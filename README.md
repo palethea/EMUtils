@@ -16,6 +16,10 @@ EMUtils is currently in early development. The first public build is not ready y
 
 - **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
 - **Automatic reconnect** - reconnect to the last server after being kicked.
+- **Inventory safety tools** - protect important items from accidental drops or slot movement.
+- **Smart chat filters** - reduce repeated server spam and noisy messages.
+- **Death position marker** - save your latest death coordinates for easier recovery.
+- **Screenshot helper** - organize screenshots with useful names and context.
 - **HUD overlays** - optional on-screen utility information, including:
   - Coordinates
   - Chunk and region details
