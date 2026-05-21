@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/emutils-logo.png" alt="EMUtils logo" width="160">
+  <img src="assets/branding/emutils-logo.svg" alt="EMUtils logo" width="160">
 </p>
 
 <h1 align="center">EMUtils</h1>
