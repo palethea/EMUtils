@@ -2,11 +2,14 @@
 
 A lightweight client-side utilities mod for **Minecraft 1.21.11** (Fabric).
 
-Named after its creators — **E** and **M**.
-
 ## Features
 
-- *(coming soon)*
+- Villager workstation interaction control
+- Automatic server reconnect after kicks
+- Configurable HUD overlays
+  - Coordinates display
+  - Chunk and region information
+  - More utility overlays planned
 
 ## Requirements
 
