@@ -1,26 +1,36 @@
-# EMUtils
+<p align="center">
+  <img src="assets/branding/emutils-logo.png" alt="EMUtils logo" width="160">
+</p>
 
-A lightweight client-side utilities mod for **Minecraft 1.21.11** (Fabric).
+<h1 align="center">EMUtils</h1>
 
-## Features
+<p align="center">
+  A lightweight client-side utilities mod for <strong>Minecraft 1.21.11</strong> on Fabric.
+</p>
 
-- Villager workstation interaction control
-- Automatic server reconnect after kicks
-- Configurable HUD overlays
-  - Coordinates display
-  - Chunk and region information
-  - More utility overlays planned
+## Status
+
+EMUtils is currently in early development. The first public build is not ready yet, but the mod is being built around small quality-of-life features that stay out of the way while playing.
+
+## Coming Soon
+
+- **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
+- **Automatic reconnect** - reconnect to the last server after being kicked.
+- **HUD overlays** - optional on-screen utility information, including:
+  - Coordinates
+  - Chunk and region details
+  - More lightweight overlays over time
 
 ## Requirements
 
 - Minecraft 1.21.11
-- Fabric Loader 0.16.x+
-- Fabric API *(optional, but recommended)*
+- Fabric Loader 0.16.x or newer
+- Fabric API, recommended
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for version 1.21.11.
-2. Download the latest `EMUtils` jar from [Releases](https://github.com/your-org/EMUtils/releases).
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
+2. Download the latest EMUtils jar once releases are available.
 3. Place the jar in your `mods` folder.
 4. Launch the game.
 
@@ -30,7 +40,7 @@ A lightweight client-side utilities mod for **Minecraft 1.21.11** (Fabric).
 ./gradlew build
 ```
 
-The built jar will be in `build/libs/`.
+The built jar will be created in `build/libs/`.
 
 ## License
 

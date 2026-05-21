@@ -1,0 +1,23 @@
+# Gradle / build output
+build/
+.gradle/
+out/
+
+# Local environment files
+.env
+.env.*
+
+# IDE files
+.idea/
+*.iml
+
+# Local AI assistant files
+.codex/
+.claude/
+.copilot/
+.cursor/
+.continue/
+
+# OS files
+.DS_Store
+Thumbs.db
