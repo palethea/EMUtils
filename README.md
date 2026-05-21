@@ -31,6 +31,10 @@ EMUtils is currently in early development. The first public build is not ready y
 - Fabric Loader 0.16.x or newer
 - Fabric API, recommended
 
+## Screenshots
+
+No screenshots are available yet. This section is ready for in-game previews once the first features are implemented.
+
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
