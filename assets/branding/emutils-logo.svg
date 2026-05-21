@@ -1,14 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   viewBox="0 0 14400 15376"
+   viewBox="0 0 120 124"
    version="1.1"
    id="svg38"
-   width="14400"
-   height="15376"
+   sodipodi:docname="EMUtils_Logo.svg"
+   inkscape:export-filename="EMUtils_Logo.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
      id="defs38" />
+  <sodipodi:namedview
+     id="namedview38"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="1"
+     inkscape:cx="-13.5"
+     inkscape:cy="43"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg38" />
   <!-- SVG created with Arrow, by QuiverAI (https://quiver.ai) -->
   <style
      type="text/css"
@@ -33,151 +56,186 @@
 .cls-18 {fill:#21BF70;}</style>
   <polygon
      class="cls-1"
-     points="1.1,27.1 1.1,97.3 6.4,99.4 6.4,103.8 60,123.3 113.7,103.8 113.7,99.4 119.4,97.3 118.9,27.1 113.7,25.4 113.7,19.3 59.9,0.8 6.4,19.2 10.9,20.9 "
-     id="polygon1" />
+     points="113.7,25.4 113.7,19.3 59.9,0.8 6.4,19.2 10.9,20.9 1.1,27.1 1.1,97.3 6.4,99.4 6.4,103.8 60,123.3 113.7,103.8 113.7,99.4 119.4,97.3 118.9,27.1 "
+     id="polygon1"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-2"
-     points="8.1,25 1.1,27.1 8.1,29.4 "
-     id="polygon2" />
+     points="1.1,27.1 8.1,29.4 8.1,25 "
+     id="polygon2"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-3"
-     points="60,123.3 113.7,103.8 113.7,22.8 59.9,41.3 8.1,22.7 8.1,29.4 59.5,48.9 59.5,118.8 6.4,99.4 6.4,103.8 "
+     points="8.1,29.4 59.5,48.9 59.5,118.8 6.4,99.4 6.4,103.8 60,123.3 113.7,103.8 113.7,22.8 59.9,41.3 8.1,22.7 "
      id="polygon3"
-     style="fill:#14171c;fill-opacity:1" />
+     style="fill:#14171c;fill-opacity:1"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-4"
-     points="10.2,21.2 14.9,21.2 14.9,21.2 14.9,19.7 21.2,22 27.1,19.8 21.4,17.7 53.7,6.8 60,9.1 66.3,6.8 98.3,17.8 92.8,19.8 98.7,22 105.2,19.7 101.1,21.2 109.1,21.2 113.7,19.3 60,0.8 6.4,19.2 "
-     id="polygon4" />
+     points="101.1,21.2 109.1,21.2 113.7,19.3 60,0.8 6.4,19.2 10.2,21.2 14.9,21.2 14.9,21.2 14.9,19.7 21.2,22 27.1,19.8 21.4,17.7 53.7,6.8 60,9.1 66.3,6.8 98.3,17.8 92.8,19.8 98.7,22 105.2,19.7 "
+     id="polygon4"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-4"
-     points="113.7,25 113.7,29.3 119.4,27.1 "
-     id="polygon5" />
+     points="113.7,29.3 119.4,27.1 113.7,25 "
+     id="polygon5"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <path
-     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 6.3984375,19.199219 0.042863,6.278722 4.2536895,-4.275786 z"
+     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 4.4674851,19.199219 0.0444,6.278722 4.4062282,-4.275786 z"
      id="path45" />
   <polygon
      class="cls-5"
-     points="6.5,22.7 59.9,41.8 113.6,22.7 110.9,21.7 59.9,39.7 9.3,21.7 "
-     id="polygon6" />
+     points="59.9,41.8 113.6,22.7 110.9,21.7 59.9,39.7 9.3,21.7 6.5,22.7 "
+     id="polygon6"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-4"
      points="8.1,30.9 8.1,31.2 49.9,47.1 51.6,46.3 9.2,30.4 "
-     id="polygon7" />
+     id="polygon7"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-6"
-     points="58.1,118.2 6.4,99.4 1.1,97.3 1.1,27.1 6.4,29.3 6.5,22.7 6.5,29.4 58.1,41.3 59.5,41.9 59.6,49 58.1,48.5 "
-     id="polygon8" />
+     points="6.5,29.4 58.1,41.3 59.5,41.9 59.6,49 58.1,48.5 58.1,118.2 6.4,99.4 1.1,97.3 1.1,27.1 6.4,29.3 6.5,22.7 "
+     id="polygon8"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-7"
-     points="21.5,72.8 36.3,78.3 36.3,66.6 17.6,59.7 17.6,47 21.5,48.6 49.9,59 49.9,47.1 6.5,31 6.5,93.6 49.9,109.1 49.9,97 17.6,84.7 17.6,71.3 "
-     id="polygon9" />
+     points="6.5,93.6 49.9,109.1 49.9,97 17.6,84.7 17.6,71.3 21.5,72.8 36.3,78.3 36.3,66.6 17.6,59.7 17.6,47 21.5,48.6 49.9,59 49.9,47.1 6.5,31 "
+     id="polygon9"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="21.5,57.7 21.5,48.6 17.6,47 17.6,59.7 "
-     id="polygon11" />
+     points="17.6,59.7 21.5,57.7 21.5,48.6 17.6,47 "
+     id="polygon11"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="21.5,82.6 21.5,72.9 17.6,71.3 17.6,84.6 "
-     id="polygon12" />
+     points="17.6,84.6 21.5,82.6 21.5,72.9 17.6,71.3 "
+     id="polygon12"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-10"
-     points="53.8,95 49.9,97.1 17.6,84.6 21.5,82.6 "
-     id="polygon13" />
+     points="21.5,82.6 53.8,95 49.9,97.1 17.6,84.6 "
+     id="polygon13"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="53.8,95 49.9,97 49.9,109.1 53.8,107.7 "
-     id="polygon14" />
+     points="53.8,107.7 53.8,95 49.9,97 49.9,109.1 "
+     id="polygon14"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-11"
-     points="21.5,48.6 21.5,57.7 25,58.9 25,53.6 53.8,64 53.8,57.5 49.9,59 "
-     id="polygon15" />
+     points="25,58.9 25,53.6 53.8,64 53.8,57.5 49.9,59 21.5,48.6 21.5,57.7 "
+     id="polygon15"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-11"
-     points="53.7,95 21.5,82.6 21.5,72.9 36.3,78.3 40.4,76.8 40.4,83.4 25,77.5 25,83.7 53.8,94.7 53.8,110.1 49.9,108.9 53.6,107.7 "
-     id="polygon16" />
+     points="25,83.7 53.8,94.7 53.8,110.1 49.9,108.9 53.6,107.7 53.7,95 21.5,82.6 21.5,72.9 36.3,78.3 40.4,76.8 40.4,83.4 25,77.5 "
+     id="polygon16"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="40.4,64.6 36.3,66.6 17.6,59.7 21.5,57.7 "
-     id="polygon17" />
+     points="21.5,57.7 40.4,64.6 36.3,66.6 17.6,59.7 "
+     id="polygon17"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="40.4,76.8 40.4,64.6 36.3,66.6 36.3,78.3 "
-     id="polygon18" />
+     points="36.3,78.3 40.4,76.8 40.4,64.6 36.3,66.6 "
+     id="polygon18"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
      points="49.9,59 53.8,57.5 53.8,47.2 51.6,46.3 49.9,47.2 "
-     id="polygon19" />
+     id="polygon19"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-4"
-     points="60,9.1 66.3,6.8 98.3,17.8 92.8,19.8 98.7,22 105.2,19.7 111.1,21.7 59.9,39.7 9.3,21.7 14.9,19.7 21.2,22 27.1,19.8 21.4,17.7 53.7,6.8 "
-     id="polygon21" />
+     points="14.9,19.7 21.2,22 27.1,19.8 21.4,17.7 53.7,6.8 60,9.1 66.3,6.8 98.3,17.8 92.8,19.8 98.7,22 105.2,19.7 111.1,21.7 59.9,39.7 9.3,21.7 "
+     id="polygon21"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-6"
-     points="81.9,79 81.9,85.9 85.9,87.8 94.8,84.4 94.8,74.6 98.2,73.5 98.2,96.8 102.6,98.4 113.6,94.3 113.7,32.7 109.4,31 109.4,29.4 63.7,45.5 63.7,47.9 63.7,110.1 67.1,111.1 78.4,107.1 78.4,77.8 80.6,79.5 "
-     id="polygon22" />
+     points="63.7,110.1 67.1,111.1 78.4,107.1 78.4,77.8 80.6,79.5 81.9,79 81.9,85.9 85.9,87.8 94.8,84.4 94.8,74.6 98.2,73.5 98.2,96.8 102.6,98.4 113.6,94.3 113.7,32.7 109.4,31 109.4,29.4 63.7,45.5 63.7,47.9 "
+     id="polygon22"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-7"
-     points="85.9,77.6 85.9,87.8 94.8,84.4 94.8,74.6 100.1,72.9 100.1,64.3 102.6,63.5 102.6,98.4 113.6,94.3 113.7,32.7 100.2,37.4 100.2,45.3 94.8,47.4 94.8,55 90.6,56.6 90.6,64.6 90.6,56.6 85.9,58.3 85.9,51 80.7,52.9 80.7,44.8 67,50.1 67,111.1 78.4,107.1 78.4,71.5 80.6,70.7 80.6,79.5 "
-     id="polygon23" />
+     points="67,111.1 78.4,107.1 78.4,71.5 80.6,70.7 80.6,79.5 85.9,77.6 85.9,87.8 94.8,84.4 94.8,74.6 100.1,72.9 100.1,64.3 102.6,63.5 102.6,98.4 113.6,94.3 113.7,32.7 100.2,37.4 100.2,45.3 94.8,47.4 94.8,55 90.6,56.6 90.6,64.6 90.6,56.6 85.9,58.3 85.9,51 80.7,52.9 80.7,44.8 67,50.1 "
+     id="polygon23"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="80.7,44.9 76.6,43 63.7,47.9 67.1,50.1 "
-     id="polygon24" />
+     points="67.1,50.1 80.7,44.9 76.6,43 63.7,47.9 "
+     id="polygon24"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="85.9,50.9 80.7,52.9 80.7,49.4 81.6,49 "
-     id="polygon25" />
+     points="81.6,49 85.9,50.9 80.7,52.9 80.7,49.4 "
+     id="polygon25"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="94.8,55 90.6,56.6 85.9,54.8 90.7,53.3 "
-     id="polygon26" />
+     points="90.7,53.3 94.8,55 90.6,56.6 85.9,54.8 "
+     id="polygon26"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="90.6,56.6 86.6,54.7 85.9,54.8 85.9,58.3 "
-     id="polygon27" />
+     points="85.9,58.3 90.6,56.6 86.6,54.7 85.9,54.8 "
+     id="polygon27"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="100.2,45.3 94.8,47.4 90.6,45.5 96.1,43.4 "
-     id="polygon28" />
+     points="96.1,43.4 100.2,45.3 94.8,47.4 90.6,45.5 "
+     id="polygon28"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-13"
-     points="113.6,32.7 100.2,37.4 95.9,35.7 109.4,31.1 "
-     id="polygon29" />
+     points="109.4,31.1 113.6,32.7 100.2,37.4 95.9,35.7 "
+     id="polygon29"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="67.1,111.1 63.8,110.1 63.7,48 67,50.1 "
-     id="polygon30" />
+     points="67,50.1 67.1,111.1 63.8,110.1 63.7,48 "
+     id="polygon30"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="80.6,79.5 78.4,78.6 78.4,71.6 80.6,70.7 "
-     id="polygon31" />
+     points="80.6,70.7 80.6,79.5 78.4,78.6 78.4,71.6 "
+     id="polygon31"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="85.9,87.8 81.9,85.9 81.9,79 85.9,77.6 "
-     id="polygon32" />
+     points="85.9,77.6 85.9,87.8 81.9,85.9 81.9,79 "
+     id="polygon32"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
      points="100.1,64.3 102.6,63.5 102.6,98.4 98.2,96.8 98.2,65.6 "
-     id="polygon33" />
+     id="polygon33"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="94.8,54.9 90.7,53.3 90.6,45.5 94.8,47.4 "
-     id="polygon34" />
+     points="94.8,47.4 94.8,54.9 90.7,53.3 90.6,45.5 "
+     id="polygon34"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-9"
-     points="100.2,45.3 95.9,43.4 95.9,35.7 100.2,37.4 "
-     id="polygon35" />
+     points="100.2,37.4 100.2,45.3 95.9,43.4 95.9,35.7 "
+     id="polygon35"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-16"
-     points="61.4,86.4 61.4,58.9 58.1,58.9 58.1,86.4 "
-     id="polygon36" />
+     points="58.1,86.4 61.4,86.4 61.4,58.9 58.1,58.9 "
+     id="polygon36"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <radialGradient
      id="SVGID_1_"
-     cx="59.610001"
+     cx="59.61"
      cy="72.75"
      r="21.4"
-     gradientUnits="userSpaceOnUse">
+     gradientUnits="userSpaceOnUse"
+     gradientTransform="matrix(1.0358603,0,0,1,-2.1604025,0)">
     <stop
        stop-color="#27BF73"
        offset="0"
@@ -189,54 +247,62 @@
        id="stop37" />
   </radialGradient>
   <path
-     style="fill:#1c7752;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 53.984375,45.101562 -4.085938,2.015625 v 11.878907 l 3.90625,-1.5 z"
+     style="fill:#1c7752;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 53.75987,45.101562 -4.232461,2.015625 v 11.878907 l 4.046329,-1.5 z"
      id="path40" />
   <path
-     style="fill:#e6ebef;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="M 6.4960937,31.003906 10.390625,28.996094 53.992187,45.101562 49.90625,47.113281 Z"
+     style="fill:#e6ebef;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 4.5686432,31.003906 4.0341905,-2.007812 45.1651283,16.105468 -4.23246,2.011719 z"
      id="path39" />
-  <circle
-     cx="59.599998"
+  <ellipse
+     cx="59.57687"
      cy="72.800003"
-     r="21.4"
      fill="url(#SVGID_1_)"
      id="circle37"
-     style="fill:url(#SVGID_1_)" />
+     style="fill:url(#SVGID_1_);stroke-width:1.01777"
+     rx="22.16741"
+     ry="21.4" />
   <polygon
      class="cls-17"
-     points="73.2,74.1 73.2,70.7 46.8,70.8 46.8,74.1 "
-     id="polygon37" />
+     points="46.8,74.1 73.2,74.1 73.2,70.7 46.8,70.8 "
+     id="polygon37"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <polygon
      class="cls-18"
-     points="61.5,83.5 61.5,74.1 70.3,74.1 70.3,70.7 61.5,70.7 61.5,61.7 58.1,61.7 58.1,70.7 49.6,70.7 49.6,74.1 58.1,74.1 58.1,83.5 "
-     id="polygon38" />
+     points="58.1,70.7 49.6,70.7 49.6,74.1 58.1,74.1 58.1,83.5 61.5,83.5 61.5,74.1 70.3,74.1 70.3,70.7 61.5,70.7 61.5,61.7 58.1,61.7 "
+     id="polygon38"
+     transform="matrix(1.0358603,0,0,1,-2.1604025,0)" />
   <path
-     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="M 6.4960937,22.695312 8.09375,23.269531 8.10156,29.398437 6.4023412,28.847656 Z"
+     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 4.5686432,22.695312 1.6549488,0.574219 0.00809,6.128906 -1.7601533,-0.550781 z"
      id="path41" />
   <path
-     style="fill:#0e1116;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 1.0976562,27.097656 7.0039063,2.289063 0.8632813,0.34375 -0.328125,0.171875 -2.2382813,-0.484375 -4.0898437,-1.75 z"
+     style="fill:#0e1116;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m -1.023384,27.097656 7.2550687,2.289063 0.8942388,0.34375 -0.3398916,0.171875 -2.3185468,-0.484375 -4.23650686,-1.75 z"
      id="path42" />
   <path
-     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 8.0625,23.253906 0.1171875,0.04687 0.019531,6.09375 -0.1484375,-0.0625 z"
+     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 6.1912214,23.253906 0.1213899,0.04687 0.020231,6.09375 -0.1537606,-0.0625 z"
      id="path43" />
   <path
-     style="fill:#454d57;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="M 12.625,19.8125 60.45763,36.946329 109.07122,19.26866 59.750523,2.298097 Z"
+     style="fill:#454d57;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="M 10.917334,19.8125 60.465258,36.946329 110.82215,19.26866 59.732794,2.298097 Z"
      id="path44" />
   <path
-     style="fill:#111419;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="M 58.097656,48.507812 58.164062,41.3125 59.5,41.875 l 0.01172,7.117187 z"
-     id="path46" />
+     style="fill:#111419;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 58.020654,48.507812 0.06879,-7.195312 1.383845,0.5625 0.01214,7.117187 z"
+     id="path46"
+     sodipodi:nodetypes="ccccc" />
   <path
-     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 59.651086,49.033436 -0.154992,-7.150624 0.01172,7.097657 z"
+     style="fill:#14171c;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m 59.629791,49.033436 -0.16055,-7.150624 0.01214,7.097657 z"
      id="path47" />
   <path
-     style="fill:#262d35;fill-opacity:1;stroke:none;stroke-width:0.0377953;stroke-linecap:round;stroke-linejoin:round"
-     d="m 1.0898437,27.109375 c 0.023437,-0.0078 5.3359375,-3.378906 5.3359375,-3.378906 l 0.019531,1.83203 z"
-     id="path48" />
+     style="fill:#262d35;fill-opacity:1;stroke:none;stroke-width:0.038467;stroke-linecap:round;stroke-linejoin:round"
+     d="m -1.0314766,27.109375 c 0.024277,-0.0078 5.5272859,-3.378906 5.5272859,-3.378906 l 0.020231,1.83203 z"
+     id="path48"
+     sodipodi:nodetypes="cccc"
+     inkscape:export-filename="EMUtils_Logo.svg"
+     inkscape:export-xdpi="100.26699"
+     inkscape:export-ydpi="100.26699" />
 </svg>
