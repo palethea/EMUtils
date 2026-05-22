@@ -22,6 +22,7 @@ EMUtils is currently in early development. The first public build is not ready y
 - **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
 - **Inventory safety tools** - protect important items from accidental drops or slot movement.
 - **Auto sort** - organize inventories and containers with a quick action.
+- **Quick GIF** - record short shareable gameplay clips from a keybind.
 - **Keybind wheel** - create profile-based wheel actions that run chat commands or send saved messages.
 - **Smart chat filters** - reduce repeated server spam and noisy messages.
 - **Death position marker** - save your latest death coordinates for easier recovery.
