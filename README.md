@@ -12,11 +12,15 @@
 
 EMUtils is currently in early development. The first public build is not ready yet, but the mod is being built around small quality-of-life features that stay out of the way while playing.
 
+## Features
+
+- **Automatic reconnect** - reconnect to the last server after being kicked, with a configurable retry delay.
+
 ## Coming Soon
 
 - **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
-- **Automatic reconnect** - reconnect to the last server after being kicked.
 - **Inventory safety tools** - protect important items from accidental drops or slot movement.
+- **Auto sort** - organize inventories and containers with a quick action.
 - **Smart chat filters** - reduce repeated server spam and noisy messages.
 - **Death position marker** - save your latest death coordinates for easier recovery.
 - **Screenshot helper** - organize screenshots with useful names and context.
@@ -33,7 +37,9 @@ EMUtils is currently in early development. The first public build is not ready y
 
 ## Screenshots
 
-No screenshots are available yet. This section is ready for in-game previews once the first features are implemented.
+### Automatic Reconnect
+
+![Automatic reconnect countdown](assets/screenshots/auto-reconnect.png)
 
 ## Installation
 

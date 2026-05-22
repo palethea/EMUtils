@@ -17,8 +17,14 @@
 	"entrypoints": {
 		"client": [
 			"net.emutils.client.EMUtilsClient"
+		],
+		"modmenu": [
+			"net.emutils.client.modmenu.EMUtilsModMenu"
 		]
 	},
+	"mixins": [
+		"emutils.mixins.json"
+	],
 	"depends": {
 		"fabricloader": ">=0.19.2",
 		"minecraft": "~1.21.11",
