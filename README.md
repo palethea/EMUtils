@@ -15,18 +15,22 @@ EMUtils is currently in early development. The first public build is not ready y
 ## Features
 
 - **Automatic reconnect** - reconnect to the last server after being kicked, with a configurable retry delay.
+- **Screenshot helper** - replace the default screenshot message with quick actions to copy the path, open the image, or open the folder.
 
 ## Coming Soon
 
 - **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
 - **Inventory safety tools** - protect important items from accidental drops or slot movement.
 - **Auto sort** - organize inventories and containers with a quick action.
+- **Keybind wheel** - create profile-based wheel actions that run chat commands or send saved messages.
 - **Smart chat filters** - reduce repeated server spam and noisy messages.
 - **Death position marker** - save your latest death coordinates for easier recovery.
-- **Screenshot helper** - organize screenshots with useful names and context.
+- **Chat timestamps** - prepend timestamps to chat messages for easier history navigation.
+- **Copy chat message** - copy a chat message to your clipboard with a single click.
 - **HUD overlays** - optional on-screen utility information, including:
   - Coordinates
   - Chunk and region details
+  - Ping / FPS
   - More lightweight overlays over time
 
 ## Requirements
@@ -34,12 +38,7 @@ EMUtils is currently in early development. The first public build is not ready y
 - Minecraft 1.21.11
 - Fabric Loader 0.16.x or newer
 - Fabric API
-
-## Screenshots
-
-### Automatic Reconnect
-
-![Automatic reconnect countdown](assets/screenshots/auto-reconnect.png)
+- Mod Menu
 
 ## Installation
 
@@ -59,3 +58,13 @@ The built jar will be created in `build/libs/`.
 ## License
 
 MIT
+
+## Screenshots
+
+<p align="center"><strong>Automatic Reconnect</strong></p>
+
+<p align="center"><img src="assets/screenshots/auto-reconnect.png" alt="Automatic reconnect countdown"></p>
+
+<p align="center"><strong>Screenshot Helper</strong></p>
+
+<p align="center"><img src="assets/screenshots/screenshot-helper.png" alt="Screenshot helper actions"></p>
