@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "net.emutils.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"ConnectScreenMixin",
+		"DisconnectedScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
