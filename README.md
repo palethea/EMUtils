@@ -29,7 +29,7 @@ EMUtils is currently in early development. The first public build is not ready y
 
 - Minecraft 1.21.11
 - Fabric Loader 0.16.x or newer
-- Fabric API, recommended
+- Fabric API
 
 ## Screenshots
 

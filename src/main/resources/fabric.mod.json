@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "emutils",
+	"version": "${version}",
+	"name": "EMUtils",
+	"description": "A lightweight client-side utilities mod for Minecraft 1.21.11 on Fabric.",
+	"authors": [
+		"mwsk75996"
+	],
+	"contact": {
+		"homepage": "https://github.com/mwsk75996/emutils",
+		"sources": "https://github.com/mwsk75996/emutils"
+	},
+	"license": "MIT",
+	"icon": "assets/emutils/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"net.emutils.client.EMUtilsClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
