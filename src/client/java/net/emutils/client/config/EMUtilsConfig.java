@@ -2,6 +2,7 @@ package net.emutils.client.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import net.emutils.client.util.EMUtilsPaths;
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +24,7 @@ public final class EMUtilsConfig {
 		if (Files.exists(EMUtilsPaths.configFile())) {
 			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.configFile())) {
 				config = GSON.fromJson(reader, EMUtilsConfig.class);
-			} catch (IOException ignored) {
+			} catch (IOException | JsonParseException | IllegalStateException ignored) {
 			}
 		}
 
