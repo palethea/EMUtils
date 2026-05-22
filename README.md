@@ -72,3 +72,11 @@ Copyright 2026 Palethea. If you use, fork, modify, or redistribute EMUtils, keep
 <p align="center"><strong>Screenshot Helper</strong></p>
 
 <p align="center"><img src="assets/screenshots/screenshot-helper.png" alt="Screenshot helper actions"></p>
+
+<p align="center"><strong>Death Waypoint</strong></p>
+
+<p align="center"><img src="assets/screenshots/death-waypoint.png" alt="Death waypoint marker"></p>
+
+<p align="center"><strong>Copy Chat</strong></p>
+
+<p align="center"><img src="assets/screenshots/copy-chat.png" alt="Copy chat message action"></p>
