@@ -12,6 +12,7 @@ out/
 *.iml
 
 # Local AI assistant files
+.antigravitycli/
 .codex/
 .claude/
 .copilot/
