@@ -58,7 +58,9 @@ The built jar will be created in `build/libs/`.
 
 ## License
 
-MIT
+EMUtils is licensed under the [Apache License 2.0](LICENSE).
+
+Copyright 2026 Palethea. If you use, fork, modify, or redistribute EMUtils, keep the original license and attribution notices.
 
 ## Screenshots
 
