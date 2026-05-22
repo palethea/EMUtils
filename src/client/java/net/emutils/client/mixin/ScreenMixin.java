@@ -2,6 +2,8 @@ package net.emutils.client.mixin;
 
 import java.io.File;
 import java.util.Optional;
+import net.emutils.client.death.DeathWaypointClickHandler;
+import net.emutils.client.death.DeathWaypointMessage;
 import net.emutils.client.screenshot.ScreenshotClipboard;
 import net.emutils.client.screenshot.ScreenshotMessage;
 import net.minecraft.client.MinecraftClient;
@@ -18,8 +20,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
 	@Inject(method = "handleClickEvent", at = @At("HEAD"), cancellable = true)
-	private static void emutils$handleCopyScreenshot(ClickEvent event, MinecraftClient client, Screen screen, CallbackInfo ci) {
-		if (!(event instanceof ClickEvent.Custom custom) || !ScreenshotMessage.COPY_SCREENSHOT_ACTION.equals(custom.id())) {
+	private static void emutils$handleCustomClickEvents(ClickEvent event, MinecraftClient client, Screen screen, CallbackInfo ci) {
+		if (!(event instanceof ClickEvent.Custom custom)) {
+			return;
+		}
+
+		if (DeathWaypointClickHandler.tryHandle(custom.id(), client)) {
+			ci.cancel();
+			return;
+		}
+
+		if (!ScreenshotMessage.COPY_SCREENSHOT_ACTION.equals(custom.id())) {
 			return;
 		}
 

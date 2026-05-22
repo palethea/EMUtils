@@ -1,6 +1,8 @@
 package net.emutils.client;
 
 import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.death.DeathWaypointManager;
+import net.emutils.client.death.DeathWaypointRenderer;
 import net.emutils.client.reconnect.AutoReconnectManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -16,13 +18,16 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static EMUtilsConfig config;
 	private static AutoReconnectManager autoReconnectManager;
+	private static DeathWaypointManager deathWaypointManager;
 
 	@Override
 	public void onInitializeClient() {
 		config = EMUtilsConfig.load();
 		autoReconnectManager = new AutoReconnectManager();
+		deathWaypointManager = new DeathWaypointManager();
 
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
+		DeathWaypointRenderer.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> autoReconnectManager.captureCurrentServer(client));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> autoReconnectManager.onDisconnected());
 
@@ -36,6 +41,7 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void tickClient(MinecraftClient client) {
 		autoReconnectManager.tick(client);
+		deathWaypointManager.tick(client);
 	}
 
 	public static EMUtilsConfig config() {
@@ -44,5 +50,9 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	public static AutoReconnectManager autoReconnect() {
 		return autoReconnectManager;
+	}
+
+	public static DeathWaypointManager deathWaypoint() {
+		return deathWaypointManager;
 	}
 }

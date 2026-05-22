@@ -16,18 +16,19 @@ EMUtils is currently in early development. The first public build is not ready y
 
 - **Automatic reconnect** - reconnect to the last server after being kicked, with a configurable retry delay.
 - **Screenshot helper** - replace the default screenshot message with quick actions to copy the path, open the image, or open the folder.
+- **Death waypoint** - marks your last death with an in-world label, distance text, configurable opacity, and a one-time nearby removal prompt.
+- **Copy chat** - copy a full chat message to the clipboard with Ctrl + left click while chat is open.
 
 ## Coming Soon
 
+- **Custom settings UI** - dedicated in-game settings screen with richer layout and controls beyond the current Mod Menu toggles.
 - **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
 - **Inventory safety tools** - protect important items from accidental drops or slot movement.
 - **Auto sort** - organize inventories and containers with a quick action.
 - **Quick GIF** - record short shareable gameplay clips from a keybind.
 - **Keybind wheel** - create profile-based wheel actions that run chat commands or send saved messages.
 - **Smart chat filters** - reduce repeated server spam and noisy messages.
-- **Death position marker** - save your latest death coordinates for easier recovery.
 - **Chat timestamps** - prepend timestamps to chat messages for easier history navigation.
-- **Copy chat message** - copy a chat message to your clipboard with a single click.
 - **HUD overlays** - optional on-screen utility information, including:
   - Coordinates
   - Chunk and region details
