@@ -4,7 +4,9 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ConnectScreenMixin",
-		"DisconnectedScreenMixin"
+		"DisconnectedScreenMixin",
+		"ScreenMixin",
+		"ScreenshotRecorderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

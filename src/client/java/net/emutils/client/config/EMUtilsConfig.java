@@ -14,6 +14,7 @@ public final class EMUtilsConfig {
 	private static final int MAX_RECONNECT_DELAY_SECONDS = 15;
 
 	private Boolean autoReconnect = Boolean.TRUE;
+	private Boolean screenshotHelper = Boolean.TRUE;
 	private Integer reconnectDelaySeconds = 8;
 
 	public static EMUtilsConfig load() {
@@ -44,6 +45,15 @@ public final class EMUtilsConfig {
 		save();
 	}
 
+	public boolean screenshotHelper() {
+		return screenshotHelper == null || screenshotHelper;
+	}
+
+	public void setScreenshotHelper(boolean enabled) {
+		screenshotHelper = enabled;
+		save();
+	}
+
 	public int reconnectDelaySeconds() {
 		return clampDelay(reconnectDelaySeconds == null ? 8 : reconnectDelaySeconds);
 	}
@@ -66,6 +76,9 @@ public final class EMUtilsConfig {
 	private void applyDefaults() {
 		if (autoReconnect == null) {
 			autoReconnect = Boolean.TRUE;
+		}
+		if (screenshotHelper == null) {
+			screenshotHelper = Boolean.TRUE;
 		}
 		reconnectDelaySeconds = reconnectDelaySeconds();
 	}

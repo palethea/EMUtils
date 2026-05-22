@@ -31,6 +31,11 @@ public final class EMUtilsSettingsScreen extends Screen {
 
 		addDrawableChild(new ReconnectDelaySlider(centerX - 100, y + 28, 200, 20));
 
+		addDrawableChild(ButtonWidget.builder(screenshotHelperText(), button -> {
+			EMUtilsClient.config().setScreenshotHelper(!EMUtilsClient.config().screenshotHelper());
+			button.setMessage(screenshotHelperText());
+		}).dimensions(centerX - 100, y + 56, 200, 20).build());
+
 		addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
 			.dimensions(centerX - 100, height - 32, 200, 20)
 			.build());
@@ -50,6 +55,11 @@ public final class EMUtilsSettingsScreen extends Screen {
 	private static Text autoReconnectText() {
 		String state = EMUtilsClient.config().autoReconnect() ? "On" : "Off";
 		return Text.literal("Auto Reconnect: " + state);
+	}
+
+	private static Text screenshotHelperText() {
+		String state = EMUtilsClient.config().screenshotHelper() ? "On" : "Off";
+		return Text.literal("Screenshot Helper: " + state);
 	}
 
 	private static final class ReconnectDelaySlider extends SliderWidget {
