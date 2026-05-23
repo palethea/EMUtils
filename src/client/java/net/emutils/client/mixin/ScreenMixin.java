@@ -4,8 +4,9 @@ import java.io.File;
 import java.util.Optional;
 import net.emutils.client.death.DeathWaypointClickHandler;
 import net.emutils.client.death.DeathWaypointMessage;
-import net.emutils.client.screenshot.ScreenshotClipboard;
+import net.emutils.client.screenshot.ScreenshotActions;
 import net.emutils.client.screenshot.ScreenshotMessage;
+import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.nbt.NbtString;
@@ -25,7 +26,7 @@ public abstract class ScreenMixin {
 			return;
 		}
 
-		if (DeathWaypointClickHandler.tryHandle(custom.id(), client)) {
+		if (DeathWaypointClickHandler.tryHandle(custom.id(), custom, client)) {
 			ci.cancel();
 			return;
 		}
@@ -37,12 +38,9 @@ public abstract class ScreenMixin {
 		ci.cancel();
 		custom.payload()
 			.flatMap(element -> element instanceof NbtString string ? string.asString() : Optional.empty())
-			.ifPresentOrElse(path -> {
-				boolean copied = ScreenshotClipboard.copyImage(new File(path));
-				Text message = copied
-					? Text.literal("EMUtils copied screenshot to clipboard.").formatted(Formatting.GREEN)
-					: Text.literal("EMUtils could not copy screenshot.").formatted(Formatting.RED);
-				client.inGameHud.getChatHud().addMessage(message);
-			}, () -> client.inGameHud.getChatHud().addMessage(Text.literal("EMUtils could not copy screenshot.").formatted(Formatting.RED)));
+			.ifPresentOrElse(
+				path -> ScreenshotActions.copyWithFeedback(client, new File(path)),
+				() -> client.inGameHud.getChatHud().addMessage(Text.translatable(EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE).formatted(Formatting.RED), null, null)
+			);
 	}
 }

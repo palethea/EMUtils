@@ -1,6 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -33,7 +34,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
-		emutils$clearWaypointsButton = ButtonWidget.builder(Text.literal("Clear Waypoints"), button -> {
+		emutils$clearWaypointsButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_CLEAR_WAYPOINTS), button -> {
 			EMUtilsClient.deathWaypoint().clearForCurrentWorld(client);
 			button.active = false;
 		}).dimensions(BUTTON_MARGIN, BUTTON_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT).build();
