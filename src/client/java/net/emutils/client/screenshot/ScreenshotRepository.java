@@ -10,8 +10,6 @@ import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.MinecraftClient;
 
 public final class ScreenshotRepository {
-	private static final int MAX_SCREENSHOTS = 200;
-
 	private ScreenshotRepository() {
 	}
 
@@ -22,11 +20,16 @@ public final class ScreenshotRepository {
 		}
 
 		try (var stream = Files.list(screenshotsDir)) {
+			Comparator<ScreenshotEntry> sort = Comparator.comparingLong(ScreenshotEntry::modifiedMillis);
+			if (EMUtilsClient.config() == null || EMUtilsClient.config().screenshotGallerySort() == ScreenshotGallerySort.NEWEST_FIRST) {
+				sort = sort.reversed();
+			}
+
 			return stream
 				.filter(ScreenshotRepository::isReadablePng)
 				.map(ScreenshotRepository::entry)
-				.sorted(Comparator.comparingLong(ScreenshotEntry::modifiedMillis).reversed())
-				.limit(MAX_SCREENSHOTS)
+				.sorted(sort)
+				.limit(EMUtilsClient.config() == null ? 200 : EMUtilsClient.config().screenshotGalleryMaxCount())
 				.toList();
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("Failed to list screenshots.", exception);

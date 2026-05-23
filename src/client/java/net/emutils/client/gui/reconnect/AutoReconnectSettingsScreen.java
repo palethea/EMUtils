@@ -7,7 +7,7 @@ import net.emutils.client.gui.widget.ConfigToggleButton;
 import net.emutils.client.gui.widget.IntConfigSlider;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
+import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.text.Text;
 
 public final class AutoReconnectSettingsScreen extends EMUtilsScreen {
@@ -17,16 +17,16 @@ public final class AutoReconnectSettingsScreen extends EMUtilsScreen {
 
 	@Override
 	protected void initBody() {
-		DirectionalLayoutWidget body = createVerticalBody();
-		body.add(ConfigToggleButton.create(
+		GridWidget.Adder adder = initTwoColumnBody();
+		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_AUTO_RECONNECT,
 			() -> EMUtilsClient.config().autoReconnect(),
 			EMUtilsClient.config()::setAutoReconnect
 		));
-		body.add(new IntConfigSlider(
+		adder.add(new IntConfigSlider(
 			0,
 			0,
-			200,
+			SETTINGS_BUTTON_WIDTH,
 			20,
 			EMUtilsTexts.OPTION_RETRY_DELAY,
 			EMUtilsTexts.SUFFIX_SECONDS,
@@ -35,6 +35,31 @@ public final class AutoReconnectSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().reconnectDelaySeconds(),
 			EMUtilsClient.config()::setReconnectDelaySeconds
 		));
-		layout.addBody(body);
+		IntConfigSlider maxTriesSlider = new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			EMUtilsTexts.OPTION_AUTO_RECONNECT_MAX_TRIES,
+			"",
+			EMUtilsConfig.RECONNECT_MAX_TRIES_MIN,
+			EMUtilsConfig.RECONNECT_MAX_TRIES_MAX,
+			() -> EMUtilsClient.config().autoReconnectMaxTries(),
+			EMUtilsClient.config()::setAutoReconnectMaxTries
+		);
+		maxTriesSlider.active = !EMUtilsClient.config().autoReconnectUnlimitedTries();
+		adder.add(maxTriesSlider);
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_RECONNECT_UNLIMITED,
+			() -> EMUtilsClient.config().autoReconnectUnlimitedTries(),
+			enabled -> {
+				EMUtilsClient.config().setAutoReconnectUnlimitedTries(enabled);
+				maxTriesSlider.active = !enabled;
+			}
+		));
+		adder.add(fullWidthSettingsButton(Text.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
+			EMUtilsClient.config().resetAutoReconnectDefaults();
+			client.setScreen(new AutoReconnectSettingsScreen(parent));
+		}), SETTINGS_COLUMNS);
 	}
 }

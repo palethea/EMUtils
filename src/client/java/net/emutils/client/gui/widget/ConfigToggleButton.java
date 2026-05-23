@@ -2,6 +2,7 @@ package net.emutils.client.gui.widget;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import net.emutils.client.gui.EMUtilsScreen;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
@@ -14,7 +15,7 @@ public final class ConfigToggleButton {
 		return ButtonWidget.builder(message(label, getter), button -> {
 			setter.accept(!getter.getAsBoolean());
 			button.setMessage(message(label, getter));
-		}).width(200).build();
+		}).width(EMUtilsScreen.SETTINGS_BUTTON_WIDTH).build();
 	}
 
 	public static ButtonWidget create(String labelKey, BooleanSupplier getter, Consumer<Boolean> setter) {

@@ -1,6 +1,9 @@
 package net.emutils.client.screenshot;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import net.emutils.client.EMUtilsClient;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -26,6 +29,35 @@ public final class ScreenshotActions {
 		if (parent != null) {
 			Util.getOperatingSystem().open(parent);
 		}
+	}
+
+	public static boolean deleteWithFeedback(MinecraftClient client, File screenshot) {
+		boolean deleted = delete(screenshot);
+		postDeleteFeedback(client, deleted);
+		return deleted;
+	}
+
+	private static boolean delete(File screenshot) {
+		if (screenshot == null || !screenshot.isFile()) {
+			return false;
+		}
+
+		try {
+			return Files.deleteIfExists(screenshot.toPath());
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Failed to delete screenshot {}.", screenshot, exception);
+			return false;
+		}
+	}
+
+	private static void postDeleteFeedback(MinecraftClient client, boolean deleted) {
+		if (client == null || client.inGameHud == null) {
+			return;
+		}
+
+		String key = deleted ? EMUtilsTexts.CHAT_SCREENSHOT_DELETE_SUCCESS : EMUtilsTexts.CHAT_SCREENSHOT_DELETE_FAILURE;
+		Formatting formatting = deleted ? Formatting.GREEN : Formatting.RED;
+		client.inGameHud.getChatHud().addMessage(Text.translatable(key).formatted(formatting), null, null);
 	}
 
 	private static void postCopyFeedback(MinecraftClient client, boolean copied) {

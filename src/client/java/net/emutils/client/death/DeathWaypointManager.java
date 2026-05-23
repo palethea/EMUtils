@@ -12,12 +12,14 @@ import java.util.List;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.util.EMUtilsPaths;
+import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jspecify.annotations.Nullable;
@@ -65,6 +67,10 @@ public final class DeathWaypointManager {
 		));
 		trimDeathsForWorld(worldKey, dimension);
 		save();
+
+		if (EMUtilsClient.config().deathWaypointAutoCopyCoords()) {
+			copyCoordinates(client, timestamp);
+		}
 	}
 
 	public void tick(MinecraftClient client) {
@@ -102,6 +108,18 @@ public final class DeathWaypointManager {
 
 		DeathWaypointChat.removeNearPrompt(client.inGameHud.getChatHud(), deathTimestamp);
 		client.inGameHud.getChatHud().addMessage(DeathWaypointMessage.kept());
+	}
+
+	public void copyCoordinates(MinecraftClient client, long deathTimestamp) {
+		DeathLocation location = findByTimestamp(deathTimestamp);
+		if (location == null || client == null || client.keyboard == null) {
+			return;
+		}
+
+		client.keyboard.setClipboard(DeathWaypointCoordinates.format(location, EMUtilsClient.config().deathWaypointCoordinateFormat()));
+		if (client.inGameHud != null) {
+			client.inGameHud.getChatHud().addMessage(Text.translatable(EMUtilsTexts.DEATH_COORDS_COPIED).formatted(Formatting.GREEN));
+		}
 	}
 
 	public void clear(MinecraftClient client, long deathTimestamp) {

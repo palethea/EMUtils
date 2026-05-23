@@ -1,8 +1,5 @@
 package net.emutils.client.gui.screenshot;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -13,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.emutils.client.EMUtilsClient;
@@ -23,11 +21,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
@@ -36,25 +35,33 @@ import net.minecraft.util.Util;
 
 public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget<ScreenshotGalleryWidget.Entry> implements AutoCloseable {
 	private static final int COLUMNS = 3;
-	private static final int ROW_HEIGHT = 174;
+	private static final int ROW_HEIGHT = 160;
 	private static final int TILE_GAP = 8;
+	private static final int TOOLBAR_HEIGHT = 26;
 	private static final int PREVIEW_HEIGHT = 92;
 	private static final int MAX_CACHED_TEXTURES = 32;
 	private static final DateTimeFormatter DATE_FORMAT = Util.getDefaultLocaleFormatter(FormatStyle.SHORT);
 
 	private final LinkedHashMap<Path, Thumbnail> thumbnails = new LinkedHashMap<>(16, 0.75F, true);
-	private final Set<Path> failedThumbnails = new HashSet<>();
+	private final ScreenshotThumbnailLoader thumbnailLoader;
+	private Runnable onScreenshotsChanged;
 	private int previewTargetWidth = 1;
 	private int previewTargetHeight = 1;
 
 	public ScreenshotGalleryWidget(MinecraftClient client, int width, int height) {
 		super(client, width, height, 0, ROW_HEIGHT);
 		centerListVertically = false;
+		thumbnailLoader = new ScreenshotThumbnailLoader(client, this::onThumbnailLoaded);
+	}
+
+	public void setOnScreenshotsChanged(Runnable onScreenshotsChanged) {
+		this.onScreenshotsChanged = onScreenshotsChanged;
 	}
 
 	public void setScreenshots(List<ScreenshotEntry> screenshots) {
 		updatePreviewTargetSize();
 		clearEntries();
+		trimThumbnailCache(screenshots);
 		if (screenshots.isEmpty()) {
 			addEntry(new EmptyEntry(client));
 			return;
@@ -77,9 +84,31 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 		super.setDimensions(width, height);
 		updatePreviewTargetSize();
 		if (previewTargetWidth != previousTargetWidth || previewTargetHeight != previousTargetHeight) {
-			close();
-			failedThumbnails.clear();
+			invalidateThumbnailCache();
 		}
+	}
+
+	private void invalidateThumbnailCache() {
+		for (Thumbnail thumbnail : thumbnails.values()) {
+			client.getTextureManager().destroyTexture(thumbnail.id);
+		}
+		thumbnails.clear();
+		thumbnailLoader.clearFailures();
+	}
+
+	private void onThumbnailLoaded(Path path, ScreenshotThumbnailLoader.LoadedThumbnail loaded) {
+		if (loaded.targetWidth() != previewTargetWidth || loaded.targetHeight() != previewTargetHeight) {
+			client.getTextureManager().destroyTexture(loaded.id());
+			return;
+		}
+		Thumbnail existing = thumbnails.get(path);
+		if (existing != null) {
+			client.getTextureManager().destroyTexture(existing.id);
+		}
+
+		Thumbnail thumbnail = new Thumbnail(loaded.id(), loaded.width(), loaded.height(), loaded.targetWidth(), loaded.targetHeight());
+		thumbnails.put(path, thumbnail);
+		trimCache();
 	}
 
 	private void updatePreviewTargetSize() {
@@ -92,11 +121,15 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 
 	@Override
 	public void close() {
+		thumbnailLoader.close();
 		for (Thumbnail thumbnail : thumbnails.values()) {
 			client.getTextureManager().destroyTexture(thumbnail.id);
 		}
 		thumbnails.clear();
-		failedThumbnails.clear();
+	}
+
+	private void requestThumbnail(ScreenshotEntry screenshot) {
+		thumbnailLoader.request(screenshot, previewTargetWidth, previewTargetHeight);
 	}
 
 	private Thumbnail thumbnail(ScreenshotEntry screenshot) {
@@ -111,30 +144,34 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 			thumbnails.remove(path);
 		}
 
-		if (failedThumbnails.contains(path)) {
-			return null;
+		if (!hasFailed(screenshot) && !isLoading(screenshot)) {
+			requestThumbnail(screenshot);
 		}
 
-		try (InputStream stream = Files.newInputStream(path)) {
-			NativeImage image = NativeImage.read(stream);
-			NativeImage thumbnailImage = scaleToPreviewSize(image, previewTargetWidth, previewTargetHeight);
-			if (thumbnailImage != image) {
-				image.close();
-			}
+		return null;
+	}
 
-			Identifier id = Identifier.of(
-				EMUtilsClient.MOD_ID,
-				"screenshot_gallery/" + Integer.toUnsignedString(path.toString().hashCode(), 16) + "_" + screenshot.modifiedMillis()
-			);
-			client.getTextureManager().registerTexture(id, new NativeImageBackedTexture(() -> screenshot.filename(), thumbnailImage));
-			Thumbnail thumbnail = new Thumbnail(id, thumbnailImage.getWidth(), thumbnailImage.getHeight(), previewTargetWidth, previewTargetHeight);
-			thumbnails.put(path, thumbnail);
-			trimCache();
-			return thumbnail;
-		} catch (IOException | RuntimeException exception) {
-			failedThumbnails.add(path);
-			EMUtilsClient.LOGGER.warn("Failed to load screenshot thumbnail {}.", path, exception);
-			return null;
+	private boolean isLoading(ScreenshotEntry screenshot) {
+		return thumbnailLoader.isActive(screenshot, previewTargetWidth, previewTargetHeight);
+	}
+
+	private boolean hasFailed(ScreenshotEntry screenshot) {
+		return thumbnailLoader.hasFailed(screenshot, previewTargetWidth, previewTargetHeight);
+	}
+
+	private void trimThumbnailCache(List<ScreenshotEntry> screenshots) {
+		Set<Path> validPaths = new HashSet<>();
+		for (ScreenshotEntry screenshot : screenshots) {
+			validPaths.add(screenshot.path());
+		}
+
+		Iterator<Map.Entry<Path, Thumbnail>> iterator = thumbnails.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<Path, Thumbnail> entry = iterator.next();
+			if (!validPaths.contains(entry.getKey())) {
+				client.getTextureManager().destroyTexture(entry.getValue().id);
+				iterator.remove();
+			}
 		}
 	}
 
@@ -147,19 +184,20 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 		}
 	}
 
-	private static NativeImage scaleToPreviewSize(NativeImage image, int maxWidth, int maxHeight) {
-		int width = image.getWidth();
-		int height = image.getHeight();
-		if (width <= maxWidth && height <= maxHeight) {
-			return image;
+	private void deleteScreenshot(ScreenshotEntry screenshot) {
+		if (!ScreenshotActions.deleteWithFeedback(client, screenshot.path().toFile())) {
+			return;
 		}
 
-		double scale = Math.min(maxWidth / (double) width, maxHeight / (double) height);
-		int targetWidth = Math.max(1, (int) Math.round(width * scale));
-		int targetHeight = Math.max(1, (int) Math.round(height * scale));
-		NativeImage scaled = new NativeImage(targetWidth, targetHeight, false);
-		image.resizeSubRectTo(0, 0, width, height, scaled);
-		return scaled;
+		Path path = screenshot.path();
+		Thumbnail thumbnail = thumbnails.remove(path);
+		if (thumbnail != null) {
+			client.getTextureManager().destroyTexture(thumbnail.id);
+		}
+
+		if (onScreenshotsChanged != null) {
+			onScreenshotsChanged.run();
+		}
 	}
 
 	abstract static class Entry extends AlwaysSelectedEntryListWidget.Entry<Entry> {
@@ -238,29 +276,86 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 	}
 
 	private static final class Tile {
-		private static final int BUTTON_HEIGHT = 18;
+		private static final int BUTTON_SIZE = 20;
+		private static final int BUTTON_COUNT = 4;
+		private static final int BUTTON_GAP = 4;
 		private final ScreenshotGalleryWidget widget;
 		private final MinecraftClient client;
 		private final ScreenshotEntry screenshot;
-		private final ButtonWidget copyButton;
-		private final ButtonWidget openButton;
-		private final ButtonWidget folderButton;
+		private final GalleryIconButtonWidget copyButton;
+		private final GalleryIconButtonWidget openButton;
+		private final GalleryIconButtonWidget folderButton;
+		private final GalleryIconButtonWidget deleteButton;
 
 		private Tile(ScreenshotGalleryWidget widget, MinecraftClient client, ScreenshotEntry screenshot) {
 			this.widget = widget;
 			this.client = client;
 			this.screenshot = screenshot;
-			copyButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.CHAT_ACTION_COPY), button -> ScreenshotActions.copyWithFeedback(client, screenshot.path().toFile())).build();
-			openButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.CHAT_ACTION_OPEN), button -> ScreenshotActions.openImage(screenshot.path().toFile())).build();
-			folderButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.CHAT_ACTION_FOLDER), button -> ScreenshotActions.openFolder(screenshot.path().toFile())).build();
+			copyButton = iconButton(
+				Text.translatable(EMUtilsTexts.CHAT_ACTION_COPY),
+				GalleryIcons.COPY,
+				button -> ScreenshotActions.copyWithFeedback(client, screenshot.path().toFile())
+			);
+			openButton = iconButton(
+				Text.translatable(EMUtilsTexts.CHAT_ACTION_OPEN),
+				GalleryIcons.OPEN,
+				button -> ScreenshotActions.openImage(screenshot.path().toFile())
+			);
+			folderButton = iconButton(
+				Text.translatable(EMUtilsTexts.CHAT_ACTION_FOLDER),
+				GalleryIcons.FOLDER,
+				button -> ScreenshotActions.openFolder(screenshot.path().toFile())
+			);
+			deleteButton = iconButton(
+				Text.translatable(EMUtilsTexts.GALLERY_ACTION_DELETE),
+				GalleryIcons.DELETE,
+				button -> confirmOrDeleteScreenshot(screenshot)
+			);
+		}
+
+		private static GalleryIconButtonWidget iconButton(Text label, Identifier texture, ButtonWidget.PressAction action) {
+			return GalleryIconButtonWidget.create(label, texture, GalleryIcons.SIZE, action);
+		}
+
+		private void confirmOrDeleteScreenshot(ScreenshotEntry screenshot) {
+			if (EMUtilsClient.config() == null || !EMUtilsClient.config().screenshotGalleryDeleteConfirmation()) {
+				widget.deleteScreenshot(screenshot);
+				return;
+			}
+
+			Screen galleryScreen = client.currentScreen;
+			client.setScreen(new ConfirmScreen(
+				confirmed -> {
+					client.setScreen(galleryScreen);
+					if (confirmed) {
+						widget.deleteScreenshot(screenshot);
+					}
+				},
+				Text.translatable(EMUtilsTexts.GALLERY_DELETE_TITLE),
+				Text.translatable(EMUtilsTexts.GALLERY_DELETE_MESSAGE, screenshot.filename()),
+				Text.translatable(EMUtilsTexts.GALLERY_ACTION_DELETE),
+				ScreenTexts.CANCEL
+			));
 		}
 
 		private void render(DrawContext context, int mouseX, int mouseY, float deltaTicks, int x, int y, int width, int height) {
 			context.fill(x, y, x + width, y + height, 0x66000000);
 			context.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xAA202020);
 
+			int toolbarWidth = BUTTON_COUNT * BUTTON_SIZE + (BUTTON_COUNT - 1) * BUTTON_GAP;
+			int toolbarX = x + (width - toolbarWidth) / 2;
+			int buttonY = y + 4;
+			positionButton(copyButton, toolbarX, buttonY);
+			positionButton(openButton, toolbarX + (BUTTON_SIZE + BUTTON_GAP), buttonY);
+			positionButton(folderButton, toolbarX + (BUTTON_SIZE + BUTTON_GAP) * 2, buttonY);
+			positionButton(deleteButton, toolbarX + (BUTTON_SIZE + BUTTON_GAP) * 3, buttonY);
+			copyButton.render(context, mouseX, mouseY, deltaTicks);
+			openButton.render(context, mouseX, mouseY, deltaTicks);
+			folderButton.render(context, mouseX, mouseY, deltaTicks);
+			deleteButton.render(context, mouseX, mouseY, deltaTicks);
+
 			int previewX = x + 6;
-			int previewY = y + 6;
+			int previewY = y + TOOLBAR_HEIGHT;
 			int previewWidth = width - 12;
 			Thumbnail thumbnail = widget.thumbnail(screenshot);
 			if (thumbnail != null) {
@@ -283,43 +378,51 @@ public final class ScreenshotGalleryWidget extends AlwaysSelectedEntryListWidget
 					thumbnail.width,
 					thumbnail.height
 				);
+			} else if (widget.isLoading(screenshot)) {
+				GalleryLoadingSpinner.render(context, previewX + previewWidth / 2, previewY + PREVIEW_HEIGHT / 2);
 			} else {
 				Text missing = Text.literal("?");
-				context.drawTextWithShadow(client.textRenderer, missing, previewX + previewWidth / 2 - client.textRenderer.getWidth(missing) / 2, previewY + PREVIEW_HEIGHT / 2 - 4, Colors.GRAY);
+				context.drawTextWithShadow(
+					client.textRenderer,
+					missing,
+					previewX + previewWidth / 2 - client.textRenderer.getWidth(missing) / 2,
+					previewY + PREVIEW_HEIGHT / 2 - 4,
+					Colors.GRAY
+				);
 			}
 
 			int textY = previewY + PREVIEW_HEIGHT + 5;
-			context.drawTextWithShadow(client.textRenderer, client.textRenderer.trimToWidth(screenshot.filename(), previewWidth), previewX, textY, Colors.WHITE);
+			Text filename = Text.literal(client.textRenderer.trimToWidth(screenshot.filename(), previewWidth));
+			context.drawCenteredTextWithShadow(client.textRenderer, filename, x + width / 2, textY, Colors.WHITE);
 			String date = DATE_FORMAT.format(Instant.ofEpochMilli(screenshot.modifiedMillis()).atZone(ZoneId.systemDefault()));
-			context.drawTextWithShadow(client.textRenderer, client.textRenderer.trimToWidth(date, previewWidth), previewX, textY + 11, Colors.LIGHT_GRAY);
+			Text dateText = Text.literal(client.textRenderer.trimToWidth(date, previewWidth));
+			context.drawCenteredTextWithShadow(client.textRenderer, dateText, x + width / 2, textY + 11, Colors.LIGHT_GRAY);
+		}
 
-			int buttonY = y + height - BUTTON_HEIGHT - 5;
-			int buttonWidth = Math.max(34, (width - 18) / 3);
-			copyButton.setDimensions(buttonWidth, BUTTON_HEIGHT);
-			openButton.setDimensions(buttonWidth, BUTTON_HEIGHT);
-			folderButton.setDimensions(buttonWidth, BUTTON_HEIGHT);
-			copyButton.setPosition(x + 5, buttonY);
-			openButton.setPosition(x + 9 + buttonWidth, buttonY);
-			folderButton.setPosition(x + 13 + buttonWidth * 2, buttonY);
-			copyButton.render(context, mouseX, mouseY, deltaTicks);
-			openButton.render(context, mouseX, mouseY, deltaTicks);
-			folderButton.render(context, mouseX, mouseY, deltaTicks);
+		private static void positionButton(GalleryIconButtonWidget button, int x, int y) {
+			button.setPosition(x, y);
+			button.setDimensions(BUTTON_SIZE, BUTTON_SIZE);
 		}
 
 		private boolean mouseClicked(Click click, boolean doubled) {
 			return copyButton.mouseClicked(click, doubled)
 				|| openButton.mouseClicked(click, doubled)
-				|| folderButton.mouseClicked(click, doubled);
+				|| folderButton.mouseClicked(click, doubled)
+				|| deleteButton.mouseClicked(click, doubled);
 		}
 
 		private boolean mouseReleased(Click click) {
-			return copyButton.mouseReleased(click) || openButton.mouseReleased(click) || folderButton.mouseReleased(click);
+			return copyButton.mouseReleased(click)
+				|| openButton.mouseReleased(click)
+				|| folderButton.mouseReleased(click)
+				|| deleteButton.mouseReleased(click);
 		}
 
 		private void forEachChild(Consumer<ClickableWidget> consumer) {
 			consumer.accept(copyButton);
 			consumer.accept(openButton);
 			consumer.accept(folderButton);
+			consumer.accept(deleteButton);
 		}
 
 		private String filename() {

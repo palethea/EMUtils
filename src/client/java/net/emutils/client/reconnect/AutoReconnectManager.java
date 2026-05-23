@@ -15,10 +15,12 @@ public final class AutoReconnectManager {
 	private String lastServerName;
 	private String lastServerAddress;
 	private long nextReconnectAt;
+	private int attemptsSinceDisconnect;
 	private Screen trackedDisconnectScreen;
 	private ButtonWidget reconnectButton;
 
 	public void captureCurrentServer(MinecraftClient client) {
+		resetAttempts();
 		captureServer(client.getCurrentServerEntry());
 	}
 
@@ -32,6 +34,7 @@ public final class AutoReconnectManager {
 	}
 
 	public void onDisconnected() {
+		resetAttempts();
 		scheduleNextAttempt();
 		trackedDisconnectScreen = null;
 	}
@@ -44,10 +47,11 @@ public final class AutoReconnectManager {
 
 		if (trackedDisconnectScreen != client.currentScreen) {
 			trackedDisconnectScreen = client.currentScreen;
+			resetAttempts();
 			scheduleNextAttempt();
 		}
 
-		if (System.currentTimeMillis() >= nextReconnectAt) {
+		if (System.currentTimeMillis() >= nextReconnectAt && hasAttemptsRemaining()) {
 			reconnectNow(client, client.currentScreen);
 			return;
 		}
@@ -74,7 +78,17 @@ public final class AutoReconnectManager {
 			return Text.translatable(EMUtilsTexts.RECONNECT_UNAVAILABLE);
 		}
 
-		return Text.translatable(EMUtilsTexts.RECONNECT_COUNTDOWN, countdownText());
+		if (!hasAttemptsRemaining()) {
+			return Text.translatable(EMUtilsTexts.RECONNECT_EXHAUSTED);
+		}
+
+		if (EMUtilsClient.config().autoReconnectUnlimitedTries()) {
+			return Text.translatable(EMUtilsTexts.RECONNECT_COUNTDOWN, countdownText());
+		}
+
+		int maxTries = EMUtilsClient.config().autoReconnectMaxTries();
+		int currentAttempt = Math.min(attemptsSinceDisconnect + 1, maxTries);
+		return Text.translatable(EMUtilsTexts.RECONNECT_COUNTDOWN_ATTEMPTS, countdownText(), currentAttempt, maxTries);
 	}
 
 	public String countdownText() {
@@ -87,6 +101,11 @@ public final class AutoReconnectManager {
 			return;
 		}
 
+		if (!hasAttemptsRemaining()) {
+			resetAttempts();
+		}
+
+		attemptsSinceDisconnect++;
 		scheduleNextAttempt();
 		try {
 			ServerInfo reconnectServer = new ServerInfo(lastServerName, lastServerAddress, ServerInfo.ServerType.OTHER);
@@ -98,6 +117,18 @@ public final class AutoReconnectManager {
 				reconnectButton.setMessage(Text.translatable(EMUtilsTexts.RECONNECT_RETRYING));
 			}
 		}
+	}
+
+	private boolean hasAttemptsRemaining() {
+		if (EMUtilsClient.config().autoReconnectUnlimitedTries()) {
+			return true;
+		}
+
+		return attemptsSinceDisconnect < EMUtilsClient.config().autoReconnectMaxTries();
+	}
+
+	private void resetAttempts() {
+		attemptsSinceDisconnect = 0;
 	}
 
 	private void scheduleNextAttempt() {

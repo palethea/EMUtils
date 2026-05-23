@@ -150,10 +150,7 @@ public final class DeathWaypointListWidget extends AlwaysSelectedEntryListWidget
 		}
 
 		private void copyCoordinates() {
-			client.keyboard.setClipboard(DeathWaypointCoordinates.plain(location));
-			if (client.inGameHud != null) {
-				client.inGameHud.getChatHud().addMessage(Text.translatable(EMUtilsTexts.DEATH_COORDS_COPIED).formatted(Formatting.GREEN));
-			}
+			EMUtilsClient.deathWaypoint().copyCoordinates(client, location.deathTimestamp());
 		}
 
 		private void removeWaypoint() {
