@@ -14,10 +14,11 @@ EMUtils is currently in early development. The first public build is not ready y
 
 ## Features
 
-- **Automatic reconnect** — reconnect to the last server after being kicked, with a configurable retry delay.
-- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, and a screenshot gallery for copying or opening recent captures.
-- **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and a current-waypoints list with coordinate copying.
+- **Automatic reconnect** — reconnect to the last server after being kicked, with configurable retry delay, limited attempts, or always-retry mode.
+- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, an open-gallery keybind, and a configurable screenshot gallery for copying, opening, sorting, and deleting recent captures.
+- **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
 - **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts when you are mentioned.
+- **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time.
 - **Settings UI** — vanilla-style hub in **Options → EMUtils...** and Mod Menu, with per-feature detail screens.
 
 ## Coming Soon
@@ -27,11 +28,6 @@ EMUtils is currently in early development. The first public build is not ready y
 - **Auto sort** — organize inventories and containers with a quick action.
 - **Quick GIF** — record short shareable gameplay clips from a keybind.
 - **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.
-- **HUD overlays** — optional on-screen utility information, including:
-  - Coordinates
-  - Chunk and region details
-  - Ping / FPS
-  - More lightweight overlays over time
 
 ## Requirements
 

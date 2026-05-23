@@ -1,12 +1,14 @@
 package net.emutils.client.gui.screenshot;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.gui.EMUtilsScreen;
 import net.emutils.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.gui.widget.IntConfigSlider;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
+import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.text.Text;
 
 public final class ScreenshotSettingsScreen extends EMUtilsScreen {
@@ -16,21 +18,57 @@ public final class ScreenshotSettingsScreen extends EMUtilsScreen {
 
 	@Override
 	protected void initBody() {
-		DirectionalLayoutWidget body = createVerticalBody();
-		body.add(ConfigToggleButton.create(
+		GridWidget.Adder adder = initTwoColumnBody();
+		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_SCREENSHOT_HELPER,
 			() -> EMUtilsClient.config().screenshotHelper(),
 			EMUtilsClient.config()::setScreenshotHelper
 		));
-		body.add(ConfigToggleButton.create(
+		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_SCREENSHOT_AUTO_COPY,
 			() -> EMUtilsClient.config().screenshotAutoCopy(),
 			EMUtilsClient.config()::setScreenshotAutoCopy
 		));
-		body.add(ButtonWidget.builder(
+		adder.add(sortButton());
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_SCREENSHOT_DELETE_CONFIRMATION,
+			() -> EMUtilsClient.config().screenshotGalleryDeleteConfirmation(),
+			EMUtilsClient.config()::setScreenshotGalleryDeleteConfirmation
+		));
+		adder.add(new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			EMUtilsTexts.OPTION_SCREENSHOT_MAX_COUNT,
+			"",
+			EMUtilsConfig.SCREENSHOT_MAX_COUNT_MIN,
+			EMUtilsConfig.SCREENSHOT_MAX_COUNT_MAX,
+			() -> EMUtilsClient.config().screenshotGalleryMaxCount(),
+			EMUtilsClient.config()::setScreenshotGalleryMaxCount
+		));
+		adder.add(fullWidthSettingsButton(
 			Text.translatable(EMUtilsTexts.OPTION_SCREENSHOT_GALLERY),
 			button -> client.setScreen(new ScreenshotGalleryScreen(this))
-		).width(200).build());
-		layout.addBody(body);
+		), SETTINGS_COLUMNS);
+		adder.add(fullWidthSettingsButton(Text.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
+			EMUtilsClient.config().resetScreenshotDefaults();
+			client.setScreen(new ScreenshotSettingsScreen(parent));
+		}), SETTINGS_COLUMNS);
+	}
+
+	private ButtonWidget sortButton() {
+		return ButtonWidget.builder(sortMessage(), button -> {
+			EMUtilsClient.config().setScreenshotGallerySort(EMUtilsClient.config().screenshotGallerySort().next());
+			button.setMessage(sortMessage());
+		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Text sortMessage() {
+		return Text.translatable(
+			EMUtilsTexts.OPTION_VALUE,
+			Text.translatable(EMUtilsTexts.OPTION_SCREENSHOT_SORT),
+			Text.translatable(EMUtilsClient.config().screenshotGallerySort().labelKey())
+		);
 	}
 }

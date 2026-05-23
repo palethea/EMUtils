@@ -30,8 +30,15 @@ public final class ScreenshotGalleryScreen extends Screen {
 		layout.forEachChild(this::addDrawableChild);
 
 		gallery = addDrawableChild(new ScreenshotGalleryWidget(client, width, height));
+		gallery.setOnScreenshotsChanged(this::refreshGallery);
 		gallery.setScreenshots(ScreenshotRepository.list(client));
 		refreshWidgetPositions();
+	}
+
+	private void refreshGallery() {
+		if (gallery != null) {
+			gallery.setScreenshots(ScreenshotRepository.list(client));
+		}
 	}
 
 	@Override
@@ -47,14 +54,14 @@ public final class ScreenshotGalleryScreen extends Screen {
 	}
 
 	@Override
-	public void removed() {
+	public void close() {
 		if (gallery != null) {
 			gallery.close();
 		}
+		client.setScreen(parent);
 	}
 
 	@Override
-	public void close() {
-		client.setScreen(parent);
+	public void removed() {
 	}
 }
