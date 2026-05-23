@@ -14,22 +14,20 @@ EMUtils is currently in early development. The first public build is not ready y
 
 ## Features
 
-- **Automatic reconnect** - reconnect to the last server after being kicked, with a configurable retry delay.
-- **Screenshot helper** - replace the default screenshot message with quick actions to copy the path, open the image, or open the folder.
-- **Death waypoint** - marks your last death with an in-world label, distance text, configurable opacity, and a one-time nearby removal prompt.
-- **Copy chat** - copy a full chat message to the clipboard with Ctrl + left click while chat is open.
+- **Automatic reconnect** — reconnect to the last server after being kicked, with a configurable retry delay.
+- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, and a screenshot gallery for copying or opening recent captures.
+- **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and a current-waypoints list with coordinate copying.
+- **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts when you are mentioned.
+- **Settings UI** — vanilla-style hub in **Options → EMUtils...** and Mod Menu, with per-feature detail screens.
 
 ## Coming Soon
 
-- **Custom settings UI** - dedicated in-game settings screen with richer layout and controls beyond the current Mod Menu toggles.
-- **Villager workstation protection** - prevent accidental villager workstation interactions when needed.
-- **Inventory safety tools** - protect important items from accidental drops or slot movement.
-- **Auto sort** - organize inventories and containers with a quick action.
-- **Quick GIF** - record short shareable gameplay clips from a keybind.
-- **Keybind wheel** - create profile-based wheel actions that run chat commands or send saved messages.
-- **Smart chat filters** - reduce repeated server spam and noisy messages.
-- **Chat timestamps** - prepend timestamps to chat messages for easier history navigation.
-- **HUD overlays** - optional on-screen utility information, including:
+- **Villager workstation protection** — prevent accidental villager workstation interactions when needed.
+- **Inventory safety tools** — protect important items from accidental drops or slot movement.
+- **Auto sort** — organize inventories and containers with a quick action.
+- **Quick GIF** — record short shareable gameplay clips from a keybind.
+- **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.
+- **HUD overlays** — optional on-screen utility information, including:
   - Coordinates
   - Chunk and region details
   - Ping / FPS

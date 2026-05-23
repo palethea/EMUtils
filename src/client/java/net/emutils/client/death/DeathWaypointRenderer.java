@@ -1,6 +1,8 @@
 package net.emutils.client.death;
 
+import java.util.List;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.util.EMUtilsTexts;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -26,6 +28,18 @@ public final class DeathWaypointRenderer {
 			return;
 		}
 
+		List<DeathLocation> locations = manager.deathsForCurrentWorld(client);
+		for (DeathLocation location : locations) {
+			renderWaypoint(context, client, manager, location);
+		}
+	}
+
+	private static void renderWaypoint(
+		WorldRenderContext context,
+		MinecraftClient client,
+		DeathWaypointManager manager,
+		DeathLocation location
+	) {
 		Camera camera = context.gameRenderer().getCamera();
 		MatrixStack matrices = context.matrices();
 		TextRenderer textRenderer = client.textRenderer;
@@ -36,14 +50,16 @@ public final class DeathWaypointRenderer {
 		double cameraX = camera.getCameraPos().x;
 		double cameraY = camera.getCameraPos().y;
 		double cameraZ = camera.getCameraPos().z;
-		double x = manager.renderX() - cameraX;
-		double y = manager.renderY() - cameraY;
-		double z = manager.renderZ() - cameraZ;
-		float scale = manager.labelScale(client);
+		double x = DeathWaypointManager.renderX(location) - cameraX;
+		double y = DeathWaypointManager.renderY(location) - cameraY;
+		double z = DeathWaypointManager.renderZ(location) - cameraZ;
+		float scale = manager.labelScale(client, location);
 
-		Text title = Text.literal("Last Death");
-		int distance = manager.distanceBlocks(client);
-		Text lore = Text.literal(distance + " blocks away");
+		int index = manager.labelIndex(client, location);
+		Text title = index == 0
+			? Text.translatable(EMUtilsTexts.DEATH_LABEL_LAST)
+			: Text.translatable(EMUtilsTexts.DEATH_LABEL_NUMBERED, index + 1);
+		Text lore = Text.translatable(EMUtilsTexts.DEATH_DISTANCE, manager.distanceBlocks(client, location));
 
 		matrices.push();
 		matrices.translate(x, y, z);

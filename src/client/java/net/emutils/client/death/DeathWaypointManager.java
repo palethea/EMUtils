@@ -3,6 +3,13 @@ package net.emutils.client.death;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.util.EMUtilsPaths;
 import net.minecraft.client.MinecraftClient;
@@ -10,22 +17,19 @@ import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.util.function.Supplier;
-import net.minecraft.text.Text;
+import org.jspecify.annotations.Nullable;
 
 public final class DeathWaypointManager {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final double NEAR_DISTANCE_BLOCKS = 10.0D;
 	private static final double NEAR_DISTANCE_SQUARED = NEAR_DISTANCE_BLOCKS * NEAR_DISTANCE_BLOCKS;
 	private static final long DUPLICATE_CAPTURE_WINDOW_MS = 1_000L;
+	private static final int MAX_DEATHS_PER_WORLD = 32;
 
-	private DeathLocation location;
+	private final List<DeathLocation> deaths = new ArrayList<>();
 	private long lastCaptureTimestamp;
 
 	public DeathWaypointManager() {
@@ -39,26 +43,32 @@ public final class DeathWaypointManager {
 
 		BlockPos blockPos = client.player.getBlockPos();
 		long timestamp = System.currentTimeMillis();
-		if (location != null
-			&& location.sameBlock(blockPos.getX(), blockPos.getY(), blockPos.getZ())
-			&& timestamp - lastCaptureTimestamp < DUPLICATE_CAPTURE_WINDOW_MS) {
-			return;
+		String worldKey = worldKey(client);
+		String dimension = dimensionId(client.world);
+
+		for (DeathLocation existing : deaths) {
+			if (matchesWorld(existing, worldKey, dimension)
+				&& existing.sameBlock(blockPos.getX(), blockPos.getY(), blockPos.getZ())
+				&& timestamp - existing.deathTimestamp() < DUPLICATE_CAPTURE_WINDOW_MS) {
+				return;
+			}
 		}
 
 		lastCaptureTimestamp = timestamp;
-		location = new DeathLocation(
+		deaths.add(new DeathLocation(
 			blockPos.getX(),
 			blockPos.getY(),
 			blockPos.getZ(),
-			dimensionId(client.world),
-			worldKey(client),
+			dimension,
+			worldKey,
 			timestamp
-		);
+		));
+		trimDeathsForWorld(worldKey, dimension);
 		save();
 	}
 
 	public void tick(MinecraftClient client) {
-		if (!enabled() || location == null || client.player == null || client.world == null) {
+		if (!enabled() || client.player == null || client.world == null) {
 			return;
 		}
 
@@ -66,38 +76,36 @@ public final class DeathWaypointManager {
 			return;
 		}
 
-		if (!matchesCurrentWorld(client)) {
+		DeathLocation nearest = findNearestUnprompted(client);
+		if (nearest == null) {
 			return;
 		}
 
-		if (location.nearPromptShown()) {
-			return;
-		}
-
-		if (distanceSquaredToPlayer(client) > NEAR_DISTANCE_SQUARED) {
+		if (distanceSquaredToPlayer(client, nearest) > NEAR_DISTANCE_SQUARED) {
 			return;
 		}
 
 		try {
-			DeathWaypointChat.showNearPrompt(client.inGameHud.getChatHud());
-			location.setNearPromptShown(true);
+			DeathWaypointChat.showNearPrompt(client.inGameHud.getChatHud(), nearest.deathTimestamp());
+			nearest.setNearPromptShown(true);
 			save();
 		} catch (Throwable exception) {
 			EMUtilsClient.LOGGER.error("Failed to show death waypoint prompt.", exception);
 		}
 	}
 
-	public void keep(MinecraftClient client) {
-		if (!hasWaypoint() || client == null || client.inGameHud == null) {
+	public void keep(MinecraftClient client, long deathTimestamp) {
+		DeathLocation location = findByTimestamp(deathTimestamp);
+		if (location == null || client == null || client.inGameHud == null) {
 			return;
 		}
 
-		DeathWaypointChat.removeNearPrompt(client.inGameHud.getChatHud());
+		DeathWaypointChat.removeNearPrompt(client.inGameHud.getChatHud(), deathTimestamp);
 		client.inGameHud.getChatHud().addMessage(DeathWaypointMessage.kept());
 	}
 
-	public void clear(MinecraftClient client) {
-		clear(client, DeathWaypointMessage::cleared);
+	public void clear(MinecraftClient client, long deathTimestamp) {
+		clear(client, deathTimestamp, DeathWaypointMessage::cleared);
 	}
 
 	public void clearForCurrentWorld(MinecraftClient client) {
@@ -116,15 +124,24 @@ public final class DeathWaypointManager {
 	}
 
 	public boolean hasWaypoint() {
-		return location != null;
+		return !deaths.isEmpty();
 	}
 
 	public boolean hasWaypointForCurrentWorld(MinecraftClient client) {
-		return location != null && client != null && client.world != null && matchesCurrentWorld(client);
+		return !deathsForCurrentWorld(client).isEmpty();
 	}
 
-	public DeathLocation location() {
-		return location;
+	public List<DeathLocation> deathsForCurrentWorld(MinecraftClient client) {
+		if (client == null || client.world == null) {
+			return List.of();
+		}
+
+		String worldKey = worldKey(client);
+		String dimension = dimensionId(client.world);
+		return deaths.stream()
+			.filter(death -> matchesWorld(death, worldKey, dimension))
+			.sorted(Comparator.comparingLong(DeathLocation::deathTimestamp).reversed())
+			.toList();
 	}
 
 	public boolean enabled() {
@@ -132,39 +149,41 @@ public final class DeathWaypointManager {
 	}
 
 	public boolean shouldRender(MinecraftClient client) {
-		if (!enabled() || location == null || client.player == null || client.world == null) {
-			return false;
-		}
-
-		return matchesCurrentWorld(client);
+		return enabled() && client.player != null && client.world != null && !deathsForCurrentWorld(client).isEmpty();
 	}
 
-	private boolean matchesCurrentWorld(MinecraftClient client) {
-		return location.matchesDimension(dimensionId(client.world))
-			&& location.matchesWorldKey(worldKey(client));
+	public int distanceBlocks(MinecraftClient client, DeathLocation location) {
+		return (int) Math.round(Math.sqrt(distanceSquaredToPlayer(client, location)));
 	}
 
-	public int distanceBlocks(MinecraftClient client) {
-		return (int) Math.round(Math.sqrt(distanceSquaredToPlayer(client)));
-	}
-
-	public double distanceToCamera(MinecraftClient client) {
+	public double distanceToCamera(MinecraftClient client, DeathLocation location) {
 		if (client.gameRenderer == null || client.gameRenderer.getCamera() == null) {
 			return 1.0D;
 		}
 
 		var cameraPos = client.gameRenderer.getCamera().getCameraPos();
-		double dx = renderX() - cameraPos.x;
-		double dy = renderY() - cameraPos.y;
-		double dz = renderZ() - cameraPos.z;
+		double dx = renderX(location) - cameraPos.x;
+		double dy = renderY(location) - cameraPos.y;
+		double dz = renderZ(location) - cameraPos.z;
 		return Math.sqrt(dx * dx + dy * dy + dz * dz);
 	}
 
-	public float labelScale(MinecraftClient client) {
-		double distance = Math.max(1.0D, distanceToCamera(client));
+	public float labelScale(MinecraftClient client, DeathLocation location) {
+		double distance = Math.max(1.0D, distanceToCamera(client, location));
 		float scale = (float) (distance * 0.02666667D);
 		scale = Math.max(0.35F, Math.min(6.0F, scale));
 		return scale * EMUtilsClient.config().deathWaypointSizeMultiplier();
+	}
+
+	public int labelIndex(MinecraftClient client, DeathLocation location) {
+		List<DeathLocation> worldDeaths = deathsForCurrentWorld(client);
+		for (int index = 0; index < worldDeaths.size(); index++) {
+			if (worldDeaths.get(index).deathTimestamp() == location.deathTimestamp()) {
+				return index;
+			}
+		}
+
+		return 0;
 	}
 
 	private static boolean canInteractWithWaypoint(MinecraftClient client) {
@@ -175,45 +194,126 @@ public final class DeathWaypointManager {
 		return client.player.isAlive();
 	}
 
-	public double renderX() {
+	public static double renderX(DeathLocation location) {
 		return location.x() + 0.5D;
 	}
 
-	public double renderY() {
+	public static double renderY(DeathLocation location) {
 		return location.y() + 1.25D;
 	}
 
-	public double renderZ() {
+	public static double renderZ(DeathLocation location) {
 		return location.z() + 0.5D;
 	}
 
-	private double distanceSquaredToPlayer(MinecraftClient client) {
-		double dx = client.player.getX() - renderX();
-		double dy = client.player.getY() - renderY();
-		double dz = client.player.getZ() - renderZ();
-		return dx * dx + dy * dy + dz * dz;
-	}
+	@Nullable
+	private DeathLocation findNearestUnprompted(MinecraftClient client) {
+		DeathLocation nearest = null;
+		double nearestDistance = Double.MAX_VALUE;
 
-	private void clear(MinecraftClient client, Supplier<Text> confirmationMessage) {
-		if (client != null && client.inGameHud != null) {
-			try {
-				DeathWaypointChat.removeNearPrompt(client.inGameHud.getChatHud());
-			} catch (RuntimeException exception) {
-				EMUtilsClient.LOGGER.warn("Failed to remove death waypoint prompt from chat.", exception);
+		for (DeathLocation location : deathsForCurrentWorld(client)) {
+			if (location.nearPromptShown()) {
+				continue;
+			}
+
+			double distance = distanceSquaredToPlayer(client, location);
+			if (distance < nearestDistance) {
+				nearestDistance = distance;
+				nearest = location;
 			}
 		}
 
-		location = null;
-		lastCaptureTimestamp = 0L;
+		return nearest;
+	}
 
-		try {
-			Files.deleteIfExists(EMUtilsPaths.deathWaypointFile());
-		} catch (IOException ignored) {
+	@Nullable
+	private DeathLocation findByTimestamp(long deathTimestamp) {
+		for (DeathLocation location : deaths) {
+			if (location.deathTimestamp() == deathTimestamp) {
+				return location;
+			}
 		}
+
+		return null;
+	}
+
+	private double distanceSquaredToPlayer(MinecraftClient client, DeathLocation location) {
+		double dx = client.player.getX() - renderX(location);
+		double dy = client.player.getY() - renderY(location);
+		double dz = client.player.getZ() - renderZ(location);
+		return dx * dx + dy * dy + dz * dz;
+	}
+
+	private void clear(MinecraftClient client, long deathTimestamp, Supplier<Text> confirmationMessage) {
+		DeathLocation location = findByTimestamp(deathTimestamp);
+		if (location == null) {
+			return;
+		}
+
+		clear(client, confirmationMessage, location);
+	}
+
+	private void clear(MinecraftClient client, Supplier<Text> confirmationMessage) {
+		if (client == null || client.world == null) {
+			return;
+		}
+
+		String worldKey = worldKey(client);
+		String dimension = dimensionId(client.world);
+		List<DeathLocation> removed = deathsForCurrentWorld(client);
+		if (removed.isEmpty()) {
+			return;
+		}
+
+		deaths.removeIf(death -> matchesWorld(death, worldKey, dimension));
+		for (DeathLocation location : removed) {
+			removeDeath(client, location);
+		}
+
+		save();
+
+		if (client.inGameHud != null) {
+			client.inGameHud.getChatHud().addMessage(confirmationMessage.get());
+		}
+	}
+
+	private void clear(MinecraftClient client, Supplier<Text> confirmationMessage, DeathLocation location) {
+		if (!deaths.remove(location)) {
+			return;
+		}
+
+		removeDeath(client, location);
+		save();
 
 		if (client != null && client.inGameHud != null) {
 			client.inGameHud.getChatHud().addMessage(confirmationMessage.get());
 		}
+	}
+
+	private void removeDeath(MinecraftClient client, DeathLocation location) {
+		if (client != null && client.inGameHud != null) {
+			try {
+				DeathWaypointChat.removeNearPrompt(client.inGameHud.getChatHud(), location.deathTimestamp());
+			} catch (RuntimeException exception) {
+				EMUtilsClient.LOGGER.warn("Failed to remove death waypoint prompt from chat.", exception);
+			}
+		}
+	}
+
+	private void trimDeathsForWorld(String worldKey, String dimension) {
+		List<DeathLocation> worldDeaths = deaths.stream()
+			.filter(death -> matchesWorld(death, worldKey, dimension))
+			.sorted(Comparator.comparingLong(DeathLocation::deathTimestamp))
+			.toList();
+
+		int excess = worldDeaths.size() - MAX_DEATHS_PER_WORLD;
+		for (int index = 0; index < excess; index++) {
+			deaths.remove(worldDeaths.get(index));
+		}
+	}
+
+	private static boolean matchesWorld(DeathLocation location, String worldKey, String dimension) {
+		return location.matchesDimension(dimension) && location.matchesWorldKey(worldKey);
 	}
 
 	private void load() {
@@ -221,26 +321,41 @@ public final class DeathWaypointManager {
 			return;
 		}
 
-		try (Reader reader = Files.newBufferedReader(EMUtilsPaths.deathWaypointFile())) {
-			location = GSON.fromJson(reader, DeathLocation.class);
+		try {
+			String json = Files.readString(EMUtilsPaths.deathWaypointFile());
+			DeathWaypointSaveData saveData = GSON.fromJson(json, DeathWaypointSaveData.class);
+			if (saveData != null && saveData.deaths() != null && !saveData.deaths().isEmpty()) {
+				deaths.clear();
+				deaths.addAll(saveData.deaths());
+				return;
+			}
+
+			DeathLocation legacy = GSON.fromJson(json, DeathLocation.class);
+			if (legacy != null && legacy.dimension() != null) {
+				deaths.clear();
+				deaths.add(legacy);
+			}
 		} catch (IOException | JsonParseException | IllegalStateException exception) {
-			EMUtilsClient.LOGGER.warn("Failed to load death waypoint.", exception);
-			location = null;
+			EMUtilsClient.LOGGER.warn("Failed to load death waypoints.", exception);
+			deaths.clear();
 		}
 	}
 
 	private void save() {
-		if (location == null) {
-			return;
-		}
-
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
+			if (deaths.isEmpty()) {
+				Files.deleteIfExists(EMUtilsPaths.deathWaypointFile());
+				return;
+			}
+
+			DeathWaypointSaveData saveData = new DeathWaypointSaveData();
+			saveData.setDeaths(new ArrayList<>(deaths));
 			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.deathWaypointFile())) {
-				GSON.toJson(location, writer);
+				GSON.toJson(saveData, writer);
 			}
 		} catch (IOException exception) {
-			EMUtilsClient.LOGGER.warn("Failed to save death waypoint.", exception);
+			EMUtilsClient.LOGGER.warn("Failed to save death waypoints.", exception);
 		}
 	}
 

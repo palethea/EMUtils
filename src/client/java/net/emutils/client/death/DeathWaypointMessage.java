@@ -2,6 +2,8 @@ package net.emutils.client.death;
 
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.util.EMUtilsTexts;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
@@ -16,37 +18,43 @@ public final class DeathWaypointMessage {
 	private DeathWaypointMessage() {
 	}
 
-	public static Text nearWaypointPrompt() {
+	public static Text nearWaypointPrompt(long deathTimestamp) {
 		return Text.empty()
-			.append(Text.literal("EMUtils").formatted(Formatting.GREEN))
-			.append(Text.literal(" You are near your last death location. ").formatted(Formatting.GRAY))
-			.append(action("Remove", Formatting.RED, new ClickEvent.Custom(CLEAR_DEATH_WAYPOINT_ACTION, Optional.empty()), "Remove death waypoint"))
+			.append(EMUtilsTexts.greenPrefix())
+			.append(Text.translatable(EMUtilsTexts.DEATH_PROMPT).formatted(Formatting.GRAY))
+			.append(action(EMUtilsTexts.DEATH_ACTION_REMOVE, Formatting.RED, CLEAR_DEATH_WAYPOINT_ACTION, deathTimestamp, EMUtilsTexts.DEATH_HOVER_REMOVE))
 			.append(Text.literal(" "))
-			.append(action("Keep", Formatting.AQUA, new ClickEvent.Custom(KEEP_DEATH_WAYPOINT_ACTION, Optional.empty()), "Keep death waypoint"));
+			.append(action(EMUtilsTexts.DEATH_ACTION_KEEP, Formatting.AQUA, KEEP_DEATH_WAYPOINT_ACTION, deathTimestamp, EMUtilsTexts.DEATH_HOVER_KEEP));
 	}
 
 	public static Text cleared() {
-		return Text.literal("EMUtils removed death waypoint.").formatted(Formatting.GREEN);
+		return Text.translatable(EMUtilsTexts.DEATH_CLEARED).formatted(Formatting.GREEN);
 	}
 
 	public static Text kept() {
-		return Text.literal("EMUtils will keep the death waypoint.").formatted(Formatting.GREEN);
+		return Text.translatable(EMUtilsTexts.DEATH_KEPT).formatted(Formatting.GREEN);
 	}
 
 	public static Text clearedForWorld() {
-		return Text.literal("EMUtils cleared death waypoints for this world.").formatted(Formatting.GREEN);
+		return Text.translatable(EMUtilsTexts.DEATH_CLEARED_WORLD).formatted(Formatting.GREEN);
 	}
 
 	public static Text noneForWorld() {
-		return Text.literal("EMUtils has no death waypoint for this world.").formatted(Formatting.GRAY);
+		return Text.translatable(EMUtilsTexts.DEATH_NONE_WORLD).formatted(Formatting.GRAY);
 	}
 
-	private static MutableText action(String label, Formatting color, ClickEvent clickEvent, String hoverText) {
+	private static MutableText action(
+		String labelKey,
+		Formatting color,
+		Identifier actionId,
+		long deathTimestamp,
+		String hoverKey
+	) {
 		return Text.empty()
 			.append(Text.literal("[").formatted(Formatting.DARK_GRAY))
-			.append(Text.literal(label).formatted(color).styled(style -> style
-				.withClickEvent(clickEvent)
-				.withHoverEvent(new HoverEvent.ShowText(Text.literal(hoverText)))))
+			.append(Text.translatable(labelKey).formatted(color).styled(style -> style
+				.withClickEvent(new ClickEvent.Custom(actionId, Optional.of(NbtString.of(Long.toString(deathTimestamp)))))
+				.withHoverEvent(new HoverEvent.ShowText(Text.translatable(hoverKey)))))
 			.append(Text.literal("]").formatted(Formatting.DARK_GRAY));
 	}
 }

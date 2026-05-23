@@ -18,7 +18,7 @@ public abstract class ClientCommonNetworkHandlerMixin {
 			return;
 		}
 
-		if (DeathWaypointClickHandler.tryHandle(clickPacket.id(), MinecraftClient.getInstance())) {
+		if (DeathWaypointClickHandler.tryHandle(clickPacket.id(), clickPacket.payload(), MinecraftClient.getInstance())) {
 			ci.cancel();
 		}
 	}

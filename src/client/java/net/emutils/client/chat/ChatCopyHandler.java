@@ -1,6 +1,7 @@
 package net.emutils.client.chat;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.hud.ChatHud;
@@ -9,8 +10,6 @@ import net.minecraft.util.Formatting;
 import org.jspecify.annotations.Nullable;
 
 public final class ChatCopyHandler {
-	private static final Text COPIED_FEEDBACK = Text.literal("EMUtils copied chat message.").formatted(Formatting.GRAY);
-
 	private ChatCopyHandler() {
 	}
 
@@ -24,13 +23,20 @@ public final class ChatCopyHandler {
 			return false;
 		}
 
-		String copiedText = access.emutils$getMessageAt(click.x(), click.y());
-		if (copiedText == null || copiedText.isEmpty()) {
+		Text message = access.emutils$getMessageAt(click.x(), click.y());
+		if (message == null) {
+			return false;
+		}
+
+		String copiedText = formatForClipboard(message);
+		if (copiedText.isEmpty()) {
 			return false;
 		}
 
 		client.keyboard.setClipboard(copiedText);
-		chatHud.addMessage(COPIED_FEEDBACK, null, null);
+		if (EMUtilsClient.config().copyChatFeedback()) {
+			chatHud.addMessage(Text.translatable(EMUtilsTexts.CHAT_COPY_SUCCESS).formatted(Formatting.GREEN), null, null);
+		}
 		return true;
 	}
 
@@ -45,6 +51,15 @@ public final class ChatCopyHandler {
 			return null;
 		}
 
-		return access.emutils$getMessageAt(mouseX, mouseY);
+		Text message = access.emutils$getMessageAt(mouseX, mouseY);
+		return message == null ? null : formatForClipboard(message);
+	}
+
+	private static String formatForClipboard(Text message) {
+		if (EMUtilsClient.config().copyChatFormatting()) {
+			return ChatLegacyFormatting.toAmpersandString(message);
+		}
+
+		return message.getString();
 	}
 }

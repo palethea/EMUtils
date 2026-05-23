@@ -2,6 +2,7 @@ package net.emutils.client.reconnect;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.compat.ConnectScreenCompat;
+import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -70,10 +71,10 @@ public final class AutoReconnectManager {
 
 	public Text buttonText() {
 		if (!hasServer()) {
-			return Text.literal("Auto reconnect unavailable");
+			return Text.translatable(EMUtilsTexts.RECONNECT_UNAVAILABLE);
 		}
 
-		return Text.literal("Reconnect in " + countdownText());
+		return Text.translatable(EMUtilsTexts.RECONNECT_COUNTDOWN, countdownText());
 	}
 
 	public String countdownText() {
@@ -94,7 +95,7 @@ public final class AutoReconnectManager {
 			EMUtilsClient.LOGGER.warn("Auto reconnect failed.", exception);
 			scheduleNextAttempt();
 			if (reconnectButton != null) {
-				reconnectButton.setMessage(Text.literal("Reconnect failed; retrying"));
+				reconnectButton.setMessage(Text.translatable(EMUtilsTexts.RECONNECT_RETRYING));
 			}
 		}
 	}
