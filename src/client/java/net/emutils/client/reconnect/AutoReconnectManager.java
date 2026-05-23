@@ -5,8 +5,6 @@ import net.emutils.client.compat.ConnectScreenCompat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
@@ -89,10 +87,9 @@ public final class AutoReconnectManager {
 		}
 
 		scheduleNextAttempt();
-		Screen connectParent = new MultiplayerScreen(new TitleScreen());
 		try {
 			ServerInfo reconnectServer = new ServerInfo(lastServerName, lastServerAddress, ServerInfo.ServerType.OTHER);
-			ConnectScreenCompat.connect(connectParent, client, ServerAddress.parse(lastServerAddress), reconnectServer);
+			ConnectScreenCompat.connect(parent, client, ServerAddress.parse(lastServerAddress), reconnectServer);
 		} catch (RuntimeException exception) {
 			EMUtilsClient.LOGGER.warn("Auto reconnect failed.", exception);
 			scheduleNextAttempt();

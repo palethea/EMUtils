@@ -14,4 +14,8 @@ public final class EMUtilsPaths {
 	public static Path configFile() {
 		return configDir().resolve("config.json");
 	}
+
+	public static Path deathWaypointFile() {
+		return configDir().resolve("last-death.json");
+	}
 }
