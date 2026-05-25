@@ -22,14 +22,23 @@ public final class StoragePreviewManager {
 	private String activeScopeKey;
 	private int profileCheckCooldown;
 
+	public StoragePreviewManager() {
+		SkyblockContext.events().addListener(this::onSkyblockEvent);
+	}
+
+	private void onSkyblockEvent(SkyblockEvent event) {
+		if (event instanceof SkyblockEvent.ProfileJoin) {
+			MinecraftClient client = MinecraftClient.getInstance();
+			if (client != null) {
+				profileCheckCooldown = 0;
+				refreshScopeIfNeeded(client);
+			}
+		}
+	}
+
 	public void onWorldJoin(MinecraftClient client) {
 		onWorldLeave(client);
-		if (SkyblockProfileDetector.isHypixel(client)) {
-			refreshScopeIfNeeded(client);
-			return;
-		}
-
-		switchToScope(StoragePreviewStore.scopeKey(client));
+		refreshScopeIfNeeded(client);
 	}
 
 	public void onWorldLeave(MinecraftClient client) {
@@ -38,10 +47,11 @@ public final class StoragePreviewManager {
 		aliasIndex.clear();
 		activeScopeKey = null;
 		profileCheckCooldown = 0;
+		StoragePreviewStore.invalidateCache();
 	}
 
 	public void tick(MinecraftClient client) {
-		if (!enabled() || !SkyblockProfileDetector.isHypixel(client)) {
+		if (!enabled(client)) {
 			return;
 		}
 
@@ -55,26 +65,30 @@ public final class StoragePreviewManager {
 	}
 
 	public void onTabListUpdated(MinecraftClient client) {
-		if (!enabled() || !SkyblockProfileDetector.isHypixel(client)) {
+		if (!enabled(client)) {
 			return;
 		}
 
-		profileCheckCooldown = 0;
+		if (profileCheckCooldown > 0) {
+			return;
+		}
+
+		profileCheckCooldown = PROFILE_CHECK_INTERVAL;
 		refreshScopeIfNeeded(client);
 	}
 
 	public void captureFromScreen(HandledScreen<?> screen, ScreenHandler handler) {
-		if (!enabled()) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (!enabled(client)) {
 			return;
 		}
 
 		try {
-			MinecraftClient client = MinecraftClient.getInstance();
-			if (client == null || client.player == null || !SkyblockProfileDetector.isHypixel(client)) {
+			if (client == null || client.player == null) {
 				return;
 			}
 
-			if (SkyblockProfileDetector.detect(client) == null) {
+			if (SkyblockContext.detectProfile(client) == null) {
 				return;
 			}
 
@@ -86,7 +100,7 @@ public final class StoragePreviewManager {
 			PlayerInventory inventory = client.player.getInventory();
 			String title = StoragePreviewKeys.displayTitle(screen.getTitle().getString());
 			StoragePreviewRecord captured = StoragePreviewCapture.capture(handler, inventory, title);
-			if (captured == null) {
+			if (captured == null || !StoragePreviewFilters.isValidRecord(captured)) {
 				return;
 			}
 
@@ -99,27 +113,56 @@ public final class StoragePreviewManager {
 	}
 
 	public boolean shouldPreview(ItemStack stack) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (!enabled(client)) {
+			return false;
+		}
+
+		if (!StoragePreviewFilters.isStorageMenuScreen(client != null ? client.currentScreen : null)) {
+			return false;
+		}
+
 		return findRecord(stack) != null;
 	}
 
 	@Nullable
 	public TooltipData createTooltipData(ItemStack stack) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (!enabled(client)) {
+			return null;
+		}
+
+		if (!StoragePreviewFilters.isStorageMenuScreen(client != null ? client.currentScreen : null)) {
+			return null;
+		}
+
 		StoragePreviewRecord record = findRecord(stack);
 		return record == null ? null : new StoragePreviewTooltipData(record.rows(), record.resolveContents());
 	}
 
 	@Nullable
 	private StoragePreviewRecord findRecord(ItemStack stack) {
-		if (!enabled() || stack == null || stack.isEmpty()) {
+		if (stack == null || stack.isEmpty()) {
 			return null;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (client != null && SkyblockProfileDetector.isHypixel(client)) {
-			refreshScopeIfNeeded(client);
-			if (activeScopeKey == null) {
-				return null;
-			}
+		if (!enabled(client)) {
+			return null;
+		}
+
+		String displayName = StoragePreviewKeys.normalize(stack.getName().getString());
+		if (!StoragePreviewFilters.isPreviewableHover(displayName)) {
+			return null;
+		}
+
+		if (StoragePreviewFilters.isBlockedHover(stack, displayName)) {
+			return null;
+		}
+
+		refreshScopeIfNeeded(client);
+		if (activeScopeKey == null) {
+			return null;
 		}
 
 		for (String key : StoragePreviewMatcher.lookupKeys(stack, client)) {
@@ -130,7 +173,7 @@ public final class StoragePreviewManager {
 			String id = aliasIndex.get(key);
 			if (id != null) {
 				StoragePreviewRecord record = records.get(id);
-				if (record != null) {
+				if (record != null && StoragePreviewFilters.isValidRecord(record)) {
 					return record;
 				}
 			}
@@ -159,12 +202,19 @@ public final class StoragePreviewManager {
 
 		StoragePreviewStore.LoadedScope loaded = StoragePreviewStore.readScope(scopeKey);
 		records.putAll(loaded.records());
-		aliasIndex.putAll(loaded.aliasIndex());
+		records.entrySet().removeIf(entry -> !StoragePreviewFilters.isValidRecord(entry.getValue()));
+		rebuildAliasIndex();
+		if (records.size() != loaded.records().size()) {
+			persist();
+		}
 	}
 
-	private boolean enabled() {
+	private boolean enabled(@Nullable MinecraftClient client) {
 		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null && config.skyblockEnabled() && config.storagePreviewEnabled();
+		return config != null
+			&& config.skyblockEnabled()
+			&& config.storagePreviewEnabled()
+			&& SkyblockFeatures.inSkyBlock(client);
 	}
 
 	private void persist() {

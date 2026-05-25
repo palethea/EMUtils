@@ -4,6 +4,8 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
 import net.emutils.client.hud.HudOverlayPlacement;
+import net.emutils.client.hud.layout.HudElementId;
+import net.emutils.client.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -24,26 +26,34 @@ public final class SpotifyHudRenderer {
 	private static void render(DrawContext context) {
 		EMUtilsConfig config = EMUtilsClient.config();
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (config == null || !config.spotifyHudOverlay() || client == null || client.player == null || client.world == null) {
+		if (config == null || client == null || client.player == null || client.world == null) {
 			return;
 		}
-		if (client.currentScreen instanceof ChatScreen && config.spotifyHudAnchor().isBottom()) {
+		if (!config.spotifyHudOverlay() && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (!EMUtilsClient.spotify().state().shouldDisplay()) {
+		if (client.currentScreen instanceof ChatScreen && config.spotifyHudAnchor().isBottom() && !HudLayoutManager.isEditing()) {
+			return;
+		}
+		if (!EMUtilsClient.spotify().state().shouldDisplay() && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {
 			return;
 		}
+		if (HudLayoutManager.isEditing()) {
+			return;
+		}
 
 		float scale = config.spotifyHudScale() / 100.0F;
 		HudOverlayPlacement.PanelDimensions dimensions = HudOverlayPlacement.spotifyHudDimensions(config);
-		HudOverlayPlacement.Position position = HudOverlayPlacement.spotifyHudPosition(
+		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+			HudElementId.SPOTIFY,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions
+			dimensions,
+			client
 		);
 		SpotifyPlayerOverlay.renderHud(
 			context,

@@ -69,6 +69,10 @@ public final class StoragePreviewCapture {
 
 		String displayTitle = StoragePreviewKeys.displayTitle(title);
 		String id = StoragePreviewKeys.idFromTitle(displayTitle);
+		if (id == null) {
+			return null;
+		}
+
 		List<String> aliases = StoragePreviewKeys.aliasesFromTitle(displayTitle);
 		List<JsonElement> stacks = new ArrayList<>(contents.size());
 		for (ItemStack stack : contents) {

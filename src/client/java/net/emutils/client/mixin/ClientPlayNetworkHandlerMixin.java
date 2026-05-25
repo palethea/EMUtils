@@ -30,11 +30,16 @@ public abstract class ClientPlayNetworkHandlerMixin {
 
 	@Inject(method = "onPlayerList", at = @At("TAIL"))
 	private void emutils$refreshSkyblockProfileOnPlayerList(PlayerListS2CPacket packet, CallbackInfo ci) {
-		EMUtilsClient.storagePreview().onTabListUpdated(MinecraftClient.getInstance());
+		MinecraftClient client = MinecraftClient.getInstance();
+		EMUtilsClient.skyblock().onTabListUpdated(client);
+		EMUtilsClient.storagePreview().onTabListUpdated(client);
 	}
 
 	@Inject(method = "onPlayerListHeader", at = @At("TAIL"))
 	private void emutils$refreshSkyblockProfileOnPlayerListHeader(PlayerListHeaderS2CPacket packet, CallbackInfo ci) {
-		EMUtilsClient.storagePreview().onTabListUpdated(MinecraftClient.getInstance());
+		MinecraftClient client = MinecraftClient.getInstance();
+		EMUtilsClient.skyblock().onTabListHeader(packet.header(), packet.footer());
+		EMUtilsClient.skyblock().onTabListUpdated(client);
+		EMUtilsClient.storagePreview().onTabListUpdated(client);
 	}
 }

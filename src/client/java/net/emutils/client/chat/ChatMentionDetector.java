@@ -49,7 +49,7 @@ public final class ChatMentionDetector {
 		return content.substring(0, separator).toLowerCase(Locale.ROOT).contains(lowerUsername);
 	}
 
-	private static boolean looksLikeChatLine(String content) {
+	static boolean looksLikeChatLine(String content) {
 		int separator = firstChatSeparator(content);
 		return separator >= 0 && separator <= OWN_MESSAGE_PREFIX_LIMIT;
 	}
