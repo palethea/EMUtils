@@ -1,5 +1,6 @@
 package net.emutils.client.mixin;
 
+import net.emutils.client.hud.layout.HudLayoutEditorVanillaDim;
 import net.emutils.client.inventory.InventoryPreviewItemOpacity;
 import net.minecraft.client.gui.render.GuiRenderer;
 import net.minecraft.client.gui.render.state.ItemGuiElementRenderState;
@@ -36,9 +37,14 @@ public abstract class GuiRendererMixin {
 	private int emutils$applyInventoryPreviewItemOpacity(int color) {
 		ItemGuiElementRenderState state = PREPARING_ITEM.get();
 		if (state != null) {
-			Float opacity = InventoryPreviewItemOpacity.remove(state);
-			if (opacity != null) {
-				return ColorHelper.getWhite(opacity);
+			Float previewOpacity = InventoryPreviewItemOpacity.remove(state);
+			if (previewOpacity != null) {
+				return ColorHelper.getWhite(previewOpacity);
+			}
+
+			Float dimOpacity = HudLayoutEditorVanillaDim.itemOpacity(state);
+			if (dimOpacity != null) {
+				return ColorHelper.getWhite(dimOpacity);
 			}
 		}
 
@@ -48,5 +54,6 @@ public abstract class GuiRendererMixin {
 	@Inject(method = "prepareItemElements", at = @At("RETURN"))
 	private void emutils$clearPreviewItemOpacities(CallbackInfo ci) {
 		InventoryPreviewItemOpacity.clear();
+		HudLayoutEditorVanillaDim.clearItems();
 	}
 }

@@ -20,10 +20,12 @@
 		"GuiRendererMixin",
 		"GuiRenderStateMixin",
 		"GameMenuScreenMixin",
+		"GenericContainerScreenMixin",
 		"CapeFeatureRendererMixin",
 		"PlayerEntityRendererMixin",
 		"PlayerListEntryMixin",
 		"HandledScreenMixin",
+		"HandledScreenAccessor",
 		"InGameHudMixin",
 		"KeyBindingMixin",
 		"KeyBindingAccessorMixin",
@@ -35,9 +37,11 @@
 		"MouseMixin",
 		"MouseAccess",
 		"OptionsScreenMixin",
+		"RecipeBookScreenMixin",
 		"ScreenMixin",
 		"WeatherRenderingMixin",
-		"ScreenshotRecorderMixin"
+		"ScreenshotRecorderMixin",
+		"StatusEffectsDisplayMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

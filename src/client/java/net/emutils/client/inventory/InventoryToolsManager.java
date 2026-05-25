@@ -28,7 +28,6 @@ public final class InventoryToolsManager {
 	private static final int SLOT_SIZE = 16;
 	private static final int LINE_COLOR = 0xFF00E5FF;
 	private static final int BORDER_ALPHA_MASK = 0xFF000000;
-	private static final int BOUND_RING_COLOR = 0xFF64D2FF;
 
 	private final Set<InventorySlotRef> lockedSlots = new HashSet<>();
 	private final Map<InventorySlotRef, InventorySlotRef> boundSlots = new HashMap<>();
@@ -334,9 +333,9 @@ public final class InventoryToolsManager {
 			return;
 		}
 
-		int color = config.slotLockColor().color() | BORDER_ALPHA_MASK;
+		int color = config.slotLockOverlayColor() | BORDER_ALPHA_MASK;
 		if (bound) {
-			drawBoundRing(context, slot.x, slot.y);
+			drawBoundRing(context, slot.x, slot.y, config.boundSlotOverlayColor());
 		} else if (locked) {
 			drawLockIcon(context, slot.x + 10, slot.y + 1, color);
 		}
@@ -483,11 +482,11 @@ public final class InventoryToolsManager {
 		return null;
 	}
 
-	private static void drawBoundRing(DrawContext context, int x, int y) {
-		context.fill(x, y, x + SLOT_SIZE, y + 1, BOUND_RING_COLOR);
-		context.fill(x, y + SLOT_SIZE - 1, x + SLOT_SIZE, y + SLOT_SIZE, BOUND_RING_COLOR);
-		context.fill(x, y, x + 1, y + SLOT_SIZE, BOUND_RING_COLOR);
-		context.fill(x + SLOT_SIZE - 1, y, x + SLOT_SIZE, y + SLOT_SIZE, BOUND_RING_COLOR);
+	private static void drawBoundRing(DrawContext context, int x, int y, int color) {
+		context.fill(x, y, x + SLOT_SIZE, y + 1, color);
+		context.fill(x, y + SLOT_SIZE - 1, x + SLOT_SIZE, y + SLOT_SIZE, color);
+		context.fill(x, y, x + 1, y + SLOT_SIZE, color);
+		context.fill(x + SLOT_SIZE - 1, y, x + SLOT_SIZE, y + SLOT_SIZE, color);
 	}
 
 	private static void drawLockIcon(DrawContext context, int x, int y, int color) {

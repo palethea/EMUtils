@@ -1,0 +1,31 @@
+package net.emutils.client.skyblock;
+
+import net.emutils.client.EMUtilsClient;
+import net.emutils.client.config.EMUtilsConfig;
+import net.minecraft.client.MinecraftClient;
+import org.jspecify.annotations.Nullable;
+
+public final class SkyblockFeatures {
+	private SkyblockFeatures() {
+	}
+
+	public static boolean inSkyBlock() {
+		return inSkyBlock(MinecraftClient.getInstance());
+	}
+
+	public static boolean inSkyBlock(@Nullable MinecraftClient client) {
+		if (client != null && !SkyblockManager.isHypixel(client)) {
+			return false;
+		}
+
+		return SkyblockContext.active();
+	}
+
+	public static boolean hideVanillaStatusBars(@Nullable MinecraftClient client) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null
+			&& config.skyblockEnabled()
+			&& config.skyblockHideVanillaStatusBars()
+			&& inSkyBlock(client);
+	}
+}

@@ -5,6 +5,8 @@ import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.util.EMUtilsTexts;
+import net.emutils.client.hud.layout.HudElementId;
+import net.emutils.client.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -58,7 +60,7 @@ public final class HudOverlayRenderer {
 		List<HudOverlayLine> mainLines = mainLines(config);
 		boolean showMemory = config.hudShowMemory();
 		if (mainLines.isEmpty() && !showMemory) {
-			return 0;
+			return PADDING_Y * 2 + ROW_HEIGHT;
 		}
 
 		int mainLineCount = mainLines.size();
@@ -72,10 +74,43 @@ public final class HudOverlayRenderer {
 		return panelHeight;
 	}
 
+	public static void renderPanel(
+		DrawContext context,
+		MinecraftClient client,
+		EMUtilsConfig config,
+		int x,
+		int y,
+		int panelWidth,
+		int panelHeight
+	) {
+		List<HudOverlayLine> mainLines = mainLines(config);
+		boolean showMemory = config.hudShowMemory();
+		TextRenderer textRenderer = client.textRenderer;
+		boolean showIcons = config.hudShowIcons();
+		drawPanelBackground(context, x, y, panelWidth, panelHeight, config.hudBackgroundOpacity());
+		drawLines(context, textRenderer, mainLines, showIcons, x + PADDING_X, y + PADDING_Y);
+
+		if (showMemory) {
+			int memoryRowY = y + PADDING_Y + mainLines.size() * ROW_HEIGHT;
+			drawLine(
+				context,
+				textRenderer,
+				new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory")),
+				showIcons,
+				x + PADDING_X,
+				memoryRowY
+			);
+			drawMemoryBar(context, x + PADDING_X, memoryRowY + ROW_HEIGHT + MEMORY_BAR_GAP, data.memoryPercent());
+		}
+	}
+
 	private static void render(DrawContext context) {
 		EMUtilsConfig config = EMUtilsClient.config();
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (config == null || !config.hudOverlay() || client == null || client.player == null || client.world == null) {
+		if (config == null || client == null || client.player == null || client.world == null) {
+			return;
+		}
+		if (!config.hudOverlay() && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {
@@ -84,51 +119,39 @@ public final class HudOverlayRenderer {
 		if (config.hudHideWithDebug() && client.getDebugHud().shouldShowDebugHud()) {
 			return;
 		}
+		if (HudLayoutManager.isEditing()) {
+			return;
+		}
 
 		List<HudOverlayLine> mainLines = mainLines(config);
 		boolean showMemory = config.hudShowMemory();
-		if (mainLines.isEmpty() && !showMemory) {
+		if (mainLines.isEmpty() && !showMemory && !HudLayoutManager.isEditing()) {
 			return;
 		}
 
 		TextRenderer textRenderer = client.textRenderer;
-		boolean showIcons = config.hudShowIcons();
 		int panelWidth = unscaledPanelWidth();
 		int panelHeight = unscaledPanelHeight(config);
 		float scale = config.hudScale() / 100.0F;
 		HudOverlayPlacement.PanelDimensions dimensions = HudOverlayPlacement.hudOverlayDimensions(config);
-		if (dimensions.height() <= 0) {
+		if (dimensions.height() <= 0 && !HudLayoutManager.isEditing()) {
 			return;
 		}
 
-		boolean spotifyHudVisible = config.spotifyHudOverlay() && EMUtilsClient.spotify().state().shouldDisplay();
-		HudOverlayPlacement.Position position = HudOverlayPlacement.hudOverlayPosition(
+		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+			HudElementId.INFO_OVERLAY,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
 			dimensions,
-			spotifyHudVisible
+			client
 		);
 
 		context.getMatrices().pushMatrix();
 		try {
 			context.getMatrices().translate(position.x(), position.y());
 			context.getMatrices().scale(scale, scale);
-			drawPanelBackground(context, 0, 0, panelWidth, panelHeight, config.hudBackgroundOpacity());
-			drawLines(context, textRenderer, mainLines, showIcons, PADDING_X, PADDING_Y);
-
-			if (showMemory) {
-				int memoryRowY = PADDING_Y + mainLines.size() * ROW_HEIGHT;
-				drawLine(
-					context,
-					textRenderer,
-					new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory")),
-					showIcons,
-					PADDING_X,
-					memoryRowY
-				);
-				drawMemoryBar(context, PADDING_X, memoryRowY + ROW_HEIGHT + MEMORY_BAR_GAP, data.memoryPercent());
-			}
+			renderPanel(context, client, config, 0, 0, panelWidth, panelHeight);
 		} finally {
 			context.getMatrices().popMatrix();
 		}

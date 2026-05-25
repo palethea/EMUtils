@@ -34,4 +34,8 @@ public final class EMUtilsPaths {
 	public static Path storagePreviewFile() {
 		return configDir().resolve("skyblock-storage.json");
 	}
+
+	public static Path debugDir() {
+		return configDir().resolve("debug");
+	}
 }

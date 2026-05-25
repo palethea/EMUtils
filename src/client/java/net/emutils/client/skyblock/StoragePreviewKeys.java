@@ -19,6 +19,7 @@ public final class StoragePreviewKeys {
 	private StoragePreviewKeys() {
 	}
 
+	@org.jspecify.annotations.Nullable
 	public static String idFromTitle(String title) {
 		Matcher enderChest = ENDER_CHEST.matcher(title);
 		if (enderChest.find()) {
@@ -35,7 +36,7 @@ public final class StoragePreviewKeys {
 			return backpackId(backpack.group(1), backpack.group(2));
 		}
 
-		return "storage:" + slug(title);
+		return null;
 	}
 
 	public static List<String> aliasesFromTitle(String title) {
@@ -88,6 +89,7 @@ public final class StoragePreviewKeys {
 			Matcher backpackSlot = BACKPACK_SLOT.matcher(source);
 			if (backpackSlot.find()) {
 				addNormalized(keys, "Backpack Slot #" + backpackSlot.group(1));
+				addNormalized(keys, "Backpack Slot " + backpackSlot.group(1));
 				addNormalized(keys, "Backpack (Slot #" + backpackSlot.group(1) + ")");
 			}
 		}
@@ -111,6 +113,7 @@ public final class StoragePreviewKeys {
 	private static void addBackpackAliases(Set<String> aliases, @org.jspecify.annotations.Nullable String type, String slot) {
 		addNormalized(aliases, "Backpack (Slot #" + slot + ")");
 		addNormalized(aliases, "Backpack Slot #" + slot);
+		addNormalized(aliases, "Backpack Slot " + slot);
 		if (type != null && !type.isBlank()) {
 			addNormalized(aliases, type.trim() + " Backpack (Slot #" + slot + ")");
 		}

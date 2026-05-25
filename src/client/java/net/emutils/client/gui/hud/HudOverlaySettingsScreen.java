@@ -6,6 +6,7 @@ import net.emutils.client.gui.EMUtilsScreen;
 import net.emutils.client.gui.widget.ConfigToggleButton;
 import net.emutils.client.gui.widget.IntConfigSlider;
 import net.emutils.client.hud.HudOverlayAnchor;
+import net.emutils.client.hud.layout.HudLayoutManager;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -25,6 +26,22 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().hudOverlay(),
 			EMUtilsClient.config()::setHudOverlay
 		));
+		adder.add(ButtonWidget.builder(
+			Text.translatable(
+				EMUtilsTexts.OPTION_VALUE,
+				Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_MODE),
+				Text.translatable(EMUtilsClient.config().hudLayoutMode().labelKey())
+			),
+			button -> {
+				EMUtilsClient.config().setHudLayoutMode(EMUtilsClient.config().hudLayoutMode().next());
+				client.setScreen(new HudOverlaySettingsScreen(parent));
+			}
+		).width(SETTINGS_BUTTON_WIDTH).build());
+		adder.add(ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR), button -> {
+			if (client != null) {
+				HudLayoutManager.openEditor(client);
+			}
+		}).width(SETTINGS_BUTTON_WIDTH).build());
 		adder.add(positionButton());
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_HUD_SHOW_ICONS,

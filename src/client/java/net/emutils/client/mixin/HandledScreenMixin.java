@@ -3,7 +3,12 @@ package net.emutils.client.mixin;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.skyblock.SkyblockHoveredTooltipContext;
+import net.emutils.client.skyblock.SkyblockTooltipPrices;
 import net.emutils.client.skyblock.StoragePreviewManager;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueManager;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueResult;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueTooltipHelper;
 import net.emutils.client.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -57,15 +62,31 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		}
 
 		ItemStack stack = this.focusedSlot.getStack();
+		List<Text> result = tooltip;
 		if (EMUtilsClient.storagePreview().shouldPreview(stack)) {
-			return List.of(stack.getName());
+			result = List.of(stack.getName());
+		} else if (TooltipPreviewRenderer.shouldPreviewShulker(stack)) {
+			result = TooltipPreviewRenderer.stripContainerLines(tooltip);
 		}
 
-		if (TooltipPreviewRenderer.shouldPreviewShulker(stack)) {
-			return TooltipPreviewRenderer.stripContainerLines(tooltip);
-		}
+		List<Text> augmented = SkyblockTooltipPrices.appendLines(stack, result);
+		EstimatedItemValueResult estimatedValue = EstimatedItemValueManager.get().updateHoveredItem(stack, result);
+		augmented = EstimatedItemValueTooltipHelper.appendLine(stack, augmented, estimatedValue);
+		SkyblockHoveredTooltipContext.set(augmented);
+		return augmented;
+	}
 
-		return tooltip;
+	@Inject(method = "drawMouseoverTooltip", at = @At("HEAD"))
+	private void emutils$clearEstimatedItemValueWhenNotHovering(CallbackInfo ci) {
+		if (this.focusedSlot == null || !this.focusedSlot.hasStack()) {
+			EstimatedItemValueManager.get().clear();
+			SkyblockHoveredTooltipContext.clear();
+		}
+	}
+
+	@Inject(method = "drawMouseoverTooltip", at = @At("RETURN"))
+	private void emutils$clearEstimatedItemValueContext(DrawContext context, int x, int y, CallbackInfo ci) {
+		SkyblockHoveredTooltipContext.clear();
 	}
 
 	@ModifyArg(
@@ -127,6 +148,11 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void emutils$handleInventoryToolKeyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
+		if (EMUtilsClient.tryDebugGuiDump(input)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
 		PlayerInventory inventory = emutils$playerInventory();
 		if (inventory != null && EMUtilsClient.inventoryTools().handleKeyPressed(handler, focusedSlot, input, inventory)) {
 			cir.setReturnValue(true);

@@ -37,11 +37,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatHud.class)
 public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAccess {
 	@Unique
-	private static final int EMUTILS_MENTION_HIGHLIGHT_COLOR = 0x00FFD54A;
-	@Unique
-	private static final int EMUTILS_MENTION_HIGHLIGHT_ALPHA = 64;
-
-	@Unique
 	private final SmartChatFilter emutils$smartChatFilter = new SmartChatFilter();
 
 	@Unique
@@ -104,7 +99,8 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 
 	@Inject(
 		method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
-		at = @At("HEAD")
+		at = @At("HEAD"),
+		cancellable = true
 	)
 	private void emutils$handleMentionAlerts(
 		Text message,
@@ -112,6 +108,11 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 		@Nullable MessageIndicator indicator,
 		CallbackInfo ci
 	) {
+		if (EMUtilsClient.skyblock().onChatMessage(message)) {
+			ci.cancel();
+			return;
+		}
+
 		ChatMentionAlerts.handle(client, message);
 	}
 
@@ -168,10 +169,8 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 		}
 
 		int duplicateCount = pending != null ? pending.duplicateCount() : 1;
-		Text displayMessage = duplicate ? SmartChatFilter.withDuplicateCount(message, duplicateCount) : message;
-		if (timestamps) {
-			displayMessage = ChatTimestampFormatter.prependTimestamp(displayMessage, config.chatTimestamp24Hour(), nowMillis);
-		}
+		ChatMessageMetadata metadata = new ChatMessageMetadata(message, duplicateCount, nowMillis, mentionsCurrentPlayer);
+		Text displayMessage = ChatDisplayFormatter.format(metadata, config, emutils$currentUsername());
 
 		ChatHudLine line = emutils$addProcessedMessage(displayMessage, signatureData, indicator);
 		emutils$messageTracker.register(line, message.copy(), duplicateCount, nowMillis, mentionsCurrentPlayer);
@@ -200,8 +199,10 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 		}
 
 		long nowMillis = System.currentTimeMillis();
+		boolean mentionsCurrentPlayer = emutils$mentionsCurrentPlayer(message);
 		ChatHudLine line = messages.getFirst();
-		emutils$messageTracker.register(line, message.copy(), 1, nowMillis, emutils$mentionsCurrentPlayer(message));
+		emutils$messageTracker.register(line, message.copy(), 1, nowMillis, mentionsCurrentPlayer);
+		emutils$applyFormattingToLine(line, config);
 
 		if (!config.smartChatFilters() || config.chatTimestamps()) {
 			return;
@@ -224,53 +225,6 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 	private void emutils$clearChatFeatureState(boolean clearHistory, CallbackInfo ci) {
 		emutils$smartChatFilter.clear();
 		emutils$messageTracker.clear();
-	}
-
-	@Inject(
-		method = "render(Lnet/minecraft/client/gui/hud/ChatHud$Backend;IIZ)V",
-		at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/client/gui/hud/ChatHud;forEachVisibleLine(Lnet/minecraft/client/gui/hud/ChatHud$OpacityRule;Lnet/minecraft/client/gui/hud/ChatHud$LineConsumer;)I",
-			ordinal = 1
-		)
-	)
-	private void emutils$renderMentionHighlights(ChatHud.Backend drawer, int windowHeight, int currentTick, boolean expanded, CallbackInfo ci) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		if (
-			config == null
-				|| !config.chatMentionHighlight()
-				|| isChatHidden()
-				|| visibleMessages.isEmpty()
-				|| scrolledLines >= visibleMessages.size()
-		) {
-			return;
-		}
-
-		float scale = (float) getChatScale();
-		int chatWidth = MathHelper.ceil(getWidth() / scale);
-		int chatBottom = MathHelper.floor((windowHeight - 40) / scale);
-		double lineSpacing = client.options.getChatLineSpacing().getValue();
-		int lineHeight = (int) (9 * (lineSpacing + 1.0));
-		float chatOpacity = client.options.getChatOpacity().getValue().floatValue() * 0.9F + 0.1F;
-		int visibleRows = Math.min(visibleMessages.size() - scrolledLines, getVisibleLineCount());
-
-		for (int row = visibleRows - 1; row >= 0; row--) {
-			int listIndex = row + scrolledLines;
-			ChatHudLine line = emutils$lineForVisibleListIndex(listIndex);
-			if (line == null || !emutils$messageTracker.metadataFor(line).mentionsCurrentPlayer()) {
-				continue;
-			}
-
-			ChatHudLine.Visible visible = visibleMessages.get(listIndex);
-			float opacity = expanded ? 1.0F : emutils$lineOpacity(visible, currentTick);
-			if (opacity <= 1.0E-5F) {
-				continue;
-			}
-
-			int top = chatBottom - row * lineHeight;
-			int bottom = top - lineHeight;
-			drawer.fill(-4, bottom, chatWidth + 8, top, emutils$highlightColor(opacity * chatOpacity));
-		}
 	}
 
 	@Override
@@ -300,6 +254,7 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 		}
 
 		boolean changed = false;
+		String username = emutils$currentUsername();
 		for (int index = 0; index < messages.size(); index++) {
 			ChatHudLine line = messages.get(index);
 			if (EMUtilsChatMessages.isInternal(line.content())) {
@@ -307,8 +262,9 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 			}
 
 			ChatMessageMetadata metadata = emutils$messageTracker.metadataFor(line);
-			Text displayMessage = ChatDisplayFormatter.format(metadata, config);
-			if (displayMessage.getString().equals(line.content().getString())) {
+			Text displayMessage = ChatDisplayFormatter.format(metadata, config, username);
+			boolean forceUpdate = metadata.mentionsCurrentPlayer();
+			if (!forceUpdate && displayMessage.getString().equals(line.content().getString())) {
 				continue;
 			}
 
@@ -393,20 +349,33 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 	}
 
 	@Unique
-	private static float emutils$lineOpacity(ChatHudLine.Visible line, int currentTick) {
-		int ticksVisible = currentTick - line.addedTime();
-		double opacity = ticksVisible / 200.0;
-		opacity = 1.0 - opacity;
-		opacity *= 10.0;
-		opacity = MathHelper.clamp(opacity, 0.0, 1.0);
-		opacity *= opacity;
-		return (float) opacity;
+	@Nullable
+	private String emutils$currentUsername() {
+		return client != null && client.getSession() != null ? client.getSession().getUsername() : null;
 	}
 
 	@Unique
-	private static int emutils$highlightColor(float opacity) {
-		int alpha = MathHelper.clamp(Math.round(EMUTILS_MENTION_HIGHLIGHT_ALPHA * opacity), 0, EMUTILS_MENTION_HIGHLIGHT_ALPHA);
-		return (alpha << 24) | EMUTILS_MENTION_HIGHLIGHT_COLOR;
+	private void emutils$applyFormattingToLine(ChatHudLine line, EMUtilsConfig config) {
+		ChatMessageMetadata metadata = emutils$messageTracker.trackedMetadata(line);
+		if (metadata == null) {
+			return;
+		}
+
+		Text displayMessage = ChatDisplayFormatter.format(metadata, config, emutils$currentUsername());
+		boolean forceUpdate = metadata.mentionsCurrentPlayer();
+		if (!forceUpdate && displayMessage.getString().equals(line.content().getString())) {
+			return;
+		}
+
+		int index = messages.indexOf(line);
+		if (index < 0) {
+			return;
+		}
+
+		ChatHudLine updatedLine = new ChatHudLine(line.creationTick(), displayMessage, line.signature(), line.indicator());
+		messages.set(index, updatedLine);
+		emutils$messageTracker.replaceLine(line, updatedLine);
+		emutils$invokeRefresh();
 	}
 
 	private ChatHudLine emutils$addProcessedMessage(

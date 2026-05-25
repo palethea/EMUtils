@@ -7,6 +7,7 @@ public enum HudOverlayAnchor {
 	TOP_CENTER(EMUtilsTexts.HUD_ANCHOR_TOP_CENTER),
 	TOP_RIGHT(EMUtilsTexts.HUD_ANCHOR_TOP_RIGHT),
 	BOTTOM_LEFT(EMUtilsTexts.HUD_ANCHOR_BOTTOM_LEFT),
+	BOTTOM_CENTER(EMUtilsTexts.HUD_ANCHOR_BOTTOM_CENTER),
 	BOTTOM_RIGHT(EMUtilsTexts.HUD_ANCHOR_BOTTOM_RIGHT);
 
 	private final String labelKey;
@@ -26,7 +27,7 @@ public enum HudOverlayAnchor {
 
 	public int x(int screenWidth, int panelWidth, int margin) {
 		return switch (this) {
-			case TOP_CENTER -> (screenWidth - panelWidth) / 2;
+			case TOP_CENTER, BOTTOM_CENTER -> (screenWidth - panelWidth) / 2;
 			case TOP_RIGHT, BOTTOM_RIGHT -> screenWidth - panelWidth - margin;
 			case TOP_LEFT, BOTTOM_LEFT -> margin;
 		};
@@ -34,7 +35,7 @@ public enum HudOverlayAnchor {
 
 	public int y(int screenHeight, int panelHeight, int margin) {
 		return switch (this) {
-			case BOTTOM_LEFT, BOTTOM_RIGHT -> screenHeight - panelHeight - margin;
+			case BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT -> screenHeight - panelHeight - margin;
 			case TOP_LEFT, TOP_CENTER, TOP_RIGHT -> margin;
 		};
 	}
@@ -42,7 +43,7 @@ public enum HudOverlayAnchor {
 	public boolean isTop() {
 		return switch (this) {
 			case TOP_LEFT, TOP_CENTER, TOP_RIGHT -> true;
-			case BOTTOM_LEFT, BOTTOM_RIGHT -> false;
+			case BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT -> false;
 		};
 	}
 

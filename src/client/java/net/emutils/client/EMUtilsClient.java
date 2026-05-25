@@ -3,16 +3,31 @@ package net.emutils.client;
 import net.emutils.client.compat.MinescriptCompat;
 import net.emutils.client.capes.CustomCapeManager;
 import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.debug.DebugGuiDumpTrigger;
+import net.emutils.client.debug.DebugGuiDumper;
 import net.emutils.client.death.DeathWaypointManager;
 import net.emutils.client.death.DeathWaypointRenderer;
+import net.emutils.client.gui.hub.CustomHubScreen;
 import net.emutils.client.gui.minescript.ScriptManagerScreen;
 import net.emutils.client.gui.screenshot.ScreenshotGalleryScreen;
 import net.emutils.client.hud.HudOverlayRenderer;
+import net.emutils.client.hud.layout.HudLayoutManager;
 import net.emutils.client.inventory.InventoryPreviewRenderer;
 import net.emutils.client.inventory.InventoryToolsManager;
+import net.emutils.client.skyblock.bazaar.BazaarPriceFetcher;
+import net.emutils.client.skyblock.auction.AuctionPriceFetcher;
+import net.emutils.client.skyblock.npc.NpcPriceFetcher;
 import net.emutils.client.skyblock.StoragePreviewManager;
 import net.emutils.client.skyblock.StoragePreviewTooltipComponent;
 import net.emutils.client.skyblock.StoragePreviewTooltipData;
+import net.emutils.client.skyblock.SkyblockActionBarManager;
+import net.emutils.client.skyblock.SkyblockContext;
+import net.emutils.client.skyblock.SkyblockEvent;
+import net.emutils.client.skyblock.SkyblockManager;
+import net.emutils.client.skyblock.SkyblockStatsHudRenderer;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueData;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueHudRenderer;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueManager;
 import net.emutils.client.minescript.MinescriptKeybindManager;
 import net.emutils.client.reconnect.AutoReconnectManager;
 import net.emutils.client.spotify.SpotifyHudRenderer;
@@ -30,6 +45,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -47,9 +63,17 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static SpotifyPlaybackService spotifyPlaybackService;
 	private static InventoryToolsManager inventoryToolsManager;
 	private static StoragePreviewManager storagePreviewManager;
+	private static SkyblockManager skyblockManager;
+	private static SkyblockActionBarManager skyblockActionBarManager;
+	private static BazaarPriceFetcher bazaarPriceFetcher;
+	private static AuctionPriceFetcher auctionPriceFetcher;
+	private static NpcPriceFetcher npcPriceFetcher;
 	private static MinescriptKeybindManager minescriptKeybindManager;
 	private static KeyBinding openGalleryKeyBinding;
 	private static KeyBinding openScriptManagerKeyBinding;
+	private static KeyBinding openSettingsHubKeyBinding;
+	private static KeyBinding openHudLayoutEditorKeyBinding;
+	private static KeyBinding debugDumpGuiKeyBinding;
 
 	@Override
 	public void onInitializeClient() {
@@ -61,6 +85,19 @@ public class EMUtilsClient implements ClientModInitializer {
 		spotifyPlaybackService = new SpotifyPlaybackService();
 		inventoryToolsManager = new InventoryToolsManager();
 		storagePreviewManager = new StoragePreviewManager();
+		skyblockManager = new SkyblockManager();
+		skyblockActionBarManager = new SkyblockActionBarManager();
+		bazaarPriceFetcher = new BazaarPriceFetcher();
+		auctionPriceFetcher = new AuctionPriceFetcher();
+		npcPriceFetcher = new NpcPriceFetcher();
+		SkyblockContext.bind(skyblockManager);
+		skyblockManager.events().addListener(event -> {
+			if (event instanceof SkyblockEvent.ProfileJoin || event instanceof SkyblockEvent.IslandJoin) {
+				bazaarPriceFetcher.fetchNow();
+				auctionPriceFetcher.fetchNow();
+				npcPriceFetcher.fetchNow();
+			}
+		});
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyBindings();
 		registerTooltipComponents();
@@ -70,6 +107,9 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudOverlayRenderer.register();
 		SpotifyHudRenderer.register();
 		InventoryPreviewRenderer.register();
+		SkyblockStatsHudRenderer.register();
+		EstimatedItemValueData.load();
+		EstimatedItemValueHudRenderer.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
 			CustomCapeManager.clear();
@@ -77,11 +117,21 @@ public class EMUtilsClient implements ClientModInitializer {
 				CustomCapeManager.onLoadTexture(client.player.getGameProfile());
 			}
 			inventoryToolsManager.onWorldJoin(client);
+			skyblockManager.onWorldJoin(client);
 			storagePreviewManager.onWorldJoin(client);
+			bazaarPriceFetcher.fetchNow();
+			auctionPriceFetcher.fetchNow();
+			npcPriceFetcher.fetchNow();
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
+			skyblockManager.onWorldLeave(client);
+			skyblockActionBarManager.clear();
 			storagePreviewManager.onWorldLeave(client);
+			EstimatedItemValueManager.get().clear();
+			bazaarPriceFetcher.clear();
+			auctionPriceFetcher.clear();
+			npcPriceFetcher.clear();
 			autoReconnectManager.onDisconnected();
 		});
 
@@ -102,7 +152,12 @@ public class EMUtilsClient implements ClientModInitializer {
 		zoomManager.tick(client);
 		tweaksManager.tick(client);
 		inventoryToolsManager.tick(client);
+		skyblockManager.tick(client);
 		storagePreviewManager.tick(client);
+		bazaarPriceFetcher.tick(client);
+		auctionPriceFetcher.tick(client);
+		npcPriceFetcher.tick(client);
+		EstimatedItemValueManager.get().tick();
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 	}
@@ -148,6 +203,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputUtil.UNKNOWN_KEY.getCode(),
 			category
 		));
+		openSettingsHubKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+			"key.emutils.open_settings_hub",
+			InputUtil.Type.KEYSYM,
+			InputUtil.UNKNOWN_KEY.getCode(),
+			category
+		));
 		zoomManager.setKeyBinding(KeyBindingHelper.registerKeyBinding(new KeyBinding(
 			"key.emutils.zoom",
 			InputUtil.Type.KEYSYM,
@@ -174,6 +235,18 @@ public class EMUtilsClient implements ClientModInitializer {
 		));
 		tweaksManager.setKeyBindings(freelookKey);
 		inventoryToolsManager.setKeyBindings(slotLockKey, slotBindKey);
+		debugDumpGuiKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+			"key.emutils.debug_dump_gui",
+			InputUtil.Type.KEYSYM,
+			InputUtil.UNKNOWN_KEY.getCode(),
+			category
+		));
+		openHudLayoutEditorKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+			"key.emutils.open_hud_layout_editor",
+			InputUtil.Type.KEYSYM,
+			InputUtil.UNKNOWN_KEY.getCode(),
+			category
+		));
 	}
 
 	private static void handleKeyBindings(MinecraftClient client) {
@@ -187,6 +260,19 @@ public class EMUtilsClient implements ClientModInitializer {
 				client.setScreen(new ScriptManagerScreen(client.currentScreen));
 			}
 		}
+		while (openSettingsHubKeyBinding != null && openSettingsHubKeyBinding.wasPressed()) {
+			if (!(client.currentScreen instanceof CustomHubScreen)) {
+				client.setScreen(new CustomHubScreen(client.currentScreen));
+			}
+		}
+		while (openHudLayoutEditorKeyBinding != null && openHudLayoutEditorKeyBinding.wasPressed()) {
+			HudLayoutManager.openEditor(client);
+		}
+		DebugGuiDumpTrigger.tryFromBinding(debugDumpGuiKeyBinding);
+	}
+
+	public static boolean tryDebugGuiDump(KeyInput input) {
+		return DebugGuiDumpTrigger.tryFromInput(debugDumpGuiKeyBinding, input);
 	}
 
 	public static EMUtilsConfig config() {
@@ -219,6 +305,26 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	public static StoragePreviewManager storagePreview() {
 		return storagePreviewManager;
+	}
+
+	public static SkyblockManager skyblock() {
+		return skyblockManager;
+	}
+
+	public static SkyblockActionBarManager skyblockActionBar() {
+		return skyblockActionBarManager;
+	}
+
+	public static BazaarPriceFetcher bazaarPrices() {
+		return bazaarPriceFetcher;
+	}
+
+	public static AuctionPriceFetcher auctionPrices() {
+		return auctionPriceFetcher;
+	}
+
+	public static NpcPriceFetcher npcPrices() {
+		return npcPriceFetcher;
 	}
 
 	public static MinescriptKeybindManager minescriptKeybinds() {

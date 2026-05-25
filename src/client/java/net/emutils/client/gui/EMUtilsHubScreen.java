@@ -6,6 +6,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.compat.MinescriptCompat;
+import net.emutils.client.gui.hub.CustomHubScreen;
 import net.emutils.client.gui.capes.CapesSettingsScreen;
 import net.emutils.client.gui.chat.ChatFeaturesSettingsScreen;
 import net.emutils.client.gui.death.DeathWaypointSettingsScreen;
@@ -40,6 +41,7 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		GridWidget grid = new GridWidget();
 		grid.getMainPositioner().marginX(4).marginBottom(4).alignHorizontalCenter();
 		GridWidget.Adder adder = grid.createAdder(2);
+		adder.add(fullWidthSettingsButton(Text.translatable(EMUtilsTexts.HUB_MODERN_OPEN), button -> client.setScreen(new CustomHubScreen(this))), SETTINGS_COLUMNS);
 		adder.add(navButton(EMUtilsTexts.HUB_DEATH_WAYPOINTS, () -> EMUtilsClient.config().deathWaypoint(), DeathWaypointSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_AUTO_RECONNECT, () -> EMUtilsClient.config().autoReconnect(), AutoReconnectSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_SCREENSHOT_HELPER, () -> EMUtilsClient.config().screenshotHelper(), ScreenshotSettingsScreen::new));
