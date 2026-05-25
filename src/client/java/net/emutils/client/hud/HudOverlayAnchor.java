@@ -39,6 +39,17 @@ public enum HudOverlayAnchor {
 		};
 	}
 
+	public boolean isTop() {
+		return switch (this) {
+			case TOP_LEFT, TOP_CENTER, TOP_RIGHT -> true;
+			case BOTTOM_LEFT, BOTTOM_RIGHT -> false;
+		};
+	}
+
+	public boolean isBottom() {
+		return !isTop();
+	}
+
 	public static HudOverlayAnchor fromName(String name) {
 		if (name != null) {
 			for (HudOverlayAnchor anchor : values()) {

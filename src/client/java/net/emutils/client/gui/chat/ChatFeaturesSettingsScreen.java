@@ -58,6 +58,11 @@ public final class ChatFeaturesSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().chatMentionAlerts(),
 			EMUtilsClient.config()::setChatMentionAlerts
 		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_CHAT_MENTION_HIGHLIGHT,
+			() -> EMUtilsClient.config().chatMentionHighlight(),
+			EMUtilsClient.config()::setChatMentionHighlight
+		));
 		adder.add(new IntConfigSlider(
 			0,
 			0,

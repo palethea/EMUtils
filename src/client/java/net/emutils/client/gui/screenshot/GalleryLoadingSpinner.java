@@ -11,11 +11,15 @@ public final class GalleryLoadingSpinner {
 	}
 
 	public static void render(DrawContext context, int centerX, int centerY) {
+		render(context, centerX, centerY, ORBIT_RADIUS);
+	}
+
+	public static void render(DrawContext context, int centerX, int centerY, int orbitRadius) {
 		long millis = System.currentTimeMillis();
 		for (int index = 0; index < DOT_COUNT; index++) {
 			double angle = Math.toRadians((millis / 16.0) + index * (360.0 / DOT_COUNT));
-			int dotX = centerX + (int) Math.round(Math.cos(angle) * ORBIT_RADIUS);
-			int dotY = centerY + (int) Math.round(Math.sin(angle) * ORBIT_RADIUS);
+			int dotX = centerX + (int) Math.round(Math.cos(angle) * orbitRadius);
+			int dotY = centerY + (int) Math.round(Math.sin(angle) * orbitRadius);
 			int alpha = 55 + (index * 200 / DOT_COUNT);
 			int color = 0xFF000000 | (alpha << 16) | (alpha << 8) | alpha;
 			context.fill(dotX - DOT_RADIUS, dotY - DOT_RADIUS, dotX + DOT_RADIUS + 1, dotY + DOT_RADIUS + 1, color);

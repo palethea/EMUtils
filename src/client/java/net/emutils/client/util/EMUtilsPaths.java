@@ -18,4 +18,20 @@ public final class EMUtilsPaths {
 	public static Path deathWaypointFile() {
 		return configDir().resolve("last-death.json");
 	}
+
+	public static Path packInstallIndexFile() {
+		return configDir().resolve("pack-index.json");
+	}
+
+	public static Path minescriptKeybindFile() {
+		return configDir().resolve("minescript-keybinds.json");
+	}
+
+	public static Path inventoryToolsFile() {
+		return configDir().resolve("inventory-tools.json");
+	}
+
+	public static Path storagePreviewFile() {
+		return configDir().resolve("skyblock-storage.json");
+	}
 }

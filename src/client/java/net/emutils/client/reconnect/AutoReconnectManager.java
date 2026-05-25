@@ -2,6 +2,7 @@ package net.emutils.client.reconnect;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.compat.ConnectScreenCompat;
+import net.emutils.client.mixin.DisconnectedScreenAccess;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
@@ -17,16 +18,24 @@ public final class AutoReconnectManager {
 	private long nextReconnectAt;
 	private int attemptsSinceDisconnect;
 	private Screen trackedDisconnectScreen;
+	private Screen reconnectParentScreen;
 	private ButtonWidget reconnectButton;
 
 	public void captureCurrentServer(MinecraftClient client) {
 		resetAttempts();
+		reconnectParentScreen = null;
 		captureServer(client.getCurrentServerEntry());
 	}
 
 	public void captureServer(ServerInfo serverInfo) {
 		if (serverInfo == null || serverInfo.address == null || serverInfo.address.isBlank()) {
 			return;
+		}
+
+		if (lastServerAddress == null || !lastServerAddress.equals(serverInfo.address)) {
+			resetAttempts();
+			nextReconnectAt = 0L;
+			reconnectParentScreen = null;
 		}
 
 		lastServerName = serverInfo.name;
@@ -37,6 +46,7 @@ public final class AutoReconnectManager {
 		resetAttempts();
 		scheduleNextAttempt();
 		trackedDisconnectScreen = null;
+		reconnectParentScreen = null;
 	}
 
 	public void tick(MinecraftClient client) {
@@ -47,8 +57,12 @@ public final class AutoReconnectManager {
 
 		if (trackedDisconnectScreen != client.currentScreen) {
 			trackedDisconnectScreen = client.currentScreen;
-			resetAttempts();
-			scheduleNextAttempt();
+			if (reconnectParentScreen == null) {
+				reconnectParentScreen = resolveReconnectParent((DisconnectedScreen) client.currentScreen);
+			}
+			if (nextReconnectAt <= System.currentTimeMillis()) {
+				scheduleNextAttempt();
+			}
 		}
 
 		if (System.currentTimeMillis() >= nextReconnectAt && hasAttemptsRemaining()) {
@@ -107,9 +121,10 @@ public final class AutoReconnectManager {
 
 		attemptsSinceDisconnect++;
 		scheduleNextAttempt();
+		Screen connectParent = reconnectParentScreen != null ? reconnectParentScreen : parent;
 		try {
 			ServerInfo reconnectServer = new ServerInfo(lastServerName, lastServerAddress, ServerInfo.ServerType.OTHER);
-			ConnectScreenCompat.connect(parent, client, ServerAddress.parse(lastServerAddress), reconnectServer);
+			ConnectScreenCompat.connect(connectParent, client, ServerAddress.parse(lastServerAddress), reconnectServer);
 		} catch (RuntimeException exception) {
 			EMUtilsClient.LOGGER.warn("Auto reconnect failed.", exception);
 			scheduleNextAttempt();
@@ -133,5 +148,14 @@ public final class AutoReconnectManager {
 
 	private void scheduleNextAttempt() {
 		nextReconnectAt = System.currentTimeMillis() + EMUtilsClient.config().reconnectDelaySeconds() * 1000L;
+	}
+
+	private static Screen resolveReconnectParent(DisconnectedScreen screen) {
+		Screen parent = ((DisconnectedScreenAccess) screen).emutils$getParentScreen();
+		while (parent instanceof DisconnectedScreen disconnectedParent) {
+			parent = ((DisconnectedScreenAccess) disconnectedParent).emutils$getParentScreen();
+		}
+
+		return parent;
 	}
 }

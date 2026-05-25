@@ -1,8 +1,11 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
+import net.emutils.client.spotify.SpotifyTrackState;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -22,12 +25,53 @@ public abstract class GameMenuScreenMixin extends Screen {
 	@Unique
 	private ButtonWidget emutils$clearWaypointsButton;
 
+	@Unique
+	private SpotifyPlayerOverlay emutils$spotifyOverlay;
+
 	protected GameMenuScreenMixin(Text title) {
 		super(title);
 	}
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void emutils$init(CallbackInfo ci) {
+		emutils$initClearWaypointsButton();
+		emutils$initSpotifyPlayer();
+	}
+
+	@Inject(method = "tick", at = @At("TAIL"))
+	private void emutils$tick(CallbackInfo ci) {
+		if (emutils$clearWaypointsButton != null) {
+			emutils$clearWaypointsButton.active = EMUtilsClient.deathWaypoint()
+				.hasWaypointForCurrentWorld(MinecraftClient.getInstance());
+		}
+
+		if (emutils$spotifyOverlay != null) {
+			SpotifyTrackState state = EMUtilsClient.spotify().state();
+			emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(state));
+			emutils$spotifyOverlay.syncPlaybackState(state);
+		}
+	}
+
+	@Inject(method = "render", at = @At("HEAD"))
+	private void emutils$renderSpotifyBackground(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		if (emutils$spotifyOverlay == null || !SpotifyPlayerOverlay.shouldDisplay(EMUtilsClient.spotify().state())) {
+			return;
+		}
+
+		SpotifyPlayerOverlay.renderBackground(context, width, height);
+	}
+
+	@Inject(method = "render", at = @At("RETURN"))
+	private void emutils$renderSpotifyContent(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		if (emutils$spotifyOverlay == null || !SpotifyPlayerOverlay.shouldDisplay(EMUtilsClient.spotify().state())) {
+			return;
+		}
+
+		SpotifyPlayerOverlay.renderContent(context, width, height, EMUtilsClient.spotify().state());
+	}
+
+	@Unique
+	private void emutils$initClearWaypointsButton() {
 		if (!EMUtilsClient.config().deathWaypoint()) {
 			emutils$clearWaypointsButton = null;
 			return;
@@ -42,11 +86,15 @@ public abstract class GameMenuScreenMixin extends Screen {
 		addDrawableChild(emutils$clearWaypointsButton);
 	}
 
-	@Inject(method = "tick", at = @At("TAIL"))
-	private void emutils$tick(CallbackInfo ci) {
-		if (emutils$clearWaypointsButton != null) {
-			emutils$clearWaypointsButton.active = EMUtilsClient.deathWaypoint()
-				.hasWaypointForCurrentWorld(MinecraftClient.getInstance());
+	@Unique
+	private void emutils$initSpotifyPlayer() {
+		emutils$spotifyOverlay = null;
+		if (!EMUtilsClient.config().spotifyPlayerEnabled()) {
+			return;
 		}
+
+		emutils$spotifyOverlay = SpotifyPlayerOverlay.create(width, height, this::addDrawableChild);
+		emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(EMUtilsClient.spotify().state()));
+		EMUtilsClient.spotify().refreshSoon();
 	}
 }
