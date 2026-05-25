@@ -23,6 +23,9 @@ public final class DeathWaypointRenderer {
 
 	private static void render(WorldRenderContext context) {
 		MinecraftClient client = MinecraftClient.getInstance();
+		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {
+			return;
+		}
 		DeathWaypointManager manager = EMUtilsClient.deathWaypoint();
 		if (!manager.shouldRender(client)) {
 			return;

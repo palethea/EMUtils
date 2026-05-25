@@ -9,8 +9,8 @@ import org.jspecify.annotations.Nullable;
 public final class ChatMessageTracker {
 	private final Map<ChatHudLine, ChatMessageMetadata> metadataByLine = new IdentityHashMap<>();
 
-	public void register(ChatHudLine line, Text baseMessage, int duplicateCount, long receivedAtMillis) {
-		metadataByLine.put(line, new ChatMessageMetadata(baseMessage.copy(), duplicateCount, receivedAtMillis));
+	public void register(ChatHudLine line, Text baseMessage, int duplicateCount, long receivedAtMillis, boolean mentionsCurrentPlayer) {
+		metadataByLine.put(line, new ChatMessageMetadata(baseMessage.copy(), duplicateCount, receivedAtMillis, mentionsCurrentPlayer));
 	}
 
 	public void replaceLine(ChatHudLine oldLine, ChatHudLine newLine) {

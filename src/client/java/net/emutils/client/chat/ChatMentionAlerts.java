@@ -3,7 +3,6 @@ package net.emutils.client.chat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
@@ -15,7 +14,6 @@ import net.minecraft.text.Text;
 public final class ChatMentionAlerts {
 	private static final long MESSAGE_DEBOUNCE_MILLIS = 7_000L;
 	private static final long GLOBAL_DEBOUNCE_MILLIS = 2_000L;
-	private static final int OWN_MESSAGE_PREFIX_LIMIT = 64;
 	private static final int TOAST_PREVIEW_LIMIT = 80;
 	private static final Map<String, Long> LAST_ALERT_BY_MESSAGE = new HashMap<>();
 	private static long lastAlertMillis;
@@ -39,7 +37,7 @@ public final class ChatMentionAlerts {
 		}
 
 		String content = message.getString().trim();
-		if (content.isEmpty() || isLikelyOwnMessage(content, username) || !mentionsUser(content, username)) {
+		if (!ChatMentionDetector.isMention(message, username)) {
 			return;
 		}
 
@@ -57,51 +55,6 @@ public final class ChatMentionAlerts {
 		LAST_ALERT_BY_MESSAGE.put(normalized, nowMillis);
 		lastAlertMillis = nowMillis;
 		client.execute(() -> notify(client, content));
-	}
-
-	private static boolean mentionsUser(String content, String username) {
-		String quotedUsername = Pattern.quote(username);
-		if (Pattern.compile("(?i)(?<![A-Za-z0-9_])@" + quotedUsername + "(?![A-Za-z0-9_])").matcher(content).find()) {
-			return true;
-		}
-
-		if (!looksLikeChatLine(content)) {
-			return false;
-		}
-
-		return Pattern.compile("(?i)(?<![A-Za-z0-9_])" + quotedUsername + "(?![A-Za-z0-9_])").matcher(content).find();
-	}
-
-	private static boolean isLikelyOwnMessage(String content, String username) {
-		String lowerContent = content.toLowerCase(Locale.ROOT);
-		String lowerUsername = username.toLowerCase(Locale.ROOT);
-		if (lowerContent.startsWith("<" + lowerUsername + ">") || lowerContent.startsWith(lowerUsername + ":")) {
-			return true;
-		}
-
-		int separator = firstChatSeparator(content);
-		if (separator < 0 || separator > OWN_MESSAGE_PREFIX_LIMIT) {
-			return false;
-		}
-
-		return content.substring(0, separator).toLowerCase(Locale.ROOT).contains(lowerUsername);
-	}
-
-	private static boolean looksLikeChatLine(String content) {
-		int separator = firstChatSeparator(content);
-		return separator >= 0 && separator <= OWN_MESSAGE_PREFIX_LIMIT;
-	}
-
-	private static int firstChatSeparator(String content) {
-		int separator = -1;
-		for (char candidate : new char[] {':', '»', '>'}) {
-			int index = content.indexOf(candidate);
-			if (index >= 0 && (separator < 0 || index < separator)) {
-				separator = index;
-			}
-		}
-
-		return separator;
 	}
 
 	private static void notify(MinecraftClient client, String content) {

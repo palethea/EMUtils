@@ -5,8 +5,11 @@ import net.emutils.client.reconnect.AutoReconnectManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
 import net.minecraft.text.Text;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,6 +17,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "net.minecraft.client.gui.screen.DisconnectedScreen")
 public abstract class DisconnectedScreenMixin extends Screen {
+	@Shadow
+	@Final
+	private DirectionalLayoutWidget grid;
+
 	@Unique
 	private ButtonWidget emutils$reconnectButton;
 
@@ -21,18 +28,21 @@ public abstract class DisconnectedScreenMixin extends Screen {
 		super(title);
 	}
 
-	@Inject(method = "init", at = @At("TAIL"))
-	private void emutils$init(CallbackInfo ci) {
+	@Inject(
+		method = "init",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/DirectionalLayoutWidget;refreshPositions()V", shift = At.Shift.BEFORE)
+	)
+	private void emutils$addReconnectButton(CallbackInfo ci) {
 		AutoReconnectManager manager = EMUtilsClient.autoReconnect();
 		if (!manager.enabled() || !manager.hasServer()) {
 			return;
 		}
 
-		int buttonY = Math.min(height - 28, height / 2 + 58);
-		emutils$reconnectButton = ButtonWidget.builder(manager.buttonText(), button -> manager.reconnectNow(MinecraftClient.getInstance(), this))
-			.dimensions(width / 2 - 100, buttonY, 200, 20)
-			.build();
-		addDrawableChild(emutils$reconnectButton);
+		emutils$reconnectButton = ButtonWidget.builder(
+			manager.buttonText(),
+			button -> manager.reconnectNow(MinecraftClient.getInstance(), this)
+		).width(200).build();
+		this.grid.add(emutils$reconnectButton);
 		manager.setReconnectButton(emutils$reconnectButton);
 	}
 }

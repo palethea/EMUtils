@@ -87,7 +87,7 @@ public final class ChatMessageDecorations {
 		long receivedAtMillis = parseTimestampMillis(displayedString).orElse(fallbackReceivedAtMillis);
 		int duplicateCount = extractDuplicateCount(displayedString);
 		Text baseMessage = stripAll(displayed);
-		return new ChatMessageMetadata(baseMessage, duplicateCount, receivedAtMillis);
+		return new ChatMessageMetadata(baseMessage, duplicateCount, receivedAtMillis, false);
 	}
 
 	private static OptionalLong parseTime(String value, DateTimeFormatter formatter) {

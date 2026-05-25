@@ -4,8 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import net.emutils.client.chat.ChatFeaturesRefresher;
+import net.emutils.client.capes.CapePreferredProvider;
+import net.emutils.client.capes.CustomCapeManager;
 import net.emutils.client.death.DeathWaypointCoordinateFormat;
 import net.emutils.client.hud.HudOverlayAnchor;
+import net.emutils.client.inventory.BoundSlotColor;
+import net.emutils.client.inventory.SlotLockColor;
 import net.emutils.client.screenshot.ScreenshotGallerySort;
 import net.emutils.client.util.EMUtilsPaths;
 import java.io.IOException;
@@ -26,10 +30,19 @@ public final class EMUtilsConfig {
 	public static final int DEATH_WAYPOINT_SIZE_MAX = 100;
 	public static final int HUD_BACKGROUND_OPACITY_MIN = 25;
 	public static final int HUD_BACKGROUND_OPACITY_MAX = 100;
+	public static final int INVENTORY_PREVIEW_OPACITY_MIN = 25;
+	public static final int INVENTORY_PREVIEW_OPACITY_MAX = 100;
 	public static final int HUD_SCALE_MIN = 50;
 	public static final int HUD_SCALE_MAX = 150;
+	public static final int ZOOM_AMOUNT_MIN = 2;
+	public static final int ZOOM_AMOUNT_MAX = 10;
+	public static final int ZOOM_SCROLL_AMOUNT_MAX = 100;
+	public static final int ZOOM_TRANSITION_SPEED_MIN = 4;
+	public static final int ZOOM_TRANSITION_SPEED_MAX = 40;
 	public static final int DUPLICATE_MESSAGE_WINDOW_MIN = 30;
 	public static final int DUPLICATE_MESSAGE_WINDOW_MAX = 120;
+	public static final int PACK_MANAGER_SEARCH_LIMIT_MIN = 5;
+	public static final int PACK_MANAGER_SEARCH_LIMIT_MAX = 50;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
@@ -49,6 +62,7 @@ public final class EMUtilsConfig {
 	private Boolean smartChatFilters = Boolean.FALSE;
 	private Boolean duplicateMessageTimeWindow = Boolean.FALSE;
 	private Boolean chatMentionAlerts = Boolean.FALSE;
+	private Boolean chatMentionHighlight = Boolean.FALSE;
 	private Boolean hudOverlay = Boolean.FALSE;
 	private String hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
 	private Boolean hudShowCoordinates = Boolean.TRUE;
@@ -73,6 +87,65 @@ public final class EMUtilsConfig {
 	private Integer deathWaypointSize = DEFAULT_DEATH_WAYPOINT_SIZE;
 	private Integer hudBackgroundOpacity = 100;
 	private Integer hudScale = 100;
+	private Boolean zoomEnabled = Boolean.TRUE;
+	private Boolean zoomCinematicCamera = Boolean.TRUE;
+	private Boolean zoomHideHand = Boolean.FALSE;
+	private Boolean zoomSmoothTransition = Boolean.TRUE;
+	private Boolean zoomHideHud = Boolean.FALSE;
+	private Boolean tweakFullbright = Boolean.FALSE;
+	private Boolean tweakNoFog = Boolean.FALSE;
+	private Boolean tweakClearUnderwater = Boolean.TRUE;
+	private Boolean tweakClearLava = Boolean.TRUE;
+	private Boolean tweakNoEnvironmentFog = Boolean.TRUE;
+	@Deprecated
+	private Boolean tweakNoCaveFog;
+	@Deprecated
+	private Boolean tweakNoNetherFog;
+	@Deprecated
+	private Boolean tweakNoEndFog;
+	@Deprecated
+	private Boolean tweakNoRainFog;
+	@Deprecated
+	private Boolean tweakNoWaterFog;
+	@Deprecated
+	private Boolean tweakNoLavaFog;
+	@Deprecated
+	private Boolean tweakClearFluidOverlay;
+	private Boolean tweakNoHurtCam = Boolean.FALSE;
+	private Boolean tweakFreelook = Boolean.FALSE;
+	private Boolean tweakShulkerTooltipPreview = Boolean.TRUE;
+	private Boolean tweakBundleTooltipPreview = Boolean.TRUE;
+	private Boolean tweakClearWeather = Boolean.FALSE;
+	private Boolean tweakOwnNametag = Boolean.FALSE;
+	private Boolean packManagerEnabled = Boolean.TRUE;
+	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
+	private Boolean customCapes = Boolean.TRUE;
+	private Boolean capeOptifine = Boolean.TRUE;
+	private Boolean capeLabyMod = Boolean.TRUE;
+	private Boolean capeMinecraftCapes = Boolean.TRUE;
+	private Boolean capeCosmetica = Boolean.TRUE;
+	private Boolean capeCloaksPlus = Boolean.TRUE;
+	private String capePreferredProvider = CapePreferredProvider.AUTO.name();
+	private Boolean spotifyPlayerEnabled = Boolean.FALSE;
+	private Boolean spotifyHudOverlay = Boolean.FALSE;
+	private String spotifyHudAnchor = HudOverlayAnchor.BOTTOM_RIGHT.name();
+	private Integer spotifyHudBackgroundOpacity = 100;
+	private Integer spotifyHudScale = 100;
+	private Boolean inventoryToolsEnabled = Boolean.TRUE;
+	private Boolean slotLockingEnabled = Boolean.TRUE;
+	private Boolean slotBindingEnabled = Boolean.TRUE;
+	private Boolean slotBindingShowIcons = Boolean.TRUE;
+	private Boolean slotBindingLockBoundSlots = Boolean.TRUE;
+	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
+	private Boolean preserveContainerCursor = Boolean.TRUE;
+	private String slotLockColor = SlotLockColor.RED.name();
+	private String boundSlotColor = BoundSlotColor.GRAY.name();
+	private Integer inventoryPreviewOpacity = 75;
+	private Integer zoomAmount = 4;
+	private Boolean skyblockEnabled = Boolean.FALSE;
+	private Boolean storagePreviewEnabled = Boolean.TRUE;
+	private Integer zoomTransitionSpeed = 24;
+	private Integer packManagerSearchLimit = 20;
 
 	public static EMUtilsConfig load() {
 		EMUtilsConfig config = null;
@@ -236,6 +309,15 @@ public final class EMUtilsConfig {
 
 	public void setChatMentionAlerts(boolean enabled) {
 		chatMentionAlerts = enabled;
+		save();
+	}
+
+	public boolean chatMentionHighlight() {
+		return chatMentionHighlight != null && chatMentionHighlight;
+	}
+
+	public void setChatMentionHighlight(boolean enabled) {
+		chatMentionHighlight = enabled;
 		save();
 	}
 
@@ -419,6 +501,441 @@ public final class EMUtilsConfig {
 		save();
 	}
 
+	public boolean zoomEnabled() {
+		return zoomEnabled == null || zoomEnabled;
+	}
+
+	public void setZoomEnabled(boolean enabled) {
+		zoomEnabled = enabled;
+		save();
+	}
+
+	public boolean zoomCinematicCamera() {
+		return zoomCinematicCamera == null || zoomCinematicCamera;
+	}
+
+	public void setZoomCinematicCamera(boolean enabled) {
+		zoomCinematicCamera = enabled;
+		save();
+	}
+
+	public int zoomAmount() {
+		return clampZoomAmount(zoomAmount == null ? 4 : zoomAmount);
+	}
+
+	public void setZoomAmount(int amount) {
+		zoomAmount = clampZoomAmount(amount);
+		save();
+	}
+
+	public int zoomTransitionSpeed() {
+		return clampZoomTransitionSpeed(zoomTransitionSpeed == null ? 24 : zoomTransitionSpeed);
+	}
+
+	public void setZoomTransitionSpeed(int speed) {
+		zoomTransitionSpeed = clampZoomTransitionSpeed(speed);
+		save();
+	}
+
+	public boolean zoomHideHand() {
+		return zoomHideHand != null && zoomHideHand;
+	}
+
+	public void setZoomHideHand(boolean enabled) {
+		zoomHideHand = enabled;
+		save();
+	}
+
+	public boolean zoomSmoothTransition() {
+		return zoomSmoothTransition == null || zoomSmoothTransition;
+	}
+
+	public void setZoomSmoothTransition(boolean enabled) {
+		zoomSmoothTransition = enabled;
+		save();
+	}
+
+	public boolean zoomHideHud() {
+		return zoomHideHud != null && zoomHideHud;
+	}
+
+	public void setZoomHideHud(boolean enabled) {
+		zoomHideHud = enabled;
+		save();
+	}
+
+	public boolean tweakFullbright() {
+		return tweakFullbright != null && tweakFullbright;
+	}
+
+	public void setTweakFullbright(boolean enabled) {
+		tweakFullbright = enabled;
+		save();
+	}
+
+	public boolean tweakNoFog() {
+		return tweakNoFog != null && tweakNoFog;
+	}
+
+	public void setTweakNoFog(boolean enabled) {
+		tweakNoFog = enabled;
+		save();
+	}
+
+	public boolean tweakClearUnderwater() {
+		return tweakClearUnderwater == null || tweakClearUnderwater;
+	}
+
+	public void setTweakClearUnderwater(boolean enabled) {
+		tweakClearUnderwater = enabled;
+		save();
+	}
+
+	public boolean tweakClearLava() {
+		return tweakClearLava == null || tweakClearLava;
+	}
+
+	public void setTweakClearLava(boolean enabled) {
+		tweakClearLava = enabled;
+		save();
+	}
+
+	public boolean tweakNoEnvironmentFog() {
+		return tweakNoEnvironmentFog == null || tweakNoEnvironmentFog;
+	}
+
+	public void setTweakNoEnvironmentFog(boolean enabled) {
+		tweakNoEnvironmentFog = enabled;
+		save();
+	}
+
+	public boolean tweakNoHurtCam() {
+		return tweakNoHurtCam != null && tweakNoHurtCam;
+	}
+
+	public void setTweakNoHurtCam(boolean enabled) {
+		tweakNoHurtCam = enabled;
+		save();
+	}
+
+	public boolean tweakFreelook() {
+		return tweakFreelook != null && tweakFreelook;
+	}
+
+	public void setTweakFreelook(boolean enabled) {
+		tweakFreelook = enabled;
+		save();
+	}
+
+	public boolean tweakShulkerTooltipPreview() {
+		return tweakShulkerTooltipPreview == null || tweakShulkerTooltipPreview;
+	}
+
+	public void setTweakShulkerTooltipPreview(boolean enabled) {
+		tweakShulkerTooltipPreview = enabled;
+		save();
+	}
+
+	public boolean tweakBundleTooltipPreview() {
+		return tweakBundleTooltipPreview == null || tweakBundleTooltipPreview;
+	}
+
+	public void setTweakBundleTooltipPreview(boolean enabled) {
+		tweakBundleTooltipPreview = enabled;
+		save();
+	}
+
+	public boolean tweakClearWeather() {
+		return tweakClearWeather != null && tweakClearWeather;
+	}
+
+	public void setTweakClearWeather(boolean enabled) {
+		tweakClearWeather = enabled;
+		save();
+	}
+
+	public boolean tweakOwnNametag() {
+		return tweakOwnNametag != null && tweakOwnNametag;
+	}
+
+	public void setTweakOwnNametag(boolean enabled) {
+		tweakOwnNametag = enabled;
+		save();
+	}
+
+	public boolean tweaksEnabled() {
+		return tweakFullbright()
+			|| tweakNoFog()
+			|| tweakClearUnderwater()
+			|| tweakClearLava()
+			|| tweakNoEnvironmentFog()
+			|| tweakNoHurtCam()
+			|| tweakFreelook()
+			|| tweakShulkerTooltipPreview()
+			|| tweakBundleTooltipPreview()
+			|| tweakClearWeather()
+			|| tweakOwnNametag();
+	}
+
+	public boolean packManagerEnabled() {
+		return packManagerEnabled == null || packManagerEnabled;
+	}
+
+	public void setPackManagerEnabled(boolean enabled) {
+		packManagerEnabled = enabled;
+		save();
+	}
+
+	public boolean packManagerShowShadersWithoutIris() {
+		return packManagerShowShadersWithoutIris == null || packManagerShowShadersWithoutIris;
+	}
+
+	public void setPackManagerShowShadersWithoutIris(boolean enabled) {
+		packManagerShowShadersWithoutIris = enabled;
+		save();
+	}
+
+	public int packManagerSearchLimit() {
+		return clampPackManagerSearchLimit(packManagerSearchLimit == null ? 20 : packManagerSearchLimit);
+	}
+
+	public void setPackManagerSearchLimit(int limit) {
+		packManagerSearchLimit = clampPackManagerSearchLimit(limit);
+		save();
+	}
+
+	public boolean customCapes() {
+		return customCapes == null || customCapes;
+	}
+
+	public void setCustomCapes(boolean enabled) {
+		customCapes = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capeOptifine() {
+		return capeOptifine == null || capeOptifine;
+	}
+
+	public void setCapeOptifine(boolean enabled) {
+		capeOptifine = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capeLabyMod() {
+		return capeLabyMod == null || capeLabyMod;
+	}
+
+	public void setCapeLabyMod(boolean enabled) {
+		capeLabyMod = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capeMinecraftCapes() {
+		return capeMinecraftCapes == null || capeMinecraftCapes;
+	}
+
+	public void setCapeMinecraftCapes(boolean enabled) {
+		capeMinecraftCapes = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capeCosmetica() {
+		return capeCosmetica == null || capeCosmetica;
+	}
+
+	public void setCapeCosmetica(boolean enabled) {
+		capeCosmetica = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capeCloaksPlus() {
+		return capeCloaksPlus == null || capeCloaksPlus;
+	}
+
+	public void setCapeCloaksPlus(boolean enabled) {
+		capeCloaksPlus = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public CapePreferredProvider capePreferredProvider() {
+		return CapePreferredProvider.fromName(capePreferredProvider);
+	}
+
+	public void setCapePreferredProvider(CapePreferredProvider preferred) {
+		capePreferredProvider = preferred.name();
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public boolean capesEnabled() {
+		return customCapes()
+			&& (capeOptifine()
+				|| capeLabyMod()
+				|| capeMinecraftCapes()
+				|| capeCosmetica()
+				|| capeCloaksPlus());
+	}
+
+	public boolean spotifyPlayerEnabled() {
+		return spotifyPlayerEnabled != null && spotifyPlayerEnabled;
+	}
+
+	public void setSpotifyPlayerEnabled(boolean enabled) {
+		spotifyPlayerEnabled = enabled;
+		save();
+	}
+
+	public boolean spotifyHudOverlay() {
+		return spotifyHudOverlay != null && spotifyHudOverlay;
+	}
+
+	public void setSpotifyHudOverlay(boolean enabled) {
+		spotifyHudOverlay = enabled;
+		save();
+	}
+
+	public HudOverlayAnchor spotifyHudAnchor() {
+		return HudOverlayAnchor.fromName(spotifyHudAnchor);
+	}
+
+	public void setSpotifyHudAnchor(HudOverlayAnchor anchor) {
+		spotifyHudAnchor = (anchor == null ? HudOverlayAnchor.BOTTOM_RIGHT : anchor).name();
+		save();
+	}
+
+	public int spotifyHudBackgroundOpacity() {
+		return clampHudBackgroundOpacity(spotifyHudBackgroundOpacity == null ? 100 : spotifyHudBackgroundOpacity);
+	}
+
+	public void setSpotifyHudBackgroundOpacity(int opacity) {
+		spotifyHudBackgroundOpacity = clampHudBackgroundOpacity(opacity);
+		save();
+	}
+
+	public int spotifyHudScale() {
+		return clampHudScale(spotifyHudScale == null ? 100 : spotifyHudScale);
+	}
+
+	public void setSpotifyHudScale(int scale) {
+		spotifyHudScale = clampHudScale(scale);
+		save();
+	}
+
+	public boolean inventoryToolsEnabled() {
+		return inventoryToolsEnabled == null || inventoryToolsEnabled;
+	}
+
+	public void setInventoryToolsEnabled(boolean enabled) {
+		inventoryToolsEnabled = enabled;
+		save();
+	}
+
+	public boolean skyblockEnabled() {
+		return skyblockEnabled != null && skyblockEnabled;
+	}
+
+	public void setSkyblockEnabled(boolean enabled) {
+		skyblockEnabled = enabled;
+		save();
+	}
+
+	public boolean storagePreviewEnabled() {
+		return storagePreviewEnabled == null || storagePreviewEnabled;
+	}
+
+	public void setStoragePreviewEnabled(boolean enabled) {
+		storagePreviewEnabled = enabled;
+		save();
+	}
+
+	public boolean slotLockingEnabled() {
+		return slotLockingEnabled == null || slotLockingEnabled;
+	}
+
+	public void setSlotLockingEnabled(boolean enabled) {
+		slotLockingEnabled = enabled;
+		save();
+	}
+
+	public boolean slotBindingEnabled() {
+		return slotBindingEnabled == null || slotBindingEnabled;
+	}
+
+	public void setSlotBindingEnabled(boolean enabled) {
+		slotBindingEnabled = enabled;
+		save();
+	}
+
+	public boolean slotBindingShowIcons() {
+		return slotBindingShowIcons == null || slotBindingShowIcons;
+	}
+
+	public void setSlotBindingShowIcons(boolean enabled) {
+		slotBindingShowIcons = enabled;
+		save();
+	}
+
+	public boolean slotBindingLockBoundSlots() {
+		return slotBindingLockBoundSlots == null || slotBindingLockBoundSlots;
+	}
+
+	public void setSlotBindingLockBoundSlots(boolean enabled) {
+		slotBindingLockBoundSlots = enabled;
+		save();
+	}
+
+	public boolean inventoryPreviewEnabled() {
+		return inventoryPreviewEnabled != null && inventoryPreviewEnabled;
+	}
+
+	public void setInventoryPreviewEnabled(boolean enabled) {
+		inventoryPreviewEnabled = enabled;
+		save();
+	}
+
+	public boolean preserveContainerCursor() {
+		return preserveContainerCursor == null || preserveContainerCursor;
+	}
+
+	public void setPreserveContainerCursor(boolean enabled) {
+		preserveContainerCursor = enabled;
+		save();
+	}
+
+	public SlotLockColor slotLockColor() {
+		return SlotLockColor.fromName(slotLockColor);
+	}
+
+	public void setSlotLockColor(SlotLockColor color) {
+		slotLockColor = (color == null ? SlotLockColor.RED : color).name();
+		save();
+	}
+
+	public BoundSlotColor boundSlotColor() {
+		return BoundSlotColor.fromName(boundSlotColor);
+	}
+
+	public void setBoundSlotColor(BoundSlotColor color) {
+		boundSlotColor = (color == null ? BoundSlotColor.GRAY : color).name();
+		save();
+	}
+
+	public int inventoryPreviewOpacity() {
+		return clampInventoryPreviewOpacity(inventoryPreviewOpacity == null ? 75 : inventoryPreviewOpacity);
+	}
+
+	public void setInventoryPreviewOpacity(int opacity) {
+		inventoryPreviewOpacity = clampInventoryPreviewOpacity(opacity);
+		save();
+	}
+
 	public float deathWaypointSizeMultiplier() {
 		float displayPercent = deathWaypointSize() / 100.0F;
 		float referencePercent = DEFAULT_DEATH_WAYPOINT_SIZE / 100.0F;
@@ -479,6 +996,7 @@ public final class EMUtilsConfig {
 		duplicateMessageTimeWindow = Boolean.FALSE;
 		duplicateMessageWindowSeconds = DUPLICATE_MESSAGE_WINDOW_MIN;
 		chatMentionAlerts = Boolean.FALSE;
+		chatMentionHighlight = Boolean.FALSE;
 		save();
 		ChatFeaturesRefresher.onTimestampSettingsChanged();
 	}
@@ -499,6 +1017,80 @@ public final class EMUtilsConfig {
 		hudShowFacing = Boolean.TRUE;
 		hudBackgroundOpacity = 100;
 		hudScale = 100;
+		save();
+	}
+
+	public void resetZoomDefaults() {
+		zoomEnabled = Boolean.TRUE;
+		zoomAmount = 4;
+		zoomTransitionSpeed = 24;
+		zoomCinematicCamera = Boolean.TRUE;
+		zoomHideHand = Boolean.FALSE;
+		zoomSmoothTransition = Boolean.TRUE;
+		zoomHideHud = Boolean.FALSE;
+		save();
+	}
+
+	public void resetTweaksDefaults() {
+		tweakFullbright = Boolean.FALSE;
+		tweakNoFog = Boolean.FALSE;
+		tweakClearUnderwater = Boolean.TRUE;
+		tweakClearLava = Boolean.TRUE;
+		tweakNoEnvironmentFog = Boolean.TRUE;
+		tweakNoHurtCam = Boolean.FALSE;
+		tweakFreelook = Boolean.FALSE;
+		tweakShulkerTooltipPreview = Boolean.TRUE;
+		tweakBundleTooltipPreview = Boolean.TRUE;
+		tweakClearWeather = Boolean.FALSE;
+		tweakOwnNametag = Boolean.FALSE;
+		save();
+	}
+
+	public void resetPackManagerDefaults() {
+		packManagerEnabled = Boolean.TRUE;
+		packManagerShowShadersWithoutIris = Boolean.TRUE;
+		packManagerSearchLimit = 20;
+		save();
+	}
+
+	public void resetCapesDefaults() {
+		customCapes = Boolean.TRUE;
+		capeOptifine = Boolean.TRUE;
+		capeLabyMod = Boolean.TRUE;
+		capeMinecraftCapes = Boolean.TRUE;
+		capeCosmetica = Boolean.TRUE;
+		capeCloaksPlus = Boolean.TRUE;
+		capePreferredProvider = CapePreferredProvider.AUTO.name();
+		save();
+		CustomCapeManager.reload();
+	}
+
+	public void resetSpotifyPlayerDefaults() {
+		spotifyPlayerEnabled = Boolean.FALSE;
+		spotifyHudOverlay = Boolean.FALSE;
+		spotifyHudAnchor = HudOverlayAnchor.BOTTOM_RIGHT.name();
+		spotifyHudBackgroundOpacity = 100;
+		spotifyHudScale = 100;
+		save();
+	}
+
+	public void resetInventoryToolsDefaults() {
+		inventoryToolsEnabled = Boolean.TRUE;
+		slotLockingEnabled = Boolean.TRUE;
+		slotBindingEnabled = Boolean.TRUE;
+		slotBindingShowIcons = Boolean.TRUE;
+		slotBindingLockBoundSlots = Boolean.TRUE;
+		inventoryPreviewEnabled = Boolean.FALSE;
+		preserveContainerCursor = Boolean.TRUE;
+		slotLockColor = SlotLockColor.RED.name();
+		boundSlotColor = BoundSlotColor.GRAY.name();
+		inventoryPreviewOpacity = 75;
+		save();
+	}
+
+	public void resetSkyblockDefaults() {
+		skyblockEnabled = Boolean.FALSE;
+		storagePreviewEnabled = Boolean.TRUE;
 		save();
 	}
 
@@ -553,6 +1145,9 @@ public final class EMUtilsConfig {
 		if (chatMentionAlerts == null) {
 			chatMentionAlerts = Boolean.FALSE;
 		}
+		if (chatMentionHighlight == null) {
+			chatMentionHighlight = Boolean.FALSE;
+		}
 		if (hudOverlay == null) {
 			hudOverlay = Boolean.FALSE;
 		}
@@ -606,6 +1201,146 @@ public final class EMUtilsConfig {
 		deathWaypointSize = deathWaypointSize();
 		hudBackgroundOpacity = hudBackgroundOpacity();
 		hudScale = hudScale();
+		if (zoomEnabled == null) {
+			zoomEnabled = Boolean.TRUE;
+		}
+		if (zoomCinematicCamera == null) {
+			zoomCinematicCamera = Boolean.TRUE;
+		}
+		if (zoomHideHand == null) {
+			zoomHideHand = Boolean.FALSE;
+		}
+		if (zoomSmoothTransition == null) {
+			zoomSmoothTransition = Boolean.TRUE;
+		}
+		if (zoomHideHud == null) {
+			zoomHideHud = Boolean.FALSE;
+		}
+		if (tweakFullbright == null) {
+			tweakFullbright = Boolean.FALSE;
+		}
+		if (tweakNoFog == null) {
+			tweakNoFog = Boolean.FALSE;
+		}
+		migrateFogTweaks();
+		if (tweakClearUnderwater == null) {
+			tweakClearUnderwater = Boolean.TRUE;
+		}
+		if (tweakClearLava == null) {
+			tweakClearLava = Boolean.TRUE;
+		}
+		if (tweakNoEnvironmentFog == null) {
+			tweakNoEnvironmentFog = Boolean.TRUE;
+		}
+		if (tweakNoHurtCam == null) {
+			tweakNoHurtCam = Boolean.FALSE;
+		}
+		if (tweakFreelook == null) {
+			tweakFreelook = Boolean.FALSE;
+		}
+		if (tweakShulkerTooltipPreview == null) {
+			tweakShulkerTooltipPreview = Boolean.TRUE;
+		}
+		if (tweakBundleTooltipPreview == null) {
+			tweakBundleTooltipPreview = Boolean.TRUE;
+		}
+		if (tweakClearWeather == null) {
+			tweakClearWeather = Boolean.FALSE;
+		}
+		if (tweakOwnNametag == null) {
+			tweakOwnNametag = Boolean.FALSE;
+		}
+		if (packManagerEnabled == null) {
+			packManagerEnabled = Boolean.TRUE;
+		}
+		if (packManagerShowShadersWithoutIris == null) {
+			packManagerShowShadersWithoutIris = Boolean.TRUE;
+		}
+		if (customCapes == null) {
+			customCapes = Boolean.TRUE;
+		}
+		if (capeOptifine == null) {
+			capeOptifine = Boolean.TRUE;
+		}
+		if (capeLabyMod == null) {
+			capeLabyMod = Boolean.TRUE;
+		}
+		if (capeMinecraftCapes == null) {
+			capeMinecraftCapes = Boolean.TRUE;
+		}
+		if (capeCosmetica == null) {
+			capeCosmetica = Boolean.TRUE;
+		}
+		if (capeCloaksPlus == null) {
+			capeCloaksPlus = Boolean.TRUE;
+		}
+		if (capePreferredProvider == null || capePreferredProvider.isBlank()) {
+			capePreferredProvider = CapePreferredProvider.AUTO.name();
+		}
+		if (spotifyPlayerEnabled == null) {
+			spotifyPlayerEnabled = Boolean.FALSE;
+		}
+		if (spotifyHudOverlay == null) {
+			spotifyHudOverlay = Boolean.FALSE;
+		}
+		spotifyHudAnchor = spotifyHudAnchor().name();
+		spotifyHudBackgroundOpacity = spotifyHudBackgroundOpacity();
+		spotifyHudScale = spotifyHudScale();
+		if (inventoryToolsEnabled == null) {
+			inventoryToolsEnabled = Boolean.TRUE;
+		}
+		if (slotLockingEnabled == null) {
+			slotLockingEnabled = Boolean.TRUE;
+		}
+		if (slotBindingEnabled == null) {
+			slotBindingEnabled = Boolean.TRUE;
+		}
+		if (slotBindingShowIcons == null) {
+			slotBindingShowIcons = Boolean.TRUE;
+		}
+		if (slotBindingLockBoundSlots == null) {
+			slotBindingLockBoundSlots = Boolean.TRUE;
+		}
+		if (inventoryPreviewEnabled == null) {
+			inventoryPreviewEnabled = Boolean.FALSE;
+		}
+		if (preserveContainerCursor == null) {
+			preserveContainerCursor = Boolean.TRUE;
+		}
+		slotLockColor = slotLockColor().name();
+		boundSlotColor = boundSlotColor().name();
+		inventoryPreviewOpacity = inventoryPreviewOpacity();
+		if (skyblockEnabled == null) {
+			skyblockEnabled = Boolean.FALSE;
+		}
+		if (storagePreviewEnabled == null) {
+			storagePreviewEnabled = Boolean.TRUE;
+		}
+		zoomAmount = zoomAmount();
+		zoomTransitionSpeed = zoomTransitionSpeed();
+		packManagerSearchLimit = packManagerSearchLimit();
+	}
+
+	private void migrateFogTweaks() {
+		if (tweakClearUnderwater != null && tweakClearLava != null && tweakNoEnvironmentFog != null) {
+			return;
+		}
+
+		boolean legacyWaterFog = tweakNoWaterFog == null || tweakNoWaterFog;
+		boolean legacyFluidOverlay = tweakClearFluidOverlay != null && tweakClearFluidOverlay;
+		if (tweakClearUnderwater == null) {
+			tweakClearUnderwater = legacyWaterFog || legacyFluidOverlay;
+		}
+		if (tweakClearLava == null) {
+			tweakClearLava = tweakNoLavaFog == null || tweakNoLavaFog;
+		}
+		if (tweakNoEnvironmentFog == null) {
+			boolean legacyCave = tweakNoCaveFog == null || tweakNoCaveFog;
+			boolean legacyNether = tweakNoNetherFog == null || tweakNoNetherFog;
+			boolean legacyEnd = tweakNoEndFog == null || tweakNoEndFog;
+			boolean legacyRain = tweakNoRainFog == null || tweakNoRainFog;
+			tweakNoEnvironmentFog = legacyCave || legacyNether || legacyEnd || legacyRain;
+		}
 	}
 
 	private static int clampDelay(int seconds) {
@@ -638,6 +1373,22 @@ public final class EMUtilsConfig {
 
 	private static int clampHudScale(int scale) {
 		return Math.max(HUD_SCALE_MIN, Math.min(HUD_SCALE_MAX, scale));
+	}
+
+	private static int clampInventoryPreviewOpacity(int opacity) {
+		return Math.max(INVENTORY_PREVIEW_OPACITY_MIN, Math.min(INVENTORY_PREVIEW_OPACITY_MAX, opacity));
+	}
+
+	private static int clampZoomAmount(int amount) {
+		return Math.max(ZOOM_AMOUNT_MIN, Math.min(ZOOM_AMOUNT_MAX, amount));
+	}
+
+	private static int clampZoomTransitionSpeed(int speed) {
+		return Math.max(ZOOM_TRANSITION_SPEED_MIN, Math.min(ZOOM_TRANSITION_SPEED_MAX, speed));
+	}
+
+	private static int clampPackManagerSearchLimit(int limit) {
+		return Math.max(PACK_MANAGER_SEARCH_LIMIT_MIN, Math.min(PACK_MANAGER_SEARCH_LIMIT_MAX, limit));
 	}
 
 	private static Integer migrateDeathWaypointSize(Integer sizePercent) {

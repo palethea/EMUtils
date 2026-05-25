@@ -17,7 +17,6 @@ import net.minecraft.util.Identifier;
 
 public final class HudOverlayRenderer {
 	private static final Identifier ID = Identifier.of(EMUtilsClient.MOD_ID, "hud_overlay");
-	private static final int MARGIN = 8;
 	private static final int PADDING_X = 8;
 	private static final int PADDING_Y = 7;
 	private static final int ROW_HEIGHT = 13;
@@ -47,10 +46,39 @@ public final class HudOverlayRenderer {
 		data = HudOverlayData.collect(client);
 	}
 
+	public static HudOverlayData hudOverlayData() {
+		return data;
+	}
+
+	public static int unscaledPanelWidth() {
+		return FIXED_CONTENT_WIDTH + PADDING_X * 2;
+	}
+
+	public static int unscaledPanelHeight(EMUtilsConfig config) {
+		List<HudOverlayLine> mainLines = mainLines(config);
+		boolean showMemory = config.hudShowMemory();
+		if (mainLines.isEmpty() && !showMemory) {
+			return 0;
+		}
+
+		int mainLineCount = mainLines.size();
+		int panelHeight = PADDING_Y + mainLineCount * ROW_HEIGHT;
+		if (showMemory) {
+			panelHeight += ROW_HEIGHT + MEMORY_BAR_GAP + MEMORY_BAR_HEIGHT + PADDING_Y;
+		} else {
+			panelHeight += PADDING_Y;
+		}
+
+		return panelHeight;
+	}
+
 	private static void render(DrawContext context) {
 		EMUtilsConfig config = EMUtilsClient.config();
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (config == null || !config.hudOverlay() || client == null || client.player == null || client.world == null) {
+			return;
+		}
+		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {
 			return;
 		}
 		if (config.hudHideWithDebug() && client.getDebugHud().shouldShowDebugHud()) {
@@ -65,30 +93,32 @@ public final class HudOverlayRenderer {
 
 		TextRenderer textRenderer = client.textRenderer;
 		boolean showIcons = config.hudShowIcons();
-		int panelWidth = FIXED_CONTENT_WIDTH + PADDING_X * 2;
-		int mainLineCount = mainLines.size();
-		int panelHeight = PADDING_Y + mainLineCount * ROW_HEIGHT;
-		if (showMemory) {
-			panelHeight += ROW_HEIGHT + MEMORY_BAR_GAP + MEMORY_BAR_HEIGHT + PADDING_Y;
-		} else {
-			panelHeight += PADDING_Y;
+		int panelWidth = unscaledPanelWidth();
+		int panelHeight = unscaledPanelHeight(config);
+		float scale = config.hudScale() / 100.0F;
+		HudOverlayPlacement.PanelDimensions dimensions = HudOverlayPlacement.hudOverlayDimensions(config);
+		if (dimensions.height() <= 0) {
+			return;
 		}
 
-		float scale = config.hudScale() / 100.0F;
-		int scaledPanelWidth = Math.round(panelWidth * scale);
-		int scaledPanelHeight = Math.round(panelHeight * scale);
-		int x = config.hudOverlayAnchor().x(context.getScaledWindowWidth(), scaledPanelWidth, MARGIN);
-		int y = config.hudOverlayAnchor().y(context.getScaledWindowHeight(), scaledPanelHeight, MARGIN);
+		boolean spotifyHudVisible = config.spotifyHudOverlay() && EMUtilsClient.spotify().state().shouldDisplay();
+		HudOverlayPlacement.Position position = HudOverlayPlacement.hudOverlayPosition(
+			config,
+			context.getScaledWindowWidth(),
+			context.getScaledWindowHeight(),
+			dimensions,
+			spotifyHudVisible
+		);
 
 		context.getMatrices().pushMatrix();
 		try {
-			context.getMatrices().translate(x, y);
+			context.getMatrices().translate(position.x(), position.y());
 			context.getMatrices().scale(scale, scale);
 			drawPanelBackground(context, 0, 0, panelWidth, panelHeight, config.hudBackgroundOpacity());
 			drawLines(context, textRenderer, mainLines, showIcons, PADDING_X, PADDING_Y);
 
 			if (showMemory) {
-				int memoryRowY = PADDING_Y + mainLineCount * ROW_HEIGHT;
+				int memoryRowY = PADDING_Y + mainLines.size() * ROW_HEIGHT;
 				drawLine(
 					context,
 					textRenderer,
