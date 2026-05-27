@@ -21,6 +21,27 @@ public final class SkyblockItemIds {
 	private static final Map<String, String> AUCTION_ID_ALIASES = Map.of(
 		"MAGMA_LORD_NECKLACE", "MAGMA_LORD_GAUNTLET"
 	);
+	private static final Map<String, String> DISPLAY_NAME_ALIASES = Map.ofEntries(
+		Map.entry("CLAY", "CLAY_BALL"),
+		Map.entry("INK_SAC", "INK_SACK"),
+		Map.entry("INK_SACK", "INK_SACK"),
+		Map.entry("LILY_PAD", "WATER_LILY"),
+		Map.entry("MAGMAFISH", "MAGMA_FISH"),
+		Map.entry("MAGMA_FISH", "MAGMA_FISH"),
+		Map.entry("SILVER_MAGMAFISH", "MAGMA_FISH_SILVER"),
+		Map.entry("SILVER_MAGMA_FISH", "MAGMA_FISH_SILVER"),
+		Map.entry("MYCELIUM", "MYCEL"),
+		Map.entry("PUFFERFISH", "RAW_FISH-3"),
+		Map.entry("RAW_COD", "RAW_FISH"),
+		Map.entry("RAW_FISH", "RAW_FISH"),
+		Map.entry("RAW_SALMON", "RAW_FISH-1"),
+		Map.entry("RED_SAND", "SAND-1"),
+		Map.entry("SULPHUR", "SULPHUR_ORE"),
+		Map.entry("TROPICAL_FISH", "RAW_FISH-2"),
+		Map.entry("CLOWNFISH", "RAW_FISH-2"),
+		Map.entry("PRISMARINE_CRYSTAL", "PRISMARINE_CRYSTALS"),
+		Map.entry("ENCHANTED_PRISMARINE_CRYSTAL", "ENCHANTED_PRISMARINE_CRYSTALS")
+	);
 
 	private SkyblockItemIds() {
 	}
@@ -71,6 +92,21 @@ public final class SkyblockItemIds {
 		if (alias != null) {
 			candidates.add(alias);
 		}
+	}
+
+	@Nullable
+	public static String guessFromDisplayName(String displayName) {
+		if (displayName == null) {
+			return null;
+		}
+
+		String stripped = Formatting.strip(displayName).trim();
+		if (stripped.isEmpty()) {
+			return null;
+		}
+
+		String guessed = stripped.toUpperCase(Locale.ROOT).replace(' ', '_');
+		return DISPLAY_NAME_ALIASES.getOrDefault(guessed, guessed);
 	}
 
 	@Nullable

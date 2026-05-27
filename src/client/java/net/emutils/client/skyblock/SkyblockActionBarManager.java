@@ -1,7 +1,6 @@
 package net.emutils.client.skyblock;
 
-import net.emutils.client.EMUtilsClient;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -26,25 +25,20 @@ public final class SkyblockActionBarManager {
 	}
 
 	public boolean active(MinecraftClient client) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null
-			&& config.skyblockEnabled()
-			&& config.skyblockStatsHudEnabled()
+		return EMSkyblockSettings.skyblockEnabled()
+			&& EMSkyblockSettings.skyblockStatsHudEnabled()
 			&& client != null
 			&& SkyblockFeatures.inSkyBlock(client);
 	}
 
 	public boolean shouldHideActionBarStats(MinecraftClient client) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null
-			&& config.skyblockStatsHideActionBar()
+		return EMSkyblockSettings.skyblockStatsHideActionBar()
 			&& active(client)
 			&& stats.hasAny();
 	}
 
 	public Text processOverlayMessage(Text message) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		EMUtilsConfig config = EMUtilsClient.config();
 		boolean inSkyBlock = SkyblockFeatures.inSkyBlock(client);
 
 		if (active(client)) {
@@ -54,7 +48,7 @@ public final class SkyblockActionBarManager {
 				stats = stats.merge(parsed);
 			}
 
-			if (config != null && config.skyblockHideActionBarMessages() && inSkyBlock) {
+			if (EMSkyblockSettings.skyblockHideActionBarMessages() && inSkyBlock) {
 				return Text.empty();
 			}
 
@@ -70,7 +64,7 @@ public final class SkyblockActionBarManager {
 			return Text.literal(stripped);
 		}
 
-		if (config != null && config.skyblockHideActionBarMessages() && inSkyBlock) {
+		if (EMSkyblockSettings.skyblockHideActionBarMessages() && inSkyBlock) {
 			return Text.empty();
 		}
 

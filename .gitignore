@@ -13,6 +13,7 @@ out/
 
 # Local AI assistant files
 .antigravitycli/
+AGENTS.md
 .codex/
 .claude/
 .copilot/
@@ -21,6 +22,9 @@ out/
 
 # Local project notes
 guides.md
+
+# Local reference
+ideas/
 
 # OS files
 .DS_Store

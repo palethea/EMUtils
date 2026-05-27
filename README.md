@@ -29,9 +29,11 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
 - **Spotify player** — show the current Spotify track in the pause menu and optional HUD overlay when Spotify is running (Linux, macOS, and Windows).
 - **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
-- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...** or with the settings keybind, with grouped controls, color pickers, sliders, reset actions, and classic per-feature screens still available. Mod Menu integration is supported when Mod Menu is installed.
+- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind for normal Minecraft QoL. Open **Options → EMSkyblock...** or the EMSkyblock button in the hub footer for Hypixel SkyBlock settings powered by MoulConfig. Mod Menu shows a chooser between both hubs when Mod Menu is installed.
 
 ### Hypixel Skyblock
+
+SkyBlock settings live in a dedicated **EMSkyblock** hub (`~/.config/emutils/emskyblock.json`). Existing SkyBlock values in `config.json` migrate automatically on first launch.
 
 - **Storage previews** — remember what's in your backpacks and ender chest, and show a quick preview when you hover the menu item. Each Skyblock profile keeps its own saves.
 - **Skyblock detection** — track Hypixel Skyblock state from tab list, scoreboard, and `/locraw` data so Skyblock features stay profile-aware and server-aware.

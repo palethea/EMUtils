@@ -21,9 +21,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.skyblock.SkyblockContext;
+import net.emutils.client.skyblock.SkyblockPriceFetchTask;
 import net.emutils.client.skyblock.SkyblockPriceExecutor;
 import net.emutils.client.skyblock.SkyblockPriceNeeds;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public final class BazaarPriceFetcher {
 	private static final Logger LOGGER = LoggerFactory.getLogger("emutils.bazaar");
 	private static final String API_URL = "https://api.hypixel.net/v2/skyblock/bazaar";
+	private static final String AVERAGE_24H_URL = "https://lb.tricked.dev/averages/1day.json?type=bazaar";
 	private static final long FETCH_INTERVAL_MS = 120_000L;
 	private static final Gson GSON = new Gson();
 
@@ -38,90 +41,84 @@ public final class BazaarPriceFetcher {
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
+	private final SkyblockPriceFetchTask<LoadedPrices> fetchTask = new SkyblockPriceFetchTask<>(
+		LOGGER,
+		"Bazaar",
+		FETCH_INTERVAL_MS,
+		BazaarPriceFetcher::shouldRun,
+		this::fetch,
+		this::publish
+	);
 
+	private volatile Map<String, BazaarProductPrice> hypixelProducts = Map.of();
 	private volatile Map<String, BazaarProductPrice> products = Map.of();
-	private long lastFetchAttemptMs;
-	private long fetchStartedMs;
-	private boolean fetching;
 
 	public int productCount() {
-		return products.size();
+		return hypixelProducts.size();
 	}
 
 	public Optional<BazaarProductPrice> price(String productId) {
 		return Optional.ofNullable(products.get(productId));
 	}
 
-	public void tick(@Nullable MinecraftClient client) {
-		recoverStuckFetch();
-		if (!shouldRun(client)) {
-			return;
-		}
-
-		long now = System.currentTimeMillis();
-		if (fetching || now - lastFetchAttemptMs < FETCH_INTERVAL_MS) {
-			return;
-		}
-
-		startFetch();
+	public boolean isListed(ItemStack stack) {
+		String productId = SkyblockItemIds.bazaarId(stack);
+		return productId != null && hypixelProducts.containsKey(productId);
 	}
 
-	public void fetchNow() {
-		recoverStuckFetch();
-		if (fetching) {
-			return;
-		}
+	public void tick(@Nullable MinecraftClient client) {
+		fetchTask.tick(client);
+	}
 
-		lastFetchAttemptMs = 0L;
-		startFetch();
+	public void fetchNow(@Nullable MinecraftClient client) {
+		fetchTask.fetchNow(client);
 	}
 
 	public void requestImmediateFetch() {
-		lastFetchAttemptMs = 0L;
+		fetchTask.requestImmediateFetch();
 	}
 
 	public void clear() {
+		hypixelProducts = Map.of();
 		products = Map.of();
-		lastFetchAttemptMs = 0L;
-		fetchStartedMs = 0L;
-		fetching = false;
+		fetchTask.clear();
 	}
 
-	private void recoverStuckFetch() {
-		if (!fetching || fetchStartedMs <= 0L) {
-			return;
-		}
-
-		if (System.currentTimeMillis() - fetchStartedMs > 45_000L) {
-			LOGGER.warn("Bazaar price fetch timed out; allowing retry.");
-			fetching = false;
-			fetchStartedMs = 0L;
-		}
-	}
-
-	private boolean shouldRun(@Nullable MinecraftClient client) {
-		if (!SkyblockPriceNeeds.anyEnabled(EMUtilsClient.config())) {
+	private static boolean shouldRun(@Nullable MinecraftClient client) {
+		if (!SkyblockPriceNeeds.anyEnabled()) {
 			return false;
 		}
 
 		return SkyblockContext.onHypixel(client);
 	}
 
-	private void startFetch() {
-		lastFetchAttemptMs = System.currentTimeMillis();
-		fetchStartedMs = lastFetchAttemptMs;
-		fetching = true;
-		CompletableFuture.runAsync(this::fetch, SkyblockPriceExecutor.EXECUTOR)
-			.whenComplete((ignored, throwable) -> {
-				fetching = false;
-				fetchStartedMs = 0L;
-				if (throwable != null) {
-					LOGGER.warn("Bazaar price fetch failed.", throwable);
-				}
-			});
+	private LoadedPrices fetch() {
+		CompletableFuture<Map<String, BazaarProductPrice>> productsFuture = CompletableFuture.supplyAsync(
+			this::fetchHypixelProducts,
+			SkyblockPriceExecutor.EXECUTOR
+		);
+		CompletableFuture<Map<String, Double>> averagesFuture = CompletableFuture.supplyAsync(
+			() -> fetchJsonMap(AVERAGE_24H_URL),
+			SkyblockPriceExecutor.EXECUTOR
+		);
+
+		Map<String, BazaarProductPrice> hypixel = productsFuture.join();
+		Map<String, Double> averages = averagesFuture.join();
+		return new LoadedPrices(hypixel, mergeProducts(hypixel, averages), averages.size());
 	}
 
-	private void fetch() {
+	private boolean publish(LoadedPrices loaded) {
+		hypixelProducts = loaded.hypixelProducts().isEmpty() ? Map.of() : loaded.hypixelProducts();
+		if (loaded.products().isEmpty()) {
+			return false;
+		}
+
+		products = loaded.products();
+		LOGGER.info("Loaded {} bazaar products ({} with 24h averages).", loaded.products().size(), loaded.averageCount());
+		return true;
+	}
+
+	private Map<String, BazaarProductPrice> fetchHypixelProducts() {
 		try {
 			HttpRequest request = HttpRequest.newBuilder(URI.create(API_URL))
 				.timeout(Duration.ofSeconds(30))
@@ -133,24 +130,100 @@ public final class BazaarPriceFetcher {
 			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
 				LOGGER.warn("Bazaar API request failed with HTTP {}.", response.statusCode());
-				return;
+				return Map.of();
 			}
 
-			Map<String, BazaarProductPrice> parsed = parseResponse(response.body());
-			if (!parsed.isEmpty()) {
-				products = parsed;
-				LOGGER.info("Loaded {} bazaar products.", parsed.size());
-			} else {
-				LOGGER.warn("Bazaar API returned no products.");
-				lastFetchAttemptMs = System.currentTimeMillis() - FETCH_INTERVAL_MS + 5_000L;
-			}
+			return parseResponse(response.body());
 		} catch (IOException | InterruptedException exception) {
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
 			LOGGER.warn("Bazaar API fetch failed.", exception);
-			lastFetchAttemptMs = System.currentTimeMillis() - FETCH_INTERVAL_MS + 5_000L;
+			return Map.of();
 		}
+	}
+
+	private Map<String, Double> fetchJsonMap(String url) {
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+				.timeout(Duration.ofSeconds(30))
+				.header("Accept", "application/json")
+				.header("User-Agent", "mwsk75996/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
+				.GET()
+				.build();
+
+			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				LOGGER.warn("Bazaar price request failed with HTTP {} for {}.", response.statusCode(), url);
+				return Map.of();
+			}
+
+			return parsePriceMap(response.body());
+		} catch (IOException | InterruptedException exception) {
+			if (exception instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
+			LOGGER.warn("Bazaar price fetch failed for {}.", url, exception);
+			return Map.of();
+		}
+	}
+
+	private static Map<String, BazaarProductPrice> mergeProducts(
+		Map<String, BazaarProductPrice> prices,
+		Map<String, Double> averages24h
+	) {
+		if (prices.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, BazaarProductPrice> merged = new HashMap<>(prices.size());
+		for (Map.Entry<String, BazaarProductPrice> entry : prices.entrySet()) {
+			BazaarProductPrice existing = entry.getValue();
+			double average = averages24h.getOrDefault(entry.getKey(), 0.0D);
+			merged.put(
+				entry.getKey(),
+				new BazaarProductPrice(
+					existing.buyPrice(),
+					existing.sellPrice(),
+					existing.instantBuyPrice(),
+					existing.instantSellPrice(),
+					average
+				)
+			);
+		}
+
+		return Map.copyOf(merged);
+	}
+
+	private static Map<String, Double> parsePriceMap(String body) {
+		JsonObject root;
+		try {
+			root = GSON.fromJson(body, JsonObject.class);
+		} catch (JsonParseException exception) {
+			LOGGER.warn("Bazaar average API returned malformed JSON.", exception);
+			return Map.of();
+		}
+
+		if (root == null || root.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, Double> result = new HashMap<>();
+		for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
+			if (!entry.getValue().isJsonPrimitive()) {
+				continue;
+			}
+
+			try {
+				double value = entry.getValue().getAsDouble();
+				if (value > 0.0D) {
+					result.put(entry.getKey(), value);
+				}
+			} catch (NumberFormatException | UnsupportedOperationException ignored) {
+			}
+		}
+
+		return Map.copyOf(result);
 	}
 
 	private static Map<String, BazaarProductPrice> parseResponse(String body) {
@@ -167,7 +240,12 @@ public final class BazaarPriceFetcher {
 			return Map.of();
 		}
 
-		if (root == null || !root.get("success").getAsBoolean()) {
+		if (root == null) {
+			return Map.of();
+		}
+
+		JsonElement success = root.get("success");
+		if (success == null || !success.isJsonPrimitive() || !success.getAsBoolean()) {
 			return Map.of();
 		}
 
@@ -178,6 +256,10 @@ public final class BazaarPriceFetcher {
 
 		Map<String, BazaarProductPrice> result = new HashMap<>();
 		for (Map.Entry<String, JsonElement> entry : productsObject.entrySet()) {
+			if (!entry.getValue().isJsonObject()) {
+				continue;
+			}
+
 			BazaarProductPrice price = parseProduct(entry.getValue().getAsJsonObject());
 			if (price != null) {
 				result.put(entry.getKey(), price);
@@ -262,7 +344,7 @@ public final class BazaarPriceFetcher {
 			instantSell = sell;
 		}
 
-		return new BazaarProductPrice(buy, sell, instantBuy, instantSell);
+		return new BazaarProductPrice(buy, sell, instantBuy, instantSell, 0.0D);
 	}
 
 	private static double minPriceFromSummary(JsonReader reader) throws IOException {
@@ -337,7 +419,7 @@ public final class BazaarPriceFetcher {
 			instantSell = sell;
 		}
 
-		return new BazaarProductPrice(buy, sell, instantBuy, instantSell);
+		return new BazaarProductPrice(buy, sell, instantBuy, instantSell, 0.0D);
 	}
 
 	private static double minPrice(@Nullable JsonArray summary) {
@@ -370,5 +452,16 @@ public final class BazaarPriceFetcher {
 		}
 
 		return max;
+	}
+
+	private record LoadedPrices(
+		Map<String, BazaarProductPrice> hypixelProducts,
+		Map<String, BazaarProductPrice> products,
+		int averageCount
+	) {
+		private LoadedPrices {
+			hypixelProducts = hypixelProducts.isEmpty() ? Map.of() : Map.copyOf(hypixelProducts);
+			products = products.isEmpty() ? Map.of() : Map.copyOf(products);
+		}
 	}
 }

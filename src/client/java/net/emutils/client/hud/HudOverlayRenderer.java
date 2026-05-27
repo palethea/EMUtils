@@ -83,11 +83,24 @@ public final class HudOverlayRenderer {
 		int panelWidth,
 		int panelHeight
 	) {
+		renderPanel(context, client, config, x, y, panelWidth, panelHeight, config.hudBackgroundOpacity());
+	}
+
+	public static void renderPanel(
+		DrawContext context,
+		MinecraftClient client,
+		EMUtilsConfig config,
+		int x,
+		int y,
+		int panelWidth,
+		int panelHeight,
+		int opacityPercent
+	) {
 		List<HudOverlayLine> mainLines = mainLines(config);
 		boolean showMemory = config.hudShowMemory();
 		TextRenderer textRenderer = client.textRenderer;
 		boolean showIcons = config.hudShowIcons();
-		drawPanelBackground(context, x, y, panelWidth, panelHeight, config.hudBackgroundOpacity());
+		drawPanelBackground(context, x, y, panelWidth, panelHeight, opacityPercent);
 		drawLines(context, textRenderer, mainLines, showIcons, x + PADDING_X, y + PADDING_Y);
 
 		if (showMemory) {
@@ -129,29 +142,24 @@ public final class HudOverlayRenderer {
 			return;
 		}
 
-		TextRenderer textRenderer = client.textRenderer;
 		int panelWidth = unscaledPanelWidth();
 		int panelHeight = unscaledPanelHeight(config);
-		float scale = config.hudScale() / 100.0F;
-		HudOverlayPlacement.PanelDimensions dimensions = HudOverlayPlacement.hudOverlayDimensions(config);
-		if (dimensions.height() <= 0 && !HudLayoutManager.isEditing()) {
-			return;
-		}
-
-		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			HudElementId.INFO_OVERLAY,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions,
 			client
 		);
+		if (layout.dimensions().height() <= 0 && !HudLayoutManager.isEditing()) {
+			return;
+		}
 
 		context.getMatrices().pushMatrix();
 		try {
-			context.getMatrices().translate(position.x(), position.y());
-			context.getMatrices().scale(scale, scale);
-			renderPanel(context, client, config, 0, 0, panelWidth, panelHeight);
+			context.getMatrices().translate(layout.position().x(), layout.position().y());
+			context.getMatrices().scale(layout.scaleFactor(), layout.scaleFactor());
+			renderPanel(context, client, config, 0, 0, panelWidth, panelHeight, layout.opacityPercent());
 		} finally {
 			context.getMatrices().popMatrix();
 		}

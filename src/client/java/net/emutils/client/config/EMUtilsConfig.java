@@ -10,6 +10,7 @@ import net.emutils.client.death.DeathWaypointCoordinateFormat;
 import net.emutils.client.hud.HudOverlayAnchor;
 import net.emutils.client.hud.layout.HudCustomLayoutEntry;
 import net.emutils.client.hud.layout.HudElementId;
+import net.emutils.client.hud.layout.HudLayoutManager;
 import net.emutils.client.hud.layout.HudLayoutMode;
 import net.emutils.client.inventory.BoundSlotColor;
 import net.emutils.client.inventory.SlotLockColor;
@@ -38,8 +39,8 @@ public final class EMUtilsConfig {
 	public static final int HUD_BACKGROUND_OPACITY_MAX = 100;
 	public static final int INVENTORY_PREVIEW_OPACITY_MIN = 25;
 	public static final int INVENTORY_PREVIEW_OPACITY_MAX = 100;
-	public static final int HUD_SCALE_MIN = 50;
-	public static final int HUD_SCALE_MAX = 150;
+	public static final int HUD_LAYOUT_SCALE_MIN = HudLayoutManager.LAYOUT_SCALE_MIN;
+	public static final int HUD_LAYOUT_SCALE_MAX = HudLayoutManager.LAYOUT_SCALE_MAX;
 	public static final int ZOOM_AMOUNT_MIN = 2;
 	public static final int ZOOM_AMOUNT_MAX = 10;
 	public static final int ZOOM_SCROLL_AMOUNT_MAX = 100;
@@ -399,7 +400,7 @@ public final class EMUtilsConfig {
 		return hudCustomLayout.get(id.configKey());
 	}
 
-	public void setHudCustomLayoutEntry(HudElementId id, int x, int y) {
+	public void setHudCustomLayoutEntry(HudElementId id, int x, int y, int scale, int opacity) {
 		if (hudCustomLayout == null) {
 			hudCustomLayout = new LinkedHashMap<>();
 		}
@@ -407,6 +408,24 @@ public final class EMUtilsConfig {
 		HudCustomLayoutEntry entry = hudCustomLayout.computeIfAbsent(id.configKey(), ignored -> new HudCustomLayoutEntry());
 		entry.setX(x);
 		entry.setY(y);
+		entry.setScale(HudLayoutManager.clampLayoutScale(scale));
+		entry.setOpacity(HudLayoutManager.clampLayoutOpacity(opacity));
+	}
+
+	public int legacyHudScale() {
+		return hudScale == null ? 100 : hudScale;
+	}
+
+	public int legacySpotifyHudScale() {
+		return spotifyHudScale == null ? 100 : spotifyHudScale;
+	}
+
+	public int legacySkyblockStatsHudScale() {
+		return skyblockStatsHudScale == null ? 100 : skyblockStatsHudScale;
+	}
+
+	public int legacyEstimatedItemValueHudScale() {
+		return estimatedItemValueHudScale == null ? 100 : estimatedItemValueHudScale;
 	}
 
 	public Map<String, HudCustomLayoutEntry> hudCustomLayout() {
@@ -522,15 +541,6 @@ public final class EMUtilsConfig {
 
 	public void setHudBackgroundOpacity(int opacity) {
 		hudBackgroundOpacity = clampHudBackgroundOpacity(opacity);
-		save();
-	}
-
-	public int hudScale() {
-		return clampHudScale(hudScale == null ? 100 : hudScale);
-	}
-
-	public void setHudScale(int scale) {
-		hudScale = clampHudScale(scale);
 		save();
 	}
 
@@ -897,15 +907,6 @@ public final class EMUtilsConfig {
 		save();
 	}
 
-	public int spotifyHudScale() {
-		return clampHudScale(spotifyHudScale == null ? 100 : spotifyHudScale);
-	}
-
-	public void setSpotifyHudScale(int scale) {
-		spotifyHudScale = clampHudScale(scale);
-		save();
-	}
-
 	public boolean inventoryToolsEnabled() {
 		return inventoryToolsEnabled == null || inventoryToolsEnabled;
 	}
@@ -1032,15 +1033,6 @@ public final class EMUtilsConfig {
 		save();
 	}
 
-	public int skyblockStatsHudScale() {
-		return clampHudScale(skyblockStatsHudScale);
-	}
-
-	public void setSkyblockStatsHudScale(int scale) {
-		skyblockStatsHudScale = clampHudScale(scale);
-		save();
-	}
-
 	public boolean estimatedItemValueHudEnabled() {
 		return estimatedItemValueHudEnabled != null && estimatedItemValueHudEnabled;
 	}
@@ -1056,15 +1048,6 @@ public final class EMUtilsConfig {
 
 	public void setEstimatedItemValueHudAnchor(HudOverlayAnchor anchor) {
 		estimatedItemValueHudAnchor = (anchor == null ? HudOverlayAnchor.TOP_LEFT : anchor).name();
-		save();
-	}
-
-	public int estimatedItemValueHudScale() {
-		return clampHudScale(estimatedItemValueHudScale);
-	}
-
-	public void setEstimatedItemValueHudScale(int scale) {
-		estimatedItemValueHudScale = clampHudScale(scale);
 		save();
 	}
 
@@ -1291,7 +1274,6 @@ public final class EMUtilsConfig {
 	public void resetHudDefaults() {
 		hudOverlay = Boolean.FALSE;
 		hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
-		hudLayoutMode = HudLayoutMode.ANCHOR.name();
 		hudCustomLayout = new LinkedHashMap<>();
 		hudShowCoordinates = Boolean.TRUE;
 		hudShowChunkRegion = Boolean.TRUE;
@@ -1357,7 +1339,6 @@ public final class EMUtilsConfig {
 	public void resetSpotifyPlayerDefaults() {
 		spotifyPlayerEnabled = Boolean.FALSE;
 		spotifyHudOverlay = Boolean.FALSE;
-		spotifyHudAnchor = HudOverlayAnchor.BOTTOM_RIGHT.name();
 		spotifyHudBackgroundOpacity = 100;
 		spotifyHudScale = 100;
 		save();
@@ -1518,7 +1499,9 @@ public final class EMUtilsConfig {
 		deathWaypointSize = migrateDeathWaypointSize(deathWaypointSize);
 		deathWaypointSize = deathWaypointSize();
 		hudBackgroundOpacity = hudBackgroundOpacity();
-		hudScale = hudScale();
+		if (hudScale == null) {
+			hudScale = 100;
+		}
 		if (zoomEnabled == null) {
 			zoomEnabled = Boolean.TRUE;
 		}
@@ -1603,7 +1586,9 @@ public final class EMUtilsConfig {
 		}
 		spotifyHudAnchor = spotifyHudAnchor().name();
 		spotifyHudBackgroundOpacity = spotifyHudBackgroundOpacity();
-		spotifyHudScale = spotifyHudScale();
+		if (spotifyHudScale == null) {
+			spotifyHudScale = 100;
+		}
 		if (inventoryToolsEnabled == null) {
 			inventoryToolsEnabled = Boolean.TRUE;
 		}
@@ -1663,12 +1648,16 @@ public final class EMUtilsConfig {
 		}
 		skyblockStatsHudAnchor = skyblockStatsHudAnchor().name();
 		skyblockStatsHudBackgroundOpacity = skyblockStatsHudBackgroundOpacity();
-		skyblockStatsHudScale = skyblockStatsHudScale();
+		if (skyblockStatsHudScale == null) {
+			skyblockStatsHudScale = 100;
+		}
 		if (estimatedItemValueHudEnabled == null) {
 			estimatedItemValueHudEnabled = Boolean.FALSE;
 		}
 		estimatedItemValueHudAnchor = estimatedItemValueHudAnchor().name();
-		estimatedItemValueHudScale = estimatedItemValueHudScale();
+		if (estimatedItemValueHudScale == null) {
+			estimatedItemValueHudScale = 100;
+		}
 		estimatedItemValueEnchantmentsCap = estimatedItemValueEnchantmentsCap();
 		if (estimatedItemValueShowExactTotal == null) {
 			estimatedItemValueShowExactTotal = Boolean.FALSE;
@@ -1735,10 +1724,6 @@ public final class EMUtilsConfig {
 
 	private static int clampHudBackgroundOpacity(int opacity) {
 		return Math.max(HUD_BACKGROUND_OPACITY_MIN, Math.min(HUD_BACKGROUND_OPACITY_MAX, opacity));
-	}
-
-	private static int clampHudScale(int scale) {
-		return Math.max(HUD_SCALE_MIN, Math.min(HUD_SCALE_MAX, scale));
 	}
 
 	private static int clampEstimatedItemValueEnchantmentsCap(Integer cap) {

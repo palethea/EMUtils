@@ -4,6 +4,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.emutils.client.skyblock.sacks.SkyblockSackTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
@@ -105,6 +106,8 @@ public final class SkyblockManager {
 			applyProfileHint(SkyblockTextUtils.normalizeProfile(playing.group(1)), client);
 		}
 
+		SkyblockSackTracker.onChat(message);
+		net.emutils.client.skyblock.fishing.FishingChatHandler.onChat(message);
 		return false;
 	}
 

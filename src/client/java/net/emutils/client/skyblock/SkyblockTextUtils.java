@@ -19,6 +19,20 @@ public final class SkyblockTextUtils {
 		return Formatting.strip(text.getString()).trim();
 	}
 
+	/** Legacy string with section-sign formatting codes (Hypixel armor stand names). */
+	public static String formattedLegacy(@Nullable Text text) {
+		if (text == null) {
+			return "";
+		}
+
+		return text.getString();
+	}
+
+	/** Like {@link #formattedLegacy(Text)} but strips reset codes and outer whitespace (SkyHanni-style). */
+	public static String formattedLegacyLessResets(@Nullable Text text) {
+		return formattedLegacy(text).replaceAll("(?i)§r", "").trim();
+	}
+
 	public static String strip(@Nullable String text) {
 		if (text == null) {
 			return "";

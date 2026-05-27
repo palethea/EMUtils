@@ -3,9 +3,10 @@ package net.emutils.client.skyblock.bazaar;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.emutils.client.skyblock.SkyblockFeatures;
 import net.emutils.client.skyblock.SkyblockPriceTooltipUtils;
+import net.emutils.client.skyblock.SkyblockSoulboundUtils;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
@@ -16,63 +17,74 @@ public final class BazaarTooltipHelper {
 	private BazaarTooltipHelper() {
 	}
 
-	public static List<Text> appendLines(ItemStack stack, List<Text> tooltip) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || !config.skyblockEnabled() || !config.bazaarTooltipsEnabled()) {
-			return tooltip;
+	public static void collectLines(ItemStack stack, List<Text> tooltip, List<Text> target) {
+		if (!EMSkyblockSettings.skyblockEnabled() || !EMSkyblockSettings.bazaarTooltipsEnabled()) {
+			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (!SkyblockFeatures.inSkyBlock(client)) {
-			return tooltip;
+			return;
+		}
+		if (SkyblockSoulboundUtils.shouldHide(EMSkyblockSettings.bazaarHideOnSoulbound(), tooltip)) {
+			return;
+		}
+		if (!EMUtilsClient.skyblockPrices().bazaar().isListed(stack)) {
+			return;
 		}
 
 		String productId = SkyblockItemIds.bazaarId(stack);
 		if (productId == null) {
-			return tooltip;
+			return;
 		}
 
-		BazaarProductPrice price = EMUtilsClient.bazaarPrices()
+		BazaarProductPrice price = EMUtilsClient.skyblockPrices().bazaar()
 			.price(productId)
 			.orElse(null);
-		if (price == null) {
-			return tooltip;
+		if (price == null || !price.hasAny()) {
+			return;
 		}
 
-		boolean stackTotal = SkyblockPriceTooltipUtils.isShiftDown(client);
+		boolean stackTotal = SkyblockPriceTooltipUtils.useStackTotal(client);
 		double multiplier = SkyblockPriceTooltipUtils.totalAmount(tooltip, stack, stackTotal);
-		List<Text> lines = buildLines(price, multiplier);
-		return SkyblockPriceTooltipUtils.appendSection(tooltip, lines);
+		target.addAll(buildLines(price, multiplier));
 	}
 
 	private static List<Text> buildLines(BazaarProductPrice price, double multiplier) {
 		List<Text> lines = new ArrayList<>(4);
-		if (price.buyPrice() > 0.0D) {
+		if (EMSkyblockSettings.bazaarShowBuyOrder() && price.buyPrice() > 0.0D) {
 			lines.add(SkyblockPriceTooltipUtils.priceLine(
-				Text.translatable(EMUtilsTexts.BAZAAR_BUY),
+				Text.translatable(EMUtilsTexts.BAZAAR_BUY_ORDER),
 				Formatting.GRAY,
 				price.buyPrice() * multiplier
 			));
 		}
-		if (price.sellPrice() > 0.0D) {
+		if (EMSkyblockSettings.bazaarShowSellOrder() && price.sellPrice() > 0.0D) {
 			lines.add(SkyblockPriceTooltipUtils.priceLine(
-				Text.translatable(EMUtilsTexts.BAZAAR_SELL),
+				Text.translatable(EMUtilsTexts.BAZAAR_SELL_ORDER),
 				Formatting.GRAY,
 				price.sellPrice() * multiplier
 			));
 		}
-		if (price.instantBuyPrice() > 0.0D) {
+		if (EMSkyblockSettings.bazaarShowInstantBuy() && price.instantBuyPrice() > 0.0D) {
 			lines.add(SkyblockPriceTooltipUtils.priceLine(
 				Text.translatable(EMUtilsTexts.BAZAAR_INSTANT_BUY),
 				Formatting.GRAY,
 				price.instantBuyPrice() * multiplier
 			));
 		}
-		if (price.instantSellPrice() > 0.0D) {
+		if (EMSkyblockSettings.bazaarShowInstantSell() && price.instantSellPrice() > 0.0D) {
 			lines.add(SkyblockPriceTooltipUtils.priceLine(
 				Text.translatable(EMUtilsTexts.BAZAAR_INSTANT_SELL),
 				Formatting.GRAY,
 				price.instantSellPrice() * multiplier
+			));
+		}
+		if (EMSkyblockSettings.bazaarShowAverage24h() && price.average24h() > 0.0D) {
+			lines.add(SkyblockPriceTooltipUtils.priceLine(
+				Text.translatable(EMUtilsTexts.BAZAAR_AVERAGE_24H),
+				Formatting.GRAY,
+				price.average24h() * multiplier
 			));
 		}
 		return lines;

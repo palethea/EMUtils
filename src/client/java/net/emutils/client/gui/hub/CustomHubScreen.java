@@ -52,10 +52,7 @@ public final class CustomHubScreen extends Screen {
 	private int contentHeight;
 	private int controlsWidth;
 	@Nullable
-	private HubActionButtonWidget classicButton;
-	@Nullable
 	private HubHeaderButtonWidget doneButton;
-	private int classicButtonY;
 
 	public CustomHubScreen(Screen parent) {
 		super(Text.translatable(EMUtilsTexts.HUB_MODERN_TITLE));
@@ -74,22 +71,9 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private void rebuildFooterButtons() {
-		if (classicButton != null) {
-			remove(classicButton);
-		}
-
 		if (doneButton != null) {
 			remove(doneButton);
 		}
-
-		classicButtonY = panelY + panelHeight - BOTTOM_PADDING - HubPanelTheme.ROW_HEIGHT;
-		classicButton = addDrawableChild(new HubActionButtonWidget(
-			sidebarX,
-			classicButtonY,
-			sidebarWidth,
-			Text.translatable(EMUtilsTexts.HUB_CLASSIC_OPEN),
-			button -> client.setScreen(new net.emutils.client.gui.EMUtilsHubScreen(this))
-		));
 
 		Text doneLabel = ScreenTexts.DONE;
 		int doneWidth = HubHeaderButtonWidget.widthFor(doneLabel);
@@ -103,8 +87,12 @@ public final class CustomHubScreen extends Screen {
 		updateSidebarScroll();
 	}
 
+	private int sidebarListBottom() {
+		return panelY + panelHeight - BOTTOM_PADDING - FOOTER_BUTTON_HEIGHT - BOTTOM_PADDING;
+	}
+
 	private int sidebarListHeight() {
-		return Math.max(0, classicButtonY - SIDEBAR_CLASSIC_PADDING - sidebarY);
+		return Math.max(0, sidebarListBottom() - SIDEBAR_CLASSIC_PADDING - sidebarY);
 	}
 
 	private int sidebarContentHeight() {
@@ -306,7 +294,6 @@ public final class CustomHubScreen extends Screen {
 		context.disableScissor();
 
 		renderChromeWidget(context, resetButton, mouseX, mouseY, delta);
-		renderChromeWidget(context, classicButton, mouseX, mouseY, delta);
 		renderChromeWidget(context, doneButton, mouseX, mouseY, delta);
 
 		if (maxScroll > 0) {
@@ -331,7 +318,7 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private void renderSidebar(DrawContext context, int mouseX, int mouseY) {
-		int sidebarListBottom = classicButtonY - SIDEBAR_CLASSIC_PADDING;
+		int sidebarListBottom = sidebarListBottom() - SIDEBAR_CLASSIC_PADDING;
 		context.enableScissor(panelX + 1, sidebarY, panelX + SIDEBAR_WIDTH - 1, sidebarListBottom);
 		int y = sidebarY - sidebarScrollOffset;
 		for (HubCategory category : categories) {
@@ -373,11 +360,11 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private boolean handleSidebarClick(double mouseX, double mouseY) {
-		if (mouseY >= classicButtonY - SIDEBAR_CLASSIC_PADDING) {
+		if (mouseY >= sidebarListBottom() - SIDEBAR_CLASSIC_PADDING) {
 			return false;
 		}
 
-		if (mouseY < sidebarY || mouseY > classicButtonY - SIDEBAR_CLASSIC_PADDING) {
+		if (mouseY < sidebarY || mouseY > sidebarListBottom() - SIDEBAR_CLASSIC_PADDING) {
 			return false;
 		}
 
@@ -559,7 +546,7 @@ public final class CustomHubScreen extends Screen {
 			&& mouseX >= panelX
 			&& mouseX < panelX + SIDEBAR_WIDTH
 			&& mouseY >= sidebarY
-			&& mouseY < classicButtonY - SIDEBAR_CLASSIC_PADDING) {
+			&& mouseY < sidebarListBottom() - SIDEBAR_CLASSIC_PADDING) {
 			sidebarScrollOffset = MathHelper.clamp(sidebarScrollOffset - scrollStep, 0, sidebarMaxScroll);
 			return true;
 		}

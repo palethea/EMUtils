@@ -7,11 +7,12 @@ import net.minecraft.util.Formatting;
 public final class EMUtilsTexts {
 	public static final String NAME = "emutils.name";
 	public static final String OPTIONS_BUTTON = "emutils.options.button";
-	public static final String OPTIONS_MODERN_BUTTON = "emutils.options.modern_button";
+	public static final String OPTIONS_SKYBLOCK_BUTTON = "emutils.options.skyblock_button";
 
 	public static final String HUB_MODERN_TITLE = "emutils.hub.modern_title";
 	public static final String HUB_MODERN_OPEN = "emutils.hub.modern_open";
 	public static final String HUB_CLASSIC_OPEN = "emutils.hub.classic_open";
+	public static final String HUB_EMSKYBLOCK_OPEN = "emutils.hub.emskyblock_open";
 	public static final String HUB_OPEN_PACK_MANAGER = "emutils.hub.open_pack_manager";
 	public static final String HUB_OPEN_SCRIPT_MANAGER = "emutils.hub.open_script_manager";
 
@@ -35,6 +36,7 @@ public final class EMUtilsTexts {
 	public static final String HUB_SPOTIFY_PLAYER = "emutils.hub.spotify_player";
 	public static final String HUB_INVENTORY_TOOLS = "emutils.hub.inventory_tools";
 	public static final String HUB_SKYBLOCK = "emutils.hub.skyblock";
+	public static final String HUB_EMSKYBLOCK = "emutils.hub.emskyblock";
 	public static final String HUB_SCRIPT_MANAGER = "emutils.hub.script_manager";
 
 	public static final String SCREEN_DEATH_WAYPOINTS = "emutils.screen.death_waypoints";
@@ -52,6 +54,10 @@ public final class EMUtilsTexts {
 	public static final String SCREEN_SPOTIFY_PLAYER = "emutils.screen.spotify_player";
 	public static final String SCREEN_INVENTORY_TOOLS = "emutils.screen.inventory_tools";
 	public static final String SCREEN_SKYBLOCK = "emutils.screen.skyblock";
+	public static final String SCREEN_EMSKYBLOCK = "emutils.screen.emskyblock";
+	public static final String SCREEN_SETTINGS_CHOOSER = "emutils.screen.settings_chooser";
+	public static final String SETTINGS_CHOOSER_EMUTILS = "emutils.settings_chooser.emutils";
+	public static final String SETTINGS_CHOOSER_EMSKYBLOCK = "emutils.settings_chooser.emskyblock";
 	public static final String SCREEN_SCRIPT_MANAGER = "emutils.screen.script_manager";
 
 	public static final String OPTION_AUTO_RECONNECT = "emutils.option.auto_reconnect";
@@ -94,6 +100,7 @@ public final class EMUtilsTexts {
 	public static final String HUD_LAYOUT_EDITOR_HINT = "emutils.hud.layout_editor.hint";
 	public static final String HUD_LAYOUT_EDITOR_SAVE = "emutils.hud.layout_editor.save";
 	public static final String HUD_LAYOUT_EDITOR_CANCEL = "emutils.hud.layout_editor.cancel";
+	public static final String HUD_LAYOUT_EDITOR_RESET_ALL = "emutils.hud.layout_editor.reset_all";
 	public static final String HUD_LAYOUT_MODE_ANCHOR = "emutils.hud.layout_mode.anchor";
 	public static final String HUD_LAYOUT_MODE_CUSTOM = "emutils.hud.layout_mode.custom";
 	public static final String HUD_ELEMENT_INFO_OVERLAY = "emutils.hud.element.info_overlay";
@@ -101,6 +108,9 @@ public final class EMUtilsTexts {
 	public static final String HUD_ELEMENT_INVENTORY_PREVIEW = "emutils.hud.element.inventory_preview";
 	public static final String HUD_ELEMENT_SKYBLOCK_STATS = "emutils.hud.element.skyblock_stats";
 	public static final String HUD_ELEMENT_ESTIMATED_ITEM_VALUE = "emutils.hud.element.estimated_item_value";
+	public static final String HUD_ELEMENT_FISHING_HOOK = "emutils.hud.element.fishing_hook";
+	public static final String HUD_ELEMENT_SEA_CREATURE_TRACKER = "emutils.hud.element.sea_creature_tracker";
+	public static final String HUD_ELEMENT_FISHING_PROFIT_TRACKER = "emutils.hud.element.fishing_profit_tracker";
 	public static final String OPTION_SKYBLOCK_HIDE_ACTION_BAR = "emutils.option.skyblock_hide_action_bar";
 	public static final String OPTION_SKYBLOCK_HIDE_INVENTORY_STATUS_EFFECTS = "emutils.option.skyblock_hide_inventory_status_effects";
 	public static final String OPTION_HUD_COORDINATES = "emutils.option.hud_coordinates";
@@ -167,10 +177,11 @@ public final class EMUtilsTexts {
 	public static final String OPTION_ESTIMATED_ITEM_VALUE_ENCHANTMENTS_CAP = "emutils.option.estimated_item_value_enchantments_cap";
 	public static final String OPTION_ESTIMATED_ITEM_VALUE_EXACT_TOTAL = "emutils.option.estimated_item_value_exact_total";
 	public static final String OPTION_SKYBLOCK_HIDE_VANILLA_STATUS = "emutils.option.skyblock_hide_vanilla_status";
-	public static final String BAZAAR_BUY = "emutils.bazaar.buy";
-	public static final String BAZAAR_SELL = "emutils.bazaar.sell";
+	public static final String BAZAAR_BUY_ORDER = "emutils.bazaar.buy_order";
+	public static final String BAZAAR_SELL_ORDER = "emutils.bazaar.sell_order";
 	public static final String BAZAAR_INSTANT_BUY = "emutils.bazaar.instant_buy";
 	public static final String BAZAAR_INSTANT_SELL = "emutils.bazaar.instant_sell";
+	public static final String BAZAAR_AVERAGE_24H = "emutils.bazaar.average_24h";
 	public static final String AUCTION_LOWEST_BIN = "emutils.auction.lowest_bin";
 	public static final String AUCTION_AVERAGE_24H = "emutils.auction.average_24h";
 	public static final String ESTIMATED_ITEM_VALUE_TOTAL = "emutils.eiv.total";

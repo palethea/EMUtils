@@ -3,7 +3,6 @@ package net.emutils.client.spotify;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
-import net.emutils.client.hud.HudOverlayPlacement;
 import net.emutils.client.hud.layout.HudElementId;
 import net.emutils.client.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -45,23 +44,20 @@ public final class SpotifyHudRenderer {
 			return;
 		}
 
-		float scale = config.spotifyHudScale() / 100.0F;
-		HudOverlayPlacement.PanelDimensions dimensions = HudOverlayPlacement.spotifyHudDimensions(config);
-		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			HudElementId.SPOTIFY,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions,
 			client
 		);
 		SpotifyPlayerOverlay.renderHud(
 			context,
-			position.x(),
-			position.y(),
+			layout.position().x(),
+			layout.position().y(),
 			EMUtilsClient.spotify().state(),
-			config.spotifyHudBackgroundOpacity(),
-			scale
+			layout.opacityPercent(),
+			layout.scaleFactor()
 		);
 	}
 }

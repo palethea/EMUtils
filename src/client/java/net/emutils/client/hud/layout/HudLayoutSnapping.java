@@ -22,7 +22,21 @@ public final class HudLayoutSnapping {
 		}
 	}
 
-	public static HudOverlayPlacement.Position snap(
+	public enum GuideAxis {
+		HORIZONTAL,
+		VERTICAL
+	}
+
+	public record GuideLine(GuideAxis axis, int coordinate) {
+	}
+
+	public record SnapResult(HudOverlayPlacement.Position position, List<GuideLine> guides) {
+		public static SnapResult free(HudOverlayPlacement.Position position) {
+			return new SnapResult(position, List.of());
+		}
+	}
+
+	public static SnapResult snap(
 		HudOverlayPlacement.Position candidate,
 		Bounds moving,
 		Collection<Bounds> others,
@@ -33,6 +47,7 @@ public final class HudLayoutSnapping {
 		int y = candidate.y();
 		List<Integer> xTargets = new ArrayList<>();
 		List<Integer> yTargets = new ArrayList<>();
+		List<GuideLine> guides = new ArrayList<>();
 
 		xTargets.add(HudOverlayPlacement.MARGIN);
 		xTargets.add((screenWidth - moving.width()) / 2);
@@ -55,26 +70,37 @@ public final class HudLayoutSnapping {
 			yTargets.add(other.y() + (other.height() - moving.height()) / 2);
 		}
 
-		x = snapAxis(x, xTargets);
-		y = snapAxis(y, yTargets);
-		return new HudOverlayPlacement.Position(
-			clamp(x, 0, Math.max(0, screenWidth - moving.width())),
-			clamp(y, 0, Math.max(0, screenHeight - moving.height()))
-		);
+		AxisSnap xSnap = snapAxis(x, xTargets);
+		AxisSnap ySnap = snapAxis(y, yTargets);
+		if (xSnap.snapped()) {
+			guides.add(new GuideLine(GuideAxis.VERTICAL, xSnap.guideCoordinate()));
+		}
+		if (ySnap.snapped()) {
+			guides.add(new GuideLine(GuideAxis.HORIZONTAL, ySnap.guideCoordinate()));
+		}
+
+		int clampedX = clamp(xSnap.value(), 0, Math.max(0, screenWidth - moving.width()));
+		int clampedY = clamp(ySnap.value(), 0, Math.max(0, screenHeight - moving.height()));
+		return new SnapResult(new HudOverlayPlacement.Position(clampedX, clampedY), List.copyOf(guides));
 	}
 
-	private static int snapAxis(int value, List<Integer> targets) {
+	private record AxisSnap(int value, boolean snapped, int guideCoordinate) {
+	}
+
+	private static AxisSnap snapAxis(int value, List<Integer> targets) {
 		int best = value;
 		int bestDistance = SNAP_DISTANCE + 1;
+		int guide = value;
 		for (int target : targets) {
 			int distance = Math.abs(value - target);
 			if (distance <= SNAP_DISTANCE && distance < bestDistance) {
 				bestDistance = distance;
 				best = target;
+				guide = target;
 			}
 		}
 
-		return best;
+		return new AxisSnap(best, bestDistance <= SNAP_DISTANCE, guide);
 	}
 
 	private static int clamp(int value, int min, int max) {
