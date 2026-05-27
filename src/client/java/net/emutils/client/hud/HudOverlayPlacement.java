@@ -2,6 +2,8 @@ package net.emutils.client.hud;
 
 import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
+import net.emutils.client.hud.layout.HudElementId;
+import net.emutils.client.hud.layout.HudLayoutManager;
 
 public final class HudOverlayPlacement {
 	public static final int MARGIN = 8;
@@ -16,9 +18,19 @@ public final class HudOverlayPlacement {
 	public record Position(int x, int y) {
 	}
 
-	public static PanelDimensions spotifyHudDimensions(EMUtilsConfig config) {
-		float scale = config.spotifyHudScale() / 100.0F;
-		return scaled(SpotifyPlayerOverlay.hudPanelWidth(), SpotifyPlayerOverlay.hudPanelHeight(), scale);
+	public static PanelDimensions scaled(PanelDimensions unscaled, int scalePercent) {
+		float scale = scalePercent / 100.0F;
+		return new PanelDimensions(
+			Math.round(unscaled.width() * scale),
+			Math.round(unscaled.height() * scale)
+		);
+	}
+
+	public static PanelDimensions spotifyHudDimensions(int scalePercent) {
+		return scaled(
+			new PanelDimensions(SpotifyPlayerOverlay.hudPanelWidth(), SpotifyPlayerOverlay.hudPanelHeight()),
+			scalePercent
+		);
 	}
 
 	public static Position spotifyHudPosition(
@@ -32,10 +44,13 @@ public final class HudOverlayPlacement {
 	}
 
 	public static PanelDimensions hudOverlayDimensions(EMUtilsConfig config) {
-		float scale = config.hudScale() / 100.0F;
-		int panelWidth = HudOverlayRenderer.unscaledPanelWidth();
-		int panelHeight = HudOverlayRenderer.unscaledPanelHeight(config);
-		return scaled(panelWidth, panelHeight, scale);
+		return scaled(
+			new PanelDimensions(
+				HudOverlayRenderer.unscaledPanelWidth(),
+				HudOverlayRenderer.unscaledPanelHeight(config)
+			),
+			HudLayoutManager.layoutScale(HudElementId.INFO_OVERLAY, config)
+		);
 	}
 
 	public static Position hudOverlayPosition(
@@ -51,7 +66,8 @@ public final class HudOverlayPlacement {
 			return position;
 		}
 
-		PanelDimensions spotifyDimensions = spotifyHudDimensions(config);
+		int spotifyScale = HudLayoutManager.layoutScale(HudElementId.SPOTIFY, config);
+		PanelDimensions spotifyDimensions = spotifyHudDimensions(spotifyScale);
 		Position spotifyPosition = spotifyHudPosition(config, screenWidth, screenHeight, spotifyDimensions);
 		int stackedY = anchor.isTop()
 			? spotifyPosition.y() + spotifyDimensions.height() + STACK_GAP
@@ -69,9 +85,5 @@ public final class HudOverlayPlacement {
 			anchor.x(screenWidth, dimensions.width(), MARGIN),
 			anchor.y(screenHeight, dimensions.height(), MARGIN)
 		);
-	}
-
-	private static PanelDimensions scaled(int width, int height, float scale) {
-		return new PanelDimensions(Math.round(width * scale), Math.round(height * scale));
 	}
 }

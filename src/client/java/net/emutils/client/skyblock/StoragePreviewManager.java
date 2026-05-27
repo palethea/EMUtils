@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -210,10 +210,8 @@ public final class StoragePreviewManager {
 	}
 
 	private boolean enabled(@Nullable MinecraftClient client) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null
-			&& config.skyblockEnabled()
-			&& config.storagePreviewEnabled()
+		return EMSkyblockSettings.skyblockEnabled()
+			&& EMSkyblockSettings.storagePreviewEnabled()
 			&& SkyblockFeatures.inSkyBlock(client);
 	}
 

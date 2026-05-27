@@ -4,7 +4,6 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.hud.layout.HudElementId;
 import net.emutils.client.hud.layout.HudLayoutManager;
-import net.emutils.client.hud.HudOverlayPlacement;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -59,29 +58,29 @@ public final class InventoryPreviewRenderer {
 			return;
 		}
 
-		HudOverlayPlacement.PanelDimensions dimensions = new HudOverlayPlacement.PanelDimensions(
-			ShulkerStylePanelRenderer.WIDTH,
-			ShulkerStylePanelRenderer.HEIGHT
-		);
-		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			HudElementId.INVENTORY_PREVIEW,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions,
 			client
 		);
-		int x = position.x();
-		int y = position.y();
-		float opacity = Math.min(100, Math.max(0, config.inventoryPreviewOpacity())) / 100.0F;
-		ShulkerStylePanelRenderer.drawPanel(context, x, y, opacity);
-		ShulkerStylePanelRenderer.drawMainInventory(
-			context,
-			client.textRenderer,
-			x,
-			y,
-			client.player.getInventory().getMainStacks(),
-			opacity
-		);
+		float opacity = layout.opacityPercent() / 100.0F;
+		context.getMatrices().pushMatrix();
+		try {
+			context.getMatrices().translate(layout.position().x(), layout.position().y());
+			context.getMatrices().scale(layout.scaleFactor(), layout.scaleFactor());
+			ShulkerStylePanelRenderer.drawPanel(context, 0, 0, opacity);
+			ShulkerStylePanelRenderer.drawMainInventory(
+				context,
+				client.textRenderer,
+				0,
+				0,
+				client.player.getInventory().getMainStacks(),
+				opacity
+			);
+		} finally {
+			context.getMatrices().popMatrix();
+		}
 	}
 }

@@ -1,8 +1,7 @@
 package net.emutils.client.skyblock.eiv;
 
 import java.util.List;
-import net.emutils.client.EMUtilsClient;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.emutils.client.skyblock.SkyblockFeatures;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
@@ -29,9 +28,8 @@ public final class EstimatedItemValueManager {
 	}
 
 	public EstimatedItemValueResult updateHoveredItem(ItemStack stack, List<Text> tooltip) {
-		EMUtilsConfig config = EMUtilsClient.config();
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (config == null || !config.skyblockEnabled() || !config.estimatedItemValueHudEnabled()) {
+		if (!EMSkyblockSettings.skyblockEnabled() || !EMSkyblockSettings.estimatedItemValueHudEnabled()) {
 			clear();
 			return EstimatedItemValueResult.empty();
 		}
@@ -45,7 +43,7 @@ public final class EstimatedItemValueManager {
 			return EstimatedItemValueResult.empty();
 		}
 
-		current = EstimatedItemValueCalculator.calculate(stack, tooltip, config);
+		current = EstimatedItemValueCalculator.calculate(stack, tooltip);
 		lastHoverMs = current.isEmpty() ? 0L : System.currentTimeMillis();
 		return current;
 	}

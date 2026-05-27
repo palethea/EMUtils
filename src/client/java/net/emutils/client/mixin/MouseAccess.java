@@ -8,6 +8,12 @@ import net.minecraft.client.Mouse;
 @Mixin(Mouse.class)
 public interface MouseAccess {
 	@Accessor("x")
+	double emutils$getX();
+
+	@Accessor("y")
+	double emutils$getY();
+
+	@Accessor("x")
 	void emutils$setX(double x);
 
 	@Accessor("y")

@@ -1,5 +1,6 @@
 package net.emutils.client.skyblock;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.skyblock.auction.AuctionTooltipHelper;
 import net.emutils.client.skyblock.bazaar.BazaarTooltipHelper;
@@ -12,9 +13,10 @@ public final class SkyblockTooltipPrices {
 	}
 
 	public static List<Text> appendLines(ItemStack stack, List<Text> tooltip) {
-		return NpcTooltipHelper.appendLines(
-			stack,
-			AuctionTooltipHelper.appendLines(stack, BazaarTooltipHelper.appendLines(stack, tooltip))
-		);
+		List<Text> addonLines = new ArrayList<>();
+		BazaarTooltipHelper.collectLines(stack, tooltip, addonLines);
+		AuctionTooltipHelper.collectLines(stack, tooltip, addonLines);
+		NpcTooltipHelper.collectLines(stack, tooltip, addonLines);
+		return SkyblockPriceTooltipUtils.appendAddonBlock(tooltip, addonLines);
 	}
 }

@@ -16,7 +16,6 @@ import net.emutils.client.gui.minescript.ScriptManagerScreen;
 import net.emutils.client.gui.packs.PackManagerScreen;
 import net.emutils.client.gui.reconnect.AutoReconnectSettingsScreen;
 import net.emutils.client.gui.screenshot.ScreenshotSettingsScreen;
-import net.emutils.client.gui.skyblock.SkyblockSettingsScreen;
 import net.emutils.client.gui.spotify.SpotifyPlayerSettingsScreen;
 import net.emutils.client.gui.tweaks.TweaksSettingsScreen;
 import net.emutils.client.gui.zoom.ZoomSettingsScreen;
@@ -52,7 +51,6 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		adder.add(navButton(EMUtilsTexts.HUB_PACK_MANAGER, () -> EMUtilsClient.config().packManagerEnabled(), PackManagerScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_CAPES, () -> EMUtilsClient.config().capesEnabled(), CapesSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_INVENTORY_TOOLS, () -> EMUtilsClient.config().inventoryToolsEnabled(), InventoryToolsSettingsScreen::new));
-		adder.add(navButton(EMUtilsTexts.HUB_SKYBLOCK, () -> EMUtilsClient.config().skyblockEnabled(), SkyblockSettingsScreen::new));
 		adder.add(optionalNavButton(
 			EMUtilsTexts.HUB_SCRIPT_MANAGER,
 			MinescriptCompat::isLoaded,

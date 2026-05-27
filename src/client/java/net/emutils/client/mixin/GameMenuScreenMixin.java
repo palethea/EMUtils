@@ -1,5 +1,6 @@
 package net.emutils.client.mixin;
 
+import java.util.ArrayList;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.gui.hub.CustomHubScreen;
 import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
@@ -12,6 +13,7 @@ import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,6 +29,8 @@ public abstract class GameMenuScreenMixin extends Screen {
 	private static final int BUTTON_WIDTH = 140;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int BUTTON_MARGIN = 8;
+	private static final String SERVER_LINKS_KEY = "menu.server_links";
+	private static final String MODMENU_TITLE_KEY = "modmenu.title";
 
 	@Unique
 	private ButtonWidget emutils$clearWaypointsButton;
@@ -34,12 +38,16 @@ public abstract class GameMenuScreenMixin extends Screen {
 	@Unique
 	private SpotifyPlayerOverlay emutils$spotifyOverlay;
 
+	@Unique
+	private ButtonWidget emutils$hubButton;
+
 	protected GameMenuScreenMixin(Text title) {
 		super(title);
 	}
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void emutils$init(CallbackInfo ci) {
+		emutils$hubButton = null;
 		emutils$layoutGameMenuButtons();
 		emutils$initClearWaypointsButton();
 		emutils$initSpotifyPlayer();
@@ -56,6 +64,10 @@ public abstract class GameMenuScreenMixin extends Screen {
 			SpotifyTrackState state = EMUtilsClient.spotify().state();
 			emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(state));
 			emutils$spotifyOverlay.syncPlaybackState(state);
+		}
+
+		if (emutils$hubButton == null) {
+			emutils$layoutGameMenuButtons();
 		}
 	}
 
@@ -85,26 +97,55 @@ public abstract class GameMenuScreenMixin extends Screen {
 
 		int leftX = width / 2 - FULL_BUTTON_LEFT;
 		int rightX = width / 2 + HALF_BUTTON_RIGHT;
+		ButtonWidget modsButton = null;
+		boolean removedServerLinks = false;
 
-		for (var child : children()) {
+		for (var child : new ArrayList<>(children())) {
 			if (!(child instanceof ButtonWidget button)) {
 				continue;
 			}
 
-			if (!button.getMessage().getString().startsWith("Mods") || button.getWidth() < MIN_FULL_MODS_WIDTH) {
+			if (emutils$isServerLinksButton(button)) {
+				remove(button);
+				removedServerLinks = true;
 				continue;
 			}
 
-			int y = button.getY();
-			int height = button.getHeight();
-			button.setPosition(leftX, y);
-			button.setDimensions(HALF_BUTTON_WIDTH, height);
-			addDrawableChild(ButtonWidget.builder(
-				Text.translatable(EMUtilsTexts.HUB_TITLE),
-				open -> MinecraftClient.getInstance().setScreen(new CustomHubScreen(this))
-			).dimensions(rightX, y, HALF_BUTTON_WIDTH, height).build());
+			if (emutils$isModsButton(button)) {
+				modsButton = button;
+			}
+		}
+
+		if (modsButton == null) {
 			return;
 		}
+
+		int y = modsButton.getY();
+		int height = modsButton.getHeight();
+		modsButton.setPosition(leftX, y);
+		if (modsButton.getWidth() >= MIN_FULL_MODS_WIDTH || removedServerLinks) {
+			modsButton.setDimensions(HALF_BUTTON_WIDTH, height);
+		}
+		emutils$hubButton = addDrawableChild(ButtonWidget.builder(
+			Text.translatable(EMUtilsTexts.HUB_TITLE),
+			open -> MinecraftClient.getInstance().setScreen(new CustomHubScreen(this))
+		).dimensions(rightX, y, HALF_BUTTON_WIDTH, height).build());
+	}
+
+	@Unique
+	private static boolean emutils$isServerLinksButton(ButtonWidget button) {
+		return emutils$hasTranslationKey(button.getMessage(), SERVER_LINKS_KEY);
+	}
+
+	@Unique
+	private static boolean emutils$isModsButton(ButtonWidget button) {
+		return emutils$hasTranslationKey(button.getMessage(), MODMENU_TITLE_KEY)
+			|| button.getMessage().getString().startsWith("Mods");
+	}
+
+	@Unique
+	private static boolean emutils$hasTranslationKey(Text text, String key) {
+		return text.getContent() instanceof TranslatableTextContent content && key.equals(content.getKey());
 	}
 
 	@Unique

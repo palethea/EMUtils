@@ -1,0 +1,32 @@
+accessWidener	v2	named
+accessible	method	net/minecraft/client/gui/DrawContext	enableScissor	(IIII)V
+accessible	field	net/minecraft/client/gui/DrawContext	scissorStack	Lnet/minecraft/client/gui/DrawContext$ScissorStack;
+accessible	class	net/minecraft/client/gui/DrawContext$ScissorStack
+accessible	method	net/minecraft/client/gui/DrawContext	fill	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/client/texture/TextureSetup;IIIIILjava/lang/Integer;)V
+accessible	field	net/minecraft/client/gui/DrawContext$ScissorStack	stack	Ljava/util/Deque;
+accessible	method	net/minecraft/client/gui/DrawContext	fill	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;IIIII)V
+accessible	method	net/minecraft/client/gui/DrawContext	drawTexturedQuad	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIFFFFI)V
+accessible	field	net/minecraft/client/render/GameRenderer	guiState	Lnet/minecraft/client/gui/render/state/GuiRenderState;
+accessible	field	net/minecraft/client/gl/RenderPipelines	GUI_SNIPPET	Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible	field	net/minecraft/client/gl/RenderPipelines	GUI	Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible	field	net/minecraft/client/gl/RenderPipelines	GUI_INVERT	Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible	field	net/minecraft/client/gl/RenderPipelines	GUI_TEXT_HIGHLIGHT	Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible	field	net/minecraft/client/gl/RenderPipelines	GUI_TEXTURED	Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible	field	net/minecraft/client/gui/DrawContext	state	Lnet/minecraft/client/gui/render/state/GuiRenderState;
+accessible	method	net/minecraft/client/gui/DrawContext	drawTexturedQuad	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lcom/mojang/blaze3d/textures/GpuTextureView;Lnet/minecraft/client/gl/GpuSampler;IIIIFFFFI)V
+accessible	method	net/minecraft/client/gui/DrawContext	disableScissor	()V
+accessible	method	net/minecraft/client/gui/DrawContext$ScissorStack	push	(Lnet/minecraft/client/gui/ScreenRect;)Lnet/minecraft/client/gui/ScreenRect;
+accessible	method	net/minecraft/client/gui/DrawContext$ScissorStack	pop	()Lnet/minecraft/client/gui/ScreenRect;
+accessible	method	net/minecraft/client/gui/DrawContext$ScissorStack	peekLast	()Lnet/minecraft/client/gui/ScreenRect;
+accessible	method	net/minecraft/client/gui/ScreenRect	intersection	(Lnet/minecraft/client/gui/ScreenRect;)Lnet/minecraft/client/gui/ScreenRect;
+accessible	method	net/minecraft/client/gui/ScreenRect	transformEachVertex	(Lorg/joml/Matrix3x2fc;)Lnet/minecraft/client/gui/ScreenRect;
+accessible	method	net/minecraft/client/gui/ScreenRect	getTop	()I
+accessible	method	net/minecraft/client/gui/ScreenRect	getBottom	()I
+accessible	method	net/minecraft/client/gui/ScreenRect	getLeft	()I
+accessible	method	net/minecraft/client/gui/ScreenRect	getRight	()I
+accessible	method	net/minecraft/client/texture/TextureSetup	empty	()Lnet/minecraft/client/texture/TextureSetup;
+accessible	method	net/minecraft/client/gui/render/state/GuiRenderState	addSimpleElement	(Lnet/minecraft/client/gui/render/state/SimpleGuiElementRenderState;)V
+accessible	method	net/minecraft/client/gui/render/GuiRenderer	startBuffer	(Lcom/mojang/blaze3d/pipeline/RenderPipeline;)Lnet/minecraft/client/render/BufferBuilder;
+accessible	method	net/minecraft/client/gui/render/GuiRenderer	endBuffer	(Lnet/minecraft/client/render/BufferBuilder;Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/client/texture/TextureSetup;Lnet/minecraft/client/gui/ScreenRect;)V
+accessible	method	net/minecraft/client/gui/render/state/SimpleGuiElementRenderState	setupVertices	(Lnet/minecraft/client/render/VertexConsumer;)V
+accessible	method	net/minecraft/client/render/VertexConsumer	vertex	(Lorg/joml/Matrix3x2fc;FF)Lnet/minecraft/client/render/VertexConsumer;

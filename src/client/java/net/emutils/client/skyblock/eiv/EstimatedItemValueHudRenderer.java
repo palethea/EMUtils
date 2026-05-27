@@ -3,7 +3,7 @@ package net.emutils.client.skyblock.eiv;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
-import net.emutils.client.hud.HudOverlayPlacement;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.emutils.client.hud.layout.HudElementId;
 import net.emutils.client.hud.layout.HudLayoutManager;
 import net.emutils.client.skyblock.SkyblockFeatures;
@@ -36,12 +36,12 @@ public final class EstimatedItemValueHudRenderer {
 	public static void register() {
 	}
 
-	public static int unscaledPanelWidth(EMUtilsConfig config) {
-		return measureWidth(MinecraftClient.getInstance().textRenderer, previewLines(config)) + PADDING_X * 2;
+	public static int unscaledPanelWidth(@SuppressWarnings("unused") EMUtilsConfig config) {
+		return measureWidth(MinecraftClient.getInstance().textRenderer, previewLines()) + PADDING_X * 2;
 	}
 
-	public static int unscaledPanelHeight(EMUtilsConfig config) {
-		List<EstimatedItemValueLine> lines = previewLines(config);
+	public static int unscaledPanelHeight(@SuppressWarnings("unused") EMUtilsConfig config) {
+		List<EstimatedItemValueLine> lines = previewLines();
 		if (lines.isEmpty()) {
 			return 0;
 		}
@@ -56,6 +56,17 @@ public final class EstimatedItemValueHudRenderer {
 		int x,
 		int y
 	) {
+		renderPanel(context, config, lines, x, y, EMSkyblockSettings.skyblockStatsHudBackgroundOpacity());
+	}
+
+	public static void renderPanel(
+		DrawContext context,
+		EMUtilsConfig config,
+		List<EstimatedItemValueLine> lines,
+		int x,
+		int y,
+		int opacityPercent
+	) {
 		if (lines.isEmpty()) {
 			return;
 		}
@@ -63,7 +74,7 @@ public final class EstimatedItemValueHudRenderer {
 		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
 		int panelWidth = measureWidth(textRenderer, lines) + PADDING_X * 2;
 		int panelHeight = PADDING_Y * 2 + lines.size() * ROW_HEIGHT;
-		drawPanelBackground(context, x, y, panelWidth, panelHeight, config.skyblockStatsHudBackgroundOpacity());
+		drawPanelBackground(context, x, y, panelWidth, panelHeight, opacityPercent);
 
 		int cursorY = y + PADDING_Y;
 		for (EstimatedItemValueLine line : lines) {
@@ -80,7 +91,7 @@ public final class EstimatedItemValueHudRenderer {
 		if (!(client.currentScreen instanceof HandledScreen<?>)) {
 			return;
 		}
-		if (!config.skyblockEnabled() || !config.estimatedItemValueHudEnabled()) {
+		if (!EMSkyblockSettings.skyblockEnabled() || !EMSkyblockSettings.estimatedItemValueHudEnabled()) {
 			return;
 		}
 		if (!SkyblockFeatures.inSkyBlock(client) && !HudLayoutManager.isEditing()) {
@@ -99,33 +110,25 @@ public final class EstimatedItemValueHudRenderer {
 		}
 
 		List<EstimatedItemValueLine> lines = result.lines();
-		int panelWidth = measureWidth(client.textRenderer, lines) + PADDING_X * 2;
-		int panelHeight = PADDING_Y * 2 + lines.size() * ROW_HEIGHT;
-		float scale = config.estimatedItemValueHudScale() / 100.0F;
-		HudOverlayPlacement.PanelDimensions dimensions = new HudOverlayPlacement.PanelDimensions(
-			Math.round(panelWidth * scale),
-			Math.round(panelHeight * scale)
-		);
-		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			HudElementId.ESTIMATED_ITEM_VALUE,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions,
 			client
 		);
 
 		context.getMatrices().pushMatrix();
 		try {
-			context.getMatrices().translate(position.x(), position.y());
-			context.getMatrices().scale(scale, scale);
-			renderPanel(context, config, lines, 0, 0);
+			context.getMatrices().translate(layout.position().x(), layout.position().y());
+			context.getMatrices().scale(layout.scaleFactor(), layout.scaleFactor());
+			renderPanel(context, config, lines, 0, 0, layout.opacityPercent());
 		} finally {
 			context.getMatrices().popMatrix();
 		}
 	}
 
-	public static List<EstimatedItemValueLine> previewLines(EMUtilsConfig config) {
+	public static List<EstimatedItemValueLine> previewLines() {
 		EstimatedItemValueResult result = EstimatedItemValueManager.get().current();
 		if (!result.isEmpty()) {
 			return result.lines();

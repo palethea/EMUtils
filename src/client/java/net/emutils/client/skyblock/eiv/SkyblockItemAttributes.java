@@ -11,8 +11,10 @@ import net.minecraft.nbt.NbtList;
 import net.emutils.client.skyblock.bazaar.SkyblockItemIds;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.emutils.client.skyblock.SkyblockTextUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.text.Text;
 import org.jspecify.annotations.Nullable;
 
 public final class SkyblockItemAttributes {
@@ -102,6 +104,43 @@ public final class SkyblockItemAttributes {
 		return getInt(extraAttributes(stack), "rarity_upgrades") > 0;
 	}
 
+	public static boolean isDungeonItem(java.util.List<Text> tooltip) {
+		for (Text line : tooltip) {
+			if (SkyblockTextUtils.strip(line).toUpperCase(Locale.ROOT).contains("DUNGEON")) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static int dungeonStarCount(ItemStack stack, java.util.List<Text> tooltip) {
+		NbtCompound extra = extraAttributes(stack);
+		if (extra == null) {
+			return 0;
+		}
+
+		int dungeonLevel = extra.getInt("dungeon_item_level").orElse(0);
+		if (dungeonLevel > 0) {
+			return dungeonLevel;
+		}
+
+		int upgradeLevel = extra.getInt("upgrade_level").orElse(0);
+		if (upgradeLevel > 0) {
+			return upgradeLevel;
+		}
+
+		return isDungeonItem(tooltip) ? 0 : 0;
+	}
+
+	public static int regularStarCount(int totalStars) {
+		return Math.min(5, Math.max(0, totalStars));
+	}
+
+	public static int masterStarCount(int totalStars) {
+		return Math.max(0, Math.min(5, totalStars - 5));
+	}
+
 	@Nullable
 	public static String powerScrollId(ItemStack stack) {
 		return getString(extraAttributes(stack), "power_ability_scroll");
@@ -164,6 +203,28 @@ public final class SkyblockItemAttributes {
 		}
 
 		return result.isEmpty() ? null : Map.copyOf(result);
+	}
+
+	@Nullable
+	public static AppliedRune appliedRune(ItemStack stack) {
+		NbtCompound extra = extraAttributes(stack);
+		if (extra == null) {
+			return null;
+		}
+
+		NbtCompound runes = extra.getCompound("runes").orElse(null);
+		if (runes == null || runes.isEmpty()) {
+			return null;
+		}
+
+		for (String runeKey : runes.getKeys()) {
+			int level = runes.getInt(runeKey).orElse(0);
+			if (level > 0) {
+				return new AppliedRune(runeKey, level);
+			}
+		}
+
+		return null;
 	}
 
 	public static List<GemstoneEntry> gemstones(ItemStack stack) {
@@ -243,6 +304,12 @@ public final class SkyblockItemAttributes {
 	public record GemstoneEntry(String type, String quality) {
 		public String productId() {
 			return gemstoneProductId(type, quality);
+		}
+	}
+
+	public record AppliedRune(String runeKey, int level) {
+		public String auctionProductId() {
+			return "RUNE-" + runeKey.toUpperCase(Locale.ROOT) + "-" + level;
 		}
 	}
 }

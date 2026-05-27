@@ -24,6 +24,7 @@ public final class EivGemstoneFormat {
 
 	private static String qualityColor(String quality) {
 		return switch (quality.toUpperCase(Locale.ROOT)) {
+			case "ROUGH" -> "§f";
 			case "FLAWED" -> "§a";
 			case "FINE" -> "§9";
 			case "FLAWLESS" -> "§5";
@@ -37,13 +38,13 @@ public final class EivGemstoneFormat {
 			case "JADE" -> "§a";
 			case "AMBER" -> "§6";
 			case "TOPAZ" -> "§e";
-			case "SAPPHIRE" -> "§9";
+			case "SAPPHIRE" -> "§b";
 			case "AMETHYST" -> "§5";
 			case "JASPER" -> "§d";
 			case "RUBY" -> "§c";
 			case "OPAL" -> "§f";
 			case "ONYX" -> "§8";
-			case "AQUAMARINE" -> "§b";
+			case "AQUAMARINE" -> "§3";
 			case "CITRINE" -> "§4";
 			case "PERIDOT" -> "§2";
 			default -> "§f";

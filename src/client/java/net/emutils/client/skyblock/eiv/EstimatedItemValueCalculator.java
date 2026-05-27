@@ -6,12 +6,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.emutils.client.skyblock.bazaar.SkyblockItemIds;
-import net.emutils.client.skyblock.eiv.EstimatedItemValueData.AlwaysActiveEnchant;
+import net.emutils.client.skyblock.SkyblockPrices.PriceResult;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueData.EndCapEntry;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueData.ReforgeEntry;
-import net.emutils.client.skyblock.eiv.EstimatedItemValuePriceService.PriceResult;
+import net.emutils.client.EMUtilsClient;
+import net.emutils.client.skyblock.eiv.EstimatedItemValueData.AlwaysActiveEnchant;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueResult.EstimatedItemValueLine;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -26,7 +27,7 @@ public final class EstimatedItemValueCalculator {
 	private EstimatedItemValueCalculator() {
 	}
 
-	public static EstimatedItemValueResult calculate(ItemStack stack, List<Text> tooltip, EMUtilsConfig config) {
+	public static EstimatedItemValueResult calculate(ItemStack stack, List<Text> tooltip) {
 		if (stack.isEmpty()) {
 			return EstimatedItemValueResult.empty();
 		}
@@ -40,9 +41,14 @@ public final class EstimatedItemValueCalculator {
 		String itemId = SkyblockItemAttributes.itemId(stack);
 		boolean enchantedBook = "ENCHANTED_BOOK".equalsIgnoreCase(SkyblockItemIds.hypixelId(stack));
 
+		ComponentResult stars = addStars(stack, itemId, tooltip);
+		ComponentResult masterStars = addMasterStars(stack, tooltip);
+		ComponentResult reforge = addReforge(stack, tooltip);
+		ComponentResult rune = addRune(stack);
+
 		double baseValue = 0.0D;
 		if (!enchantedBook) {
-			ComponentResult base = addBaseItem(itemId, config);
+			ComponentResult base = addBaseItem(stack, tooltip, itemId);
 			if (base.line() != null) {
 				lines.add(base.line());
 			}
@@ -50,31 +56,36 @@ public final class EstimatedItemValueCalculator {
 			total += base.value();
 		}
 
-		ComponentResult reforge = addReforge(stack, tooltip, config);
+		hasExtras |= appendComponents(lines, stars);
+		total += stars.value();
+		hasExtras |= appendComponents(lines, masterStars);
+		total += masterStars.value();
 		hasExtras |= appendComponents(lines, reforge);
 		total += reforge.value();
+		hasExtras |= appendComponents(lines, rune);
+		total += rune.value();
 
-		ComponentResult recombob = addRecombobulator(stack, config);
+		ComponentResult recombob = addRecombobulator(stack);
 		hasExtras |= appendComponents(lines, recombob);
 		total += recombob.value();
 
-		ComponentResult scroll = addPowerScroll(stack, config);
+		ComponentResult scroll = addPowerScroll(stack);
 		hasExtras |= appendComponents(lines, scroll);
 		total += scroll.value();
 
-		ComponentResult abilityScrolls = addAbilityScrolls(stack, config);
+		ComponentResult abilityScrolls = addAbilityScrolls(stack);
 		hasExtras |= appendComponents(lines, abilityScrolls);
 		total += abilityScrolls.value();
 
-		ComponentResult books = addHotPotatoBooks(stack, config);
+		ComponentResult books = addHotPotatoBooks(stack);
 		hasExtras |= appendComponents(lines, books);
 		total += books.value();
 
-		ComponentResult gemstones = addGemstones(stack, config);
+		ComponentResult gemstones = addGemstones(stack);
 		hasExtras |= appendComponents(lines, gemstones);
 		total += gemstones.value();
 
-		ComponentResult enchants = addEnchantments(stack, itemId, config);
+		ComponentResult enchants = addEnchantments(stack, itemId);
 		hasExtras |= appendComponents(lines, enchants);
 		total += enchants.value();
 
@@ -88,21 +99,23 @@ public final class EstimatedItemValueCalculator {
 		return new EstimatedItemValueResult(List.copyOf(lines), baseValue, total);
 	}
 
-	private static ComponentResult addBaseItem(@Nullable String itemId, EMUtilsConfig config) {
+	private static ComponentResult addBaseItem(ItemStack stack, List<Text> tooltip, @Nullable String itemId) {
 		String baseItemId = normalizeBaseItemId(itemId);
 		if (baseItemId == null) {
 			return ComponentResult.empty();
 		}
 
-		PriceResult price = EstimatedItemValuePriceService.price(baseItemId);
+		PriceResult price = EMUtilsClient.skyblockPrices().baseItemAuctionPrice(baseItemId);
 		if (!price.known()) {
 			return ComponentResult.empty();
 		}
 
-		String line = "§7Base item: " + baseItemDisplayName(baseItemId) + " " + EivCoinFormat.hudCoinBracket(price.amount());
+		double baseAmount = price.amount();
+		String line = "§7Base item: " + baseItemDisplayName(stack, tooltip, baseItemId)
+			+ " " + EivCoinFormat.hudCoinBracket(baseAmount);
 		return ComponentResult.single(
-			EstimatedItemValueLine.of(line, price.amount(), true),
-			price.amount()
+			EstimatedItemValueLine.of(line, baseAmount, true),
+			baseAmount
 		);
 	}
 
@@ -120,9 +133,15 @@ public final class EstimatedItemValueCalculator {
 		return normalized;
 	}
 
-	private static String baseItemDisplayName(String itemId) {
+	private static String baseItemDisplayName(ItemStack stack, List<Text> tooltip, String baseItemId) {
+		SkyblockItemRarity rarity = SkyblockItemRarity.fromTooltip(tooltip, SkyblockItemAttributes.isRecombobulated(stack));
+		String color = rarity != null ? rarity.colorCode() : "§f";
+		return color + displayNameFromItemId(baseItemId);
+	}
+
+	private static String displayNameFromItemId(String itemId) {
 		String[] parts = itemId.split("_");
-		StringBuilder builder = new StringBuilder("§6");
+		StringBuilder builder = new StringBuilder();
 		for (int index = 0; index < parts.length; index++) {
 			if (index > 0) {
 				builder.append(' ');
@@ -138,14 +157,102 @@ public final class EstimatedItemValueCalculator {
 		return " " + EivCoinFormat.hudCoinBracket(amount);
 	}
 
-	private static ComponentResult addReforge(ItemStack stack, List<Text> tooltip, EMUtilsConfig config) {
+	private static ComponentResult addStars(ItemStack stack, @Nullable String itemId, List<Text> tooltip) {
+		int totalStars = SkyblockItemAttributes.dungeonStarCount(stack, tooltip);
+		if (totalStars <= 0) {
+			return ComponentResult.empty();
+		}
+
+		int regularStars = SkyblockItemAttributes.regularStarCount(totalStars);
+		if (regularStars <= 0) {
+			return ComponentResult.empty();
+		}
+
+		return EivEssenceCosts.costsFor(itemId)
+			.map(costs -> buildStarLines("Stars", costs, regularStars))
+			.orElse(ComponentResult.empty());
+	}
+
+	private static ComponentResult addMasterStars(ItemStack stack, List<Text> tooltip) {
+		int totalStars = SkyblockItemAttributes.dungeonStarCount(stack, tooltip);
+		int masterStars = SkyblockItemAttributes.masterStarCount(totalStars);
+		if (masterStars <= 0) {
+			return ComponentResult.empty();
+		}
+
+		double total = EivEssenceCosts.masterStarsValue(masterStars);
+		List<EstimatedItemValueLine> lines = new ArrayList<>();
+		addSectionHeader(lines, "Master Stars (" + masterStars + "/5)", total);
+		return new ComponentResult(lines, total);
+	}
+
+	private static ComponentResult buildStarLines(String label, EivEssenceCosts.ItemEssenceCosts costs, int totalStars) {
+		EivEssenceCosts.PricedStarUpgrade priced = EivEssenceCosts.PricedStarUpgrade.price(costs, totalStars);
+		if (priced.upgrade().appliedStars() <= 0 || priced.totalValue() <= 0.0D) {
+			return ComponentResult.empty();
+		}
+
+		List<EstimatedItemValueLine> lines = new ArrayList<>();
+		addSectionHeader(
+			lines,
+			label + " (" + priced.upgrade().appliedStars() + "/" + priced.upgrade().maxStars() + ")",
+			priced.totalValue()
+		);
+
+		for (EivEssenceCosts.MaterialLine material : priced.materialLines()) {
+			lines.add(EstimatedItemValueLine.of(
+				" §7" + material.label() + priceSuffix(material.value()),
+				material.value(),
+				true
+			));
+		}
+
+		return new ComponentResult(lines, priced.totalValue());
+	}
+
+	private static ComponentResult addRune(ItemStack stack) {
+		String itemId = SkyblockItemAttributes.itemId(stack);
+		if (itemId != null && itemId.toUpperCase(Locale.ROOT).contains("RUNE")) {
+			return ComponentResult.empty();
+		}
+
+		SkyblockItemAttributes.AppliedRune rune = SkyblockItemAttributes.appliedRune(stack);
+		if (rune == null) {
+			return ComponentResult.empty();
+		}
+
+		PriceResult price = EMUtilsClient.skyblockPrices().price(rune.auctionProductId());
+		double value = price.known() ? price.amount() : 0.0D;
+		String label = formatRuneName(rune);
+		return ComponentResult.single(
+			EstimatedItemValueLine.of("§7Rune: §b" + label + priceSuffix(value), value, true),
+			value
+		);
+	}
+
+	private static String formatRuneName(SkyblockItemAttributes.AppliedRune rune) {
+		String[] parts = rune.runeKey().toLowerCase(Locale.ROOT).split("_");
+		StringBuilder builder = new StringBuilder();
+		for (int index = 0; index < parts.length; index++) {
+			if (index > 0) {
+				builder.append(' ');
+			}
+
+			builder.append(toTitle(parts[index]));
+		}
+
+		builder.append(" Rune ").append(toRoman(rune.level()));
+		return builder.toString();
+	}
+
+	private static ComponentResult addReforge(ItemStack stack, List<Text> tooltip) {
 		String modifier = SkyblockItemAttributes.reforgeModifier(stack);
 		ReforgeEntry reforge = EstimatedItemValueData.data().reforge(modifier);
 		if (reforge == null) {
 			return ComponentResult.empty();
 		}
 
-		PriceResult stonePrice = EstimatedItemValuePriceService.price(reforge.stoneId());
+		PriceResult stonePrice = EMUtilsClient.skyblockPrices().price(reforge.stoneId());
 		SkyblockItemRarity rarity = SkyblockItemRarity.fromTooltip(tooltip, SkyblockItemAttributes.isRecombobulated(stack));
 		Long applyCost = reforge.costFor(rarity);
 		double total = 0.0D;
@@ -172,12 +279,12 @@ public final class EstimatedItemValueCalculator {
 		return new ComponentResult(lines, total);
 	}
 
-	private static ComponentResult addRecombobulator(ItemStack stack, EMUtilsConfig config) {
+	private static ComponentResult addRecombobulator(ItemStack stack) {
 		if (!SkyblockItemAttributes.isRecombobulated(stack)) {
 			return ComponentResult.empty();
 		}
 
-		PriceResult price = EstimatedItemValuePriceService.price(RECOMBOBULATOR);
+		PriceResult price = EMUtilsClient.skyblockPrices().price(RECOMBOBULATOR);
 		double value = price.known() ? price.amount() : 0.0D;
 		return ComponentResult.single(
 			EstimatedItemValueLine.of("§7Recombobulated: §a✔" + priceSuffix(value), value, true),
@@ -185,7 +292,7 @@ public final class EstimatedItemValueCalculator {
 		);
 	}
 
-	private static ComponentResult addAbilityScrolls(ItemStack stack, EMUtilsConfig config) {
+	private static ComponentResult addAbilityScrolls(ItemStack stack) {
 		List<String> scrollIds = SkyblockItemAttributes.abilityScrollIds(stack);
 		if (scrollIds.isEmpty()) {
 			return ComponentResult.empty();
@@ -194,7 +301,7 @@ public final class EstimatedItemValueCalculator {
 		List<NamedPrice> priced = new ArrayList<>();
 		double total = 0.0D;
 		for (String scrollId : scrollIds) {
-			PriceResult price = EstimatedItemValuePriceService.price(scrollId);
+			PriceResult price = EMUtilsClient.skyblockPrices().price(scrollId);
 			double amount = price.known() ? price.amount() : 0.0D;
 			total += amount;
 			priced.add(new NamedPrice(formatScrollName(scrollId), 1, amount));
@@ -215,13 +322,13 @@ public final class EstimatedItemValueCalculator {
 		return new ComponentResult(lines, total);
 	}
 
-	private static ComponentResult addPowerScroll(ItemStack stack, EMUtilsConfig config) {
+	private static ComponentResult addPowerScroll(ItemStack stack) {
 		String scrollId = SkyblockItemAttributes.powerScrollId(stack);
 		if (scrollId == null) {
 			return ComponentResult.empty();
 		}
 
-		PriceResult price = EstimatedItemValuePriceService.price(scrollId);
+		PriceResult price = EMUtilsClient.skyblockPrices().price(scrollId);
 		double value = price.known() ? price.amount() : 0.0D;
 		String label = displayName(scrollId, scrollId);
 		return ComponentResult.single(
@@ -230,7 +337,7 @@ public final class EstimatedItemValueCalculator {
 		);
 	}
 
-	private static ComponentResult addHotPotatoBooks(ItemStack stack, EMUtilsConfig config) {
+	private static ComponentResult addHotPotatoBooks(ItemStack stack) {
 		Integer count = SkyblockItemAttributes.hotPotatoCount(stack);
 		if (count == null || count <= 0) {
 			return ComponentResult.empty();
@@ -242,14 +349,14 @@ public final class EstimatedItemValueCalculator {
 		List<EstimatedItemValueLine> lines = new ArrayList<>();
 
 		if (hpb > 0) {
-			PriceResult hpbPrice = EstimatedItemValuePriceService.price(HOT_POTATO_BOOK);
+			PriceResult hpbPrice = EMUtilsClient.skyblockPrices().price(HOT_POTATO_BOOK);
 			double value = hpbPrice.known() ? hpbPrice.amount() * hpb : 0.0D;
 			lines.add(EstimatedItemValueLine.of("§7HPB's: §e" + hpb + "§7/§e10" + priceSuffix(value), value, true));
 			total += value;
 		}
 
 		if (fuming > 0) {
-			PriceResult fumingPrice = EstimatedItemValuePriceService.price(FUMING_POTATO_BOOK);
+			PriceResult fumingPrice = EMUtilsClient.skyblockPrices().price(FUMING_POTATO_BOOK);
 			double value = fumingPrice.known() ? fumingPrice.amount() * fuming : 0.0D;
 			lines.add(EstimatedItemValueLine.of("§7Fuming: §e" + fuming + "§7/§e5" + priceSuffix(value), value, true));
 			total += value;
@@ -258,7 +365,7 @@ public final class EstimatedItemValueCalculator {
 		return new ComponentResult(lines, total);
 	}
 
-	private static ComponentResult addGemstones(ItemStack stack, EMUtilsConfig config) {
+	private static ComponentResult addGemstones(ItemStack stack) {
 		List<SkyblockItemAttributes.GemstoneEntry> gemstones = SkyblockItemAttributes.gemstones(stack);
 		if (gemstones.isEmpty()) {
 			return ComponentResult.empty();
@@ -272,7 +379,7 @@ public final class EstimatedItemValueCalculator {
 		List<NamedPrice> priced = new ArrayList<>();
 		double total = 0.0D;
 		for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-			PriceResult price = EstimatedItemValuePriceService.price(entry.getKey());
+			PriceResult price = EMUtilsClient.skyblockPrices().price(entry.getKey());
 			double lineTotal = price.known() ? price.amount() * entry.getValue() : 0.0D;
 			total += lineTotal;
 			priced.add(new NamedPrice(EivGemstoneFormat.displayName(entry.getKey()), entry.getValue(), lineTotal));
@@ -293,7 +400,7 @@ public final class EstimatedItemValueCalculator {
 		return new ComponentResult(lines, total);
 	}
 
-	private static ComponentResult addEnchantments(ItemStack stack, @Nullable String baseItemId, EMUtilsConfig config) {
+	private static ComponentResult addEnchantments(ItemStack stack, @Nullable String baseItemId) {
 		Map<String, Integer> enchantments = SkyblockItemAttributes.enchantments(stack);
 		if (enchantments == null || enchantments.isEmpty()) {
 			return ComponentResult.empty();
@@ -345,14 +452,14 @@ public final class EstimatedItemValueCalculator {
 		List<NamedPrice> priced = new ArrayList<>();
 		double total = 0.0D;
 		for (Map.Entry<String, Integer> entry : items.entrySet()) {
-			PriceResult price = EstimatedItemValuePriceService.price(entry.getKey());
+			PriceResult price = EMUtilsClient.skyblockPrices().price(entry.getKey());
 			double lineTotal = price.known() ? price.amount() * entry.getValue() : 0.0D;
 			total += lineTotal;
 			priced.add(new NamedPrice(formatEnchantName(entry.getKey()), entry.getValue(), lineTotal, entry.getKey()));
 		}
 
 		priced.sort(Comparator.comparingDouble(NamedPrice::total).reversed());
-		int cap = Math.max(1, config.estimatedItemValueEnchantmentsCap());
+		int cap = Math.max(1, EMSkyblockSettings.estimatedItemValueEnchantmentsCap());
 		List<EstimatedItemValueLine> lines = new ArrayList<>();
 		addSectionHeader(lines, "Enchantments", total);
 

@@ -5,7 +5,6 @@ import net.emutils.client.config.EMUtilsConfig;
 import net.emutils.client.gui.EMUtilsScreen;
 import net.emutils.client.gui.widget.ConfigToggleButton;
 import net.emutils.client.gui.widget.IntConfigSlider;
-import net.emutils.client.hud.HudOverlayAnchor;
 import net.emutils.client.hud.layout.HudLayoutManager;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
@@ -26,23 +25,11 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().hudOverlay(),
 			EMUtilsClient.config()::setHudOverlay
 		));
-		adder.add(ButtonWidget.builder(
-			Text.translatable(
-				EMUtilsTexts.OPTION_VALUE,
-				Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_MODE),
-				Text.translatable(EMUtilsClient.config().hudLayoutMode().labelKey())
-			),
-			button -> {
-				EMUtilsClient.config().setHudLayoutMode(EMUtilsClient.config().hudLayoutMode().next());
-				client.setScreen(new HudOverlaySettingsScreen(parent));
-			}
-		).width(SETTINGS_BUTTON_WIDTH).build());
 		adder.add(ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR), button -> {
 			if (client != null) {
 				HudLayoutManager.openEditor(client);
 			}
 		}).width(SETTINGS_BUTTON_WIDTH).build());
-		adder.add(positionButton());
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_HUD_SHOW_ICONS,
 			() -> EMUtilsClient.config().hudShowIcons(),
@@ -59,18 +46,6 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			EMUtilsConfig.HUD_BACKGROUND_OPACITY_MAX,
 			() -> EMUtilsClient.config().hudBackgroundOpacity(),
 			EMUtilsClient.config()::setHudBackgroundOpacity
-		));
-		adder.add(new IntConfigSlider(
-			0,
-			0,
-			SETTINGS_BUTTON_WIDTH,
-			20,
-			EMUtilsTexts.OPTION_HUD_SCALE,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_SCALE_MIN,
-			EMUtilsConfig.HUD_SCALE_MAX,
-			() -> EMUtilsClient.config().hudScale(),
-			EMUtilsClient.config()::setHudScale
 		));
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG,
@@ -127,20 +102,5 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			client.setScreen(new HudOverlaySettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
-
-	private ButtonWidget positionButton() {
-		return ButtonWidget.builder(positionMessage(), button -> {
-			HudOverlayAnchor next = EMUtilsClient.config().hudOverlayAnchor().next();
-			EMUtilsClient.config().setHudOverlayAnchor(next);
-			button.setMessage(positionMessage());
-		}).width(SETTINGS_BUTTON_WIDTH).build();
-	}
-
-	private static Text positionMessage() {
-		return Text.translatable(
-			EMUtilsTexts.OPTION_VALUE,
-			Text.translatable(EMUtilsTexts.OPTION_HUD_POSITION),
-			Text.translatable(EMUtilsClient.config().hudOverlayAnchor().labelKey())
-		);
-	}
 }
+

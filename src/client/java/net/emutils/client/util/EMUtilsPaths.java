@@ -35,6 +35,10 @@ public final class EMUtilsPaths {
 		return configDir().resolve("skyblock-storage.json");
 	}
 
+	public static Path emSkyblockConfigFile() {
+		return configDir().resolve("emskyblock.json");
+	}
+
 	public static Path debugDir() {
 		return configDir().resolve("debug");
 	}

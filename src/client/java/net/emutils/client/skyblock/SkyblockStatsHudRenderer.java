@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Locale;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.config.EMUtilsConfig;
-import net.emutils.client.hud.HudOverlayPlacement;
 import net.emutils.client.hud.layout.HudElementId;
 import net.emutils.client.hud.layout.HudLayoutManager;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -38,12 +38,12 @@ public final class SkyblockStatsHudRenderer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, ID, (context, tickCounter) -> render(context));
 	}
 
-	public static int unscaledPanelWidth(EMUtilsConfig config, SkyblockActionBarStats stats) {
-		return measureWidth(MinecraftClient.getInstance().textRenderer, config, stats) + PADDING_X * 2;
+	public static int unscaledPanelWidth(@SuppressWarnings("unused") EMUtilsConfig config, SkyblockActionBarStats stats) {
+		return measureWidth(MinecraftClient.getInstance().textRenderer, stats) + PADDING_X * 2;
 	}
 
-	public static int unscaledPanelHeight(EMUtilsConfig config, SkyblockActionBarStats stats) {
-		if (!hasVisibleStats(config, stats) && !HudLayoutManager.isEditing()) {
+	public static int unscaledPanelHeight(@SuppressWarnings("unused") EMUtilsConfig config, SkyblockActionBarStats stats) {
+		if (!hasVisibleStats(stats) && !HudLayoutManager.isEditing()) {
 			return 0;
 		}
 
@@ -52,16 +52,29 @@ public final class SkyblockStatsHudRenderer {
 
 	public static void renderPanel(
 		DrawContext context,
-		EMUtilsConfig config,
+		@SuppressWarnings("unused") EMUtilsConfig config,
 		SkyblockActionBarStats stats,
 		int x,
 		int y,
 		int panelWidth,
 		int panelHeight
 	) {
+		renderPanel(context, config, stats, x, y, panelWidth, panelHeight, EMSkyblockSettings.skyblockStatsHudBackgroundOpacity());
+	}
+
+	public static void renderPanel(
+		DrawContext context,
+		@SuppressWarnings("unused") EMUtilsConfig config,
+		SkyblockActionBarStats stats,
+		int x,
+		int y,
+		int panelWidth,
+		int panelHeight,
+		int opacityPercent
+	) {
 		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-		drawPanelBackground(context, x, y, panelWidth, panelHeight, config.skyblockStatsHudBackgroundOpacity());
-		drawStats(context, textRenderer, config, stats, x + PADDING_X, y + PADDING_Y);
+		drawPanelBackground(context, x, y, panelWidth, panelHeight, opacityPercent);
+		drawStats(context, textRenderer, stats, x + PADDING_X, y + PADDING_Y);
 	}
 
 	private static void render(DrawContext context) {
@@ -82,31 +95,25 @@ public final class SkyblockStatsHudRenderer {
 		}
 
 		SkyblockActionBarStats stats = previewStats(manager);
-		if (!hasVisibleStats(config, stats) && !HudLayoutManager.isEditing()) {
+		if (!hasVisibleStats(stats) && !HudLayoutManager.isEditing()) {
 			return;
 		}
 
 		int panelWidth = unscaledPanelWidth(config, stats);
 		int panelHeight = unscaledPanelHeight(config, stats);
-		float scale = config.skyblockStatsHudScale() / 100.0F;
-		HudOverlayPlacement.PanelDimensions dimensions = new HudOverlayPlacement.PanelDimensions(
-			Math.round(panelWidth * scale),
-			Math.round(panelHeight * scale)
-		);
-		HudOverlayPlacement.Position position = HudLayoutManager.resolve(
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			HudElementId.SKYBLOCK_STATS,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),
-			dimensions,
 			client
 		);
 
 		context.getMatrices().pushMatrix();
 		try {
-			context.getMatrices().translate(position.x(), position.y());
-			context.getMatrices().scale(scale, scale);
-			renderPanel(context, config, stats, 0, 0, panelWidth, panelHeight);
+			context.getMatrices().translate(layout.position().x(), layout.position().y());
+			context.getMatrices().scale(layout.scaleFactor(), layout.scaleFactor());
+			renderPanel(context, config, stats, 0, 0, panelWidth, panelHeight, layout.opacityPercent());
 		} finally {
 			context.getMatrices().popMatrix();
 		}
@@ -126,12 +133,11 @@ public final class SkyblockStatsHudRenderer {
 	private static void drawStats(
 		DrawContext context,
 		TextRenderer textRenderer,
-		EMUtilsConfig config,
 		SkyblockActionBarStats stats,
 		int x,
 		int y
 	) {
-		List<StatSegment> segments = visibleSegments(config, stats);
+		List<StatSegment> segments = visibleSegments(stats);
 		int cursorX = x;
 		for (StatSegment segment : segments) {
 			context.drawTextWithShadow(textRenderer, segment.icon(), cursorX, y, segment.color());
@@ -153,9 +159,9 @@ public final class SkyblockStatsHudRenderer {
 		return (scaledAlpha << 24) | (color & 0x00FFFFFF);
 	}
 
-	private static int measureWidth(TextRenderer textRenderer, EMUtilsConfig config, SkyblockActionBarStats stats) {
+	private static int measureWidth(TextRenderer textRenderer, SkyblockActionBarStats stats) {
 		int width = 0;
-		List<StatSegment> segments = visibleSegments(config, stats);
+		List<StatSegment> segments = visibleSegments(stats);
 		for (int index = 0; index < segments.size(); index++) {
 			StatSegment segment = segments.get(index);
 			width += textRenderer.getWidth(segment.icon()) + 3 + textRenderer.getWidth(segment.value());
@@ -167,30 +173,30 @@ public final class SkyblockStatsHudRenderer {
 		return width;
 	}
 
-	private static List<StatSegment> visibleSegments(EMUtilsConfig config, SkyblockActionBarStats stats) {
+	private static List<StatSegment> visibleSegments(SkyblockActionBarStats stats) {
 		List<StatSegment> segments = new ArrayList<>();
-		if (config.skyblockStatsShowHealth() && stats.healthCurrent() != null && stats.healthMax() != null) {
+		if (EMSkyblockSettings.skyblockStatsShowHealth() && stats.healthCurrent() != null && stats.healthMax() != null) {
 			segments.add(new StatSegment(
 				Text.literal("❤ "),
 				Text.literal(formatNumber(stats.healthCurrent()) + "/" + formatNumber(stats.healthMax())),
 				HEALTH_COLOR
 			));
 		}
-		if (config.skyblockStatsShowDefense() && stats.defense() != null) {
+		if (EMSkyblockSettings.skyblockStatsShowDefense() && stats.defense() != null) {
 			segments.add(new StatSegment(
 				Text.literal("❈ "),
 				Text.literal(formatNumber(stats.defense())),
 				DEFENSE_COLOR
 			));
 		}
-		if (config.skyblockStatsShowMana() && stats.manaCurrent() != null && stats.manaMax() != null) {
+		if (EMSkyblockSettings.skyblockStatsShowMana() && stats.manaCurrent() != null && stats.manaMax() != null) {
 			segments.add(new StatSegment(
 				Text.literal("✎ "),
 				Text.literal(formatNumber(stats.manaCurrent()) + "/" + formatNumber(stats.manaMax())),
 				MANA_COLOR
 			));
 		}
-		if (config.skyblockStatsShowSoulflow() && stats.soulflow() != null) {
+		if (EMSkyblockSettings.skyblockStatsShowSoulflow() && stats.soulflow() != null) {
 			segments.add(new StatSegment(
 				Text.literal("ʬ "),
 				Text.literal(formatNumber(stats.soulflow())),
@@ -201,8 +207,8 @@ public final class SkyblockStatsHudRenderer {
 		return segments;
 	}
 
-	private static boolean hasVisibleStats(EMUtilsConfig config, SkyblockActionBarStats stats) {
-		return !visibleSegments(config, stats).isEmpty();
+	private static boolean hasVisibleStats(SkyblockActionBarStats stats) {
+		return !visibleSegments(stats).isEmpty();
 	}
 
 	private static String formatNumber(int value) {

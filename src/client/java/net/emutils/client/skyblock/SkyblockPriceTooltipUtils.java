@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.emutils.client.skyblock.bazaar.BazaarCoinFormatter;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
+import net.emutils.client.skyblock.eiv.EivCoinFormat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
@@ -17,17 +19,21 @@ public final class SkyblockPriceTooltipUtils {
 	private SkyblockPriceTooltipUtils() {
 	}
 
-	public static List<Text> appendSection(List<Text> tooltip, List<Text> lines) {
-		if (lines.isEmpty()) {
+	public static List<Text> appendAddonBlock(List<Text> tooltip, List<Text> addonLines) {
+		return appendAddonLines(tooltip, addonLines, true);
+	}
+
+	public static List<Text> appendAddonLines(List<Text> tooltip, List<Text> addonLines, boolean separatorBefore) {
+		if (addonLines.isEmpty()) {
 			return tooltip;
 		}
 
-		List<Text> combined = new ArrayList<>(tooltip.size() + lines.size() + 1);
+		List<Text> combined = new ArrayList<>(tooltip.size() + addonLines.size() + (separatorBefore ? 1 : 0));
 		combined.addAll(tooltip);
-		if (!tooltip.isEmpty()) {
+		if (separatorBefore && !tooltip.isEmpty()) {
 			combined.add(Text.empty());
 		}
-		combined.addAll(lines);
+		combined.addAll(addonLines);
 		return combined;
 	}
 
@@ -56,7 +62,19 @@ public final class SkyblockPriceTooltipUtils {
 	public static Text priceLine(Text label, Formatting labelColor, double amount) {
 		return Text.empty()
 			.append(label.copy().formatted(labelColor))
-			.append(Text.literal(BazaarCoinFormatter.format(amount) + " coins").formatted(Formatting.GOLD));
+			.append(Text.literal(formatPrice(amount) + " coins").formatted(Formatting.GOLD));
+	}
+
+	public static String formatPrice(double amount) {
+		if (EMSkyblockSettings.priceTooltipCompactNumbers()) {
+			return EivCoinFormat.compact(amount);
+		}
+
+		return BazaarCoinFormatter.format(amount);
+	}
+
+	public static boolean useStackTotal(MinecraftClient client) {
+		return EMSkyblockSettings.priceTooltipShiftForStackTotal() && isShiftDown(client);
 	}
 
 	private static Integer parseSackStoredAmount(List<Text> tooltip) {

@@ -15,10 +15,9 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.skyblock.SkyblockContext;
-import net.emutils.client.skyblock.SkyblockPriceExecutor;
+import net.emutils.client.skyblock.SkyblockPriceFetchTask;
 import net.emutils.client.skyblock.SkyblockPriceNeeds;
 import net.minecraft.client.MinecraftClient;
 import org.jspecify.annotations.Nullable;
@@ -35,65 +34,54 @@ public final class NpcPriceFetcher {
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
+	private final SkyblockPriceFetchTask<Map<String, Double>> fetchTask = new SkyblockPriceFetchTask<>(
+		LOGGER,
+		"NPC",
+		FETCH_INTERVAL_MS,
+		NpcPriceFetcher::shouldRun,
+		this::fetch,
+		this::publish
+	);
 
 	private volatile Map<String, Double> npcSellPrices = Map.of();
-	private long lastFetchAttemptMs;
-	private boolean fetching;
 
 	public Optional<Double> npcSellPrice(String itemId) {
 		return Optional.ofNullable(npcSellPrices.get(itemId));
 	}
 
 	public void tick(@Nullable MinecraftClient client) {
-		if (!SkyblockPriceNeeds.anyEnabled(EMUtilsClient.config())) {
-			return;
+		fetchTask.tick(client);
+	}
+
+	private static boolean shouldRun(@Nullable MinecraftClient client) {
+		if (!SkyblockPriceNeeds.anyEnabled()) {
+			return false;
 		}
 
-		if (!SkyblockContext.onHypixel(client)) {
-			return;
-		}
-
-		long now = System.currentTimeMillis();
-		if (fetching || now - lastFetchAttemptMs < FETCH_INTERVAL_MS) {
-			return;
-		}
-
-		lastFetchAttemptMs = now;
-		fetching = true;
-		CompletableFuture.supplyAsync(this::fetch, SkyblockPriceExecutor.EXECUTOR)
-			.thenAccept(parsed -> {
-				if (!parsed.isEmpty()) {
-					npcSellPrices = parsed;
-					LOGGER.info("Loaded {} NPC sell prices.", parsed.size());
-				} else {
-					LOGGER.warn("NPC price API returned no items.");
-				}
-			})
-			.whenComplete((ignored, throwable) -> {
-				fetching = false;
-				if (throwable != null) {
-					LOGGER.warn("NPC price fetch failed.", throwable);
-				}
-			});
+		return SkyblockContext.onHypixel(client);
 	}
 
 	public void requestImmediateFetch() {
-		lastFetchAttemptMs = 0L;
+		fetchTask.requestImmediateFetch();
 	}
 
-	public void fetchNow() {
-		if (fetching) {
-			return;
-		}
-
-		lastFetchAttemptMs = System.currentTimeMillis() - FETCH_INTERVAL_MS;
-		tick(MinecraftClient.getInstance());
+	public void fetchNow(@Nullable MinecraftClient client) {
+		fetchTask.fetchNow(client);
 	}
 
 	public void clear() {
 		npcSellPrices = Map.of();
-		lastFetchAttemptMs = 0L;
-		fetching = false;
+		fetchTask.clear();
+	}
+
+	private boolean publish(Map<String, Double> parsed) {
+		if (parsed.isEmpty()) {
+			return false;
+		}
+
+		npcSellPrices = parsed;
+		LOGGER.info("Loaded {} NPC sell prices.", parsed.size());
+		return true;
 	}
 
 	private Map<String, Double> fetch() {

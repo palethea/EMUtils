@@ -15,7 +15,6 @@ import net.emutils.client.gui.minescript.ScriptManagerScreen;
 import net.emutils.client.gui.packs.PackManagerScreen;
 import net.emutils.client.gui.screenshot.ScreenshotGalleryScreen;
 import net.emutils.client.hud.layout.HudLayoutManager;
-import net.emutils.client.hud.layout.HudLayoutMode;
 import net.emutils.client.screenshot.ScreenshotGallerySort;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
@@ -35,7 +34,6 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.TWEAKS, HubSettingsRegistry::tweaksRows);
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
 		ROWS.put(HubCategory.INVENTORY, HubSettingsRegistry::inventoryRows);
-		ROWS.put(HubCategory.SKYBLOCK, HubSettingsRegistry::skyblockRows);
 		ROWS.put(HubCategory.SPOTIFY, HubSettingsRegistry::spotifyRows);
 		ROWS.put(HubCategory.PACKS, HubSettingsRegistry::packRows);
 		ROWS.put(HubCategory.SCRIPTS, HubSettingsRegistry::scriptRows);
@@ -65,7 +63,6 @@ public final class HubSettingsRegistry {
 			case TWEAKS -> config::resetTweaksDefaults;
 			case CAPES -> config::resetCapesDefaults;
 			case INVENTORY -> config::resetInventoryToolsDefaults;
-			case SKYBLOCK -> config::resetSkyblockDefaults;
 			case SPOTIFY -> config::resetSpotifyPlayerDefaults;
 			case PACKS, SCRIPTS -> () -> {};
 		};
@@ -218,13 +215,6 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_OVERLAY, config::hudOverlay, config::setHudOverlay));
-		rows.add(new HubSettingRow.Cycle<>(
-			EMUtilsTexts.OPTION_HUD_LAYOUT_MODE,
-			config::hudLayoutMode,
-			config::setHudLayoutMode,
-			() -> config.hudLayoutMode().next(),
-			() -> Text.translatable(config.hudLayoutMode().labelKey())
-		));
 		rows.add(new HubSettingRow.Action(
 			Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
 			() -> {
@@ -235,13 +225,6 @@ public final class HubSettingsRegistry {
 			},
 			true
 		));
-		rows.add(new HubSettingRow.Cycle<>(
-			EMUtilsTexts.OPTION_HUD_POSITION,
-			config::hudOverlayAnchor,
-			config::setHudOverlayAnchor,
-			() -> config.hudOverlayAnchor().next(),
-			() -> Text.translatable(config.hudOverlayAnchor().labelKey())
-		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SHOW_ICONS, config::hudShowIcons, config::setHudShowIcons));
 		rows.add(new HubSettingRow.Slider(
@@ -251,14 +234,6 @@ public final class HubSettingsRegistry {
 			EMUtilsConfig.HUD_BACKGROUND_OPACITY_MAX,
 			config::hudBackgroundOpacity,
 			config::setHudBackgroundOpacity
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_HUD_SCALE,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_SCALE_MIN,
-			EMUtilsConfig.HUD_SCALE_MAX,
-			config::hudScale,
-			config::setHudScale
 		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG, config::hudHideWithDebug, config::setHudHideWithDebug));
 		rows.add(divider());
@@ -377,97 +352,12 @@ public final class HubSettingsRegistry {
 		return rows;
 	}
 
-	private static List<HubSettingRow> skyblockRows(Runnable refresh) {
-		EMUtilsConfig config = config();
-		List<HubSettingRow> rows = new ArrayList<>();
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK, config::skyblockEnabled, config::setSkyblockEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_STORAGE_PREVIEW, config::storagePreviewEnabled, config::setStoragePreviewEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BAZAAR_TOOLTIPS, config::bazaarTooltipsEnabled, config::setBazaarTooltipsEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUCTION_TOOLTIPS, config::auctionTooltipsEnabled, config::setAuctionTooltipsEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_NPC_SELL_PRICE_TOOLTIPS, config::npcSellPriceTooltipsEnabled, config::setNpcSellPriceTooltipsEnabled));
-		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_HUD, config::skyblockStatsHudEnabled, config::setSkyblockStatsHudEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_HIDE_ACTION_BAR, config::skyblockStatsHideActionBar, config::setSkyblockStatsHideActionBar));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_HIDE_VANILLA_STATUS, config::skyblockHideVanillaStatusBars, config::setSkyblockHideVanillaStatusBars));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_HIDE_ACTION_BAR, config::skyblockHideActionBarMessages, config::setSkyblockHideActionBarMessages));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_HIDE_INVENTORY_STATUS_EFFECTS, config::skyblockHideInventoryStatusEffects, config::setSkyblockHideInventoryStatusEffects));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_HEALTH, config::skyblockStatsShowHealth, config::setSkyblockStatsShowHealth));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_DEFENSE, config::skyblockStatsShowDefense, config::setSkyblockStatsShowDefense));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_MANA, config::skyblockStatsShowMana, config::setSkyblockStatsShowMana));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SKYBLOCK_STATS_SOULFLOW, config::skyblockStatsShowSoulflow, config::setSkyblockStatsShowSoulflow));
-		rows.add(new HubSettingRow.Cycle<>(
-			EMUtilsTexts.OPTION_SKYBLOCK_STATS_POSITION,
-			config::skyblockStatsHudAnchor,
-			config::setSkyblockStatsHudAnchor,
-			() -> config.skyblockStatsHudAnchor().next(),
-			() -> Text.translatable(config.skyblockStatsHudAnchor().labelKey())
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_SKYBLOCK_STATS_BACKGROUND_OPACITY,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_BACKGROUND_OPACITY_MIN,
-			EMUtilsConfig.HUD_BACKGROUND_OPACITY_MAX,
-			config::skyblockStatsHudBackgroundOpacity,
-			config::setSkyblockStatsHudBackgroundOpacity
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_SKYBLOCK_STATS_SCALE,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_SCALE_MIN,
-			EMUtilsConfig.HUD_SCALE_MAX,
-			config::skyblockStatsHudScale,
-			config::setSkyblockStatsHudScale
-		));
-		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(
-			EMUtilsTexts.OPTION_ESTIMATED_ITEM_VALUE_HUD,
-			config::estimatedItemValueHudEnabled,
-			config::setEstimatedItemValueHudEnabled
-		));
-		rows.add(new HubSettingRow.Cycle<>(
-			EMUtilsTexts.OPTION_ESTIMATED_ITEM_VALUE_POSITION,
-			config::estimatedItemValueHudAnchor,
-			config::setEstimatedItemValueHudAnchor,
-			() -> config.estimatedItemValueHudAnchor().next(),
-			() -> Text.translatable(config.estimatedItemValueHudAnchor().labelKey())
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_ESTIMATED_ITEM_VALUE_SCALE,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_SCALE_MIN,
-			EMUtilsConfig.HUD_SCALE_MAX,
-			config::estimatedItemValueHudScale,
-			config::setEstimatedItemValueHudScale
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_ESTIMATED_ITEM_VALUE_ENCHANTMENTS_CAP,
-			"",
-			1,
-			20,
-			config::estimatedItemValueEnchantmentsCap,
-			config::setEstimatedItemValueEnchantmentsCap
-		));
-		rows.add(new HubSettingRow.Toggle(
-			EMUtilsTexts.OPTION_ESTIMATED_ITEM_VALUE_EXACT_TOTAL,
-			config::estimatedItemValueShowExactTotal,
-			config::setEstimatedItemValueShowExactTotal
-		));
-		return rows;
-	}
-
 	private static List<HubSettingRow> spotifyRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_PLAYER, config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_OVERLAY, config::spotifyHudOverlay, config::setSpotifyHudOverlay));
-		rows.add(new HubSettingRow.Cycle<>(
-			EMUtilsTexts.OPTION_HUD_POSITION,
-			config::spotifyHudAnchor,
-			config::setSpotifyHudAnchor,
-			() -> config.spotifyHudAnchor().next(),
-			() -> Text.translatable(config.spotifyHudAnchor().labelKey())
-		));
 		rows.add(new HubSettingRow.Slider(
 			EMUtilsTexts.OPTION_SPOTIFY_HUD_BACKGROUND_OPACITY,
 			EMUtilsTexts.SUFFIX_PERCENT,
@@ -475,14 +365,6 @@ public final class HubSettingsRegistry {
 			EMUtilsConfig.HUD_BACKGROUND_OPACITY_MAX,
 			config::spotifyHudBackgroundOpacity,
 			config::setSpotifyHudBackgroundOpacity
-		));
-		rows.add(new HubSettingRow.Slider(
-			EMUtilsTexts.OPTION_SPOTIFY_HUD_SCALE,
-			EMUtilsTexts.SUFFIX_PERCENT,
-			EMUtilsConfig.HUD_SCALE_MIN,
-			EMUtilsConfig.HUD_SCALE_MAX,
-			config::spotifyHudScale,
-			config::setSpotifyHudScale
 		));
 		return rows;
 	}

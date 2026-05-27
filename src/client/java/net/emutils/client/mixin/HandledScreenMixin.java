@@ -4,16 +4,19 @@ import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.skyblock.SkyblockHoveredTooltipContext;
+import net.emutils.client.skyblock.SkyblockTextUtils;
 import net.emutils.client.skyblock.SkyblockTooltipPrices;
 import net.emutils.client.skyblock.StoragePreviewManager;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueManager;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueResult;
 import net.emutils.client.skyblock.eiv.EstimatedItemValueTooltipHelper;
+import net.emutils.client.skyblock.sacks.SkyblockSackTracker;
+import net.emutils.client.skyblock.tracker.TrackerHudClickHandler;
 import net.emutils.client.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.BundleContentsComponent;
@@ -163,6 +166,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 	private void emutils$clearInventoryToolDrag(CallbackInfo ci) {
 		EMUtilsClient.inventoryTools().clearDrag();
 		EMUtilsClient.storagePreview().captureFromScreen((HandledScreen<?>) (Object) this, handler);
+		SkyblockSackTracker.onInventoryClose(emutils$title());
 	}
 
 	@Inject(method = "init", at = @At("TAIL"))
@@ -170,6 +174,19 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client != null) {
 			EMUtilsClient.inventoryTools().cursor().tryRestoreAfterInit(client);
+		}
+		SkyblockSackTracker.onInventoryOpen(emutils$title());
+	}
+
+	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+	private void emutils$handleTrackerHudClickInInventory(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (click.button() != 0) {
+			return;
+		}
+
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (TrackerHudClickHandler.handleClick(client, click.x(), click.y())) {
+			cir.setReturnValue(true);
 		}
 	}
 
@@ -220,5 +237,9 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		}
 
 		return null;
+	}
+
+	private String emutils$title() {
+		return SkyblockTextUtils.strip(((HandledScreen<?>) (Object) this).getTitle());
 	}
 }

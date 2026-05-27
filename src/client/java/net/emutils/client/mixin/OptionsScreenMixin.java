@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.gui.EMUtilsHubScreen;
 import net.emutils.client.gui.hub.CustomHubScreen;
+import net.emutils.client.gui.skyblock.EMSkyblockConfigScreenFactory;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -20,8 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(OptionsScreen.class)
 public abstract class OptionsScreenMixin extends Screen {
-	private static final int EMUTILS_CLASSIC_ROW = 5;
-	private static final int EMUTILS_MODERN_ROW = 6;
+	private static final int EMUTILS_ROW = 5;
 
 	@Shadow
 	@Final
@@ -39,14 +38,14 @@ public abstract class OptionsScreenMixin extends Screen {
 		}
 
 		ButtonWidget emutilsButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTIONS_BUTTON), button -> MinecraftClient.getInstance()
-			.setScreen(new EMUtilsHubScreen(this))).build();
-		grid.add(emutilsButton, EMUTILS_CLASSIC_ROW, 0, 1, 2, grid.getMainPositioner());
+			.setScreen(new CustomHubScreen(this))).build();
+		grid.add(emutilsButton, EMUTILS_ROW, 0, 1, 1, grid.getMainPositioner());
 		addDrawableChild(emutilsButton);
 
-		ButtonWidget modernButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTIONS_MODERN_BUTTON), button -> MinecraftClient.getInstance()
-			.setScreen(new CustomHubScreen(this))).build();
-		grid.add(modernButton, EMUTILS_MODERN_ROW, 0, 1, 2, grid.getMainPositioner());
-		addDrawableChild(modernButton);
+		ButtonWidget skyblockButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTIONS_SKYBLOCK_BUTTON), button -> MinecraftClient.getInstance()
+			.setScreen(EMSkyblockConfigScreenFactory.create(this))).build();
+		grid.add(skyblockButton, EMUTILS_ROW, 1, 1, 1, grid.getMainPositioner());
+		addDrawableChild(skyblockButton);
 		this.layout.refreshPositions();
 	}
 

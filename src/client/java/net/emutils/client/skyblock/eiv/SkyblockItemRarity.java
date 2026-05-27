@@ -30,6 +30,20 @@ public enum SkyblockItemRarity {
 		};
 	}
 
+	public String colorCode() {
+		return switch (this) {
+			case COMMON -> "§f";
+			case UNCOMMON -> "§a";
+			case RARE -> "§9";
+			case EPIC -> "§5";
+			case LEGENDARY -> "§6";
+			case MYTHIC -> "§d";
+			case DIVINE -> "§b";
+			case SPECIAL -> "§c";
+			case VERY_SPECIAL -> "§4";
+		};
+	}
+
 	@Nullable
 	public static SkyblockItemRarity fromTooltip(List<Text> tooltip, boolean recombobulated) {
 		SkyblockItemRarity rarity = fromTooltip(tooltip);

@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.skyblock.SkyblockContext;
+import net.emutils.client.skyblock.SkyblockPriceFetchTask;
 import net.emutils.client.skyblock.SkyblockPriceExecutor;
 import net.emutils.client.skyblock.SkyblockPriceNeeds;
 import net.emutils.client.skyblock.bazaar.SkyblockItemIds;
@@ -37,12 +38,17 @@ public final class AuctionPriceFetcher {
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
+	private final SkyblockPriceFetchTask<LoadedPrices> fetchTask = new SkyblockPriceFetchTask<>(
+		LOGGER,
+		"Auction",
+		FETCH_INTERVAL_MS,
+		AuctionPriceFetcher::shouldRun,
+		this::fetchAll,
+		this::publish
+	);
 
 	private volatile Map<String, Double> lowestBins = Map.of();
 	private volatile Map<String, Double> averages24h = Map.of();
-	private long lastFetchAttemptMs;
-	private long fetchStartedMs;
-	private boolean fetching;
 
 	public int lowestBinCount() {
 		return lowestBins.size();
@@ -73,76 +79,32 @@ public final class AuctionPriceFetcher {
 	}
 
 	public void tick(@Nullable MinecraftClient client) {
-		recoverStuckFetch();
-		if (!shouldRun(client)) {
-			return;
-		}
-
-		long now = System.currentTimeMillis();
-		if (fetching || now - lastFetchAttemptMs < FETCH_INTERVAL_MS) {
-			return;
-		}
-
-		startFetch();
+		fetchTask.tick(client);
 	}
 
-	public void fetchNow() {
-		recoverStuckFetch();
-		if (fetching) {
-			return;
-		}
-
-		lastFetchAttemptMs = 0L;
-		startFetch();
+	public void fetchNow(@Nullable MinecraftClient client) {
+		fetchTask.fetchNow(client);
 	}
 
 	public void requestImmediateFetch() {
-		lastFetchAttemptMs = 0L;
+		fetchTask.requestImmediateFetch();
 	}
 
 	public void clear() {
 		lowestBins = Map.of();
 		averages24h = Map.of();
-		lastFetchAttemptMs = 0L;
-		fetchStartedMs = 0L;
-		fetching = false;
+		fetchTask.clear();
 	}
 
-	private void recoverStuckFetch() {
-		if (!fetching || fetchStartedMs <= 0L) {
-			return;
-		}
-
-		if (System.currentTimeMillis() - fetchStartedMs > 45_000L) {
-			LOGGER.warn("Auction price fetch timed out; allowing retry.");
-			fetching = false;
-			fetchStartedMs = 0L;
-		}
-	}
-
-	private boolean shouldRun(@Nullable MinecraftClient client) {
-		if (!SkyblockPriceNeeds.anyEnabled(EMUtilsClient.config())) {
+	private static boolean shouldRun(@Nullable MinecraftClient client) {
+		if (!SkyblockPriceNeeds.anyEnabled()) {
 			return false;
 		}
 
 		return SkyblockContext.onHypixel(client);
 	}
 
-	private void startFetch() {
-		lastFetchAttemptMs = System.currentTimeMillis();
-		fetchStartedMs = lastFetchAttemptMs;
-		fetching = true;
-		CompletableFuture.runAsync(this::fetchAll, SkyblockPriceExecutor.EXECUTOR)
-			.whenComplete((ignored, throwable) -> {
-				fetching = false;
-				fetchStartedMs = 0L;
-				if (throwable != null) {
-					LOGGER.warn("Auction price fetch failed.", throwable);
-				}
-			});
-	}
-
-	private void fetchAll() {
+	private LoadedPrices fetchAll() {
 		CompletableFuture<Map<String, Double>> binsFuture = CompletableFuture.supplyAsync(
 			() -> fetchJsonMap(LOWEST_BIN_URL),
 			SkyblockPriceExecutor.EXECUTOR
@@ -154,6 +116,12 @@ public final class AuctionPriceFetcher {
 
 		Map<String, Double> bins = binsFuture.join();
 		Map<String, Double> averages = averagesFuture.join();
+		return new LoadedPrices(bins, averages);
+	}
+
+	private boolean publish(LoadedPrices loaded) {
+		Map<String, Double> bins = loaded.lowestBins();
+		Map<String, Double> averages = loaded.averages24h();
 		if (!bins.isEmpty()) {
 			lowestBins = bins;
 		}
@@ -162,12 +130,11 @@ public final class AuctionPriceFetcher {
 		}
 
 		if (bins.isEmpty() && averages.isEmpty()) {
-			LOGGER.warn("Auction price APIs returned no data.");
-			lastFetchAttemptMs = System.currentTimeMillis() - FETCH_INTERVAL_MS + 5_000L;
-			return;
+			return false;
 		}
 
 		LOGGER.info("Loaded {} auction lowest BIN entries and {} 24h averages.", bins.size(), averages.size());
+		return true;
 	}
 
 	private Map<String, Double> fetchJsonMap(String url) {
@@ -224,5 +191,12 @@ public final class AuctionPriceFetcher {
 		}
 
 		return Map.copyOf(result);
+	}
+
+	private record LoadedPrices(Map<String, Double> lowestBins, Map<String, Double> averages24h) {
+		private LoadedPrices {
+			lowestBins = lowestBins.isEmpty() ? Map.of() : Map.copyOf(lowestBins);
+			averages24h = averages24h.isEmpty() ? Map.of() : Map.copyOf(averages24h);
+		}
 	}
 }

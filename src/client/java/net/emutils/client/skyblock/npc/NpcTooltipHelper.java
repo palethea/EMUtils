@@ -2,9 +2,10 @@ package net.emutils.client.skyblock.npc;
 
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.config.EMUtilsConfig;
+import net.emutils.client.skyblock.config.EMSkyblockSettings;
 import net.emutils.client.skyblock.SkyblockFeatures;
 import net.emutils.client.skyblock.SkyblockPriceTooltipUtils;
+import net.emutils.client.skyblock.SkyblockSoulboundUtils;
 import net.emutils.client.skyblock.bazaar.SkyblockItemIds;
 import net.emutils.client.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
@@ -16,36 +17,37 @@ public final class NpcTooltipHelper {
 	private NpcTooltipHelper() {
 	}
 
-	public static List<Text> appendLines(ItemStack stack, List<Text> tooltip) {
-		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || !config.skyblockEnabled() || !config.npcSellPriceTooltipsEnabled()) {
-			return tooltip;
+	public static void collectLines(ItemStack stack, List<Text> tooltip, List<Text> target) {
+		if (!EMSkyblockSettings.skyblockEnabled() || !EMSkyblockSettings.npcSellPriceTooltipsEnabled()) {
+			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (!SkyblockFeatures.inSkyBlock(client)) {
-			return tooltip;
+			return;
+		}
+		if (SkyblockSoulboundUtils.shouldHide(EMSkyblockSettings.npcHideOnSoulbound(), tooltip)) {
+			return;
 		}
 
 		String itemId = SkyblockItemIds.resolveItemId(stack);
 		if (itemId == null) {
-			return tooltip;
+			return;
 		}
 
-		Double npcSellPrice = EMUtilsClient.npcPrices()
+		Double npcSellPrice = EMUtilsClient.skyblockPrices().npc()
 			.npcSellPrice(itemId)
 			.orElse(null);
 		if (npcSellPrice == null || npcSellPrice <= 0.0D) {
-			return tooltip;
+			return;
 		}
 
-		boolean stackTotal = SkyblockPriceTooltipUtils.isShiftDown(client);
+		boolean stackTotal = SkyblockPriceTooltipUtils.useStackTotal(client);
 		double multiplier = SkyblockPriceTooltipUtils.totalAmount(tooltip, stack, stackTotal);
-		List<Text> lines = List.of(SkyblockPriceTooltipUtils.priceLine(
+		target.add(SkyblockPriceTooltipUtils.priceLine(
 			Text.translatable(EMUtilsTexts.NPC_SELL_PRICE),
 			Formatting.GRAY,
 			npcSellPrice * multiplier
 		));
-		return SkyblockPriceTooltipUtils.appendSection(tooltip, lines);
 	}
 }
