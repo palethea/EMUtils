@@ -1,8 +1,8 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.gui.hub.CustomHubScreen;
-import net.emutils.client.gui.skyblock.EMSkyblockConfigScreenFactory;
-import net.emutils.client.util.EMUtilsTexts;
+import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emskyblock.config.gui.EMSkyblockConfigScreenFactory;
+import net.emutils.client.emhelpers.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;

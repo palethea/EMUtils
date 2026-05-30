@@ -3,16 +3,16 @@ package net.emutils.client.mixin;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.skyblock.SkyblockHoveredTooltipContext;
-import net.emutils.client.skyblock.SkyblockTextUtils;
-import net.emutils.client.skyblock.SkyblockTooltipPrices;
-import net.emutils.client.skyblock.StoragePreviewManager;
-import net.emutils.client.skyblock.eiv.EstimatedItemValueManager;
-import net.emutils.client.skyblock.eiv.EstimatedItemValueResult;
-import net.emutils.client.skyblock.eiv.EstimatedItemValueTooltipHelper;
-import net.emutils.client.skyblock.sacks.SkyblockSackTracker;
-import net.emutils.client.skyblock.tracker.TrackerHudClickHandler;
-import net.emutils.client.tweaks.TooltipPreviewRenderer;
+import net.emutils.client.emskyblock.features.inventory.tooltippricing.SkyblockHoveredTooltipContext;
+import net.emutils.client.emskyblock.context.SkyblockTextUtils;
+import net.emutils.client.emskyblock.pricing.SkyblockTooltipPrices;
+import net.emutils.client.emskyblock.features.inventory.storagepreview.StoragePreviewManager;
+import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueManager;
+import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueResult;
+import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueTooltipHelper;
+import net.emutils.client.emskyblock.sacks.SkyblockSackTracker;
+import net.emutils.client.emskyblock.features.fishing.trackercommon.TrackerHudClickHandler;
+import net.emutils.client.emutils.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -180,12 +180,13 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void emutils$handleTrackerHudClickInInventory(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		if (click.button() != 0) {
+		int button = click.button();
+		if (button != 0 && button != 1) {
 			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (TrackerHudClickHandler.handleClick(client, click.x(), click.y())) {
+		if (TrackerHudClickHandler.handleClick(client, click.x(), click.y(), button == 1)) {
 			cir.setReturnValue(true);
 		}
 	}

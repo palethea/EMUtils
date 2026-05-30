@@ -2,7 +2,7 @@ package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.mixin.MouseAccess;
-import net.emutils.client.skyblock.tracker.TrackerHudClickHandler;
+import net.emutils.client.emskyblock.features.fishing.trackercommon.TrackerHudClickHandler;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -34,13 +34,21 @@ public abstract class MouseMixin {
 		}
 
 		net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-		if (client == null || client.currentScreen != null || input.button() != org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (client == null || client.currentScreen != null) {
+			return;
+		}
+
+		int button = input.button();
+		boolean isLeftClick = button == org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
+		boolean isRightClick = button == org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+
+		if (!isLeftClick && !isRightClick) {
 			return;
 		}
 
 		double[] scaledMouse = TrackerHudClickHandler.scaledMouse(client);
 		if (scaledMouse != null) {
-			TrackerHudClickHandler.handleClick(client, scaledMouse[0], scaledMouse[1]);
+			TrackerHudClickHandler.handleClick(client, scaledMouse[0], scaledMouse[1], isRightClick);
 		}
 	}
 

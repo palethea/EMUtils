@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.skyblock.fishing.FishingHookDisplayManager;
+import net.emutils.client.emskyblock.features.fishing.hookdisplay.FishingHookDisplayManager;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;

@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.chat.ChatCopyHandler;
+import net.emutils.client.emutils.chat.ChatCopyHandler;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.screen.ChatScreen;
 import org.spongepowered.asm.mixin.Mixin;

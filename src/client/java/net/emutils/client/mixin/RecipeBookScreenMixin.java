@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.skyblock.eiv.EstimatedItemValueHudRenderer;
+import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueHudRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.RecipeBookScreen;

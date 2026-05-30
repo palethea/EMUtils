@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.skyblock.config.EMSkyblockSettings;
-import net.emutils.client.skyblock.SkyblockFeatures;
+import net.emutils.client.emskyblock.config.EMSkyblockSettings;
+import net.emutils.client.emskyblock.context.SkyblockFeatures;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.StatusEffectsDisplay;

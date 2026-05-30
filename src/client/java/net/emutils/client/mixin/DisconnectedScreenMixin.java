@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.reconnect.AutoReconnectManager;
+import net.emutils.client.emutils.reconnect.AutoReconnectManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
