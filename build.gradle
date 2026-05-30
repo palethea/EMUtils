@@ -15,6 +15,10 @@ repositories {
 		name = "NotEnoughUpdates"
 		url = "https://maven.notenoughupdates.org/releases/"
 	}
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+	}
 }
 
 configurations {
@@ -51,6 +55,8 @@ dependencies {
 	}
 	modImplementation "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
 	include "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
+	modImplementation "maven.modrinth:hypixel-mod-api:${project.hypixel_mod_api_version}"
+	include "maven.modrinth:hypixel-mod-api:${project.hypixel_mod_api_version}"
 }
 
 processResources {

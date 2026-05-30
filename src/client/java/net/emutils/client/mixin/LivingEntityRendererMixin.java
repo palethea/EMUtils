@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.skyblock.fishing.FishingHookDisplayManager;
-import net.emutils.client.tweaks.OwnNametagHelper;
+import net.emutils.client.emskyblock.features.fishing.hookdisplay.FishingHookDisplayManager;
+import net.emutils.client.emutils.tweaks.OwnNametagHelper;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.entity.LivingEntity;

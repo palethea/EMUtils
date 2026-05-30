@@ -2,17 +2,17 @@ package net.emutils.client.mixin;
 
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.chat.ChatDisplayFormatter;
-import net.emutils.client.chat.ChatHudAccess;
-import net.emutils.client.chat.ChatMentionAlerts;
-import net.emutils.client.chat.ChatMentionDetector;
-import net.emutils.client.chat.ChatMessageMetadata;
-import net.emutils.client.chat.ChatMessageTracker;
-import net.emutils.client.chat.ChatTimestampFormatter;
-import net.emutils.client.chat.EMUtilsChatMessages;
-import net.emutils.client.chat.SmartChatFilter;
-import net.emutils.client.config.EMUtilsConfig;
-import net.emutils.client.death.DeathWaypointChatAccess;
+import net.emutils.client.emutils.chat.ChatDisplayFormatter;
+import net.emutils.client.emutils.chat.ChatHudAccess;
+import net.emutils.client.emutils.chat.ChatMentionAlerts;
+import net.emutils.client.emutils.chat.ChatMentionDetector;
+import net.emutils.client.emutils.chat.ChatMessageMetadata;
+import net.emutils.client.emutils.chat.ChatMessageTracker;
+import net.emutils.client.emutils.chat.ChatTimestampFormatter;
+import net.emutils.client.emutils.chat.EMUtilsChatMessages;
+import net.emutils.client.emutils.chat.SmartChatFilter;
+import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.waypoint.WaypointChatAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.DrawnTextConsumer;
 import net.minecraft.client.font.TextRenderer;
@@ -35,7 +35,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChatHud.class)
-public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAccess {
+public abstract class ChatHudMixin implements WaypointChatAccess, ChatHudAccess {
 	@Unique
 	private final SmartChatFilter emutils$smartChatFilter = new SmartChatFilter();
 
@@ -110,6 +110,19 @@ public abstract class ChatHudMixin implements DeathWaypointChatAccess, ChatHudAc
 	) {
 		if (EMUtilsClient.skyblock().onChatMessage(message)) {
 			ci.cancel();
+			return;
+		}
+
+		String filterReason = net.emutils.client.emskyblock.features.chat.chatfilter.ChatFilterManager.onChat(message);
+		if (filterReason != null) {
+			ci.cancel();
+			return;
+		}
+
+		Text modifiedMessage = net.emutils.client.emskyblock.features.chat.raredropmessages.RareDropMessagesManager.onChat(message);
+		if (modifiedMessage != null) {
+			ci.cancel();
+			emutils$addProcessedMessage(modifiedMessage, signatureData, indicator);
 			return;
 		}
 

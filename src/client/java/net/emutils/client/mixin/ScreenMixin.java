@@ -2,11 +2,11 @@ package net.emutils.client.mixin;
 
 import java.io.File;
 import java.util.Optional;
-import net.emutils.client.death.DeathWaypointClickHandler;
-import net.emutils.client.death.DeathWaypointMessage;
-import net.emutils.client.screenshot.ScreenshotActions;
-import net.emutils.client.screenshot.ScreenshotMessage;
-import net.emutils.client.util.EMUtilsTexts;
+import net.emutils.client.emutils.waypoint.WaypointClickHandler;
+import net.emutils.client.emutils.waypoint.WaypointMessage;
+import net.emutils.client.emutils.screenshot.ScreenshotActions;
+import net.emutils.client.emutils.screenshot.ScreenshotMessage;
+import net.emutils.client.emhelpers.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.nbt.NbtString;
@@ -26,7 +26,7 @@ public abstract class ScreenMixin {
 			return;
 		}
 
-		if (DeathWaypointClickHandler.tryHandle(custom.id(), custom, client)) {
+		if (WaypointClickHandler.tryHandle(custom.id(), custom, client)) {
 			ci.cancel();
 			return;
 		}

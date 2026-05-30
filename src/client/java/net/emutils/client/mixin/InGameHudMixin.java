@@ -1,11 +1,11 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.skyblock.SkyblockActionBarManager;
-import net.emutils.client.skyblock.SkyblockFeatures;
+import net.emutils.client.emskyblock.features.gui.statshud.SkyblockActionBarManager;
+import net.emutils.client.emskyblock.context.SkyblockFeatures;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.emutils.client.hud.layout.HudLayoutEditorContext;
+import net.emutils.client.emhelpers.hud.layout.HudLayoutEditorContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.RenderTickCounter;

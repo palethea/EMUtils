@@ -1,9 +1,9 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.hud.layout.HudLayoutEditorVanillaDim;
-import net.emutils.client.hud.layout.HudLayoutEditorVanillaDimStates;
-import net.emutils.client.inventory.InventoryPreviewItemOpacity;
-import net.emutils.client.inventory.InventoryPreviewRenderer;
+import net.emutils.client.emhelpers.hud.layout.HudLayoutEditorVanillaDim;
+import net.emutils.client.emhelpers.hud.layout.HudLayoutEditorVanillaDimStates;
+import net.emutils.client.emutils.inventory.InventoryPreviewItemOpacity;
+import net.emutils.client.emutils.inventory.InventoryPreviewRenderer;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.render.state.ItemGuiElementRenderState;
 import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;

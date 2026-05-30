@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
 import com.mojang.authlib.GameProfile;
-import net.emutils.client.capes.CustomCapeManager;
+import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.util.AssetInfo;

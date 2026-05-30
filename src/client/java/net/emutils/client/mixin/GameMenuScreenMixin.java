@@ -2,10 +2,10 @@ package net.emutils.client.mixin;
 
 import java.util.ArrayList;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.gui.hub.CustomHubScreen;
-import net.emutils.client.gui.spotify.SpotifyPlayerOverlay;
-import net.emutils.client.spotify.SpotifyTrackState;
-import net.emutils.client.util.EMUtilsTexts;
+import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
+import net.emutils.client.emutils.spotify.SpotifyTrackState;
+import net.emutils.client.emhelpers.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -56,7 +56,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void emutils$tick(CallbackInfo ci) {
 		if (emutils$clearWaypointsButton != null) {
-			emutils$clearWaypointsButton.active = EMUtilsClient.deathWaypoint()
+			emutils$clearWaypointsButton.active = EMUtilsClient.waypoint()
 				.hasWaypointForCurrentWorld(MinecraftClient.getInstance());
 		}
 
@@ -150,17 +150,17 @@ public abstract class GameMenuScreenMixin extends Screen {
 
 	@Unique
 	private void emutils$initClearWaypointsButton() {
-		if (!EMUtilsClient.config().deathWaypoint()) {
+		if (!EMUtilsClient.config().waypointEnabled()) {
 			emutils$clearWaypointsButton = null;
 			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
 		emutils$clearWaypointsButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_CLEAR_WAYPOINTS), button -> {
-			EMUtilsClient.deathWaypoint().clearForCurrentWorld(client);
+			EMUtilsClient.waypoint().clearForCurrentWorld(client);
 			button.active = false;
 		}).dimensions(BUTTON_MARGIN, BUTTON_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-		emutils$clearWaypointsButton.active = EMUtilsClient.deathWaypoint().hasWaypointForCurrentWorld(client);
+		emutils$clearWaypointsButton.active = EMUtilsClient.waypoint().hasWaypointForCurrentWorld(client);
 		addDrawableChild(emutils$clearWaypointsButton);
 	}
 

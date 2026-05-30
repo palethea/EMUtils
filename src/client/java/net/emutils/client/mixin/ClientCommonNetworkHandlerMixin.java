@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.death.DeathWaypointClickHandler;
+import net.emutils.client.emutils.waypoint.WaypointClickHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientCommonNetworkHandler;
 import net.minecraft.network.packet.Packet;
@@ -18,7 +18,7 @@ public abstract class ClientCommonNetworkHandlerMixin {
 			return;
 		}
 
-		if (DeathWaypointClickHandler.tryHandle(clickPacket.id(), clickPacket.payload(), MinecraftClient.getInstance())) {
+		if (WaypointClickHandler.tryHandle(clickPacket.id(), clickPacket.payload(), MinecraftClient.getInstance())) {
 			ci.cancel();
 		}
 	}

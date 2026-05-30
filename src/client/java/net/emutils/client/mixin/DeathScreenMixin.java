@@ -12,6 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class DeathScreenMixin {
 	@Inject(method = "init", at = @At("TAIL"))
 	private void emutils$captureDeath(CallbackInfo ci) {
-		EMUtilsClient.deathWaypoint().captureDeath(MinecraftClient.getInstance());
+		EMUtilsClient.waypoint().captureDeath(MinecraftClient.getInstance());
 	}
 }

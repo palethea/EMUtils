@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.capes.CustomCapeManager;
+import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.entity.PlayerLikeEntity;

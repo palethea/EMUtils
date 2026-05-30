@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.accessor.KeyBindingAccess;
+import net.emutils.client.emhelpers.accessor.KeyBindingAccess;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Mixin;
