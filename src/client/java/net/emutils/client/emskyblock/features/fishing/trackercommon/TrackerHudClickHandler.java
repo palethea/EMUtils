@@ -38,6 +38,13 @@ public final class TrackerHudClickHandler {
 				FishingProfitTrackerManager.cycleDisplayMode();
 			}
 			return true;
+		} else if (hitbox.elementId() == HudElementId.SLAYER_PROFIT_TRACKER) {
+			if (rightClick) {
+				net.emutils.client.emskyblock.features.slayer.slayertracker.SlayerTrackerManager.resetCurrentMode();
+			} else {
+				net.emutils.client.emskyblock.features.slayer.slayertracker.SlayerTrackerManager.cycleDisplayMode();
+			}
+			return true;
 		}
 
 		return false;

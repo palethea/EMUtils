@@ -149,11 +149,6 @@ public final class CustomHubScreen extends Screen {
 			resetButton = null;
 		}
 
-		boolean canReset = selectedCategory != HubCategory.PACKS && selectedCategory != HubCategory.SCRIPTS;
-		if (!canReset) {
-			return;
-		}
-
 		Text resetLabel = Text.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS);
 		int resetWidth = HubHeaderButtonWidget.widthFor(resetLabel);
 		resetButton = addDrawableChild(new HubHeaderButtonWidget(

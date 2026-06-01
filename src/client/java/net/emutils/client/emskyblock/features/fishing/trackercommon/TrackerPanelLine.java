@@ -41,6 +41,14 @@ public record TrackerPanelLine(
 			);
 		}
 
+		public static TrackerHeaderParts slayerProfit(TrackerDisplayMode mode) {
+			return new TrackerHeaderParts(
+				"§cSlayer Profit §7| ",
+				"§7" + mode.displayName() + " ",
+				""
+			);
+		}
+
 		public static String tooltipLine(TrackerDisplayMode mode) {
 			return "§7Click: switch mode §8| §7Right-click: reset " + mode.displayName().toLowerCase(Locale.ROOT);
 		}

@@ -42,6 +42,7 @@ public final class HudLayoutEditorScreen extends Screen {
 	private HudElementId opacityElement;
 	private DragMode dragMode = DragMode.MOVE;
 	private boolean draggingOpacity;
+	private boolean renderingParent;
 
 	public HudLayoutEditorScreen(@Nullable Screen parent) {
 		super(Text.translatable(EMUtilsTexts.SCREEN_HUD_LAYOUT_EDITOR));
@@ -73,6 +74,14 @@ public final class HudLayoutEditorScreen extends Screen {
 
 	@Override
 	public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+		if (parent != null && !renderingParent) {
+			renderingParent = true;
+			try {
+				parent.render(context, mouseX, mouseY, delta);
+			} finally {
+				renderingParent = false;
+			}
+		}
 		context.fill(0, 0, width, height, 0x44000000);
 	}
 

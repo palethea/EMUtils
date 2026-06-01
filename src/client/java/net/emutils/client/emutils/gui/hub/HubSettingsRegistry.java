@@ -8,6 +8,7 @@ import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
+import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
@@ -31,14 +32,13 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.DEATH_WAYPOINTS, HubSettingsRegistry::deathRows);
 		ROWS.put(HubCategory.AUTO_RECONNECT, HubSettingsRegistry::reconnectRows);
 		ROWS.put(HubCategory.SCREENSHOT, HubSettingsRegistry::screenshotRows);
+		ROWS.put(HubCategory.MANAGERS, HubSettingsRegistry::managerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
 		ROWS.put(HubCategory.TWEAKS, HubSettingsRegistry::tweaksRows);
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
 		ROWS.put(HubCategory.INVENTORY, HubSettingsRegistry::inventoryRows);
 		ROWS.put(HubCategory.SPOTIFY, HubSettingsRegistry::spotifyRows);
-		ROWS.put(HubCategory.PACKS, HubSettingsRegistry::packRows);
-		ROWS.put(HubCategory.SCRIPTS, HubSettingsRegistry::scriptRows);
 	}
 
 	private HubSettingsRegistry() {
@@ -60,13 +60,13 @@ public final class HubSettingsRegistry {
 			case DEATH_WAYPOINTS -> config::resetDeathWaypointDefaults;
 			case AUTO_RECONNECT -> config::resetAutoReconnectDefaults;
 			case SCREENSHOT -> config::resetScreenshotDefaults;
+			case MANAGERS -> config::resetManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case ZOOM -> config::resetZoomDefaults;
 			case TWEAKS -> config::resetTweaksDefaults;
 			case CAPES -> config::resetCapesDefaults;
 			case INVENTORY -> config::resetInventoryToolsDefaults;
 			case SPOTIFY -> config::resetSpotifyPlayerDefaults;
-			case PACKS, SCRIPTS -> () -> {};
 		};
 
 		return () -> {
@@ -78,10 +78,6 @@ public final class HubSettingsRegistry {
 	public static List<HubCategory> visibleCategories() {
 		List<HubCategory> categories = new ArrayList<>();
 		for (HubCategory category : HubCategory.values()) {
-			if (category == HubCategory.SCRIPTS && !MinescriptCompat.isLoaded()) {
-				continue;
-			}
-
 			categories.add(category);
 		}
 
@@ -246,6 +242,19 @@ public final class HubSettingsRegistry {
 		return rows;
 	}
 
+	private static List<HubSettingRow> managerRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PACK_MANAGER, config::packManagerEnabled, config::setPackManagerEnabled));
+		rows.add(navRow(EMUtilsTexts.HUB_OPEN_PACK_MANAGER, PackManagerScreen::new));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COMMAND_SHORTCUTS, config::commandShortcutsEnabled, config::setCommandShortcutsEnabled));
+		rows.add(navRow(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS, CommandShortcutListScreen::new));
+		rows.add(divider());
+		rows.add(navRow(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER, ScriptManagerScreen::new, MinescriptCompat.isLoaded()));
+		return rows;
+	}
+
 	private static List<HubSettingRow> hudRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
@@ -388,22 +397,11 @@ public final class HubSettingsRegistry {
 		return rows;
 	}
 
-	private static List<HubSettingRow> packRows(Runnable refresh) {
-		EMUtilsConfig config = config();
-		return List.of(
-			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PACK_MANAGER, config::packManagerEnabled, config::setPackManagerEnabled),
-			navRow(EMUtilsTexts.HUB_OPEN_PACK_MANAGER, PackManagerScreen::new),
-			new HubSettingRow.Spacer(HubPanelTheme.SECTION_GAP)
-		);
+	private static HubSettingRow navRow(String labelKey, Function<Screen, Screen> screenFactory) {
+		return navRow(labelKey, screenFactory, true);
 	}
 
-	private static List<HubSettingRow> scriptRows(Runnable refresh) {
-		return List.of(
-			navRow(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER, ScriptManagerScreen::new)
-		);
-	}
-
-	private static HubSettingRow navRow(String labelKey, java.util.function.Function<Screen, Screen> screenFactory) {
+	private static HubSettingRow navRow(String labelKey, Function<Screen, Screen> screenFactory, boolean enabled) {
 		return new HubSettingRow.Action(
 			Text.translatable(labelKey),
 			() -> {
@@ -413,7 +411,7 @@ public final class HubSettingsRegistry {
 					client.setScreen(screenFactory.apply(parent));
 				}
 			},
-			true
+			enabled
 		);
 	}
 

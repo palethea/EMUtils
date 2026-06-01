@@ -114,7 +114,7 @@ public final class SkyblockItemAttributes {
 		return false;
 	}
 
-	public static int dungeonStarCount(ItemStack stack, java.util.List<Text> tooltip) {
+	public static int starUpgradeLevel(ItemStack stack) {
 		NbtCompound extra = extraAttributes(stack);
 		if (extra == null) {
 			return 0;
@@ -130,14 +130,24 @@ public final class SkyblockItemAttributes {
 			return upgradeLevel;
 		}
 
-		return isDungeonItem(tooltip) ? 0 : 0;
+		return 0;
 	}
 
-	public static int regularStarCount(int totalStars) {
+	public static int regularStarCount(ItemStack stack, java.util.List<Text> tooltip) {
+		int totalStars = starUpgradeLevel(stack);
+		if (!isDungeonItem(tooltip)) {
+			return Math.max(0, totalStars);
+		}
+
 		return Math.min(5, Math.max(0, totalStars));
 	}
 
-	public static int masterStarCount(int totalStars) {
+	public static int masterStarCount(ItemStack stack, java.util.List<Text> tooltip) {
+		if (!isDungeonItem(tooltip)) {
+			return 0;
+		}
+
+		int totalStars = starUpgradeLevel(stack);
 		return Math.max(0, Math.min(5, totalStars - 5));
 	}
 

@@ -137,18 +137,29 @@ public final class HudLayoutManager {
 	}
 
 	public static void openEditor(@Nullable MinecraftClient client) {
-		if (client == null) {
+		if (client == null || HudLayoutEditorContext.isActive(client)) {
 			return;
+		}
+		if (!beginEditorSession(client)) {
+			return;
+		}
+
+		client.setScreen(new HudLayoutEditorScreen(client.currentScreen));
+	}
+
+	public static boolean beginEditorSession(@Nullable MinecraftClient client) {
+		if (client == null) {
+			return false;
 		}
 
 		EMUtilsConfig config = EMUtilsClient.config();
 		if (config == null) {
-			return;
+			return false;
 		}
 
 		takeLayoutSnapshot(config);
 		seedDraftFromCurrent(client, config);
-		client.setScreen(new HudLayoutEditorScreen(client.currentScreen));
+		return true;
 	}
 
 	public static void seedDraftFromCurrent(MinecraftClient client, EMUtilsConfig config) {

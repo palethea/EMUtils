@@ -3,7 +3,9 @@ package net.emutils.client.mixin;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emhelpers.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emskyblock.features.inventory.tooltippricing.SkyblockHoveredTooltipContext;
+import net.emutils.client.emskyblock.features.inventory.common.InventoryScreenFeatures;
 import net.emutils.client.emskyblock.context.SkyblockTextUtils;
 import net.emutils.client.emskyblock.pricing.SkyblockTooltipPrices;
 import net.emutils.client.emskyblock.features.inventory.storagepreview.StoragePreviewManager;
@@ -75,6 +77,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		List<Text> augmented = SkyblockTooltipPrices.appendLines(stack, result);
 		EstimatedItemValueResult estimatedValue = EstimatedItemValueManager.get().updateHoveredItem(stack, result);
 		augmented = EstimatedItemValueTooltipHelper.appendLine(stack, augmented, estimatedValue);
+		augmented = InventoryScreenFeatures.appendTooltip(handler, emutils$title(), this.focusedSlot, augmented);
 		SkyblockHoveredTooltipContext.set(augmented);
 		return augmented;
 	}
@@ -131,6 +134,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		if (inventory != null) {
 			EMUtilsClient.inventoryTools().drawSlotOverlay(context, handler, slot, inventory);
 		}
+		InventoryScreenFeatures.drawSlotOverlay(context, handler, slot, emutils$title());
 	}
 
 	@Inject(
@@ -149,9 +153,34 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		EMUtilsClient.inventoryTools().drawDragLine(context, focusedSlot, mouseX - x, mouseY - y);
 	}
 
+	@Inject(method = "renderMain", at = @At("TAIL"))
+	private void emutils$renderInventorySkyblockFeatureOverlays(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+		InventoryScreenFeatures.renderScreenOverlay(context, handler, emutils$title(), x, y, mouseX, mouseY);
+	}
+
+	@Inject(method = "render", at = @At("TAIL"))
+	private void emutils$renderHudLayoutEditorOverlay(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+		HudLayoutEditorOverlay.render(context, mouseX, mouseY, deltaTicks);
+	}
+
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void emutils$handleInventoryToolKeyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
+		if (HudLayoutEditorOverlay.handleKeyPressed(input)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
+		if (EMUtilsClient.tryOpenHudLayoutEditor(input)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
 		if (EMUtilsClient.tryDebugGuiDump(input)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
+		if (InventoryScreenFeatures.handleKeyPressed(handler, focusedSlot, input, emutils$title())) {
 			cir.setReturnValue(true);
 			return;
 		}
@@ -164,9 +193,11 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 
 	@Inject(method = "removed", at = @At("HEAD"))
 	private void emutils$clearInventoryToolDrag(CallbackInfo ci) {
+		HudLayoutEditorOverlay.cancelActive();
 		EMUtilsClient.inventoryTools().clearDrag();
 		EMUtilsClient.storagePreview().captureFromScreen((HandledScreen<?>) (Object) this, handler);
 		SkyblockSackTracker.onInventoryClose(emutils$title());
+		InventoryScreenFeatures.onInventoryClose();
 	}
 
 	@Inject(method = "init", at = @At("TAIL"))
@@ -176,16 +207,26 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 			EMUtilsClient.inventoryTools().cursor().tryRestoreAfterInit(client);
 		}
 		SkyblockSackTracker.onInventoryOpen(emutils$title());
+		InventoryScreenFeatures.onInventoryOpen(emutils$title(), handler);
 	}
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void emutils$handleTrackerHudClickInInventory(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (HudLayoutEditorOverlay.handleMouseClicked(click)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
 		int button = click.button();
 		if (button != 0 && button != 1) {
 			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
+		if (InventoryScreenFeatures.handleMouseClicked(click.x(), click.y(), button)) {
+			cir.setReturnValue(true);
+			return;
+		}
 		if (TrackerHudClickHandler.handleClick(client, click.x(), click.y(), button == 1)) {
 			cir.setReturnValue(true);
 		}
@@ -193,6 +234,11 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 
 	@Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
 	private void emutils$finishInventoryToolBindDrag(Click click, CallbackInfoReturnable<Boolean> cir) {
+		if (HudLayoutEditorOverlay.handleMouseReleased(click)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
 		PlayerInventory inventory = emutils$playerInventory();
 		if (inventory == null) {
 			return;
@@ -204,11 +250,28 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		}
 	}
 
+	@Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
+	private void emutils$dragHudLayoutEditorOverlay(Click click, double offsetX, double offsetY, CallbackInfoReturnable<Boolean> cir) {
+		if (HudLayoutEditorOverlay.handleMouseDragged(click, offsetX, offsetY)) {
+			cir.setReturnValue(true);
+		}
+	}
+
 	@Inject(method = "onMouseClick(Lnet/minecraft/screen/slot/Slot;IILnet/minecraft/screen/slot/SlotActionType;)V", at = @At("HEAD"), cancellable = true)
 	private void emutils$guardInventoryToolSlotClick(@Nullable Slot slot, int slotId, int button, SlotActionType actionType, CallbackInfo ci) {
+		if (HudLayoutEditorOverlay.isActive()) {
+			ci.cancel();
+			return;
+		}
+
 		PlayerInventory inventory = emutils$playerInventory();
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
 		if (inventory == null || minecraftClient == null) {
+			return;
+		}
+
+		if (InventoryScreenFeatures.guardSlotClick(handler, emutils$title(), slot)) {
+			ci.cancel();
 			return;
 		}
 

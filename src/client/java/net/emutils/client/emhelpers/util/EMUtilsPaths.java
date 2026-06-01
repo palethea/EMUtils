@@ -31,6 +31,10 @@ public final class EMUtilsPaths {
 		return configDir().resolve("minescript-keybinds.json");
 	}
 
+	public static Path commandShortcutsFile() {
+		return configDir().resolve("command-shortcuts.json");
+	}
+
 	public static Path inventoryToolsFile() {
 		return configDir().resolve("inventory-tools.json");
 	}

@@ -12,8 +12,6 @@ import net.emutils.client.emutils.chat.gui.ChatFeaturesSettingsScreen;
 import net.emutils.client.emutils.waypoint.gui.WaypointSettingsScreen;
 import net.emutils.client.emhelpers.hud.editor.HudOverlaySettingsScreen;
 import net.emutils.client.emutils.inventory.gui.InventoryToolsSettingsScreen;
-import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
-import net.emutils.client.emutils.packs.gui.PackManagerScreen;
 import net.emutils.client.emutils.reconnect.gui.AutoReconnectSettingsScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotSettingsScreen;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerSettingsScreen;
@@ -21,7 +19,6 @@ import net.emutils.client.emutils.tweaks.gui.TweaksSettingsScreen;
 import net.emutils.client.emutils.zoom.gui.ZoomSettingsScreen;
 import net.emutils.client.emhelpers.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.text.Text;
@@ -45,19 +42,12 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		adder.add(navButton(EMUtilsTexts.HUB_AUTO_RECONNECT, () -> EMUtilsClient.config().autoReconnect(), AutoReconnectSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_SCREENSHOT_HELPER, () -> EMUtilsClient.config().screenshotHelper(), ScreenshotSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_CHAT_FEATURES, this::chatFeaturesEnabled, ChatFeaturesSettingsScreen::new));
+		adder.add(navButton(EMUtilsTexts.HUB_MANAGERS, this::managerFeaturesEnabled, ManagerFeaturesSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_HUD_OVERLAY, () -> EMUtilsClient.config().hudOverlay(), HudOverlaySettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_ZOOM, () -> EMUtilsClient.config().zoomEnabled(), ZoomSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_TWEAKS, () -> EMUtilsClient.config().tweaksEnabled(), TweaksSettingsScreen::new));
-		adder.add(navButton(EMUtilsTexts.HUB_PACK_MANAGER, () -> EMUtilsClient.config().packManagerEnabled(), PackManagerScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_CAPES, () -> EMUtilsClient.config().capesEnabled(), CapesSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_INVENTORY_TOOLS, () -> EMUtilsClient.config().inventoryToolsEnabled(), InventoryToolsSettingsScreen::new));
-		adder.add(optionalNavButton(
-			EMUtilsTexts.HUB_SCRIPT_MANAGER,
-			MinescriptCompat::isLoaded,
-			MinescriptCompat::isLoaded,
-			ScriptManagerScreen::new,
-			EMUtilsTexts.SCRIPT_MANAGER_REQUIRES_MINESCRIPT
-		));
 		adder.add(navButton(
 			EMUtilsTexts.HUB_SPOTIFY_PLAYER,
 			() -> EMUtilsClient.config().spotifyPlayerEnabled() || EMUtilsClient.config().spotifyHudOverlay(),
@@ -78,24 +68,6 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		return button;
 	}
 
-	private ButtonWidget optionalNavButton(
-		String labelKey,
-		BooleanSupplier available,
-		BooleanSupplier enabled,
-		Function<Screen, Screen> screenFactory,
-		String disabledTooltipKey
-	) {
-		ButtonWidget button = ButtonWidget.builder(statusLabel(labelKey, available.getAsBoolean() && enabled.getAsBoolean()), ignored -> {
-			if (available.getAsBoolean()) {
-				client.setScreen(screenFactory.apply(this));
-			}
-		}).build();
-		button.active = available.getAsBoolean();
-		button.setTooltip(Tooltip.of(Text.translatable(disabledTooltipKey)));
-		navButtons.add(new StatusNavButton(button, labelKey, () -> available.getAsBoolean() && enabled.getAsBoolean(), available));
-		return button;
-	}
-
 	private void refreshNavButtons() {
 		for (StatusNavButton navButton : navButtons) {
 			navButton.button.setMessage(statusLabel(navButton.labelKey, navButton.enabled.getAsBoolean()));
@@ -109,6 +81,12 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 			|| EMUtilsClient.config().smartChatFilters()
 			|| EMUtilsClient.config().chatMentionAlerts()
 			|| EMUtilsClient.config().chatMentionHighlight();
+	}
+
+	private boolean managerFeaturesEnabled() {
+		return EMUtilsClient.config().packManagerEnabled()
+			|| EMUtilsClient.config().commandShortcutsEnabled()
+			|| MinescriptCompat.isLoaded();
 	}
 
 	private static Text statusLabel(String labelKey, boolean enabled) {

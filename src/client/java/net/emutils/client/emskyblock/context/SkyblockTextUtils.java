@@ -16,7 +16,7 @@ public final class SkyblockTextUtils {
 			return "";
 		}
 
-		return Formatting.strip(text.getString()).trim();
+		return strip(text.getString());
 	}
 
 	/** Legacy string with section-sign formatting codes (Hypixel armor stand names). */
@@ -68,7 +68,11 @@ public final class SkyblockTextUtils {
 			return "";
 		}
 
-		return Formatting.strip(text).trim();
+		String stripped = Formatting.strip(text);
+		if (stripped == null) {
+			stripped = text;
+		}
+		return stripped.replaceAll("§.", "").trim();
 	}
 
 	public static String normalizeKey(@Nullable String text) {
@@ -110,7 +114,8 @@ public final class SkyblockTextUtils {
 		}
 
 		try {
-			return Double.parseDouble(value.replace(",", ""));
+			String normalized = value.replaceAll("§.", "").replaceAll("[^0-9.,]", "").replace(",", "");
+			return normalized.isBlank() ? 0.0D : Double.parseDouble(normalized);
 		} catch (NumberFormatException ignored) {
 			return 0.0D;
 		}

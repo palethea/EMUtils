@@ -158,12 +158,7 @@ public final class EstimatedItemValueCalculator {
 	}
 
 	private static ComponentResult addStars(ItemStack stack, @Nullable String itemId, List<Text> tooltip) {
-		int totalStars = SkyblockItemAttributes.dungeonStarCount(stack, tooltip);
-		if (totalStars <= 0) {
-			return ComponentResult.empty();
-		}
-
-		int regularStars = SkyblockItemAttributes.regularStarCount(totalStars);
+		int regularStars = SkyblockItemAttributes.regularStarCount(stack, tooltip);
 		if (regularStars <= 0) {
 			return ComponentResult.empty();
 		}
@@ -174,8 +169,7 @@ public final class EstimatedItemValueCalculator {
 	}
 
 	private static ComponentResult addMasterStars(ItemStack stack, List<Text> tooltip) {
-		int totalStars = SkyblockItemAttributes.dungeonStarCount(stack, tooltip);
-		int masterStars = SkyblockItemAttributes.masterStarCount(totalStars);
+		int masterStars = SkyblockItemAttributes.masterStarCount(stack, tooltip);
 		if (masterStars <= 0) {
 			return ComponentResult.empty();
 		}

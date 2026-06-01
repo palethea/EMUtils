@@ -74,6 +74,7 @@ public final class EMUtilsConfig {
 	private Boolean duplicateMessageTimeWindow = Boolean.FALSE;
 	private Boolean chatMentionAlerts = Boolean.FALSE;
 	private Boolean chatMentionHighlight = Boolean.FALSE;
+	private Boolean commandShortcutsEnabled = Boolean.TRUE;
 	private Integer chatMentionHighlightColor = 0xFF7289DA;
 	private Integer chatMentionHighlightStyle = 0;
 	private Integer chatMentionAlertVolume = 100;
@@ -362,6 +363,15 @@ public final class EMUtilsConfig {
 		chatMentionHighlight = enabled;
 		save();
 		ChatFeaturesRefresher.onTimestampSettingsChanged();
+	}
+
+	public boolean commandShortcutsEnabled() {
+		return commandShortcutsEnabled == null || commandShortcutsEnabled;
+	}
+
+	public void setCommandShortcutsEnabled(boolean enabled) {
+		commandShortcutsEnabled = enabled;
+		save();
 	}
 
 	public int chatMentionHighlightColor() {
@@ -1396,6 +1406,19 @@ public final class EMUtilsConfig {
 		ChatFeaturesRefresher.onTimestampSettingsChanged();
 	}
 
+	public void resetCommandShortcutsDefaults() {
+		commandShortcutsEnabled = Boolean.TRUE;
+		save();
+	}
+
+	public void resetManagerDefaults() {
+		commandShortcutsEnabled = Boolean.TRUE;
+		packManagerEnabled = Boolean.TRUE;
+		packManagerShowShadersWithoutIris = Boolean.TRUE;
+		packManagerSearchLimit = 20;
+		save();
+	}
+
 	public void resetHudDefaults() {
 		hudOverlay = Boolean.FALSE;
 		hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
@@ -1564,6 +1587,9 @@ public final class EMUtilsConfig {
 		}
 		if (chatMentionHighlight == null) {
 			chatMentionHighlight = Boolean.FALSE;
+		}
+		if (commandShortcutsEnabled == null) {
+			commandShortcutsEnabled = Boolean.TRUE;
 		}
 		if (chatMentionHighlightColor == null) {
 			chatMentionHighlightColor = 0xFF7289DA;

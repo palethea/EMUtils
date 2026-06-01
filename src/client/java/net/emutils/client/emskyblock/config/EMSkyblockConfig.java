@@ -1,11 +1,14 @@
 package net.emutils.client.emskyblock.config;
 
 import io.github.notenoughupdates.moulconfig.Config;
+import io.github.notenoughupdates.moulconfig.ChromaColour;
 import io.github.notenoughupdates.moulconfig.annotations.Accordion;
 import io.github.notenoughupdates.moulconfig.annotations.Category;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton;
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown;
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText;
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption;
@@ -15,6 +18,7 @@ import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emhelpers.hud.HudOverlayAnchor;
 import net.emutils.client.emskyblock.config.ConfigVersionDisplay;
 import net.fabricmc.loader.api.FabricLoader;
+import org.lwjgl.glfw.GLFW;
 
 public final class EMSkyblockConfig extends Config {
 	@Category(name = "About", desc = "Information about EMUtils and updates.")
@@ -32,12 +36,18 @@ public final class EMSkyblockConfig extends Config {
 	@Category(name = "Chat", desc = "Chat features.")
 	public Chat chat = new Chat();
 
+	@Category(name = "Slayer", desc = "Hypixel SkyBlock slayer profit and drop tracking.")
+	public Slayer slayer = new Slayer();
+
 	@Category(name = "Dev", desc = "Developer and reset actions.")
 	public Dev dev = new Dev();
 
 	public General general = new General();
 	public Tooltips tooltips = inventory.tooltips;
 	public EstimatedItemValue eiv = inventory.eiv;
+	public AuctionHouse auctionHouse = inventory.auctionHouse;
+	public Bazaar bazaar = inventory.bazaar;
+	public ExperimentationTable experimentationTable = inventory.experimentationTable;
 	public StatsHud statsHud = gui.statsHud;
 	public UiCleanup uiCleanup = gui.uiCleanup;
 	public Actions actions = dev.actions;
@@ -46,7 +56,7 @@ public final class EMSkyblockConfig extends Config {
 		public boolean enabled = false;
 	}
 
-	public static final class Chat {
+		public static final class Chat {
 		@Accordion
 		@ConfigOption(name = "Rare Drop Messages", desc = "Enhance rare drop messages in chat.")
 		public RareDropMessages rareDropMessages = new RareDropMessages();
@@ -55,6 +65,33 @@ public final class EMSkyblockConfig extends Config {
 		@ConfigOption(name = "Chat Filters", desc = "Filter unwanted chat messages.")
 		public ChatFilters chatFilters = new ChatFilters();
 	}
+
+	public static final class Slayer {
+		@ConfigOption(name = "Profit Tracker", desc = "Show the Slayer Profit Tracker HUD while doing a slayer quest.")
+		@ConfigEditorBoolean
+		public boolean slayerProfitTrackerEnabled = false;
+
+		@ConfigOption(name = "Show Uptime", desc = "Show tracker uptime and profit per hour.")
+		@ConfigEditorBoolean
+		public boolean slayerProfitTrackerShowUptime = true;
+
+		@Accordion
+		@ConfigOption(name = "Layout", desc = "Position and scale for the Slayer Profit Tracker HUD.")
+		public TrackerLayout slayerProfitTrackerLayout = new TrackerLayout();
+
+		@ConfigOption(name = "Open HUD Layout Editor", desc = "Drag SkyBlock HUD elements into custom positions.")
+		@ConfigEditorButton(buttonText = "Edit")
+		public transient Runnable openHudLayoutEditor = () -> {};
+
+		@ConfigOption(name = "Reset Session", desc = "Clear session slayer profit for the current profile.")
+		@ConfigEditorButton(buttonText = "Reset Session")
+		public transient Runnable resetSession = () -> {};
+
+		@ConfigOption(name = "Reset All Time", desc = "Clear all-time slayer profit for the current profile.")
+		@ConfigEditorButton(buttonText = "Reset All Time")
+		public transient Runnable resetAllTime = () -> {};
+	}
+
 
 	public static final class RareDropMessages {
 		@ConfigOption(name = "Pet Drop Rarity", desc = "Shows what rarity the pet drop is in the pet drop message.")
@@ -161,11 +198,258 @@ public final class EMSkyblockConfig extends Config {
 	}
 
 	public static final class Inventory {
+		@Category(name = "Auction House", desc = "Be smart when buying or selling expensive items in the Auction House.")
+		public AuctionHouse auctionHouse = new AuctionHouse();
+
+		@Category(name = "Bazaar", desc = "Be smart when buying or selling many items in the Bazaar.")
+		public Bazaar bazaar = new Bazaar();
+
+		@Category(name = "Experimentation Table", desc = "QoL features for the Experimentation Table.")
+		public ExperimentationTable experimentationTable = new ExperimentationTable();
+
 		@Category(name = "Tooltips", desc = "Storage and price tooltip features.")
 		public Tooltips tooltips = new Tooltips();
 
 		@Category(name = "Estimated Item Value", desc = "SkyHanni-style item value breakdowns.")
 		public EstimatedItemValue eiv = new EstimatedItemValue();
+	}
+
+	public static final class AuctionHouse {
+		@Accordion
+		@ConfigOption(name = "Auctions Price Comparison", desc = "Highlight auctions based on listed price versus estimated item value.")
+		public AuctionHousePriceComparison priceComparison = new AuctionHousePriceComparison();
+
+		@ConfigOption(name = "Highlight Auctions", desc = "Highlight your sold and expired auctions in Manage Auctions.")
+		@ConfigEditorBoolean
+		public boolean highlightAuctions = true;
+
+		@ConfigOption(name = "Sold Color", desc = "Color of sold items.")
+		@ConfigEditorColour
+		public ChromaColour soldColor = ChromaColour.fromStaticRGB(85, 255, 85, 150);
+
+		@ConfigOption(name = "Expired Color", desc = "Color of expired items.")
+		@ConfigEditorColour
+		public ChromaColour expiredColor = ChromaColour.fromStaticRGB(255, 85, 85, 150);
+
+		@ConfigOption(name = "Highlight Underbid Auctions", desc = "Highlight underbid own lowest BIN auctions that are outbid.")
+		@ConfigEditorBoolean
+		public boolean highlightAuctionsUnderbid = false;
+
+		@ConfigOption(name = "Underbid Color", desc = "Color of underbid BIN items.")
+		@ConfigEditorColour
+		public ChromaColour underbidColor = ChromaColour.fromStaticRGB(255, 170, 0, 150);
+
+		@ConfigOption(
+			name = "Auto Copy Underbid",
+			desc = "Automatically copy the estimated item price minus 1 coin in Create BIN Auction."
+		)
+		@ConfigEditorBoolean
+		public boolean autoCopyUnderbidPrice = false;
+
+		@ConfigOption(
+			name = "Copy Underbid Keybind",
+			desc = "Copy the hovered Auction House price minus 1 coin to the clipboard."
+		)
+		@ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
+		public int copyUnderbidKeybind = GLFW.GLFW_KEY_UNKNOWN;
+
+		@ConfigOption(
+			name = "Price Website",
+			desc = "Add a button to Auction House searches that opens the item page on sky.coflnet.com."
+		)
+		@ConfigEditorBoolean
+		public boolean openPriceWebsite = false;
+
+		@ConfigOption(name = "Outbid Alert", desc = "Send a warning when you are outbid on an auction.")
+		@ConfigEditorBoolean
+		public boolean auctionOutbid = false;
+	}
+
+	public static final class AuctionHousePriceComparison {
+		@ConfigOption(
+			name = "Show Price Comparison",
+			desc = "Highlight auctions by the difference between their estimated value and listed price. This is only an estimate."
+		)
+		@ConfigEditorBoolean
+		public boolean enabled = false;
+
+		@ConfigOption(name = "Good Color", desc = "Color for good value items.")
+		@ConfigEditorColour
+		public ChromaColour good = ChromaColour.fromStaticRGB(85, 255, 85, 150);
+
+		@ConfigOption(name = "Very Good Color", desc = "Color for very good value items.")
+		@ConfigEditorColour
+		public ChromaColour veryGood = ChromaColour.fromStaticRGB(0, 139, 0, 170);
+
+		@ConfigOption(name = "Bad Color", desc = "Color for bad value items.")
+		@ConfigEditorColour
+		public ChromaColour bad = ChromaColour.fromStaticRGB(255, 255, 85, 150);
+
+		@ConfigOption(name = "Very Bad Color", desc = "Color for very bad value items.")
+		@ConfigEditorColour
+		public ChromaColour veryBad = ChromaColour.fromStaticRGB(225, 43, 30, 170);
+	}
+
+	public static final class Bazaar {
+		@ConfigOption(name = "Purchase Helper", desc = "Highlight the Bazaar result opened by /bz, cancelled-order reorders, and shopping-list shortcuts.")
+		@ConfigEditorBoolean
+		public boolean purchaseHelper = true;
+
+		@ConfigOption(name = "Order Helper", desc = "Show visual hints in Bazaar order views for ready or outbid orders.")
+		@ConfigEditorBoolean
+		public boolean orderHelper = false;
+
+		@ConfigOption(name = "Best Sell Method", desc = "Show the price difference between instant sell and sell offer.")
+		@ConfigEditorBoolean
+		public boolean bestSellMethod = false;
+
+		@ConfigOption(
+			name = "Daily Limit Tracker",
+			desc = "Show your progress towards the daily 15 billion coin Bazaar trade limit."
+		)
+		@ConfigEditorBoolean
+		public boolean dailyLimitTracker = false;
+
+		@ConfigOption(
+			name = "Cancelled Buy Order Clipboard",
+			desc = "Send missing items from cancelled buy orders in chat and copy the amount to the clipboard."
+		)
+		@ConfigEditorBoolean
+		public boolean cancelledBuyOrderClipboard = false;
+
+		@ConfigOption(
+			name = "Price Website",
+			desc = "Add a button to Bazaar product inventories that opens the item page on skyblock.bz."
+		)
+		@ConfigEditorBoolean
+		public boolean openPriceWebsite = false;
+
+		@ConfigOption(
+			name = "Max Items With Purse",
+			desc = "Calculate how many of the opened Bazaar item you can buy with your purse."
+		)
+		@ConfigEditorBoolean
+		public boolean maxPurseItems = false;
+
+		@ConfigOption(
+			name = "Craft Materials Bazaar",
+			desc = "In the crafting view, show a shopping list of required materials with Bazaar or Auction prices."
+		)
+		@ConfigEditorBoolean
+		public boolean craftMaterialsFromBazaar = true;
+	}
+
+	public static final class ExperimentationTable {
+		@Accordion
+		@ConfigOption(name = "Profit Tracker", desc = "Tracker for drops and XP you get from experiments.")
+		public ExperimentsProfitTracker experimentsProfitTracker = new ExperimentsProfitTracker();
+
+		@Accordion
+		@ConfigOption(name = "Dry-Streak Display", desc = "Display attempts and XP since your last ULTRA-RARE.")
+		public ExperimentsDryStreak dryStreak = new ExperimentsDryStreak();
+
+		@Accordion
+		@ConfigOption(name = "Experiment Addons", desc = "Helpers for Chronomatron and Ultrasequencer.")
+		public ExperimentsAddons addons = new ExperimentsAddons();
+
+		@Accordion
+		@ConfigOption(name = "Superpairs", desc = "Helpers and overlays for Superpairs.")
+		public ExperimentsSuperpairs superpairs = new ExperimentsSuperpairs();
+
+		@ConfigOption(
+			name = "Guardian Reminder",
+			desc = "Warn when opening the Experimentation Table without a Guardian pet equipped."
+		)
+		@ConfigEditorBoolean
+		public boolean guardianReminder = false;
+	}
+
+	public static final class ExperimentsProfitTracker {
+		@ConfigOption(name = "Enabled", desc = "Track drops, XP, bottles, and time spent in experiments.")
+		@ConfigEditorBoolean
+		public boolean enabled = false;
+
+		@ConfigOption(name = "Track Time Spent", desc = "Track time spent doing add-ons and experiments.")
+		@ConfigEditorBoolean
+		public boolean trackTimeSpent = false;
+
+		@ConfigOption(name = "Track Used Bottles", desc = "Track thrown XP bottles while near the Experimentation Table.")
+		@ConfigEditorBoolean
+		public boolean trackUsedBottles = true;
+
+		@ConfigOption(name = "Bottle Warnings", desc = "Display warnings once per session about bottles being auto-tracked.")
+		@ConfigEditorBoolean
+		public boolean bottleWarnings = true;
+	}
+
+	public static final class ExperimentsDryStreak {
+		@ConfigOption(name = "Enabled", desc = "Display attempts and XP since your last ULTRA-RARE.")
+		@ConfigEditorBoolean
+		public boolean enabled = false;
+
+		@ConfigOption(name = "Attempts", desc = "Display attempts since the last ULTRA-RARE.")
+		@ConfigEditorBoolean
+		public boolean attemptsSince = true;
+
+		@ConfigOption(name = "XP", desc = "Display XP since the last ULTRA-RARE.")
+		@ConfigEditorBoolean
+		public boolean xpSince = true;
+	}
+
+	public static final class ExperimentsAddons {
+		@ConfigOption(name = "Enabled", desc = "Enable helpers for Chronomatron and Ultrasequencer.")
+		@ConfigEditorBoolean
+		public boolean enabled = false;
+
+		@ConfigOption(
+			name = "Next Click Helper",
+			desc = "Highlight the next slot to click in Chronomatron and show the Ultrasequencer sequence."
+		)
+		@ConfigEditorBoolean
+		public boolean highlightNextClick = true;
+
+		@ConfigOption(name = "Color", desc = "Color for the next slot.")
+		@ConfigEditorColour
+		public ChromaColour nextColor = ChromaColour.fromStaticRGB(85, 255, 85, 170);
+
+		@ConfigOption(name = "Second Color", desc = "Color for later slots.")
+		@ConfigEditorColour
+		public ChromaColour secondColor = ChromaColour.fromStaticRGB(255, 255, 85, 110);
+
+		@ConfigOption(name = "Prevent Misclicks", desc = "Prevent clicking wrong Chronomatron colors or Ultrasequencer slots.")
+		@ConfigEditorBoolean
+		public boolean preventMisclicks = true;
+
+		@ConfigOption(
+			name = "Max Clicks Alert",
+			desc = "Alert when you reach the maximum clicks from Chronomatron or Ultrasequencer."
+		)
+		@ConfigEditorBoolean
+		public boolean maxSequenceAlert = true;
+	}
+
+	public static final class ExperimentsSuperpairs {
+		@Accordion
+		@ConfigOption(name = "Keep Items Visible", desc = "Keep clicked items visible to help create matches.")
+		public SuperpairsVisibility clickedItemsVisible = new SuperpairsVisibility();
+
+		@ConfigOption(name = "Superpair Data", desc = "Display useful data while doing the Superpairs experiment.")
+		@ConfigEditorBoolean
+		public boolean display = false;
+
+		@ConfigOption(name = "Superpairs XP Overlay", desc = "Show how much XP every pair is worth in Superpairs.")
+		@ConfigEditorBoolean
+		public boolean xpOverlay = true;
+
+		@ConfigOption(name = "ULTRA-RARE Book Alert", desc = "Send a chat message, title, and sound when you find an ULTRA-RARE book.")
+		@ConfigEditorBoolean
+		public boolean ultraRareBookAlert = false;
+	}
+
+	public static final class SuperpairsVisibility {
+		@ConfigOption(name = "Enabled", desc = "Keep clicked items visible to help create matches.")
+		@ConfigEditorBoolean
+		public boolean enabled = true;
 	}
 
 	public static final class Dev {
@@ -615,6 +899,7 @@ public final class EMSkyblockConfig extends Config {
 		fishing = new Fishing();
 		inventory = new Inventory();
 		chat = new Chat();
+		slayer = new Slayer();
 		dev = new Dev();
 		general = new General();
 		syncLegacyAliases();
@@ -626,10 +911,14 @@ public final class EMSkyblockConfig extends Config {
 		if (dev == null) dev = new Dev();
 		if (fishing == null) fishing = new Fishing();
 		if (chat == null) chat = new Chat();
+		if (slayer == null) slayer = new Slayer();
 
 		if (preferLegacyFields) {
 			if (tooltips != null) inventory.tooltips = tooltips;
 			if (eiv != null) inventory.eiv = eiv;
+			if (auctionHouse != null) inventory.auctionHouse = auctionHouse;
+			if (bazaar != null) inventory.bazaar = bazaar;
+			if (experimentationTable != null) inventory.experimentationTable = experimentationTable;
 			if (statsHud != null) gui.statsHud = statsHud;
 			if (uiCleanup != null) gui.uiCleanup = uiCleanup;
 			if (actions != null) dev.actions = actions;
@@ -641,6 +930,9 @@ public final class EMSkyblockConfig extends Config {
 	private void syncLegacyAliases() {
 		tooltips = inventory.tooltips;
 		eiv = inventory.eiv;
+		auctionHouse = inventory.auctionHouse;
+		bazaar = inventory.bazaar;
+		experimentationTable = inventory.experimentationTable;
 		statsHud = gui.statsHud;
 		uiCleanup = gui.uiCleanup;
 		actions = dev.actions;

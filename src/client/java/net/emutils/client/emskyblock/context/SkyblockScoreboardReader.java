@@ -11,6 +11,7 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import org.jspecify.annotations.Nullable;
 
@@ -21,7 +22,7 @@ public final class SkyblockScoreboardReader {
 	);
 	private static final Pattern HYPIXEL_FOOTER = Pattern.compile("(?:.+\\.)?hypixel\\.net", Pattern.CASE_INSENSITIVE);
 	private static final Pattern AREA = Pattern.compile("(?:⏣|ф)\\s*(.+)");
-	private static final Pattern PURSE = Pattern.compile("(?:Piggy|Purse):\\s*([\\d,.]+)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PURSE = Pattern.compile("(Piggy|Purse):\\s*(.+)", Pattern.CASE_INSENSITIVE);
 	private static final Pattern SERVER = Pattern.compile("\\d+/\\d+/\\d+\\s*[mM](\\S+)");
 	private static final Pattern VISITORS = Pattern.compile("✌\\s*\\((\\d+)/(\\d+)\\)");
 	private static final Pattern IRONMAN = Pattern.compile("Ironman", Pattern.CASE_INSENSITIVE);
@@ -54,7 +55,7 @@ public final class SkyblockScoreboardReader {
 		}
 
 		Scoreboard scoreboard = client.world.getScoreboard();
-		ScoreboardObjective objective = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
+		ScoreboardObjective objective = objectiveForClient(client, scoreboard);
 		if (objective == null) {
 			return ParsedScoreboard.empty();
 		}
@@ -85,8 +86,8 @@ public final class SkyblockScoreboardReader {
 
 			Matcher purseMatcher = PURSE.matcher(stripped);
 			if (purseMatcher.find()) {
-				double amount = SkyblockTextUtils.parseCoins(purseMatcher.group(1));
-				if (stripped.toLowerCase().contains("piggy")) {
+				double amount = SkyblockTextUtils.parseCoins(purseMatcher.group(2));
+				if (purseMatcher.group(1).equalsIgnoreCase("piggy")) {
 					piggy = amount;
 				} else {
 					purse = amount;
@@ -124,6 +125,24 @@ public final class SkyblockScoreboardReader {
 		return line != null && HYPIXEL_FOOTER.matcher(line).find();
 	}
 
+	@Nullable
+	private static ScoreboardObjective objectiveForClient(MinecraftClient client, Scoreboard scoreboard) {
+		if (client.player != null) {
+			Team team = scoreboard.getScoreHolderTeam(client.player.getNameForScoreboard());
+			if (team != null) {
+				ScoreboardDisplaySlot slot = ScoreboardDisplaySlot.fromFormatting(team.getColor());
+				if (slot != null) {
+					ScoreboardObjective objective = scoreboard.getObjectiveForSlot(slot);
+					if (objective != null) {
+						return objective;
+					}
+				}
+			}
+		}
+
+		return scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
+	}
+
 	private static List<String> readLines(Scoreboard scoreboard, ScoreboardObjective objective) {
 		Collection<ScoreboardEntry> scores = scoreboard.getScoreboardEntries(objective);
 		List<ScoreboardEntry> sorted = new ArrayList<>(scores);
@@ -132,9 +151,10 @@ public final class SkyblockScoreboardReader {
 
 		List<String> lines = new ArrayList<>(sorted.size());
 		for (ScoreboardEntry entry : sorted) {
-			Text ownerName = entry.name();
-			if (ownerName != null) {
-				lines.add(SkyblockTextUtils.strip(ownerName));
+			Text name = entry.name();
+			if (name != null) {
+				Team team = scoreboard.getScoreHolderTeam(entry.owner());
+				lines.add(SkyblockTextUtils.strip(Team.decorateName(team, name)));
 			}
 		}
 

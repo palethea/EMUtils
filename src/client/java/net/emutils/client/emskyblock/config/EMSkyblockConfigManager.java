@@ -124,6 +124,9 @@ public final class EMSkyblockConfigManager {
 		config.fishing.seaCreatureTracker.resetAllTime = FishingTrackerStorage::resetAllTimeSeaCreature;
 		config.fishing.fishingProfitTracker.resetSession = FishingTrackerStorage::resetSessionProfit;
 		config.fishing.fishingProfitTracker.resetAllTime = FishingTrackerStorage::resetAllTimeProfit;
+		config.slayer.openHudLayoutEditor = () -> HudLayoutManager.openEditor(MinecraftClient.getInstance());
+		config.slayer.resetSession = net.emutils.client.emskyblock.features.slayer.slayertracker.SlayerTrackerStorage::resetSessionAll;
+		config.slayer.resetAllTime = net.emutils.client.emskyblock.features.slayer.slayertracker.SlayerTrackerStorage::resetAllTimeAll;
 		config.actions.resetDefaults = EMSkyblockConfigManager::resetToDefaults;
 		config.about.licenses.moulConfig = () -> openUrl("https://github.com/NotEnoughUpdates/MoulConfig");
 		config.about.licenses.fabricLoader = () -> openUrl("https://github.com/FabricMC/fabric-loader");

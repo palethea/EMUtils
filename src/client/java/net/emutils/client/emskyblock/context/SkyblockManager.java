@@ -110,6 +110,8 @@ public final class SkyblockManager {
 
 		SkyblockSackTracker.onChat(message);
 		net.emutils.client.emskyblock.features.fishing.common.FishingChatHandler.onChat(message);
+		net.emutils.client.emskyblock.features.slayer.common.SlayerChatHandler.onChat(message);
+		net.emutils.client.emskyblock.features.inventory.common.InventoryScreenFeatures.onChat(message);
 		return false;
 	}
 

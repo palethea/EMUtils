@@ -58,7 +58,7 @@ public record SkyblockLocrawData(
 
 		try {
 			JsonObject object = JsonParser.parseString(trimmed).getAsJsonObject();
-			if (!object.has("server") || !object.has("gametype")) {
+			if (!isLocrawObject(object)) {
 				return null;
 			}
 
@@ -70,6 +70,22 @@ public record SkyblockLocrawData(
 
 	public static boolean isLocrawMessage(@Nullable String text) {
 		return tryParseMessage(text) != null;
+	}
+
+	private static boolean isLocrawObject(JsonObject object) {
+		if (!object.has("server")) {
+			return false;
+		}
+
+		if (object.has("gametype")
+			|| object.has("lobbyname")
+			|| object.has("lobbytype")
+			|| object.has("mode")
+			|| object.has("map")) {
+			return true;
+		}
+
+		return "limbo".equalsIgnoreCase(readString(object, "server"));
 	}
 
 	private static String readString(JsonObject object, String key) {

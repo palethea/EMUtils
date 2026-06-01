@@ -306,6 +306,16 @@ public final class EMSkyblockSettings {
 		return config == null ? 8 : config.fishing.fishingProfitTracker.maxLines;
 	}
 
+	public static boolean slayerProfitTrackerEnabled() {
+		EMSkyblockConfig config = config();
+		return config != null && config.slayer.slayerProfitTrackerEnabled;
+	}
+
+	public static boolean slayerProfitTrackerShowUptime() {
+		EMSkyblockConfig config = config();
+		return config == null || config.slayer.slayerProfitTrackerShowUptime;
+	}
+
 	public static boolean skyblockHideVanillaStatusBars() {
 		EMSkyblockConfig config = config();
 		return config != null && config.uiCleanup.hideVanillaStatusBars;

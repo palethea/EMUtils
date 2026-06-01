@@ -21,6 +21,8 @@ public final class EMUtilsTexts {
         "emutils.hub.open_pack_manager";
     public static final String HUB_OPEN_SCRIPT_MANAGER =
         "emutils.hub.open_script_manager";
+    public static final String HUB_OPEN_COMMAND_SHORTCUTS =
+        "emutils.hub.open_command_shortcuts";
 
     public static final String OPTION_ON = "emutils.option.on";
     public static final String OPTION_OFF = "emutils.option.off";
@@ -38,10 +40,10 @@ public final class EMUtilsTexts {
         "emutils.hub.screenshot_helper";
     public static final String HUB_COPY_CHAT = "emutils.hub.copy_chat";
     public static final String HUB_CHAT_FEATURES = "emutils.hub.chat_features";
+    public static final String HUB_MANAGERS = "emutils.hub.managers";
     public static final String HUB_HUD_OVERLAY = "emutils.hub.hud_overlay";
     public static final String HUB_ZOOM = "emutils.hub.zoom";
     public static final String HUB_TWEAKS = "emutils.hub.tweaks";
-    public static final String HUB_PACK_MANAGER = "emutils.hub.pack_manager";
     public static final String HUB_CAPES = "emutils.hub.capes";
     public static final String HUB_SPOTIFY_PLAYER =
         "emutils.hub.spotify_player";
@@ -49,9 +51,6 @@ public final class EMUtilsTexts {
         "emutils.hub.inventory_tools";
     public static final String HUB_SKYBLOCK = "emutils.hub.skyblock";
     public static final String HUB_EMSKYBLOCK = "emutils.hub.emskyblock";
-    public static final String HUB_SCRIPT_MANAGER =
-        "emutils.hub.script_manager";
-
     public static final String SCREEN_DEATH_WAYPOINTS =
         "emutils.screen.death_waypoints";
     public static final String SCREEN_AUTO_RECONNECT =
@@ -61,6 +60,7 @@ public final class EMUtilsTexts {
     public static final String SCREEN_COPY_CHAT = "emutils.screen.copy_chat";
     public static final String SCREEN_CHAT_FEATURES =
         "emutils.screen.chat_features";
+    public static final String SCREEN_MANAGERS = "emutils.screen.managers";
     public static final String SCREEN_CURRENT_WAYPOINTS =
         "emutils.screen.current_waypoints";
     public static final String SCREEN_SCREENSHOT_GALLERY =
@@ -86,6 +86,12 @@ public final class EMUtilsTexts {
         "emutils.settings_chooser.emskyblock";
     public static final String SCREEN_SCRIPT_MANAGER =
         "emutils.screen.script_manager";
+    public static final String SCREEN_COMMAND_SHORTCUTS =
+        "emutils.screen.command_shortcuts";
+    public static final String SCREEN_ADD_COMMAND_SHORTCUT =
+        "emutils.screen.add_command_shortcut";
+    public static final String SCREEN_EDIT_COMMAND_SHORTCUT =
+        "emutils.screen.edit_command_shortcut";
 
     public static final String OPTION_AUTO_RECONNECT =
         "emutils.option.auto_reconnect";
@@ -132,6 +138,14 @@ public final class EMUtilsTexts {
         "emutils.option.chat_mention_alert_volume";
     public static final String OPTION_CHAT_MENTION_ALERT_SOUND =
         "emutils.option.chat_mention_alert_sound";
+    public static final String OPTION_COMMAND_SHORTCUTS =
+        "emutils.option.command_shortcuts";
+    public static final String OPTION_MANAGE_COMMAND_SHORTCUTS =
+        "emutils.option.manage_command_shortcuts";
+    public static final String OPTION_ADD_COMMAND_SHORTCUT =
+        "emutils.option.add_command_shortcut";
+    public static final String OPTION_CLEAR_COMMAND_SHORTCUTS =
+        "emutils.option.clear_command_shortcuts";
     public static final String OPTION_DEATH_WAYPOINT =
         "emutils.option.death_waypoint";
     public static final String OPTION_DEATH_WAYPOINT_AUTO_COPY =
@@ -187,12 +201,23 @@ public final class EMUtilsTexts {
         "emutils.hud.element.skyblock_stats";
     public static final String HUD_ELEMENT_ESTIMATED_ITEM_VALUE =
         "emutils.hud.element.estimated_item_value";
+    public static final String HUD_ELEMENT_BAZAAR_BEST_SELL_METHOD =
+        "emutils.hud.element.bazaar_best_sell_method";
+    public static final String HUD_ELEMENT_BAZAAR_MAX_PURSE_ITEMS =
+        "emutils.hud.element.bazaar_max_purse_items";
+    public static final String HUD_ELEMENT_BAZAAR_DAILY_LIMIT =
+        "emutils.hud.element.bazaar_daily_limit";
+    public static final String HUD_ELEMENT_BAZAAR_CRAFT_MATERIAL_COLLECTOR =
+        "emutils.hud.element.bazaar_craft_material_collector";
     public static final String HUD_ELEMENT_FISHING_HOOK =
         "emutils.hud.element.fishing_hook";
     public static final String HUD_ELEMENT_SEA_CREATURE_TRACKER =
         "emutils.hud.element.sea_creature_tracker";
     public static final String HUD_ELEMENT_FISHING_PROFIT_TRACKER =
         "emutils.hud.element.fishing_profit_tracker";
+    public static final String HUD_ELEMENT_SLAYER_PROFIT_TRACKER =
+        "emutils.hud.element.slayer_profit_tracker";
+    public static final String SLAYER_BOSS_PREFIX = "emutils.slayer.boss.";
     public static final String OPTION_SKYBLOCK_HIDE_ACTION_BAR =
         "emutils.option.skyblock_hide_action_bar";
     public static final String OPTION_SKYBLOCK_HIDE_INVENTORY_STATUS_EFFECTS =
@@ -663,6 +688,44 @@ public final class EMUtilsTexts {
         "emutils.script_manager.unsaved_message";
     public static final String SCRIPT_MANAGER_DISCARD =
         "emutils.script_manager.discard";
+    public static final String COMMAND_SHORTCUT_NONE =
+        "emutils.command_shortcut.none";
+    public static final String COMMAND_SHORTCUT_ACTION_EDIT =
+        "emutils.command_shortcut.action.edit";
+    public static final String COMMAND_SHORTCUT_ACTION_DELETE =
+        "emutils.command_shortcut.action.delete";
+    public static final String COMMAND_SHORTCUT_ACTION_SAVE =
+        "emutils.command_shortcut.action.save";
+    public static final String COMMAND_SHORTCUT_TYPE_COMMAND =
+        "emutils.command_shortcut.type.command";
+    public static final String COMMAND_SHORTCUT_TYPE_CHAT =
+        "emutils.command_shortcut.type.chat";
+    public static final String COMMAND_SHORTCUT_FIELD_NAME =
+        "emutils.command_shortcut.field.name";
+    public static final String COMMAND_SHORTCUT_FIELD_TEXT =
+        "emutils.command_shortcut.field.text";
+    public static final String COMMAND_SHORTCUT_NAME_PLACEHOLDER =
+        "emutils.command_shortcut.name_placeholder";
+    public static final String COMMAND_SHORTCUT_TEXT_PLACEHOLDER =
+        "emutils.command_shortcut.text_placeholder";
+    public static final String COMMAND_SHORTCUT_KEY_UNSET =
+        "emutils.command_shortcut.key_unset";
+    public static final String COMMAND_SHORTCUT_KEY_VALUE =
+        "emutils.command_shortcut.key_value";
+    public static final String COMMAND_SHORTCUT_COMMAND_VALUE =
+        "emutils.command_shortcut.command_value";
+    public static final String COMMAND_SHORTCUT_CAPTURE_KEY =
+        "emutils.command_shortcut.capture_key";
+    public static final String COMMAND_SHORTCUT_TEXT_REQUIRED =
+        "emutils.command_shortcut.text_required";
+    public static final String COMMAND_SHORTCUT_KEY_REQUIRED =
+        "emutils.command_shortcut.key_required";
+    public static final String COMMAND_SHORTCUT_DUPLICATE_KEY =
+        "emutils.command_shortcut.duplicate_key";
+    public static final String COMMAND_SHORTCUT_CLEAR_TITLE =
+        "emutils.command_shortcut.clear_title";
+    public static final String COMMAND_SHORTCUT_CLEAR_MESSAGE =
+        "emutils.command_shortcut.clear_message";
 
     private EMUtilsTexts() {}
 

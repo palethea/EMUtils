@@ -1,6 +1,7 @@
 package net.emutils.client.emhelpers.hud.layout;
 
 import net.emutils.client.emhelpers.hud.editor.HudLayoutEditorScreen;
+import net.emutils.client.emhelpers.hud.editor.HudLayoutEditorOverlay;
 import net.minecraft.client.MinecraftClient;
 import org.jspecify.annotations.Nullable;
 
@@ -9,7 +10,7 @@ public final class HudLayoutEditorContext {
 	}
 
 	public static boolean isActive(@Nullable MinecraftClient client) {
-		return client != null && client.currentScreen instanceof HudLayoutEditorScreen;
+		return client != null && (client.currentScreen instanceof HudLayoutEditorScreen || HudLayoutEditorOverlay.isActive());
 	}
 
 	public static void beginVanillaHudDim() {

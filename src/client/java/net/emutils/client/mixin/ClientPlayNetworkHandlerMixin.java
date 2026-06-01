@@ -1,6 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emskyblock.features.inventory.common.InventoryScreenFeatures;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -15,6 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin {
+	@Inject(method = "sendChatCommand", at = @At("HEAD"))
+	private void emutils$trackSkyblockInventoryCommand(String command, CallbackInfo ci) {
+		InventoryScreenFeatures.onCommand(command);
+	}
+
 	@Inject(method = "onCloseScreen", at = @At("HEAD"))
 	private void emutils$saveContainerCursorOnClose(CloseScreenS2CPacket packet, CallbackInfo ci) {
 		MinecraftClient client = MinecraftClient.getInstance();
