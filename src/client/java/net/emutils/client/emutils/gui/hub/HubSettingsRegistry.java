@@ -264,7 +264,7 @@ public final class HubSettingsRegistry {
 			() -> {
 				MinecraftClient client = MinecraftClient.getInstance();
 				if (client != null) {
-					HudLayoutManager.openEditor(client);
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
 				}
 			},
 			true

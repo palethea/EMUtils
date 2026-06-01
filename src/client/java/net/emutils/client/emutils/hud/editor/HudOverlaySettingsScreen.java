@@ -25,7 +25,7 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 		));
 		adder.add(ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR), button -> {
 			if (client != null) {
-				HudLayoutManager.openEditor(client);
+				HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
 			}
 		}).width(SETTINGS_BUTTON_WIDTH).build());
 		adder.add(ConfigToggleButton.create(
@@ -89,4 +89,3 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 		}), SETTINGS_COLUMNS);
 	}
 }
-

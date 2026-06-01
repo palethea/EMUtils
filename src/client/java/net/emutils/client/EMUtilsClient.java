@@ -145,9 +145,9 @@ public class EMUtilsClient implements ClientModInitializer {
 	}
 
 	private static void registerHudLayoutElements() {
-		HudLayoutRegistry.register(new InfoOverlayHudElement());
-		HudLayoutRegistry.register(new SpotifyHudElement());
-		HudLayoutRegistry.register(new InventoryPreviewHudElement());
+		HudLayoutRegistry.register(MOD_ID, new InfoOverlayHudElement());
+		HudLayoutRegistry.register(MOD_ID, new SpotifyHudElement());
+		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
 	}
 
 	private static void registerKeyBindings() {
@@ -272,11 +272,11 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void openHudLayoutEditor(MinecraftClient client) {
 		if (client != null && client.currentScreen instanceof HandledScreen<?>) {
-			HudLayoutEditorOverlay.open(client);
+			HudLayoutEditorOverlay.open(MOD_ID, client);
 			return;
 		}
 
-		HudLayoutManager.openEditor(client);
+		HudLayoutManager.openEditor(MOD_ID, client);
 	}
 
 	public static EMUtilsConfig config() {
