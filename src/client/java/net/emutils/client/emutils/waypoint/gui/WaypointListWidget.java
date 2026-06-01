@@ -6,7 +6,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.WaypointType;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class InstalledPackIndex {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

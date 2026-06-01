@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.toast.SystemToast;

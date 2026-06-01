@@ -2,8 +2,8 @@ package net.emutils.client.emutils.tweaks.gui;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
-import net.emutils.client.emhelpers.gui.widget.ConfigToggleButton;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.text.Text;

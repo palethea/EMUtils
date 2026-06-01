@@ -5,7 +5,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;

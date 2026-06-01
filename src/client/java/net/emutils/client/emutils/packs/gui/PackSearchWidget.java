@@ -7,7 +7,7 @@ import net.emutils.client.emutils.compat.IrisCompat;
 import net.emutils.client.emutils.screenshot.gui.GalleryIconButtonWidget;
 import net.emutils.client.emutils.screenshot.gui.GalleryLoadingSpinner;
 import net.emutils.client.emutils.packs.PackType;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;

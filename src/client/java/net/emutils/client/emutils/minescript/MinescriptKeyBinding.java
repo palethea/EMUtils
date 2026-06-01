@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.minescript;
 
-import net.emutils.client.emhelpers.input.StoredKeyCombo;
+import net.emhelpers.client.input.StoredKeyCombo;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.util.InputUtil;
 

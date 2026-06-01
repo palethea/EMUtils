@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.emutils.client.emutils.minescript.MinescriptScript;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;

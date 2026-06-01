@@ -108,24 +108,6 @@ public abstract class ChatHudMixin implements WaypointChatAccess, ChatHudAccess 
 		@Nullable MessageIndicator indicator,
 		CallbackInfo ci
 	) {
-		if (EMUtilsClient.skyblock().onChatMessage(message)) {
-			ci.cancel();
-			return;
-		}
-
-		String filterReason = net.emutils.client.emskyblock.features.chat.chatfilter.ChatFilterManager.onChat(message);
-		if (filterReason != null) {
-			ci.cancel();
-			return;
-		}
-
-		Text modifiedMessage = net.emutils.client.emskyblock.features.chat.raredropmessages.RareDropMessagesManager.onChat(message);
-		if (modifiedMessage != null) {
-			ci.cancel();
-			emutils$addProcessedMessage(modifiedMessage, signatureData, indicator);
-			return;
-		}
-
 		ChatMentionAlerts.handle(client, message);
 	}
 

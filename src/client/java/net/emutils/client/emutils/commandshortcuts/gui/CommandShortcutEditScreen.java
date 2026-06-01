@@ -1,8 +1,8 @@
 package net.emutils.client.emutils.commandshortcuts.gui;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.input.StoredKeyCombo;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emhelpers.client.input.StoredKeyCombo;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;

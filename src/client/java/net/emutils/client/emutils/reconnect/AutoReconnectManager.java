@@ -3,7 +3,7 @@ package net.emutils.client.emutils.reconnect;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.ConnectScreenCompat;
 import net.emutils.client.mixin.DisconnectedScreenAccess;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;

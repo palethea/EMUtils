@@ -3,8 +3,8 @@ package net.emutils.client.emutils.spotify;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
-import net.emutils.client.emhelpers.hud.layout.HudElementId;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutManager;
+import net.emhelpers.client.hud.layout.HudElementId;
+import net.emhelpers.client.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -45,7 +45,7 @@ public final class SpotifyHudRenderer {
 		}
 
 		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
-			HudElementId.SPOTIFY,
+			net.emutils.client.EMUtilsHudElements.SPOTIFY,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),

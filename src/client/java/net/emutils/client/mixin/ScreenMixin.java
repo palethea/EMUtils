@@ -3,12 +3,11 @@ package net.emutils.client.mixin;
 import java.io.File;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emskyblock.features.inventory.bazaar.BazaarFeatures;
 import net.emutils.client.emutils.waypoint.WaypointClickHandler;
 import net.emutils.client.emutils.waypoint.WaypointMessage;
 import net.emutils.client.emutils.screenshot.ScreenshotActions;
 import net.emutils.client.emutils.screenshot.ScreenshotMessage;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.gui.screen.Screen;
@@ -38,11 +37,6 @@ public abstract class ScreenMixin {
 		}
 
 		if (WaypointClickHandler.tryHandle(custom.id(), custom, client)) {
-			ci.cancel();
-			return;
-		}
-
-		if (BazaarFeatures.tryHandleClick(custom, client)) {
 			ci.cancel();
 			return;
 		}

@@ -1,10 +1,10 @@
 package net.emutils.client.emutils.inventory;
 
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emhelpers.hud.HudOverlayPlacement;
-import net.emutils.client.emhelpers.hud.layout.AbstractHudLayoutElement;
-import net.emutils.client.emhelpers.hud.layout.HudElementId;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutManager;
+import net.emhelpers.client.hud.HudOverlayPlacement;
+import net.emhelpers.client.hud.layout.AbstractHudLayoutElement;
+import net.emhelpers.client.hud.layout.HudLayoutConfig;
+import net.emhelpers.client.hud.layout.HudLayoutManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
@@ -12,7 +12,7 @@ public final class InventoryPreviewHudElement extends AbstractHudLayoutElement {
 	private static final int BOTTOM_MARGIN = 62;
 
 	public InventoryPreviewHudElement() {
-		super(HudElementId.INVENTORY_PREVIEW);
+		super(net.emutils.client.EMUtilsHudElements.INVENTORY_PREVIEW);
 	}
 
 	@Override
@@ -21,13 +21,13 @@ public final class InventoryPreviewHudElement extends AbstractHudLayoutElement {
 	}
 
 	@Override
-	public HudOverlayPlacement.PanelDimensions unscaledDimensions(EMUtilsConfig config, MinecraftClient client) {
+	public HudOverlayPlacement.PanelDimensions unscaledDimensions(HudLayoutConfig config, MinecraftClient client) {
 		return new HudOverlayPlacement.PanelDimensions(ShulkerStylePanelRenderer.WIDTH, ShulkerStylePanelRenderer.HEIGHT);
 	}
 
 	@Override
 	public HudOverlayPlacement.Position defaultPosition(
-		EMUtilsConfig config,
+		HudLayoutConfig config,
 		int screenWidth,
 		int screenHeight,
 		HudOverlayPlacement.PanelDimensions dimensions
@@ -39,8 +39,8 @@ public final class InventoryPreviewHudElement extends AbstractHudLayoutElement {
 	}
 
 	@Override
-	public int defaultOpacityPercent(EMUtilsConfig config) {
-		return config.inventoryPreviewOpacity();
+	public int defaultOpacityPercent(HudLayoutConfig config) {
+		return ((EMUtilsConfig) config).inventoryPreviewOpacity();
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public final class InventoryPreviewHudElement extends AbstractHudLayoutElement {
 		DrawContext context,
 		int x,
 		int y,
-		EMUtilsConfig config,
+		HudLayoutConfig config,
 		MinecraftClient client,
 		int scalePercent
 	) {

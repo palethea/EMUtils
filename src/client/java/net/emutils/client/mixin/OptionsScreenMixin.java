@@ -1,8 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
-import net.emutils.client.emskyblock.config.gui.EMSkyblockConfigScreenFactory;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
@@ -42,10 +41,6 @@ public abstract class OptionsScreenMixin extends Screen {
 		grid.add(emutilsButton, EMUTILS_ROW, 0, 1, 1, grid.getMainPositioner());
 		addDrawableChild(emutilsButton);
 
-		ButtonWidget skyblockButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTIONS_SKYBLOCK_BUTTON), button -> MinecraftClient.getInstance()
-			.setScreen(EMSkyblockConfigScreenFactory.create(this))).build();
-		grid.add(skyblockButton, EMUTILS_ROW, 1, 1, 1, grid.getMainPositioner());
-		addDrawableChild(skyblockButton);
 		this.layout.refreshPositions();
 	}
 

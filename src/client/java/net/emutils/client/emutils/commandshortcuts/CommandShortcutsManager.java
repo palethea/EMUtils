@@ -3,7 +3,7 @@ package net.emutils.client.emutils.commandshortcuts;
 import java.util.HashSet;
 import java.util.Set;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.input.StoredKeyCombo;
+import net.emhelpers.client.input.StoredKeyCombo;
 import net.minecraft.client.MinecraftClient;
 
 public final class CommandShortcutsManager {

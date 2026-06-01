@@ -1,7 +1,7 @@
 package net.emutils.client.emutils.commandshortcuts;
 
 import java.util.UUID;
-import net.emutils.client.emhelpers.input.StoredKeyCombo;
+import net.emhelpers.client.input.StoredKeyCombo;
 
 public record CommandShortcut(String id, String name, String text, StoredKeyCombo keyCombo) {
 	public static CommandShortcut create(String name, String text, StoredKeyCombo keyCombo) {

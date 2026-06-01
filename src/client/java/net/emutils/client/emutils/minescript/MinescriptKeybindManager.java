@@ -2,7 +2,7 @@ package net.emutils.client.emutils.minescript;
 
 import java.util.HashSet;
 import java.util.Set;
-import net.emutils.client.emhelpers.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;

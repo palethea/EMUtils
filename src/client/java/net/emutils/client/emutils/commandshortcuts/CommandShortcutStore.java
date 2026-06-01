@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import net.emutils.client.emhelpers.input.StoredKeyCombo;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
+import net.emhelpers.client.input.StoredKeyCombo;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class CommandShortcutStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

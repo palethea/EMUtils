@@ -3,7 +3,7 @@ package net.emutils.client.emutils.commandshortcuts.gui;
 import java.util.List;
 import java.util.function.Consumer;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;

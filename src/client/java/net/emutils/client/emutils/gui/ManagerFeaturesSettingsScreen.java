@@ -1,8 +1,8 @@
 package net.emutils.client.emutils.gui;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.gui.widget.ConfigToggleButton;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;

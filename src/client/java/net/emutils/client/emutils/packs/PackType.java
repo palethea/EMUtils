@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.packs;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum PackType {
 	RESOURCE("resourcepack", "resourcepacks", EMUtilsTexts.PACK_TAB_RESOURCE_PACKS),

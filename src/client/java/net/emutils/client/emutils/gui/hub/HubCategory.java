@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.gui.hub;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum HubCategory {
 	CHAT(EMUtilsTexts.HUB_CHAT_FEATURES),

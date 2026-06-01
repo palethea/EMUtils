@@ -9,7 +9,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.nio.file.Files;
 
 public final class MinescriptKeybindStore {

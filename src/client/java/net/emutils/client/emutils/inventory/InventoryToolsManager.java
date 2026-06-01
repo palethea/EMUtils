@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.accessor.KeyBindingAccess;
+import net.emhelpers.client.accessor.KeyBindingAccess;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.mixin.CreativeSlotAccess;
 import net.minecraft.client.gui.DrawContext;
@@ -432,7 +432,7 @@ public final class InventoryToolsManager {
 			return false;
 		}
 
-		InputUtil.Key key = ((KeyBindingAccess) slotBindKey).emutils$getBoundKey();
+		InputUtil.Key key = ((KeyBindingAccess) slotBindKey).emhelpers$getBoundKey();
 		if (key.getCode() == InputUtil.UNKNOWN_KEY.getCode()) {
 			return false;
 		}
@@ -448,7 +448,7 @@ public final class InventoryToolsManager {
 			return false;
 		}
 
-		InputUtil.Key key = ((KeyBindingAccess) slotLockKey).emutils$getBoundKey();
+		InputUtil.Key key = ((KeyBindingAccess) slotLockKey).emhelpers$getBoundKey();
 		if (key.getCode() == InputUtil.UNKNOWN_KEY.getCode()) {
 			return false;
 		}
