@@ -23,7 +23,6 @@ repositories {
 
 configurations {
 	shadowModImpl
-	modImplementation.extendsFrom shadowModImpl
 }
 
 loom {
@@ -44,19 +43,17 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
+		exclude group: "net.fabricmc.fabric-api"
+		exclude group: "net.fabricmc", module: "fabric-loader"
+	}
+	shadowModImpl("net.emhelpers:emhelpers:${project.emhelpers_version}") {
+		exclude group: "net.fabricmc.fabric-api"
+		exclude group: "net.fabricmc", module: "fabric-loader"
+	}
 	include implementation("org.glavo:webp:0.2.0")
-	shadowModImpl("org.notenoughupdates.moulconfig:modern-${project.minecraft_version}:${project.moulconfig_version}") {
-		exclude group: "org.jetbrains.kotlin"
-		exclude group: "org.jetbrains.kotlinx"
-	}
-	include shadowModImpl("org.notenoughupdates.moulconfig:modern-${project.minecraft_version}:${project.moulconfig_version}") {
-		exclude group: "org.jetbrains.kotlin"
-		exclude group: "org.jetbrains.kotlinx"
-	}
 	modImplementation "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
 	include "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
-	modImplementation "maven.modrinth:hypixel-mod-api:${project.hypixel_mod_api_version}"
-	include "maven.modrinth:hypixel-mod-api:${project.hypixel_mod_api_version}"
 }
 
 processResources {
@@ -88,7 +85,7 @@ tasks.named("shadowJar") {
 	from(tasks.named("jar").flatMap { it.archiveFile }.map { zipTree(it) })
 	archiveClassifier.set("dev-shadow")
 	configurations = [project.configurations.shadowModImpl]
-	relocate "io.github.notenoughupdates.moulconfig", "net.emutils.client.shadow.moulconfig"
+	relocate "net.emhelpers", "net.emutils.client.shadow.emhelpers"
 	mergeServiceFiles()
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;

@@ -7,7 +7,7 @@ import net.emutils.client.emutils.gui.hub.widget.HubActionButtonWidget;
 import net.emutils.client.emutils.gui.hub.widget.HubColorSwatchWidget;
 import net.emutils.client.emutils.gui.hub.widget.HubHeaderButtonWidget;
 import net.emutils.client.emutils.gui.hub.widget.HubSliderWidget;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -147,11 +147,6 @@ public final class CustomHubScreen extends Screen {
 		if (resetButton != null) {
 			remove(resetButton);
 			resetButton = null;
-		}
-
-		boolean canReset = selectedCategory != HubCategory.PACKS && selectedCategory != HubCategory.SCRIPTS;
-		if (!canReset) {
-			return;
 		}
 
 		Text resetLabel = Text.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS);

@@ -3,7 +3,7 @@ package net.emutils.client.emutils.capes;
 import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.List;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import org.jspecify.annotations.Nullable;
 

@@ -7,15 +7,16 @@ import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
-import net.emutils.client.emhelpers.hud.HudOverlayAnchor;
-import net.emutils.client.emhelpers.hud.layout.HudCustomLayoutEntry;
-import net.emutils.client.emhelpers.hud.layout.HudElementId;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutManager;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutMode;
+import net.emhelpers.client.hud.HudOverlayAnchor;
+import net.emhelpers.client.hud.layout.HudCustomLayoutEntry;
+import net.emhelpers.client.hud.layout.HudElementId;
+import net.emhelpers.client.hud.layout.HudLayoutConfig;
+import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emhelpers.client.hud.layout.HudLayoutMode;
 import net.emutils.client.emutils.inventory.BoundSlotColor;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.io.IOException;
@@ -24,7 +25,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import org.jspecify.annotations.Nullable;
 
-public final class EMUtilsConfig {
+public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int RECONNECT_DELAY_MIN = 5;
 	public static final int RECONNECT_DELAY_MAX = 15;
 	public static final int RECONNECT_MAX_TRIES_MIN = 3;
@@ -74,6 +75,7 @@ public final class EMUtilsConfig {
 	private Boolean duplicateMessageTimeWindow = Boolean.FALSE;
 	private Boolean chatMentionAlerts = Boolean.FALSE;
 	private Boolean chatMentionHighlight = Boolean.FALSE;
+	private Boolean commandShortcutsEnabled = Boolean.TRUE;
 	private Integer chatMentionHighlightColor = 0xFF7289DA;
 	private Integer chatMentionHighlightStyle = 0;
 	private Integer chatMentionAlertVolume = 100;
@@ -163,28 +165,6 @@ public final class EMUtilsConfig {
 	private Integer boundSlotArgb;
 	private Integer inventoryPreviewOpacity = 75;
 	private Integer zoomAmount = 4;
-	private Boolean skyblockEnabled = Boolean.FALSE;
-	private Boolean storagePreviewEnabled = Boolean.TRUE;
-	private Boolean bazaarTooltipsEnabled = Boolean.TRUE;
-	private Boolean auctionTooltipsEnabled = Boolean.TRUE;
-	private Boolean npcSellPriceTooltipsEnabled = Boolean.FALSE;
-	private Boolean skyblockStatsHudEnabled = Boolean.FALSE;
-	private Boolean skyblockStatsHideActionBar = Boolean.TRUE;
-	private Boolean skyblockStatsShowHealth = Boolean.TRUE;
-	private Boolean skyblockStatsShowDefense = Boolean.TRUE;
-	private Boolean skyblockStatsShowMana = Boolean.TRUE;
-	private Boolean skyblockStatsShowSoulflow = Boolean.TRUE;
-	private String skyblockStatsHudAnchor = HudOverlayAnchor.BOTTOM_CENTER.name();
-	private Integer skyblockStatsHudBackgroundOpacity = 85;
-	private Integer skyblockStatsHudScale = 100;
-	private Boolean estimatedItemValueHudEnabled = Boolean.FALSE;
-	private String estimatedItemValueHudAnchor = HudOverlayAnchor.TOP_LEFT.name();
-	private Integer estimatedItemValueHudScale = 100;
-	private Integer estimatedItemValueEnchantmentsCap = 7;
-	private Boolean estimatedItemValueShowExactTotal = Boolean.FALSE;
-	private Boolean skyblockHideVanillaStatusBars = Boolean.FALSE;
-	private Boolean skyblockHideActionBarMessages = Boolean.FALSE;
-	private Boolean skyblockHideInventoryStatusEffects = Boolean.FALSE;
 	private Integer zoomTransitionSpeed = 24;
 	private Integer zoomOutSpeedMultiplier = 18;
 	private Integer packManagerSearchLimit = 20;
@@ -364,6 +344,15 @@ public final class EMUtilsConfig {
 		ChatFeaturesRefresher.onTimestampSettingsChanged();
 	}
 
+	public boolean commandShortcutsEnabled() {
+		return commandShortcutsEnabled == null || commandShortcutsEnabled;
+	}
+
+	public void setCommandShortcutsEnabled(boolean enabled) {
+		commandShortcutsEnabled = enabled;
+		save();
+	}
+
 	public int chatMentionHighlightColor() {
 		return chatMentionHighlightColor == null ? 0xFF7289DA : chatMentionHighlightColor;
 	}
@@ -456,14 +445,6 @@ public final class EMUtilsConfig {
 
 	public int legacySpotifyHudScale() {
 		return spotifyHudScale == null ? 100 : spotifyHudScale;
-	}
-
-	public int legacySkyblockStatsHudScale() {
-		return skyblockStatsHudScale == null ? 100 : skyblockStatsHudScale;
-	}
-
-	public int legacyEstimatedItemValueHudScale() {
-		return estimatedItemValueHudScale == null ? 100 : estimatedItemValueHudScale;
 	}
 
 	public Map<String, HudCustomLayoutEntry> hudCustomLayout() {
@@ -967,186 +948,6 @@ public final class EMUtilsConfig {
 		save();
 	}
 
-	public boolean skyblockEnabled() {
-		return skyblockEnabled != null && skyblockEnabled;
-	}
-
-	public void setSkyblockEnabled(boolean enabled) {
-		skyblockEnabled = enabled;
-		save();
-	}
-
-	public boolean storagePreviewEnabled() {
-		return storagePreviewEnabled == null || storagePreviewEnabled;
-	}
-
-	public void setStoragePreviewEnabled(boolean enabled) {
-		storagePreviewEnabled = enabled;
-		save();
-	}
-
-	public boolean bazaarTooltipsEnabled() {
-		return bazaarTooltipsEnabled == null || bazaarTooltipsEnabled;
-	}
-
-	public void setBazaarTooltipsEnabled(boolean enabled) {
-		bazaarTooltipsEnabled = enabled;
-		save();
-	}
-
-	public boolean auctionTooltipsEnabled() {
-		return auctionTooltipsEnabled == null || auctionTooltipsEnabled;
-	}
-
-	public void setAuctionTooltipsEnabled(boolean enabled) {
-		auctionTooltipsEnabled = enabled;
-		save();
-	}
-
-	public boolean npcSellPriceTooltipsEnabled() {
-		return npcSellPriceTooltipsEnabled != null && npcSellPriceTooltipsEnabled;
-	}
-
-	public void setNpcSellPriceTooltipsEnabled(boolean enabled) {
-		npcSellPriceTooltipsEnabled = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsHudEnabled() {
-		return skyblockStatsHudEnabled != null && skyblockStatsHudEnabled;
-	}
-
-	public void setSkyblockStatsHudEnabled(boolean enabled) {
-		skyblockStatsHudEnabled = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsHideActionBar() {
-		return skyblockStatsHideActionBar == null || skyblockStatsHideActionBar;
-	}
-
-	public void setSkyblockStatsHideActionBar(boolean enabled) {
-		skyblockStatsHideActionBar = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsShowHealth() {
-		return skyblockStatsShowHealth == null || skyblockStatsShowHealth;
-	}
-
-	public void setSkyblockStatsShowHealth(boolean enabled) {
-		skyblockStatsShowHealth = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsShowDefense() {
-		return skyblockStatsShowDefense == null || skyblockStatsShowDefense;
-	}
-
-	public void setSkyblockStatsShowDefense(boolean enabled) {
-		skyblockStatsShowDefense = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsShowMana() {
-		return skyblockStatsShowMana == null || skyblockStatsShowMana;
-	}
-
-	public void setSkyblockStatsShowMana(boolean enabled) {
-		skyblockStatsShowMana = enabled;
-		save();
-	}
-
-	public boolean skyblockStatsShowSoulflow() {
-		return skyblockStatsShowSoulflow == null || skyblockStatsShowSoulflow;
-	}
-
-	public void setSkyblockStatsShowSoulflow(boolean enabled) {
-		skyblockStatsShowSoulflow = enabled;
-		save();
-	}
-
-	public HudOverlayAnchor skyblockStatsHudAnchor() {
-		return HudOverlayAnchor.fromName(skyblockStatsHudAnchor);
-	}
-
-	public void setSkyblockStatsHudAnchor(HudOverlayAnchor anchor) {
-		skyblockStatsHudAnchor = (anchor == null ? HudOverlayAnchor.BOTTOM_CENTER : anchor).name();
-		save();
-	}
-
-	public int skyblockStatsHudBackgroundOpacity() {
-		return clampHudBackgroundOpacity(skyblockStatsHudBackgroundOpacity);
-	}
-
-	public void setSkyblockStatsHudBackgroundOpacity(int opacity) {
-		skyblockStatsHudBackgroundOpacity = clampHudBackgroundOpacity(opacity);
-		save();
-	}
-
-	public boolean estimatedItemValueHudEnabled() {
-		return estimatedItemValueHudEnabled != null && estimatedItemValueHudEnabled;
-	}
-
-	public void setEstimatedItemValueHudEnabled(boolean enabled) {
-		estimatedItemValueHudEnabled = enabled;
-		save();
-	}
-
-	public HudOverlayAnchor estimatedItemValueHudAnchor() {
-		return HudOverlayAnchor.fromName(estimatedItemValueHudAnchor);
-	}
-
-	public void setEstimatedItemValueHudAnchor(HudOverlayAnchor anchor) {
-		estimatedItemValueHudAnchor = (anchor == null ? HudOverlayAnchor.TOP_LEFT : anchor).name();
-		save();
-	}
-
-	public int estimatedItemValueEnchantmentsCap() {
-		return clampEstimatedItemValueEnchantmentsCap(estimatedItemValueEnchantmentsCap);
-	}
-
-	public void setEstimatedItemValueEnchantmentsCap(int cap) {
-		estimatedItemValueEnchantmentsCap = clampEstimatedItemValueEnchantmentsCap(cap);
-		save();
-	}
-
-	public boolean estimatedItemValueShowExactTotal() {
-		return estimatedItemValueShowExactTotal != null && estimatedItemValueShowExactTotal;
-	}
-
-	public void setEstimatedItemValueShowExactTotal(boolean enabled) {
-		estimatedItemValueShowExactTotal = enabled;
-		save();
-	}
-
-	public boolean skyblockHideVanillaStatusBars() {
-		return skyblockHideVanillaStatusBars != null && skyblockHideVanillaStatusBars;
-	}
-
-	public void setSkyblockHideVanillaStatusBars(boolean enabled) {
-		skyblockHideVanillaStatusBars = enabled;
-		save();
-	}
-
-	public boolean skyblockHideActionBarMessages() {
-		return skyblockHideActionBarMessages != null && skyblockHideActionBarMessages;
-	}
-
-	public void setSkyblockHideActionBarMessages(boolean enabled) {
-		skyblockHideActionBarMessages = enabled;
-		save();
-	}
-
-	public boolean skyblockHideInventoryStatusEffects() {
-		return skyblockHideInventoryStatusEffects != null && skyblockHideInventoryStatusEffects;
-	}
-
-	public void setSkyblockHideInventoryStatusEffects(boolean enabled) {
-		skyblockHideInventoryStatusEffects = enabled;
-		save();
-	}
-
 	public boolean slotLockingEnabled() {
 		return slotLockingEnabled == null || slotLockingEnabled;
 	}
@@ -1396,6 +1197,19 @@ public final class EMUtilsConfig {
 		ChatFeaturesRefresher.onTimestampSettingsChanged();
 	}
 
+	public void resetCommandShortcutsDefaults() {
+		commandShortcutsEnabled = Boolean.TRUE;
+		save();
+	}
+
+	public void resetManagerDefaults() {
+		commandShortcutsEnabled = Boolean.TRUE;
+		packManagerEnabled = Boolean.TRUE;
+		packManagerShowShadersWithoutIris = Boolean.TRUE;
+		packManagerSearchLimit = 20;
+		save();
+	}
+
 	public void resetHudDefaults() {
 		hudOverlay = Boolean.FALSE;
 		hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
@@ -1485,32 +1299,6 @@ public final class EMUtilsConfig {
 		save();
 	}
 
-	public void resetSkyblockDefaults() {
-		skyblockEnabled = Boolean.FALSE;
-		storagePreviewEnabled = Boolean.TRUE;
-		bazaarTooltipsEnabled = Boolean.TRUE;
-		auctionTooltipsEnabled = Boolean.TRUE;
-		npcSellPriceTooltipsEnabled = Boolean.FALSE;
-		skyblockStatsHudEnabled = Boolean.FALSE;
-		skyblockStatsHideActionBar = Boolean.TRUE;
-		skyblockStatsShowHealth = Boolean.TRUE;
-		skyblockStatsShowDefense = Boolean.TRUE;
-		skyblockStatsShowMana = Boolean.TRUE;
-		skyblockStatsShowSoulflow = Boolean.TRUE;
-		skyblockStatsHudAnchor = HudOverlayAnchor.BOTTOM_CENTER.name();
-		skyblockStatsHudBackgroundOpacity = 85;
-		skyblockStatsHudScale = 100;
-		estimatedItemValueHudEnabled = Boolean.FALSE;
-		estimatedItemValueHudAnchor = HudOverlayAnchor.TOP_LEFT.name();
-		estimatedItemValueHudScale = 100;
-		estimatedItemValueEnchantmentsCap = 7;
-		estimatedItemValueShowExactTotal = Boolean.FALSE;
-		skyblockHideVanillaStatusBars = Boolean.FALSE;
-		skyblockHideActionBarMessages = Boolean.FALSE;
-		skyblockHideInventoryStatusEffects = Boolean.FALSE;
-		save();
-	}
-
 	public void save() {
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
@@ -1564,6 +1352,9 @@ public final class EMUtilsConfig {
 		}
 		if (chatMentionHighlight == null) {
 			chatMentionHighlight = Boolean.FALSE;
+		}
+		if (commandShortcutsEnabled == null) {
+			commandShortcutsEnabled = Boolean.TRUE;
 		}
 		if (chatMentionHighlightColor == null) {
 			chatMentionHighlightColor = 0xFF7289DA;
@@ -1745,64 +1536,6 @@ public final class EMUtilsConfig {
 		slotLockColor = slotLockColor().name();
 		boundSlotColor = boundSlotColor().name();
 		inventoryPreviewOpacity = inventoryPreviewOpacity();
-		if (skyblockEnabled == null) {
-			skyblockEnabled = Boolean.FALSE;
-		}
-		if (storagePreviewEnabled == null) {
-			storagePreviewEnabled = Boolean.TRUE;
-		}
-		if (bazaarTooltipsEnabled == null) {
-			bazaarTooltipsEnabled = Boolean.TRUE;
-		}
-		if (auctionTooltipsEnabled == null) {
-			auctionTooltipsEnabled = Boolean.TRUE;
-		}
-		if (npcSellPriceTooltipsEnabled == null) {
-			npcSellPriceTooltipsEnabled = Boolean.FALSE;
-		}
-		if (skyblockStatsHudEnabled == null) {
-			skyblockStatsHudEnabled = Boolean.FALSE;
-		}
-		if (skyblockStatsHideActionBar == null) {
-			skyblockStatsHideActionBar = Boolean.TRUE;
-		}
-		if (skyblockStatsShowHealth == null) {
-			skyblockStatsShowHealth = Boolean.TRUE;
-		}
-		if (skyblockStatsShowDefense == null) {
-			skyblockStatsShowDefense = Boolean.TRUE;
-		}
-		if (skyblockStatsShowMana == null) {
-			skyblockStatsShowMana = Boolean.TRUE;
-		}
-		if (skyblockStatsShowSoulflow == null) {
-			skyblockStatsShowSoulflow = Boolean.TRUE;
-		}
-		skyblockStatsHudAnchor = skyblockStatsHudAnchor().name();
-		skyblockStatsHudBackgroundOpacity = skyblockStatsHudBackgroundOpacity();
-		if (skyblockStatsHudScale == null) {
-			skyblockStatsHudScale = 100;
-		}
-		if (estimatedItemValueHudEnabled == null) {
-			estimatedItemValueHudEnabled = Boolean.FALSE;
-		}
-		estimatedItemValueHudAnchor = estimatedItemValueHudAnchor().name();
-		if (estimatedItemValueHudScale == null) {
-			estimatedItemValueHudScale = 100;
-		}
-		estimatedItemValueEnchantmentsCap = estimatedItemValueEnchantmentsCap();
-		if (estimatedItemValueShowExactTotal == null) {
-			estimatedItemValueShowExactTotal = Boolean.FALSE;
-		}
-		if (skyblockHideVanillaStatusBars == null) {
-			skyblockHideVanillaStatusBars = Boolean.FALSE;
-		}
-		if (skyblockHideActionBarMessages == null) {
-			skyblockHideActionBarMessages = Boolean.FALSE;
-		}
-		if (skyblockHideInventoryStatusEffects == null) {
-			skyblockHideInventoryStatusEffects = Boolean.FALSE;
-		}
 		zoomAmount = zoomAmount();
 		zoomTransitionSpeed = zoomTransitionSpeed();
 		packManagerSearchLimit = packManagerSearchLimit();
@@ -1856,11 +1589,6 @@ public final class EMUtilsConfig {
 
 	private static int clampHudBackgroundOpacity(int opacity) {
 		return Math.max(HUD_BACKGROUND_OPACITY_MIN, Math.min(HUD_BACKGROUND_OPACITY_MAX, opacity));
-	}
-
-	private static int clampEstimatedItemValueEnchantmentsCap(Integer cap) {
-		int value = cap == null ? 7 : cap;
-		return Math.max(1, Math.min(20, value));
 	}
 
 	private static int clampInventoryPreviewOpacity(int opacity) {

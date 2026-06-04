@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.waypoint;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum WaypointCoordinateFormat {
 	PLAIN(EMUtilsTexts.WAYPOINT_COORD_FORMAT_PLAIN),

@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.screenshot;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum ScreenshotGallerySort {
 	NEWEST_FIRST(EMUtilsTexts.GALLERY_SORT_NEWEST_FIRST),

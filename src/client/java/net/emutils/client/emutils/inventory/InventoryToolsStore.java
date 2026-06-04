@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.entity.player.PlayerInventory;

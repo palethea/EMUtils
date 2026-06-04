@@ -29,23 +29,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
 - **Spotify player** — show the current Spotify track in the pause menu and optional HUD overlay when Spotify is running (Linux, macOS, and Windows).
 - **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
-- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind for normal Minecraft QoL. Open **Options → EMSkyblock...** or the EMSkyblock button in the hub footer for Hypixel SkyBlock settings powered by MoulConfig. Mod Menu shows a chooser between both hubs when Mod Menu is installed.
-
-### Hypixel Skyblock
-
-SkyBlock settings live in a dedicated **EMSkyblock** hub (`~/.config/emutils/emskyblock.json`). Existing SkyBlock values in `config.json` migrate automatically on first launch.
-
-- **Chat filters** — hide 20+ categories of unwanted SkyBlock messages: lobby joins, warping, kill combos, fire sales, parkour, slayer drops, event level-ups, and more.
-- **Rare drop messages** — shows pet drop rarity in pet drop messages, enchanted book enchantment names on book drops, and sends a custom message when an enchanted book drop is missing its chat message.
-- **Storage previews** — remember what's in your backpacks and ender chest, and show a quick preview when you hover the menu item. Each Skyblock profile keeps its own saves.
-- **Skyblock detection** — track Hypixel Skyblock state from tab list, scoreboard, and `/locraw` data so Skyblock features stay profile-aware and server-aware.
-- **Price tooltips** — add Bazaar, Auction House, and NPC sell-price lines to item tooltips when Skyblock pricing data is available.
-- **Estimated Item Value** — estimate item value from base item prices, enchantments, reforges, recombobulators, potato books, gemstones, and scrolls, with tooltip lines and an optional HUD panel.
-- **Skyblock stats HUD** — render health, defense, mana, and soulflow from the Skyblock action bar in a configurable HUD panel, with options to hide vanilla hearts, food, armor, action bar text, and inventory potion effects.
-- **Fishing hook display** — show a large on-screen alert and countdown timer while holding a fishing rod and your bobber is active. Customize the pull-ready alert text and hide Hypixel's small armor stand label.
-- **Fishing profit tracker** — track items and coins earned from fishing with per-item profit, session/all-time modes, profit-per-hour, and uptime in a configurable HUD panel.
-- **Sea creature tracker** — track sea creature catches with creature names, counts, percentage breakdowns, double hook counting, and session/all-time modes.
-- **HUD Layout Editor** — drag SkyBlock HUD elements (stats, EIV, fishing hook, profit tracker, sea creature tracker) into custom positions with per-element scale and opacity controls.
+- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind.
 
 ## Coming Soon
 
@@ -63,6 +47,7 @@ SkyBlock settings live in a dedicated **EMSkyblock** hub (`~/.config/emutils/ems
 - Java 21 or newer
 - Fabric Loader 0.19.2 or newer
 - Fabric API
+- EMHelpers 0.1.0 or newer
 
 ### Optional integrations
 
@@ -73,8 +58,8 @@ SkyBlock settings live in a dedicated **EMSkyblock** hub (`~/.config/emutils/ems
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
-2. Download the latest EMUtils jar from releases.
-3. Place the jar in your `mods` folder.
+2. Download the latest EMUtils and EMHelpers jars from releases.
+3. Place both jars in your `mods` folder.
 4. Launch the game.
 
 ## Building

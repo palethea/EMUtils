@@ -4,7 +4,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.screenshot.gui.GalleryLoadingSpinner;
 import net.emutils.client.emutils.spotify.SpotifyArtLoader;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;

@@ -3,15 +3,15 @@ package net.emutils.client.emutils.spotify;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
-import net.emutils.client.emhelpers.hud.HudOverlayPlacement;
-import net.emutils.client.emhelpers.hud.layout.AbstractHudLayoutElement;
-import net.emutils.client.emhelpers.hud.layout.HudElementId;
+import net.emhelpers.client.hud.HudOverlayPlacement;
+import net.emhelpers.client.hud.layout.AbstractHudLayoutElement;
+import net.emhelpers.client.hud.layout.HudLayoutConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
 public final class SpotifyHudElement extends AbstractHudLayoutElement {
 	public SpotifyHudElement() {
-		super(HudElementId.SPOTIFY);
+		super(net.emutils.client.EMUtilsHudElements.SPOTIFY);
 	}
 
 	@Override
@@ -20,7 +20,7 @@ public final class SpotifyHudElement extends AbstractHudLayoutElement {
 	}
 
 	@Override
-	public HudOverlayPlacement.PanelDimensions unscaledDimensions(EMUtilsConfig config, MinecraftClient client) {
+	public HudOverlayPlacement.PanelDimensions unscaledDimensions(HudLayoutConfig config, MinecraftClient client) {
 		return new HudOverlayPlacement.PanelDimensions(
 			SpotifyPlayerOverlay.hudPanelWidth(),
 			SpotifyPlayerOverlay.hudPanelHeight()
@@ -29,17 +29,17 @@ public final class SpotifyHudElement extends AbstractHudLayoutElement {
 
 	@Override
 	public HudOverlayPlacement.Position defaultPosition(
-		EMUtilsConfig config,
+		HudLayoutConfig config,
 		int screenWidth,
 		int screenHeight,
 		HudOverlayPlacement.PanelDimensions dimensions
 	) {
-		return HudOverlayPlacement.spotifyHudPosition(config, screenWidth, screenHeight, dimensions);
+		return HudOverlayPlacement.anchored(((EMUtilsConfig) config).spotifyHudAnchor(), screenWidth, screenHeight, dimensions);
 	}
 
 	@Override
-	public int defaultOpacityPercent(EMUtilsConfig config) {
-		return config.spotifyHudBackgroundOpacity();
+	public int defaultOpacityPercent(HudLayoutConfig config) {
+		return ((EMUtilsConfig) config).spotifyHudBackgroundOpacity();
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public final class SpotifyHudElement extends AbstractHudLayoutElement {
 		DrawContext context,
 		int x,
 		int y,
-		EMUtilsConfig config,
+		HudLayoutConfig config,
 		MinecraftClient client,
 		int scalePercent
 	) {
@@ -56,7 +56,7 @@ public final class SpotifyHudElement extends AbstractHudLayoutElement {
 			x,
 			y,
 			EMUtilsClient.spotify().state(),
-			net.emutils.client.emhelpers.hud.layout.HudLayoutManager.layoutOpacity(id(), config),
+			net.emhelpers.client.hud.layout.HudLayoutManager.layoutOpacity(id(), config),
 			scalePercent / 100.0F
 		);
 	}

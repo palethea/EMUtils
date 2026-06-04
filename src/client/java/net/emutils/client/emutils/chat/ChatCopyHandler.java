@@ -1,8 +1,8 @@
 package net.emutils.client.emutils.chat;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.text.EmUtilsChatPrefix;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.hud.ChatHud;

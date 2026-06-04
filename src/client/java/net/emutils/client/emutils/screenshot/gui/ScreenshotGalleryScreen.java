@@ -1,7 +1,7 @@
 package net.emutils.client.emutils.screenshot.gui;
 
 import net.emutils.client.emutils.screenshot.ScreenshotRepository;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;

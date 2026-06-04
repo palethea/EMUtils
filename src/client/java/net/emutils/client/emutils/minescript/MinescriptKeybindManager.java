@@ -2,10 +2,9 @@ package net.emutils.client.emutils.minescript;
 
 import java.util.HashSet;
 import java.util.Set;
-import net.emutils.client.emhelpers.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -40,15 +39,8 @@ public final class MinescriptKeybindManager {
         long window = client.getWindow().getHandle();
 
         for (MinescriptKeyBinding binding : store.bindings()) {
-            InputUtil.Key key = binding.key();
-            if (key == null || key.getCategory() != InputUtil.Type.KEYSYM) {
-                continue;
-            }
             String id = binding.command();
-            boolean down =
-                org.lwjgl.glfw.GLFW.glfwGetKey(window, key.getCode()) ==
-                    org.lwjgl.glfw.GLFW.GLFW_PRESS &&
-                matchesBindingModifiers(window, binding);
+            boolean down = binding.isDown(window);
             if (down && !pressed.contains(id)) {
                 runBinding(client, binding);
             }
@@ -108,63 +100,5 @@ public final class MinescriptKeybindManager {
             case FAILED -> {
             }
         }
-    }
-
-    private static boolean matchesBindingModifiers(
-        long window,
-        MinescriptKeyBinding binding
-    ) {
-        return (
-            binding.ctrl() == isCtrlOrCmdDown(window) &&
-            binding.alt() == isAltDown(window) &&
-            binding.shift() == isShiftDown(window)
-        );
-    }
-
-    private static boolean isCtrlOrCmdDown(long window) {
-        return (
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_LEFT_CONTROL
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_RIGHT_CONTROL
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_LEFT_SUPER
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_RIGHT_SUPER
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-        );
-    }
-
-    private static boolean isAltDown(long window) {
-        return (
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_LEFT_ALT
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_RIGHT_ALT
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-        );
-    }
-
-    private static boolean isShiftDown(long window) {
-        return (
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_LEFT_SHIFT
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS ||
-            org.lwjgl.glfw.GLFW.glfwGetKey(
-                window,
-                InputUtil.GLFW_KEY_RIGHT_SHIFT
-            ) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-        );
     }
 }

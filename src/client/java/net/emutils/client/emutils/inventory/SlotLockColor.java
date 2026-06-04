@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.inventory;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum SlotLockColor {
 	RED(EMUtilsTexts.INVENTORY_LOCK_COLOR_RED, 0xAAFF3030),

@@ -13,11 +13,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.text.EmUtilsChatPrefix;
-import net.emutils.client.emhelpers.util.EMUtilsPaths;
-import net.emutils.client.emskyblock.context.SkyblockTextUtils;
-import net.emutils.client.emskyblock.pricing.bazaar.SkyblockItemIds;
-import net.emutils.client.emskyblock.util.ItemStackSerializer;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.mixin.HandledScreenAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -29,6 +26,8 @@ import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Formatting;
 import org.jspecify.annotations.Nullable;
 
 public final class DebugGuiDumper {
@@ -92,7 +91,7 @@ public final class DebugGuiDumper {
         object.addProperty("title", screen.getTitle().getString());
         object.addProperty(
             "titlePlain",
-            SkyblockTextUtils.strip(screen.getTitle())
+            strip(screen.getTitle())
         );
 
         if (screen instanceof HandledScreen<?> handledScreen) {
@@ -161,18 +160,11 @@ public final class DebugGuiDumper {
         object.addProperty("name", stack.getName().getString());
         object.addProperty(
             "namePlain",
-            SkyblockTextUtils.strip(stack.getName())
+            strip(stack.getName())
         );
-        object.addProperty("skyblockId", SkyblockItemIds.bazaarId(stack));
-        object.add("stack", stackJson(stack));
+        object.addProperty("itemId", Registries.ITEM.getId(stack.getItem()).toString());
         object.add("tooltip", tooltipJson(client, stack));
         return object;
-    }
-
-    @Nullable
-    private static JsonElement stackJson(ItemStack stack) {
-        JsonElement json = ItemStackSerializer.toJson(stack);
-        return json == null ? JsonNull.INSTANCE : json;
     }
 
     private static JsonArray tooltipJson(
@@ -193,7 +185,7 @@ public final class DebugGuiDumper {
             for (Text line : tooltip) {
                 JsonObject entry = new JsonObject();
                 entry.addProperty("raw", line.getString());
-                entry.addProperty("plain", SkyblockTextUtils.strip(line));
+                entry.addProperty("plain", strip(line));
                 lines.add(entry);
             }
         } catch (RuntimeException exception) {
@@ -203,6 +195,11 @@ public final class DebugGuiDumper {
         }
 
         return lines;
+    }
+
+    private static String strip(Text text) {
+        String stripped = Formatting.strip(text == null ? "" : text.getString());
+        return stripped == null ? "" : stripped.trim();
     }
 
     private static Path writeFile(String json) throws IOException {

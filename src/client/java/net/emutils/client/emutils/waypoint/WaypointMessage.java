@@ -2,7 +2,7 @@ package net.emutils.client.emutils.waypoint;
 
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;

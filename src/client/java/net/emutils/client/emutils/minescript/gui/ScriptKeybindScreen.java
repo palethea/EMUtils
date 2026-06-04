@@ -3,7 +3,7 @@ package net.emutils.client.emutils.minescript.gui;
 import java.util.function.Consumer;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;

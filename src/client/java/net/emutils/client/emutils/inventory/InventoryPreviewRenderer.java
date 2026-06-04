@@ -2,8 +2,8 @@ package net.emutils.client.emutils.inventory;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emhelpers.hud.layout.HudElementId;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutManager;
+import net.emhelpers.client.hud.layout.HudElementId;
+import net.emhelpers.client.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
@@ -59,7 +59,7 @@ public final class InventoryPreviewRenderer {
 		}
 
 		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
-			HudElementId.INVENTORY_PREVIEW,
+			net.emutils.client.EMUtilsHudElements.INVENTORY_PREVIEW,
 			config,
 			context.getScaledWindowWidth(),
 			context.getScaledWindowHeight(),

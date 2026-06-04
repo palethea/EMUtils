@@ -2,6 +2,7 @@ package net.emutils.client;
 
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.capes.CustomCapeManager;
+import net.emutils.client.emutils.commandshortcuts.CommandShortcutsManager;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
@@ -12,49 +13,21 @@ import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
-import net.emutils.client.emhelpers.hud.HudOverlayRenderer;
-import net.emutils.client.emhelpers.hud.InfoOverlayHudElement;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutManager;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutMigration;
-import net.emutils.client.emhelpers.hud.layout.HudLayoutRegistry;
+import net.emutils.client.emutils.hud.HudOverlayRenderer;
+import net.emhelpers.client.hud.editor.HudLayoutEditorOverlay;
+import net.emutils.client.emutils.hud.InfoOverlayHudElement;
+import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.hud.layout.HudLayoutMigration;
+import net.emhelpers.client.hud.layout.HudLayoutRegistry;
 import net.emutils.client.emutils.inventory.InventoryPreviewHudElement;
 import net.emutils.client.emutils.inventory.InventoryToolsManager;
 import net.emutils.client.emutils.minescript.MinescriptKeybindManager;
 import net.emutils.client.emutils.reconnect.AutoReconnectManager;
-import net.emutils.client.emskyblock.features.gui.statshud.SkyblockActionBarManager;
-import net.emutils.client.emskyblock.context.SkyblockContext;
-import net.emutils.client.emskyblock.context.SkyblockEvent;
-import net.emutils.client.emskyblock.context.SkyblockManager;
-import net.emutils.client.emskyblock.pricing.SkyblockPrices;
-import net.emutils.client.emskyblock.features.gui.statshud.SkyblockStatsHudElement;
-import net.emutils.client.emskyblock.features.inventory.storagepreview.StoragePreviewManager;
-import net.emutils.client.emskyblock.features.inventory.storagepreview.StoragePreviewTooltipComponent;
-import net.emutils.client.emskyblock.features.inventory.storagepreview.StoragePreviewTooltipData;
-import net.emutils.client.emskyblock.pricing.auction.AuctionPriceFetcher;
-import net.emutils.client.emskyblock.pricing.bazaar.BazaarPriceFetcher;
-import net.emutils.client.emskyblock.api.SkyblockApiContext;
-import net.emutils.client.emskyblock.api.SkyblockApiManager;
-import net.emutils.client.emskyblock.config.EMSkyblockConfig;
-import net.emutils.client.emskyblock.config.EMSkyblockConfigManager;
-import net.emutils.client.emskyblock.pricing.npc.NpcPriceFetcher;
-import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EivEssenceCosts;
-import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueData;
-import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueHudElement;
-import net.emutils.client.emskyblock.features.inventory.estimateditemvalue.EstimatedItemValueManager;
-import net.emutils.client.emskyblock.features.fishing.hookdisplay.FishingHookDisplayManager;
-import net.emutils.client.emskyblock.features.fishing.hookdisplay.FishingHookHudElement;
-import net.emutils.client.emskyblock.features.fishing.common.FishingInventoryPickupTracker;
-import net.emutils.client.emskyblock.features.fishing.profittracker.FishingProfitItemRegistry;
-import net.emutils.client.emskyblock.features.fishing.profittracker.FishingProfitTrackerManager;
-import net.emutils.client.emskyblock.features.fishing.profittracker.FishingProfitTrackerHudElement;
-import net.emutils.client.emskyblock.features.fishing.seacreaturetracker.SeaCreatureRegistry;
-import net.emutils.client.emskyblock.features.fishing.seacreaturetracker.SeaCreatureTrackerHudElement;
-import net.emutils.client.emskyblock.sacks.SkyblockSackTracker;
-import net.emutils.client.emskyblock.features.fishing.trackercommon.FishingTrackerStorage;
 import net.emutils.client.emutils.spotify.SpotifyHudElement;
 import net.emutils.client.emutils.spotify.SpotifyPlaybackService;
 import net.emutils.client.emutils.tweaks.TweaksManager;
 import net.emutils.client.emutils.zoom.ZoomManager;
+import net.emhelpers.client.EMHelpers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipComponent;
@@ -65,6 +38,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.GameMenuScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.util.InputUtil;
@@ -83,11 +57,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static TweaksManager tweaksManager;
 	private static SpotifyPlaybackService spotifyPlaybackService;
 	private static InventoryToolsManager inventoryToolsManager;
-	private static StoragePreviewManager storagePreviewManager;
-	private static SkyblockManager skyblockManager;
-	private static SkyblockActionBarManager skyblockActionBarManager;
-	private static SkyblockApiManager skyblockApiManager;
-	private static SkyblockPrices skyblockPrices;
+	private static CommandShortcutsManager commandShortcutsManager;
 	private static MinescriptKeybindManager minescriptKeybindManager;
 	private static KeyBinding openGalleryKeyBinding;
 	private static KeyBinding openScriptManagerKeyBinding;
@@ -99,39 +69,23 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		EMHelpers.registerTranslationPrefix(MOD_ID);
 		config = EMUtilsConfig.load();
-		EMSkyblockConfigManager.init(config);
+		EMHelpers.configure(MOD_ID, EMUtilsClient::config, () -> zoomManager != null && zoomManager.shouldHideHud());
 		HudLayoutMigration.migrateIfNeeded(config);
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(client -> EMSkyblockConfigManager.saveIfDirty());
 		autoReconnectManager = new AutoReconnectManager();
 		waypointManager = new WaypointManager();
 		zoomManager = new ZoomManager();
 		tweaksManager = new TweaksManager();
 		spotifyPlaybackService = new SpotifyPlaybackService();
 		inventoryToolsManager = new InventoryToolsManager();
-		skyblockManager = new SkyblockManager();
-		SkyblockContext.bind(skyblockManager);
-		storagePreviewManager = new StoragePreviewManager();
-		skyblockActionBarManager = new SkyblockActionBarManager();
-		skyblockApiManager = new SkyblockApiManager();
-		SkyblockApiContext.bind(skyblockApiManager);
-		skyblockPrices = new SkyblockPrices(skyblockApiManager);
-		skyblockManager.events().addListener(event -> {
-			if (event instanceof SkyblockEvent.ProfileJoin || event instanceof SkyblockEvent.IslandJoin) {
-				skyblockPrices.fetchNow(MinecraftClient.getInstance());
-			}
-		});
+		commandShortcutsManager = new CommandShortcutsManager();
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyBindings();
 		registerTooltipComponents();
 
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
 		WaypointRenderer.register();
-		EstimatedItemValueData.load();
-		EivEssenceCosts.load();
-		SeaCreatureRegistry.load();
-		FishingProfitItemRegistry.load();
-		SkyblockSackTracker.addListener(FishingProfitTrackerManager::onSackChange);
 		registerHudLayoutElements();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
@@ -140,19 +94,9 @@ public class EMUtilsClient implements ClientModInitializer {
 				CustomCapeManager.onLoadTexture(client.player.getGameProfile());
 			}
 			inventoryToolsManager.onWorldJoin(client);
-			skyblockManager.onWorldJoin(client);
-			storagePreviewManager.onWorldJoin(client);
-			skyblockApiManager.fetchNow(client);
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
-			skyblockManager.onWorldLeave(client);
-			skyblockActionBarManager.clear();
-			storagePreviewManager.onWorldLeave(client);
-			EstimatedItemValueManager.get().clear();
-			FishingHookDisplayManager.clear();
-			net.emutils.client.emskyblock.features.fishing.common.FishingActivity.clear();
-			skyblockApiManager.clear();
 			autoReconnectManager.onDisconnected();
 		});
 
@@ -167,19 +111,13 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static void tickClient(MinecraftClient client) {
 		MinescriptCompat.tickJobs();
 		minescriptKeybindManager.tick(client);
+		commandShortcutsManager.tick(client);
 		handleKeyBindings(client);
 		autoReconnectManager.tick(client);
 		waypointManager.tick(client);
 		zoomManager.tick(client);
 		tweaksManager.tick(client);
 		inventoryToolsManager.tick(client);
-		skyblockManager.tick(client);
-		storagePreviewManager.tick(client);
-		skyblockApiManager.tick(client);
-		EstimatedItemValueManager.get().tick();
-		FishingHookDisplayManager.tick(client);
-		FishingTrackerStorage.onProfileScopeChanged(client);
-		FishingInventoryPickupTracker.tick(client);
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 	}
@@ -203,23 +141,14 @@ public class EMUtilsClient implements ClientModInitializer {
 				return new ShulkerTooltipComponent(shulkerData);
 			}
 
-			if (data instanceof StoragePreviewTooltipData storagePreviewData) {
-				return new StoragePreviewTooltipComponent(storagePreviewData);
-			}
-
 			return null;
 		});
 	}
 
 	private static void registerHudLayoutElements() {
-		HudLayoutRegistry.register(new InfoOverlayHudElement());
-		HudLayoutRegistry.register(new SpotifyHudElement());
-		HudLayoutRegistry.register(new InventoryPreviewHudElement());
-		HudLayoutRegistry.register(new SkyblockStatsHudElement());
-		HudLayoutRegistry.register(new EstimatedItemValueHudElement());
-		HudLayoutRegistry.register(new FishingHookHudElement());
-		HudLayoutRegistry.register(new SeaCreatureTrackerHudElement());
-		HudLayoutRegistry.register(new FishingProfitTrackerHudElement());
+		HudLayoutRegistry.register(MOD_ID, new InfoOverlayHudElement());
+		HudLayoutRegistry.register(MOD_ID, new SpotifyHudElement());
+		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
 	}
 
 	private static void registerKeyBindings() {
@@ -324,7 +253,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			}
 		}
 		while (openHudLayoutEditorKeyBinding != null && openHudLayoutEditorKeyBinding.wasPressed()) {
-			HudLayoutManager.openEditor(client);
+			openHudLayoutEditor(client);
 		}
 		DebugGuiDumpTrigger.tryFromBinding(debugDumpGuiKeyBinding);
 	}
@@ -333,12 +262,26 @@ public class EMUtilsClient implements ClientModInitializer {
 		return DebugGuiDumpTrigger.tryFromInput(debugDumpGuiKeyBinding, input);
 	}
 
-	public static EMUtilsConfig config() {
-		return config;
+	public static boolean tryOpenHudLayoutEditor(KeyInput input) {
+		if (openHudLayoutEditorKeyBinding == null || !openHudLayoutEditorKeyBinding.matchesKey(input)) {
+			return false;
+		}
+
+		openHudLayoutEditor(MinecraftClient.getInstance());
+		return true;
 	}
 
-	public static EMSkyblockConfig emSkyblockConfig() {
-		return EMSkyblockConfigManager.config();
+	private static void openHudLayoutEditor(MinecraftClient client) {
+		if (client != null && client.currentScreen instanceof HandledScreen<?>) {
+			HudLayoutEditorOverlay.open(MOD_ID, client);
+			return;
+		}
+
+		HudLayoutManager.openEditor(MOD_ID, client);
+	}
+
+	public static EMUtilsConfig config() {
+		return config;
 	}
 
 	public static AutoReconnectManager autoReconnect() {
@@ -365,36 +308,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		return inventoryToolsManager;
 	}
 
-	public static StoragePreviewManager storagePreview() {
-		return storagePreviewManager;
-	}
-
-	public static SkyblockManager skyblock() {
-		return skyblockManager;
-	}
-
-	public static SkyblockActionBarManager skyblockActionBar() {
-		return skyblockActionBarManager;
-	}
-
-	public static SkyblockApiManager skyblockApis() {
-		return skyblockApiManager;
-	}
-
-	public static SkyblockPrices skyblockPrices() {
-		return skyblockPrices;
-	}
-
-	public static BazaarPriceFetcher bazaarPrices() {
-		return skyblockPrices.bazaar();
-	}
-
-	public static AuctionPriceFetcher auctionPrices() {
-		return skyblockPrices.auction();
-	}
-
-	public static NpcPriceFetcher npcPrices() {
-		return skyblockPrices.npc();
+	public static CommandShortcutsManager commandShortcuts() {
+		return commandShortcutsManager;
 	}
 
 	public static MinescriptKeybindManager minescriptKeybinds() {

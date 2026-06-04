@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.waypoint;
 
-import net.emutils.client.emhelpers.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public enum WaypointType {
 	DEATH(EMUtilsTexts.WAYPOINT_TYPE_DEATH),

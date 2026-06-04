@@ -15,13 +15,11 @@
 		"DeathScreenMixin",
 		"DisconnectedScreenMixin",
 		"DisconnectedScreenAccess",
-		"EntityRendererMixin",
 		"FogRendererMixin",
 		"GameRendererMixin",
 		"GuiRendererMixin",
 		"GuiRenderStateMixin",
 		"GameMenuScreenMixin",
-		"GenericContainerScreenMixin",
 		"CapeFeatureRendererMixin",
 		"PlayerEntityRendererMixin",
 		"PlayerListEntryMixin",
@@ -37,11 +35,9 @@
 		"MouseMixin",
 		"MouseAccess",
 		"OptionsScreenMixin",
-		"RecipeBookScreenMixin",
 		"ScreenMixin",
 		"WeatherRenderingMixin",
-		"ScreenshotRecorderMixin",
-		"StatusEffectsDisplayMixin"
+		"ScreenshotRecorderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
