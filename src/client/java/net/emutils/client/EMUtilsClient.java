@@ -69,6 +69,7 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		EMHelpers.registerTranslationPrefix(MOD_ID);
 		config = EMUtilsConfig.load();
 		EMHelpers.configure(MOD_ID, EMUtilsClient::config, () -> zoomManager != null && zoomManager.shouldHideHud());
 		HudLayoutMigration.migrateIfNeeded(config);

@@ -23,7 +23,6 @@ repositories {
 
 configurations {
 	shadowModImpl
-	modImplementation.extendsFrom shadowModImpl
 }
 
 loom {
@@ -44,7 +43,14 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
-	modImplementation "net.emhelpers:emhelpers:${project.emhelpers_version}"
+	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
+		exclude group: "net.fabricmc.fabric-api"
+		exclude group: "net.fabricmc", module: "fabric-loader"
+	}
+	shadowModImpl("net.emhelpers:emhelpers:${project.emhelpers_version}") {
+		exclude group: "net.fabricmc.fabric-api"
+		exclude group: "net.fabricmc", module: "fabric-loader"
+	}
 	include implementation("org.glavo:webp:0.2.0")
 	modImplementation "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
 	include "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
@@ -79,6 +85,7 @@ tasks.named("shadowJar") {
 	from(tasks.named("jar").flatMap { it.archiveFile }.map { zipTree(it) })
 	archiveClassifier.set("dev-shadow")
 	configurations = [project.configurations.shadowModImpl]
+	relocate "net.emhelpers", "net.emutils.client.shadow.emhelpers"
 	mergeServiceFiles()
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
