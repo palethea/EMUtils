@@ -48,7 +48,6 @@ public final class HubRoundedGraphics {
 		ensureRectPatch(client, HubPanelTheme.TEXT_PRIMARY);
 		ensureRectPatch(client, HubPanelTheme.ACCENT_DIM);
 		ensureRectPatch(client, HubPanelTheme.BORDER);
-		ensureRectPatch(client, HubPanelTheme.SHADOW);
 		ensurePillPatch(client, HubPanelTheme.TRACK, PATCH_PILL_H);
 		ensurePillPatch(client, HubPanelTheme.ACCENT, PATCH_PILL_H);
 	}

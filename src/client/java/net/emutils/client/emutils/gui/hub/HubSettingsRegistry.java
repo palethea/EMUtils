@@ -12,10 +12,8 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
-import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
-import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emhelpers.client.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -32,6 +30,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.DEATH_WAYPOINTS, HubSettingsRegistry::deathRows);
 		ROWS.put(HubCategory.AUTO_RECONNECT, HubSettingsRegistry::reconnectRows);
 		ROWS.put(HubCategory.SCREENSHOT, HubSettingsRegistry::screenshotRows);
+		ROWS.put(HubCategory.SCREENSHOT_GALLERY, HubSettingsRegistry::screenshotGalleryRows);
 		ROWS.put(HubCategory.MANAGERS, HubSettingsRegistry::managerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
@@ -59,7 +58,8 @@ public final class HubSettingsRegistry {
 			case CHAT -> config::resetChatDefaults;
 			case DEATH_WAYPOINTS -> config::resetDeathWaypointDefaults;
 			case AUTO_RECONNECT -> config::resetAutoReconnectDefaults;
-			case SCREENSHOT -> config::resetScreenshotDefaults;
+			case SCREENSHOT -> config::resetScreenshotHelperDefaults;
+			case SCREENSHOT_GALLERY -> config::resetScreenshotGalleryDefaults;
 			case MANAGERS -> config::resetManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case ZOOM -> config::resetZoomDefaults;
@@ -181,8 +181,6 @@ public final class HubSettingsRegistry {
 			config::waypointSize,
 			config::setWaypointSize
 		));
-		rows.add(divider());
-		rows.add(navRow(EMUtilsTexts.OPTION_CURRENT_WAYPOINTS, WaypointListScreen::new));
 		return rows;
 	}
 
@@ -216,7 +214,12 @@ public final class HubSettingsRegistry {
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCREENSHOT_HELPER, config::screenshotHelper, config::setScreenshotHelper));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCREENSHOT_AUTO_COPY, config::screenshotAutoCopy, config::setScreenshotAutoCopy));
-		rows.add(divider());
+		return rows;
+	}
+
+	private static List<HubSettingRow> screenshotGalleryRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Cycle<>(
 			EMUtilsTexts.OPTION_SCREENSHOT_SORT,
 			config::screenshotGallerySort,
@@ -237,8 +240,6 @@ public final class HubSettingsRegistry {
 			config::screenshotGalleryMaxCount,
 			config::setScreenshotGalleryMaxCount
 		));
-		rows.add(divider());
-		rows.add(navRow(EMUtilsTexts.OPTION_SCREENSHOT_GALLERY, ScreenshotGalleryScreen::new));
 		return rows;
 	}
 
