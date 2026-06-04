@@ -15,8 +15,6 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ## Features
 
-### Minecraft
-
 - **Automatic reconnect** — reconnect to the last server after being kicked, with a countdown button on the disconnect screen, configurable retry delay, limited attempts, or always-retry mode.
 - **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, an open-gallery keybind, and a configurable screenshot gallery for copying, opening, sorting, and deleting recent captures.
 - **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
@@ -24,7 +22,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
 - **Zoom** — hold a configurable keybind for OptiFine-style zoom with adjustable zoom amount, optional smooth fade in/out, cinematic camera smoothing, hide hand, and F1-style HUD hiding while zoomed.
 - **Tweaks** — toggle fullbright, clear weather, no fog, clear underwater/lava vision, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
-- **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into Minecraft's pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.
+- **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.
 - **Script Manager** — when Minescript is installed, browse `minecraft/minescript`, create/edit Python scripts, run them locally through Minescript, and assign EMUtils-managed per-script keybinds.
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
 - **Spotify player** — show the current Spotify track in the pause menu and optional HUD overlay when Spotify is running (Linux, macOS, and Windows).
@@ -32,8 +30,6 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind.
 
 ## Coming Soon
-
-### Minecraft
 
 - **Food HUD** — saturation and exhaustion overlays on the hunger bar, plus hunger and saturation values on food tooltips.
 - **Villager workstation protection** — prevent accidental villager workstation interactions when needed.
@@ -47,7 +43,6 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - Java 21 or newer
 - Fabric Loader 0.19.2 or newer
 - Fabric API
-- EMHelpers 0.1.0 or newer
 
 ### Optional integrations
 
@@ -58,8 +53,8 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
-2. Download the latest EMUtils and EMHelpers jars from releases.
-3. Place both jars in your `mods` folder.
+2. Download the latest EMUtils jar from releases.
+3. Place `EMUtils.jar` in your `mods` folder.
 4. Launch the game.
 
 ## Building
@@ -78,18 +73,4 @@ Copyright 2026 Palethea. If you use, fork, modify, or redistribute EMUtils, keep
 
 ## Screenshots
 
-<p align="center"><strong>Screenshot Gallery</strong></p>
-
-<p align="center"><img src="assets/screenshots/screenshot-gallery.png" alt="Screenshot gallery"></p>
-
-<p align="center"><strong>Death Waypoint</strong></p>
-
-<p align="center"><img src="assets/screenshots/death-waypoint.png" alt="Death waypoint marker"></p>
-
-<p align="center"><strong>Copy Chat</strong></p>
-
-<p align="center"><img src="assets/screenshots/copy-chat.png" alt="Copy chat message action"></p>
-
-<p align="center"><strong>Chat Features</strong></p>
-
-<p align="center"><img src="assets/screenshots/chat-features.png" alt="Chat feature settings"></p>
+See the [Modrinth gallery](https://modrinth.com/mod/emutils/gallery) for screenshots and feature previews.
