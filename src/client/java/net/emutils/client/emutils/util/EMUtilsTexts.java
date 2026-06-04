@@ -19,6 +19,65 @@ public final class EMUtilsTexts {
         "emutils.hub.open_script_manager";
     public static final String HUB_OPEN_COMMAND_SHORTCUTS =
         "emutils.hub.open_command_shortcuts";
+    public static final String HUB_SEARCH_PLACEHOLDER =
+        "emutils.hub.search_placeholder";
+    public static final String HUB_EMPTY_SEARCH = "emutils.hub.empty_search";
+    public static final String HUB_GROUP_RENDER = "emutils.hub.group.render";
+    public static final String HUB_GROUP_HUD = "emutils.hub.group.hud";
+    public static final String HUB_GROUP_UTILITY = "emutils.hub.group.utility";
+    public static final String HUB_GROUP_MANAGEMENT =
+        "emutils.hub.group.management";
+    public static final String HUB_GROUP_QOL = "emutils.hub.group.qol";
+    public static final String HUB_FEATURE_CHAT_DESC =
+        "emutils.hub.feature.chat.desc";
+    public static final String HUB_FEATURE_WAYPOINTS_DESC =
+        "emutils.hub.feature.waypoints.desc";
+    public static final String HUB_FEATURE_CURRENT_WAYPOINTS_DESC =
+        "emutils.hub.feature.current_waypoints.desc";
+    public static final String HUB_FEATURE_AUTO_RECONNECT_DESC =
+        "emutils.hub.feature.auto_reconnect.desc";
+    public static final String HUB_FEATURE_SCREENSHOT_DESC =
+        "emutils.hub.feature.screenshot.desc";
+    public static final String HUB_FEATURE_SCREENSHOT_GALLERY_DESC =
+        "emutils.hub.feature.screenshot_gallery.desc";
+    public static final String HUB_FEATURE_PACK_MANAGER_DESC =
+        "emutils.hub.feature.pack_manager.desc";
+    public static final String HUB_FEATURE_SCRIPT_MANAGER_DESC =
+        "emutils.hub.feature.script_manager.desc";
+    public static final String HUB_FEATURE_COMMAND_SHORTCUTS_DESC =
+        "emutils.hub.feature.command_shortcuts.desc";
+    public static final String HUB_FEATURE_HUD_DESC =
+        "emutils.hub.feature.hud.desc";
+    public static final String HUB_FEATURE_ZOOM_DESC =
+        "emutils.hub.feature.zoom.desc";
+    public static final String HUB_FEATURE_CAPES_DESC =
+        "emutils.hub.feature.capes.desc";
+    public static final String HUB_FEATURE_SPOTIFY_DESC =
+        "emutils.hub.feature.spotify.desc";
+    public static final String HUB_FEATURE_INVENTORY_DESC =
+        "emutils.hub.feature.inventory.desc";
+    public static final String HUB_FEATURE_FULLBRIGHT_DESC =
+        "emutils.hub.feature.fullbright.desc";
+    public static final String HUB_FEATURE_CLEAR_WEATHER_DESC =
+        "emutils.hub.feature.clear_weather.desc";
+    public static final String HUB_FEATURE_NO_FOG_DESC =
+        "emutils.hub.feature.no_fog.desc";
+    public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
+        "emutils.hub.feature.clear_underwater.desc";
+    public static final String HUB_FEATURE_CLEAR_LAVA_DESC =
+        "emutils.hub.feature.clear_lava.desc";
+    public static final String HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC =
+        "emutils.hub.feature.no_environment_fog.desc";
+    public static final String HUB_FEATURE_NO_HURT_CAM_DESC =
+        "emutils.hub.feature.no_hurt_cam.desc";
+    public static final String HUB_FEATURE_FREELOOK_DESC =
+        "emutils.hub.feature.freelook.desc";
+    public static final String HUB_FEATURE_OWN_NAMETAG_DESC =
+        "emutils.hub.feature.own_nametag.desc";
+    public static final String HUB_FEATURE_SHULKER_PREVIEW_DESC =
+        "emutils.hub.feature.shulker_preview.desc";
+    public static final String HUB_FEATURE_BUNDLE_PREVIEW_DESC =
+        "emutils.hub.feature.bundle_preview.desc";
 
     public static final String OPTION_ON = "emutils.option.on";
     public static final String OPTION_OFF = "emutils.option.off";

@@ -1167,6 +1167,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public void resetScreenshotHelperDefaults() {
+		screenshotHelper = Boolean.TRUE;
+		screenshotAutoCopy = Boolean.FALSE;
+		save();
+	}
+
+	public void resetScreenshotGalleryDefaults() {
+		screenshotGallerySort = ScreenshotGallerySort.NEWEST_FIRST.name();
+		screenshotGalleryDeleteConfirmation = Boolean.TRUE;
+		screenshotGalleryMaxCount = 200;
+		save();
+	}
+
 	public void resetDeathWaypointDefaults() {
 		deathWaypoint = Boolean.TRUE;
 		deathWaypointAutoCopyCoords = Boolean.FALSE;
