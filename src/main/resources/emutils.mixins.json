@@ -25,6 +25,7 @@
 		"PlayerListEntryMixin",
 		"HandledScreenMixin",
 		"HandledScreenAccessor",
+		"HungerManagerAccessor",
 		"InGameHudMixin",
 		"KeyBindingAccessorMixin",
 		"InGameOverlayRendererMixin",

@@ -95,6 +95,14 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean hudShowIcons = Boolean.TRUE;
 	private Boolean hudHideWithDebug = Boolean.TRUE;
 	private Boolean hudShowFacing = Boolean.TRUE;
+	private Boolean foodHud = Boolean.TRUE;
+	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
+	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
+	private Boolean foodHudOffhandOverlay = Boolean.TRUE;
+	private Boolean foodHudExhaustionUnderlay = Boolean.TRUE;
+	private Boolean foodHudTooltips = Boolean.TRUE;
+	private Boolean foodHudTooltipAlways = Boolean.TRUE;
+	private Boolean foodHudVanillaAnimations = Boolean.TRUE;
 	private Boolean deathWaypoint = Boolean.TRUE;
 	private Boolean deathWaypointAutoCopyCoords = Boolean.FALSE;
 	private String deathWaypointCoordinateFormat = WaypointCoordinateFormat.PLAIN.name();
@@ -137,6 +145,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakShulkerTooltipPreview = Boolean.TRUE;
 	private Boolean tweakBundleTooltipPreview = Boolean.TRUE;
 	private Boolean tweakClearWeather = Boolean.FALSE;
+	private Boolean tweakClearWeatherHideRain = Boolean.TRUE;
+	private Boolean tweakClearWeatherHideSnow = Boolean.TRUE;
+	private Boolean tweakClearWeatherHideRainEffects = Boolean.TRUE;
+	private Boolean tweakNoFireOverlay = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
@@ -554,6 +566,78 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean foodHud() {
+		return foodHud == null || foodHud;
+	}
+
+	public void setFoodHud(boolean enabled) {
+		foodHud = enabled;
+		save();
+	}
+
+	public boolean foodHudSaturationOverlay() {
+		return foodHudSaturationOverlay == null || foodHudSaturationOverlay;
+	}
+
+	public void setFoodHudSaturationOverlay(boolean enabled) {
+		foodHudSaturationOverlay = enabled;
+		save();
+	}
+
+	public boolean foodHudHeldFoodOverlay() {
+		return foodHudHeldFoodOverlay == null || foodHudHeldFoodOverlay;
+	}
+
+	public void setFoodHudHeldFoodOverlay(boolean enabled) {
+		foodHudHeldFoodOverlay = enabled;
+		save();
+	}
+
+	public boolean foodHudOffhandOverlay() {
+		return foodHudOffhandOverlay == null || foodHudOffhandOverlay;
+	}
+
+	public void setFoodHudOffhandOverlay(boolean enabled) {
+		foodHudOffhandOverlay = enabled;
+		save();
+	}
+
+	public boolean foodHudExhaustionUnderlay() {
+		return foodHudExhaustionUnderlay == null || foodHudExhaustionUnderlay;
+	}
+
+	public void setFoodHudExhaustionUnderlay(boolean enabled) {
+		foodHudExhaustionUnderlay = enabled;
+		save();
+	}
+
+	public boolean foodHudTooltips() {
+		return foodHudTooltips == null || foodHudTooltips;
+	}
+
+	public void setFoodHudTooltips(boolean enabled) {
+		foodHudTooltips = enabled;
+		save();
+	}
+
+	public boolean foodHudTooltipAlways() {
+		return foodHudTooltipAlways == null || foodHudTooltipAlways;
+	}
+
+	public void setFoodHudTooltipAlways(boolean enabled) {
+		foodHudTooltipAlways = enabled;
+		save();
+	}
+
+	public boolean foodHudVanillaAnimations() {
+		return foodHudVanillaAnimations == null || foodHudVanillaAnimations;
+	}
+
+	public void setFoodHudVanillaAnimations(boolean enabled) {
+		foodHudVanillaAnimations = enabled;
+		save();
+	}
+
 	public int hudBackgroundOpacity() {
 		return clampHudBackgroundOpacity(hudBackgroundOpacity == null ? 100 : hudBackgroundOpacity);
 	}
@@ -774,6 +858,54 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakClearWeatherHideRain() {
+		return tweakClearWeatherHideRain == null || tweakClearWeatherHideRain;
+	}
+
+	public void setTweakClearWeatherHideRain(boolean enabled) {
+		tweakClearWeatherHideRain = enabled;
+		save();
+	}
+
+	public boolean tweakClearWeatherHideSnow() {
+		return tweakClearWeatherHideSnow == null || tweakClearWeatherHideSnow;
+	}
+
+	public void setTweakClearWeatherHideSnow(boolean enabled) {
+		tweakClearWeatherHideSnow = enabled;
+		save();
+	}
+
+	public boolean tweakClearWeatherHideRainEffects() {
+		return tweakClearWeatherHideRainEffects == null || tweakClearWeatherHideRainEffects;
+	}
+
+	public void setTweakClearWeatherHideRainEffects(boolean enabled) {
+		tweakClearWeatherHideRainEffects = enabled;
+		save();
+	}
+
+	public boolean shouldHideClearWeatherRain() {
+		return tweakClearWeather() && tweakClearWeatherHideRain();
+	}
+
+	public boolean shouldHideClearWeatherSnow() {
+		return tweakClearWeather() && tweakClearWeatherHideSnow();
+	}
+
+	public boolean shouldHideClearWeatherRainEffects() {
+		return tweakClearWeather() && (tweakClearWeatherHideRain() || tweakClearWeatherHideRainEffects());
+	}
+
+	public boolean tweakNoFireOverlay() {
+		return tweakNoFireOverlay != null && tweakNoFireOverlay;
+	}
+
+	public void setTweakNoFireOverlay(boolean enabled) {
+		tweakNoFireOverlay = enabled;
+		save();
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -794,6 +926,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakShulkerTooltipPreview()
 			|| tweakBundleTooltipPreview()
 			|| tweakClearWeather()
+			|| tweakNoFireOverlay()
 			|| tweakOwnNametag();
 	}
 
@@ -1243,6 +1376,18 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public void resetFoodHudDefaults() {
+		foodHud = Boolean.TRUE;
+		foodHudSaturationOverlay = Boolean.TRUE;
+		foodHudHeldFoodOverlay = Boolean.TRUE;
+		foodHudOffhandOverlay = Boolean.TRUE;
+		foodHudExhaustionUnderlay = Boolean.TRUE;
+		foodHudTooltips = Boolean.TRUE;
+		foodHudTooltipAlways = Boolean.TRUE;
+		foodHudVanillaAnimations = Boolean.TRUE;
+		save();
+	}
+
 	public void resetZoomDefaults() {
 		zoomEnabled = Boolean.TRUE;
 		zoomAmount = 4;
@@ -1265,7 +1410,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakShulkerTooltipPreview = Boolean.TRUE;
 		tweakBundleTooltipPreview = Boolean.TRUE;
 		tweakClearWeather = Boolean.FALSE;
+		tweakClearWeatherHideRain = Boolean.TRUE;
+		tweakClearWeatherHideSnow = Boolean.TRUE;
+		tweakClearWeatherHideRainEffects = Boolean.TRUE;
+		tweakNoFireOverlay = Boolean.FALSE;
 		tweakOwnNametag = Boolean.FALSE;
+		save();
+	}
+
+	public void resetClearWeatherDefaults() {
+		tweakClearWeather = Boolean.FALSE;
+		tweakClearWeatherHideRain = Boolean.TRUE;
+		tweakClearWeatherHideSnow = Boolean.TRUE;
+		tweakClearWeatherHideRainEffects = Boolean.TRUE;
 		save();
 	}
 
@@ -1413,6 +1570,30 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (hudShowFacing == null) {
 			hudShowFacing = Boolean.TRUE;
 		}
+		if (foodHud == null) {
+			foodHud = Boolean.TRUE;
+		}
+		if (foodHudSaturationOverlay == null) {
+			foodHudSaturationOverlay = Boolean.TRUE;
+		}
+		if (foodHudHeldFoodOverlay == null) {
+			foodHudHeldFoodOverlay = Boolean.TRUE;
+		}
+		if (foodHudOffhandOverlay == null) {
+			foodHudOffhandOverlay = Boolean.TRUE;
+		}
+		if (foodHudExhaustionUnderlay == null) {
+			foodHudExhaustionUnderlay = Boolean.TRUE;
+		}
+		if (foodHudTooltips == null) {
+			foodHudTooltips = Boolean.TRUE;
+		}
+		if (foodHudTooltipAlways == null) {
+			foodHudTooltipAlways = Boolean.TRUE;
+		}
+		if (foodHudVanillaAnimations == null) {
+			foodHudVanillaAnimations = Boolean.TRUE;
+		}
 		if (deathWaypoint == null) {
 			deathWaypoint = Boolean.TRUE;
 		}
@@ -1483,6 +1664,18 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakClearWeather == null) {
 			tweakClearWeather = Boolean.FALSE;
+		}
+		if (tweakClearWeatherHideRain == null) {
+			tweakClearWeatherHideRain = Boolean.TRUE;
+		}
+		if (tweakClearWeatherHideSnow == null) {
+			tweakClearWeatherHideSnow = Boolean.TRUE;
+		}
+		if (tweakClearWeatherHideRainEffects == null) {
+			tweakClearWeatherHideRainEffects = Boolean.TRUE;
+		}
+		if (tweakNoFireOverlay == null) {
+			tweakNoFireOverlay = Boolean.FALSE;
 		}
 		if (tweakOwnNametag == null) {
 			tweakOwnNametag = Boolean.FALSE;

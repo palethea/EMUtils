@@ -4,6 +4,7 @@ import net.emutils.client.EMUtilsClient;
 import net.minecraft.util.Identifier;
 
 public final class HubIcons {
+	public static final Identifier APPLE = icon("apple");
 	public static final Identifier BACKPACK = icon("backpack");
 	public static final Identifier BOX = icon("box");
 	public static final Identifier CHEVRON_DOWN = icon("chevron-down");

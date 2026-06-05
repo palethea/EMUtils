@@ -9,6 +9,7 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.capes.gui.CapesSettingsScreen;
 import net.emutils.client.emutils.chat.gui.ChatFeaturesSettingsScreen;
+import net.emutils.client.emutils.food.gui.FoodHudSettingsScreen;
 import net.emutils.client.emutils.waypoint.gui.WaypointSettingsScreen;
 import net.emutils.client.emutils.hud.editor.HudOverlaySettingsScreen;
 import net.emutils.client.emutils.inventory.gui.InventoryToolsSettingsScreen;
@@ -44,6 +45,7 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		adder.add(navButton(EMUtilsTexts.HUB_CHAT_FEATURES, this::chatFeaturesEnabled, ChatFeaturesSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_MANAGERS, this::managerFeaturesEnabled, ManagerFeaturesSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_HUD_OVERLAY, () -> EMUtilsClient.config().hudOverlay(), HudOverlaySettingsScreen::new));
+		adder.add(navButton(EMUtilsTexts.HUB_FOOD_HUD, () -> EMUtilsClient.config().foodHud(), FoodHudSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_ZOOM, () -> EMUtilsClient.config().zoomEnabled(), ZoomSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_TWEAKS, () -> EMUtilsClient.config().tweaksEnabled(), TweaksSettingsScreen::new));
 		adder.add(navButton(EMUtilsTexts.HUB_CAPES, () -> EMUtilsClient.config().capesEnabled(), CapesSettingsScreen::new));

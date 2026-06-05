@@ -20,8 +20,9 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
 - **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts or configurable highlights when you are mentioned.
 - **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
+- **Food HUD** — show saturation, held-food, and exhaustion overlays on the vanilla hunger bar, plus food values in item tooltips.
 - **Zoom** — hold a configurable keybind for OptiFine-style zoom with adjustable zoom amount, optional smooth fade in/out, cinematic camera smoothing, hide hand, and F1-style HUD hiding while zoomed.
-- **Tweaks** — toggle fullbright, clear weather, no fog, clear underwater/lava vision, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
+- **Tweaks** — toggle fullbright, clear weather with separate rain, snow, and rain-effect controls, no fog, clear underwater/lava vision, no fire overlay, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
 - **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.
 - **Script Manager** — when Minescript is installed, browse `minecraft/minescript`, create/edit Python scripts, run them locally through Minescript, and assign EMUtils-managed per-script keybinds.
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
@@ -31,8 +32,6 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ## Coming Soon
 
-- **Food HUD** — saturation and exhaustion overlays on the hunger bar, plus hunger and saturation values on food tooltips.
-- **Villager workstation protection** — prevent accidental villager workstation interactions when needed.
 - **Auto sort** — organize inventories and containers with a quick action.
 - **Quick GIF** — record short shareable gameplay clips from a keybind.
 - **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.

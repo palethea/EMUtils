@@ -10,6 +10,9 @@ import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
 import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
+import net.emutils.client.emutils.food.FoodHudRenderer;
+import net.emutils.client.emutils.food.FoodTooltipComponent;
+import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
@@ -118,6 +121,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		zoomManager.tick(client);
 		tweaksManager.tick(client);
 		inventoryToolsManager.tick(client);
+		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 	}
@@ -139,6 +143,9 @@ public class EMUtilsClient implements ClientModInitializer {
 		TooltipComponentCallback.EVENT.register(data -> {
 			if (data instanceof ShulkerTooltipData shulkerData) {
 				return new ShulkerTooltipComponent(shulkerData);
+			}
+			if (data instanceof FoodTooltipData foodData) {
+				return new FoodTooltipComponent(foodData);
 			}
 
 			return null;

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
 import net.emhelpers.client.hud.editor.HudLayoutEditorOverlay;
+import net.emutils.client.emutils.food.FoodHudHelper;
+import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
@@ -87,6 +89,13 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 		BundleContentsComponent bundle = stack.get(DataComponentTypes.BUNDLE_CONTENTS);
 		if (bundle != null && !bundle.isEmpty() && !EMUtilsClient.config().tweakBundleTooltipPreview()) {
 			return Optional.empty();
+		}
+
+		if (tooltipData.isEmpty()) {
+			FoodTooltipData foodData = FoodHudHelper.tooltipData(stack, MinecraftClient.getInstance().player);
+			if (foodData != null) {
+				return Optional.of(foodData);
+			}
 		}
 
 		return tooltipData;
