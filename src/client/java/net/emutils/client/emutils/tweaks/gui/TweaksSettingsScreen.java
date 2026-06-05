@@ -27,6 +27,21 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakClearWeather
 		));
 		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN,
+			() -> EMUtilsClient.config().tweakClearWeatherHideRain(),
+			EMUtilsClient.config()::setTweakClearWeatherHideRain
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_SNOW,
+			() -> EMUtilsClient.config().tweakClearWeatherHideSnow(),
+			EMUtilsClient.config()::setTweakClearWeatherHideSnow
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS,
+			() -> EMUtilsClient.config().tweakClearWeatherHideRainEffects(),
+			EMUtilsClient.config()::setTweakClearWeatherHideRainEffects
+		));
+		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_FOG,
 			() -> EMUtilsClient.config().tweakNoFog(),
 			EMUtilsClient.config()::setTweakNoFog
@@ -40,6 +55,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA,
 			() -> EMUtilsClient.config().tweakClearLava(),
 			EMUtilsClient.config()::setTweakClearLava
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY,
+			() -> EMUtilsClient.config().tweakNoFireOverlay(),
+			EMUtilsClient.config()::setTweakNoFireOverlay
 		));
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG,

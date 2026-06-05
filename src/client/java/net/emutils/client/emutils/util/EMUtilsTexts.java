@@ -48,6 +48,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.command_shortcuts.desc";
     public static final String HUB_FEATURE_HUD_DESC =
         "emutils.hub.feature.hud.desc";
+    public static final String HUB_FEATURE_FOOD_HUD_DESC =
+        "emutils.hub.feature.food_hud.desc";
     public static final String HUB_FEATURE_ZOOM_DESC =
         "emutils.hub.feature.zoom.desc";
     public static final String HUB_FEATURE_CAPES_DESC =
@@ -60,6 +62,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.fullbright.desc";
     public static final String HUB_FEATURE_CLEAR_WEATHER_DESC =
         "emutils.hub.feature.clear_weather.desc";
+    public static final String HUB_FEATURE_NO_FIRE_OVERLAY_DESC =
+        "emutils.hub.feature.no_fire_overlay.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
         "emutils.hub.feature.no_fog.desc";
     public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
@@ -97,6 +101,7 @@ public final class EMUtilsTexts {
     public static final String HUB_CHAT_FEATURES = "emutils.hub.chat_features";
     public static final String HUB_MANAGERS = "emutils.hub.managers";
     public static final String HUB_HUD_OVERLAY = "emutils.hub.hud_overlay";
+    public static final String HUB_FOOD_HUD = "emutils.hub.food_hud";
     public static final String HUB_ZOOM = "emutils.hub.zoom";
     public static final String HUB_TWEAKS = "emutils.hub.tweaks";
     public static final String HUB_CAPES = "emutils.hub.capes";
@@ -120,6 +125,7 @@ public final class EMUtilsTexts {
         "emutils.screen.screenshot_gallery";
     public static final String SCREEN_HUD_OVERLAY =
         "emutils.screen.hud_overlay";
+    public static final String SCREEN_FOOD_HUD = "emutils.screen.food_hud";
     public static final String SCREEN_ZOOM = "emutils.screen.zoom";
     public static final String SCREEN_TWEAKS = "emutils.screen.tweaks";
     public static final String SCREEN_PACK_MANAGER =
@@ -259,6 +265,21 @@ public final class EMUtilsTexts {
         "emutils.option.hud_server_time";
     public static final String OPTION_HUD_REAL_TIME =
         "emutils.option.hud_real_time";
+    public static final String OPTION_FOOD_HUD = "emutils.option.food_hud";
+    public static final String OPTION_FOOD_HUD_SATURATION_OVERLAY =
+        "emutils.option.food_hud_saturation_overlay";
+    public static final String OPTION_FOOD_HUD_HELD_FOOD_OVERLAY =
+        "emutils.option.food_hud_held_food_overlay";
+    public static final String OPTION_FOOD_HUD_OFFHAND_OVERLAY =
+        "emutils.option.food_hud_offhand_overlay";
+    public static final String OPTION_FOOD_HUD_EXHAUSTION_UNDERLAY =
+        "emutils.option.food_hud_exhaustion_underlay";
+    public static final String OPTION_FOOD_HUD_TOOLTIPS =
+        "emutils.option.food_hud_tooltips";
+    public static final String OPTION_FOOD_HUD_TOOLTIP_ALWAYS =
+        "emutils.option.food_hud_tooltip_always";
+    public static final String OPTION_FOOD_HUD_VANILLA_ANIMATIONS =
+        "emutils.option.food_hud_vanilla_animations";
     public static final String OPTION_ZOOM = "emutils.option.zoom";
     public static final String OPTION_ZOOM_AMOUNT =
         "emutils.option.zoom_amount";
@@ -294,6 +315,14 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_bundle_tooltip_preview";
     public static final String OPTION_TWEAK_CLEAR_WEATHER =
         "emutils.option.tweak_clear_weather";
+    public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN =
+        "emutils.option.tweak_clear_weather_hide_rain";
+    public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_SNOW =
+        "emutils.option.tweak_clear_weather_hide_snow";
+    public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS =
+        "emutils.option.tweak_clear_weather_hide_rain_effects";
+    public static final String OPTION_TWEAK_NO_FIRE_OVERLAY =
+        "emutils.option.tweak_no_fire_overlay";
     public static final String OPTION_TWEAK_OWN_NAMETAG =
         "emutils.option.tweak_own_nametag";
     public static final String OPTION_PACK_MANAGER =

@@ -33,7 +33,9 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.SCREENSHOT_GALLERY, HubSettingsRegistry::screenshotGalleryRows);
 		ROWS.put(HubCategory.MANAGERS, HubSettingsRegistry::managerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
+		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
+		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
 		ROWS.put(HubCategory.TWEAKS, HubSettingsRegistry::tweaksRows);
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
 		ROWS.put(HubCategory.INVENTORY, HubSettingsRegistry::inventoryRows);
@@ -62,7 +64,9 @@ public final class HubSettingsRegistry {
 			case SCREENSHOT_GALLERY -> config::resetScreenshotGalleryDefaults;
 			case MANAGERS -> config::resetManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
+			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case ZOOM -> config::resetZoomDefaults;
+			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
 			case TWEAKS -> config::resetTweaksDefaults;
 			case CAPES -> config::resetCapesDefaults;
 			case INVENTORY -> config::resetInventoryToolsDefaults;
@@ -288,6 +292,22 @@ public final class HubSettingsRegistry {
 		return rows;
 	}
 
+	private static List<HubSettingRow> foodHudRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD, config::foodHud, config::setFoodHud));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_SATURATION_OVERLAY, config::foodHudSaturationOverlay, config::setFoodHudSaturationOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_HELD_FOOD_OVERLAY, config::foodHudHeldFoodOverlay, config::setFoodHudHeldFoodOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_OFFHAND_OVERLAY, config::foodHudOffhandOverlay, config::setFoodHudOffhandOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_EXHAUSTION_UNDERLAY, config::foodHudExhaustionUnderlay, config::setFoodHudExhaustionUnderlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_VANILLA_ANIMATIONS, config::foodHudVanillaAnimations, config::setFoodHudVanillaAnimations));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_TOOLTIPS, config::foodHudTooltips, config::setFoodHudTooltips));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FOOD_HUD_TOOLTIP_ALWAYS, config::foodHudTooltipAlways, config::setFoodHudTooltipAlways));
+		return rows;
+	}
+
 	private static List<HubSettingRow> zoomRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
@@ -330,6 +350,7 @@ public final class HubSettingsRegistry {
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, config::tweakFullbright, config::setTweakFullbright));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, config::tweakClearWeather, config::setTweakClearWeather));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, config::tweakNoFireOverlay, config::setTweakNoFireOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FOG, config::tweakNoFog, config::setTweakNoFog));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, config::tweakClearUnderwater, config::setTweakClearUnderwater));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, config::tweakClearLava, config::setTweakClearLava));
@@ -341,6 +362,17 @@ public final class HubSettingsRegistry {
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW, config::tweakBundleTooltipPreview, config::setTweakBundleTooltipPreview));
+		return rows;
+	}
+
+	private static List<HubSettingRow> clearWeatherRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, config::tweakClearWeather, config::setTweakClearWeather));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN, config::tweakClearWeatherHideRain, config::setTweakClearWeatherHideRain));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_SNOW, config::tweakClearWeatherHideSnow, config::setTweakClearWeatherHideSnow));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS, config::tweakClearWeatherHideRainEffects, config::setTweakClearWeatherHideRainEffects));
 		return rows;
 	}
 

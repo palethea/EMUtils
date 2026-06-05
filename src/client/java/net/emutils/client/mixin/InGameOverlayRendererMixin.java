@@ -4,6 +4,7 @@ import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameOverlayRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,5 +29,24 @@ public abstract class InGameOverlayRendererMixin {
 		}
 
 		InGameOverlayRendererAccessor.emutils$renderUnderwaterOverlay(client, matrices, vertexConsumers);
+	}
+
+	@Redirect(
+		method = "renderOverlays",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/hud/InGameOverlayRenderer;renderFireOverlay(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;Lnet/minecraft/client/texture/Sprite;)V"
+		)
+	)
+	private static void emutils$skipFireOverlay(
+		MatrixStack matrices,
+		VertexConsumerProvider vertexConsumers,
+		Sprite sprite
+	) {
+		if (EMUtilsClient.config().tweakNoFireOverlay()) {
+			return;
+		}
+
+		InGameOverlayRendererAccessor.emutils$renderFireOverlay(matrices, vertexConsumers, sprite);
 	}
 }
