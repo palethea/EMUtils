@@ -20,7 +20,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
 - **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts or configurable highlights when you are mentioned.
 - **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
-- **Food HUD** — show AppleSkin-style saturation, held-food, and exhaustion overlays on the vanilla hunger bar, plus food values in item tooltips.
+- **Food HUD** — show saturation, held-food, and exhaustion overlays on the vanilla hunger bar, plus food values in item tooltips.
 - **Zoom** — hold a configurable keybind for OptiFine-style zoom with adjustable zoom amount, optional smooth fade in/out, cinematic camera smoothing, hide hand, and F1-style HUD hiding while zoomed.
 - **Tweaks** — toggle fullbright, clear weather with separate rain, snow, and rain-effect controls, no fog, clear underwater/lava vision, no fire overlay, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
 - **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.

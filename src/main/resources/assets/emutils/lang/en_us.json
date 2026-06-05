@@ -25,7 +25,7 @@
   "emutils.hub.feature.script_manager.desc": "Create, run, and keybind Minescript scripts.",
   "emutils.hub.feature.command_shortcuts.desc": "Manage saved quick commands.",
   "emutils.hub.feature.hud.desc": "Configure the info overlay and layout editor.",
-  "emutils.hub.feature.food_hud.desc": "AppleSkin-style food values on the vanilla hunger bar.",
+  "emutils.hub.feature.food_hud.desc": "Food values on the vanilla hunger bar.",
   "emutils.hub.feature.zoom.desc": "OptiFine-style zoom with smooth controls.",
   "emutils.hub.feature.capes.desc": "Third-party cape providers and priority.",
   "emutils.hub.feature.spotify.desc": "Pause menu and HUD now-playing controls.",
