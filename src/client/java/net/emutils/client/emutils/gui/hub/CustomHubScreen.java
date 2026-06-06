@@ -16,6 +16,7 @@ import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -83,9 +84,11 @@ public final class CustomHubScreen extends Screen {
 	private boolean searchFocused;
 	private boolean suppressListBottomFade;
 	private boolean suppressSettingsBottomFade;
-	private int scrollOffset;
+	private double scrollOffsetTarget;
+	private double settingsScrollTarget;
+	private double scrollOffset;
 	private int maxScroll;
-	private int settingsScroll;
+	private double settingsScroll;
 	private int settingsMaxScroll;
 	private int panelX;
 	private int panelY;
@@ -154,6 +157,7 @@ public final class CustomHubScreen extends Screen {
 
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+		updateScrollAnimation();
 		updateExpandAnimation();
 		renderPanel(context, mouseX, mouseY);
 		renderSidebar(context, mouseX, mouseY);
@@ -222,6 +226,21 @@ public final class CustomHubScreen extends Screen {
 		}
 	}
 
+	private void updateScrollAnimation() {
+		double speed = 0.20;
+		if (Math.abs(scrollOffsetTarget - scrollOffset) > 0.05) {
+			scrollOffset += (scrollOffsetTarget - scrollOffset) * speed;
+		} else {
+			scrollOffset = scrollOffsetTarget;
+		}
+
+		if (Math.abs(settingsScrollTarget - settingsScroll) > 0.05) {
+			settingsScroll += (settingsScrollTarget - settingsScroll) * speed;
+		} else {
+			settingsScroll = settingsScrollTarget;
+		}
+	}
+
 	private void renderSidebar(DrawContext context, int mouseX, int mouseY) {
 		int y = sidebarY;
 		for (FeatureGroup group : FeatureGroup.values()) {
@@ -280,6 +299,19 @@ public final class CustomHubScreen extends Screen {
 			search.isEmpty() ? HubPanelTheme.TEXT_MUTED : HubPanelTheme.TEXT_PRIMARY,
 			false
 		);
+		if (search.isEmpty() && !searchFocused) {
+			String keybind = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac") ? "(⌘F)" : "(Ctrl+F)";
+			Text keybindText = Text.literal(keybind);
+			int keybindWidth = textRenderer.getWidth(keybindText);
+			context.drawText(
+				textRenderer,
+				keybindText,
+				searchX + searchWidth - 12 - keybindWidth,
+				searchY + (SEARCH_HEIGHT - textRenderer.fontHeight) / 2 + 1,
+				HubPanelTheme.TEXT_DIM,
+				false
+			);
+		}
 		if (searchFocused && (System.currentTimeMillis() / 500L) % 2L == 0L) {
 			String visibleSearch = textRenderer.trimToWidth(search, searchWidth - 48);
 			int cursorX = Math.min(searchX + searchWidth - 10, searchX + 34 + textRenderer.getWidth(visibleSearch));
@@ -302,7 +334,7 @@ public final class CustomHubScreen extends Screen {
 			return;
 		}
 
-		int y = contentY - scrollOffset;
+		int y = contentY - (int) Math.round(scrollOffset);
 		for (FeatureSpec feature : visible) {
 			int rowY = y;
 			if (feature == expandedFeature || feature == collapsingFeature) {
@@ -404,14 +436,15 @@ public final class CustomHubScreen extends Screen {
 			return;
 		}
 		int renderMaxScroll = Math.max(0, settingsContentHeight(feature) - innerH);
-		int renderScroll = MathHelper.clamp(feature == expandedFeature ? settingsScroll : 0, 0, renderMaxScroll);
+		int renderScroll = MathHelper.clamp(feature == expandedFeature ? (int) Math.round(settingsScroll) : 0, 0, renderMaxScroll);
 		context.enableScissor(innerX, innerY, innerX + innerW, innerY + innerH);
 		renderSettingRows(context, feature, innerX, innerY - renderScroll, innerW, mouseX, mouseY);
 		context.disableScissor();
-		if (renderMaxScroll > 0 && renderScroll < renderMaxScroll && !suppressSettingsBottomFade) {
+		boolean needsScrollbar = settingsContentHeight(feature) + MENU_PADDING * 2 > MENU_MAX_HEIGHT;
+		if (needsScrollbar && renderMaxScroll > 0 && renderScroll < renderMaxScroll && !suppressSettingsBottomFade) {
 			renderSettingsBottomFade(context, innerX, innerY, innerW, innerH);
 		}
-		if (renderMaxScroll > 0) {
+		if (needsScrollbar && renderMaxScroll > 0) {
 			renderMiniScrollbar(context, menuLeft + 8, innerY, innerH, renderScroll, renderMaxScroll);
 		}
 	}
@@ -568,7 +601,7 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private void renderScrollbar(DrawContext context) {
-		renderMiniScrollbar(context, contentX + contentWidth - 7, contentY + 4, contentHeight - 8, scrollOffset, maxScroll);
+		renderMiniScrollbar(context, contentX + contentWidth - 7, contentY + 4, contentHeight - 8, (int) Math.round(scrollOffset), maxScroll);
 	}
 
 	private void renderMiniScrollbar(DrawContext context, int x, int y, int height, int scroll, int max) {
@@ -627,8 +660,10 @@ public final class CustomHubScreen extends Screen {
 				collapsingFeature = null;
 				suppressListBottomFade = false;
 				suppressSettingsBottomFade = false;
-				scrollOffset = 0;
-				settingsScroll = 0;
+				scrollOffset = 0.0;
+				scrollOffsetTarget = 0.0;
+				settingsScroll = 0.0;
+				settingsScrollTarget = 0.0;
 				updateScrollBounds();
 				return true;
 			}
@@ -641,7 +676,7 @@ public final class CustomHubScreen extends Screen {
 		if (!contains(mouseX, mouseY, contentX, contentY, contentWidth, contentHeight)) {
 			return false;
 		}
-		int y = contentY - scrollOffset;
+		int y = contentY - (int) Math.round(scrollOffset);
 		for (FeatureSpec feature : visibleFeatures()) {
 			int rowRight = contentX + contentWidth - scrollbarReserve();
 			if (contains(mouseX, mouseY, contentX, y, rowRight - contentX, FEATURE_HEIGHT)) {
@@ -709,7 +744,8 @@ public final class CustomHubScreen extends Screen {
 			suppressSettingsBottomFade = false;
 		}
 		suppressListBottomFade = false;
-		settingsScroll = 0;
+		settingsScroll = 0.0;
+		settingsScrollTarget = 0.0;
 		return opened;
 	}
 
@@ -730,7 +766,7 @@ public final class CustomHubScreen extends Screen {
 		int controlX = innerX + labelWidth + 18;
 		int controlRight = innerX + innerW;
 		int controlWidth = Math.max(80, controlRight - controlX);
-		int y = innerY - settingsScroll;
+		int y = innerY - (int) Math.round(settingsScroll);
 		for (HubSettingRow row : rows(expandedFeature)) {
 			int rowHeight = settingRowHeight(row);
 			if (mouseY >= y && mouseY < y + rowHeight) {
@@ -795,13 +831,13 @@ public final class CustomHubScreen extends Screen {
 		MenuBounds menu = expandedMenuBounds();
 		if (menu != null && settingsMaxScroll > 0 && contains(mouseX, mouseY, menu.x(), menu.y(), menu.width(), menu.height())) {
 			suppressSettingsBottomFade = false;
-			settingsScroll = MathHelper.clamp(settingsScroll - (int) (verticalAmount * 18.0), 0, settingsMaxScroll);
+			settingsScrollTarget = MathHelper.clamp(settingsScrollTarget - verticalAmount * 18.0, 0.0, settingsMaxScroll);
 			return true;
 		}
 		if (maxScroll > 0 && contains(mouseX, mouseY, contentX, contentY, contentWidth, contentHeight)) {
 			suppressListBottomFade = false;
 			suppressSettingsBottomFade = false;
-			scrollOffset = MathHelper.clamp(scrollOffset - (int) (verticalAmount * 22.0), 0, maxScroll);
+			scrollOffsetTarget = MathHelper.clamp(scrollOffsetTarget - verticalAmount * 22.0, 0.0, maxScroll);
 			return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -810,23 +846,26 @@ public final class CustomHubScreen extends Screen {
 	@Override
 	public boolean keyPressed(KeyInput input) {
 		if (!searchFocused) {
+			if (input.hasCtrlOrCmd() && input.key() == InputUtil.GLFW_KEY_F) {
+				searchFocused = true;
+				return true;
+			}
 			return super.keyPressed(input);
 		}
 		if (input.isEscape()) {
-			if (!search.isEmpty()) {
-				search = "";
-				scrollOffset = 0;
-				suppressListBottomFade = false;
-				suppressSettingsBottomFade = false;
-				updateScrollBounds();
-				return true;
-			}
 			searchFocused = false;
-			return super.keyPressed(input);
+			search = "";
+			scrollOffset = 0.0;
+			scrollOffsetTarget = 0.0;
+			suppressListBottomFade = false;
+			suppressSettingsBottomFade = false;
+			updateScrollBounds();
+			return true;
 		}
 		if (input.isPaste()) {
 			search = clampSearch(search + (client == null ? "" : client.keyboard.getClipboard()));
-			scrollOffset = 0;
+			scrollOffset = 0.0;
+			scrollOffsetTarget = 0.0;
 			suppressListBottomFade = false;
 			suppressSettingsBottomFade = false;
 			updateScrollBounds();
@@ -835,7 +874,8 @@ public final class CustomHubScreen extends Screen {
 		if (input.key() == InputUtil.GLFW_KEY_BACKSPACE) {
 			if (!search.isEmpty()) {
 				search = search.substring(0, search.length() - 1);
-				scrollOffset = 0;
+				scrollOffset = 0.0;
+				scrollOffsetTarget = 0.0;
 				suppressListBottomFade = false;
 				suppressSettingsBottomFade = false;
 				updateScrollBounds();
@@ -844,7 +884,8 @@ public final class CustomHubScreen extends Screen {
 		}
 		if (input.key() == InputUtil.GLFW_KEY_DELETE) {
 			search = "";
-			scrollOffset = 0;
+			scrollOffset = 0.0;
+			scrollOffsetTarget = 0.0;
 			suppressListBottomFade = false;
 			suppressSettingsBottomFade = false;
 			updateScrollBounds();
@@ -859,7 +900,8 @@ public final class CustomHubScreen extends Screen {
 			return super.charTyped(input);
 		}
 		search = clampSearch(search + input.asString());
-		scrollOffset = 0;
+		scrollOffset = 0.0;
+		scrollOffsetTarget = 0.0;
 		suppressListBottomFade = false;
 		suppressSettingsBottomFade = false;
 		updateScrollBounds();
@@ -889,11 +931,13 @@ public final class CustomHubScreen extends Screen {
 			collapsingFeature = null;
 		}
 		maxScroll = Math.max(0, listContentHeight() - contentHeight);
-		scrollOffset = MathHelper.clamp(scrollOffset, 0, maxScroll);
+		scrollOffsetTarget = MathHelper.clamp(scrollOffsetTarget, 0.0, maxScroll);
+		scrollOffset = MathHelper.clamp(scrollOffset, 0.0, maxScroll);
 		settingsMaxScroll = expandedFeature == null
 			? 0
 			: Math.max(0, settingsContentHeight(expandedFeature) - (expandedMenuHeight(expandedFeature) - MENU_PADDING * 2));
-		settingsScroll = MathHelper.clamp(settingsScroll, 0, settingsMaxScroll);
+		settingsScrollTarget = MathHelper.clamp(settingsScrollTarget, 0.0, settingsMaxScroll);
+		settingsScroll = MathHelper.clamp(settingsScroll, 0.0, settingsMaxScroll);
 	}
 
 	private int listContentHeight() {
@@ -974,7 +1018,7 @@ public final class CustomHubScreen extends Screen {
 		if (expandedFeature == null) {
 			return null;
 		}
-		int y = contentY - scrollOffset;
+		int y = contentY - (int) Math.round(scrollOffset);
 		for (FeatureSpec feature : visibleFeatures()) {
 			y += FEATURE_HEIGHT;
 			if (feature == expandedFeature) {
@@ -1011,7 +1055,7 @@ public final class CustomHubScreen extends Screen {
 		if (expandedFeature == null) {
 			return;
 		}
-		int y = contentY - scrollOffset;
+		int y = contentY - (int) Math.round(scrollOffsetTarget);
 		for (FeatureSpec feature : visibleFeatures()) {
 			int rowTop = y;
 			int menuTop = rowTop + FEATURE_HEIGHT + EXPANDED_MENU_GAP;
@@ -1020,14 +1064,14 @@ public final class CustomHubScreen extends Screen {
 				int viewBottom = contentY + contentHeight;
 				boolean movedToShowMenu = false;
 				if (menuBottom > viewBottom) {
-					scrollOffset += menuBottom - viewBottom;
+					scrollOffsetTarget += menuBottom - viewBottom;
 					movedToShowMenu = true;
 				}
 				if (rowTop < contentY) {
-					scrollOffset -= contentY - rowTop;
+					scrollOffsetTarget -= contentY - rowTop;
 					movedToShowMenu = true;
 				}
-				scrollOffset = MathHelper.clamp(scrollOffset, 0, maxScroll);
+				scrollOffsetTarget = MathHelper.clamp(scrollOffsetTarget, 0.0, maxScroll);
 				suppressListBottomFade = movedToShowMenu;
 				return;
 			}
@@ -1116,12 +1160,15 @@ public final class CustomHubScreen extends Screen {
 	private List<FeatureSpec> createFeatures() {
 		EMUtilsConfig config = EMUtilsClient.config();
 		return List.of(
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, EMUtilsTexts.HUB_FEATURE_FULLBRIGHT_DESC, IconKind.SUN, toggle(config::tweakFullbright, config::setTweakFullbright)),
+			feature(HubCategory.FULLBRIGHT, FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, EMUtilsTexts.HUB_FEATURE_FULLBRIGHT_DESC, IconKind.SUN, toggle(config::tweakFullbright, config::setTweakFullbright)),
 			feature(HubCategory.CLEAR_WEATHER, FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, EMUtilsTexts.HUB_FEATURE_CLEAR_WEATHER_DESC, IconKind.CLOUD_SUN, toggle(config::tweakClearWeather, config::setTweakClearWeather)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, EMUtilsTexts.HUB_FEATURE_CLEAR_UNDERWATER_DESC, IconKind.DROPLETS, toggle(config::tweakClearUnderwater, config::setTweakClearUnderwater)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, IconKind.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_FIRE_OVERLAY_DESC, IconKind.FLAME, toggle(config::tweakNoFireOverlay, config::setTweakNoFireOverlay)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_LOW_FIRE_OVERLAY_DESC, IconKind.FLAME, toggle(config::tweakLowFireOverlay, config::setTweakLowFireOverlay)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, EMUtilsTexts.HUB_FEATURE_NO_NAUSEA_DESC, IconKind.EYE, toggle(config::tweakNoNausea, config::setTweakNoNausea)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC, IconKind.ZOOM, toggle(config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, EMUtilsTexts.HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, IconKind.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, IconKind.EYE, toggle(config::tweakFreelook, config::setTweakFreelook)),
@@ -1180,7 +1227,8 @@ public final class CustomHubScreen extends Screen {
 				true
 			),
 			feature(HubCategory.CHAT, FeatureGroup.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, IconKind.CHAT, toggle(config::copyChat, config::setCopyChat)),
-			feature(HubCategory.INVENTORY, FeatureGroup.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, IconKind.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled))
+			feature(HubCategory.INVENTORY, FeatureGroup.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, IconKind.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace))
 		);
 	}
 
@@ -1356,6 +1404,7 @@ public final class CustomHubScreen extends Screen {
 		IMAGE(HubIcons.IMAGE),
 		TOOL(HubIcons.FOLDER_COG),
 		HUD(HubIcons.MONITOR),
+		MOUSE_CLICK(HubIcons.MOUSE_POINTER_CLICK),
 		APPLE(HubIcons.APPLE),
 		ZOOM(HubIcons.ZOOM_IN),
 		CAPE(HubIcons.SHIRT),

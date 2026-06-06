@@ -1,6 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameOverlayRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -43,7 +44,17 @@ public abstract class InGameOverlayRendererMixin {
 		VertexConsumerProvider vertexConsumers,
 		Sprite sprite
 	) {
-		if (EMUtilsClient.config().tweakNoFireOverlay()) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		if (config != null && config.tweakNoFireOverlay()) {
+			return;
+		}
+
+		if (config != null && config.tweakLowFireOverlay()) {
+			matrices.push();
+			matrices.translate(0.0F, -0.38F, 0.0F);
+			matrices.scale(1.0F, 0.65F, 1.0F);
+			InGameOverlayRendererAccessor.emutils$renderFireOverlay(matrices, vertexConsumers, sprite);
+			matrices.pop();
 			return;
 		}
 

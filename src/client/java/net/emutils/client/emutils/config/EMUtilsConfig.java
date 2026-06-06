@@ -55,6 +55,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int DUPLICATE_MESSAGE_WINDOW_MAX = 120;
 	public static final int PACK_MANAGER_SEARCH_LIMIT_MIN = 5;
 	public static final int PACK_MANAGER_SEARCH_LIMIT_MAX = 50;
+	public static final int FULLBRIGHT_STRENGTH_MIN = 1;
+	public static final int FULLBRIGHT_STRENGTH_MAX = 100;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
@@ -122,6 +124,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean zoomSmoothTransition = Boolean.TRUE;
 	private Boolean zoomHideHud = Boolean.FALSE;
 	private Boolean tweakFullbright = Boolean.FALSE;
+	private Integer tweakFullbrightStrength = 100;
 	private Boolean tweakNoFog = Boolean.FALSE;
 	private Boolean tweakClearUnderwater = Boolean.TRUE;
 	private Boolean tweakClearLava = Boolean.TRUE;
@@ -149,6 +152,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearWeatherHideSnow = Boolean.TRUE;
 	private Boolean tweakClearWeatherHideRainEffects = Boolean.TRUE;
 	private Boolean tweakNoFireOverlay = Boolean.FALSE;
+	private Boolean tweakLowFireOverlay = Boolean.FALSE;
+	private Boolean tweakNoNausea = Boolean.FALSE;
+	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
+	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
@@ -777,6 +784,23 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public int tweakFullbrightStrength() {
+		return clamp(tweakFullbrightStrength == null ? FULLBRIGHT_STRENGTH_MAX : tweakFullbrightStrength, FULLBRIGHT_STRENGTH_MIN, FULLBRIGHT_STRENGTH_MAX);
+	}
+
+	public float tweakFullbrightStrengthFactor() {
+		if (!tweakFullbright()) {
+			return 0.0F;
+		}
+		float rawFactor = tweakFullbrightStrength() / 100.0F;
+		return (float) Math.pow(rawFactor, 6.0);
+	}
+
+	public void setTweakFullbrightStrength(int value) {
+		tweakFullbrightStrength = clamp(value, FULLBRIGHT_STRENGTH_MIN, FULLBRIGHT_STRENGTH_MAX);
+		save();
+	}
+
 	public boolean tweakNoFog() {
 		return tweakNoFog != null && tweakNoFog;
 	}
@@ -906,6 +930,42 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakLowFireOverlay() {
+		return tweakLowFireOverlay != null && tweakLowFireOverlay;
+	}
+
+	public void setTweakLowFireOverlay(boolean enabled) {
+		tweakLowFireOverlay = enabled;
+		save();
+	}
+
+	public boolean tweakNoNausea() {
+		return tweakNoNausea != null && tweakNoNausea;
+	}
+
+	public void setTweakNoNausea(boolean enabled) {
+		tweakNoNausea = enabled;
+		save();
+	}
+
+	public boolean tweakNoSpyglassOverlay() {
+		return tweakNoSpyglassOverlay != null && tweakNoSpyglassOverlay;
+	}
+
+	public void setTweakNoSpyglassOverlay(boolean enabled) {
+		tweakNoSpyglassOverlay = enabled;
+		save();
+	}
+
+	public boolean tweakFastPlace() {
+		return tweakFastPlace != null && tweakFastPlace;
+	}
+
+	public void setTweakFastPlace(boolean enabled) {
+		tweakFastPlace = enabled;
+		save();
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -927,6 +987,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakBundleTooltipPreview()
 			|| tweakClearWeather()
 			|| tweakNoFireOverlay()
+			|| tweakLowFireOverlay()
+			|| tweakNoNausea()
+			|| tweakNoSpyglassOverlay()
+			|| tweakFastPlace()
 			|| tweakOwnNametag();
 	}
 
@@ -1401,6 +1465,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void resetTweaksDefaults() {
 		tweakFullbright = Boolean.FALSE;
+		tweakFullbrightStrength = FULLBRIGHT_STRENGTH_MAX;
 		tweakNoFog = Boolean.FALSE;
 		tweakClearUnderwater = Boolean.TRUE;
 		tweakClearLava = Boolean.TRUE;
@@ -1414,7 +1479,17 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakClearWeatherHideSnow = Boolean.TRUE;
 		tweakClearWeatherHideRainEffects = Boolean.TRUE;
 		tweakNoFireOverlay = Boolean.FALSE;
+		tweakLowFireOverlay = Boolean.FALSE;
+		tweakNoNausea = Boolean.FALSE;
+		tweakNoSpyglassOverlay = Boolean.FALSE;
+		tweakFastPlace = Boolean.FALSE;
 		tweakOwnNametag = Boolean.FALSE;
+		save();
+	}
+
+	public void resetFullbrightDefaults() {
+		tweakFullbright = Boolean.FALSE;
+		tweakFullbrightStrength = FULLBRIGHT_STRENGTH_MAX;
 		save();
 	}
 
@@ -1637,6 +1712,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakFullbright == null) {
 			tweakFullbright = Boolean.FALSE;
 		}
+		if (tweakFullbrightStrength == null) {
+			tweakFullbrightStrength = FULLBRIGHT_STRENGTH_MAX;
+		} else {
+			tweakFullbrightStrength = clamp(tweakFullbrightStrength, FULLBRIGHT_STRENGTH_MIN, FULLBRIGHT_STRENGTH_MAX);
+		}
 		if (tweakNoFog == null) {
 			tweakNoFog = Boolean.FALSE;
 		}
@@ -1676,6 +1756,18 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakNoFireOverlay == null) {
 			tweakNoFireOverlay = Boolean.FALSE;
+		}
+		if (tweakLowFireOverlay == null) {
+			tweakLowFireOverlay = Boolean.FALSE;
+		}
+		if (tweakNoNausea == null) {
+			tweakNoNausea = Boolean.FALSE;
+		}
+		if (tweakNoSpyglassOverlay == null) {
+			tweakNoSpyglassOverlay = Boolean.FALSE;
+		}
+		if (tweakFastPlace == null) {
+			tweakFastPlace = Boolean.FALSE;
 		}
 		if (tweakOwnNametag == null) {
 			tweakOwnNametag = Boolean.FALSE;
@@ -1767,6 +1859,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			boolean legacyRain = tweakNoRainFog == null || tweakNoRainFog;
 			tweakNoEnvironmentFog = legacyCave || legacyNether || legacyEnd || legacyRain;
 		}
+	}
+
+	private static int clamp(int value, int min, int max) {
+		return Math.max(min, Math.min(max, value));
 	}
 
 	private static int clampDelay(int seconds) {

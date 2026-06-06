@@ -33,9 +33,6 @@ public abstract class GameMenuScreenMixin extends Screen {
 	private static final String MODMENU_TITLE_KEY = "modmenu.title";
 
 	@Unique
-	private ButtonWidget emutils$clearWaypointsButton;
-
-	@Unique
 	private SpotifyPlayerOverlay emutils$spotifyOverlay;
 
 	@Unique
@@ -49,17 +46,11 @@ public abstract class GameMenuScreenMixin extends Screen {
 	private void emutils$init(CallbackInfo ci) {
 		emutils$hubButton = null;
 		emutils$layoutGameMenuButtons();
-		emutils$initClearWaypointsButton();
 		emutils$initSpotifyPlayer();
 	}
 
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void emutils$tick(CallbackInfo ci) {
-		if (emutils$clearWaypointsButton != null) {
-			emutils$clearWaypointsButton.active = EMUtilsClient.waypoint()
-				.hasWaypointForCurrentWorld(MinecraftClient.getInstance());
-		}
-
 		if (emutils$spotifyOverlay != null) {
 			SpotifyTrackState state = EMUtilsClient.spotify().state();
 			emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(state));
@@ -146,22 +137,6 @@ public abstract class GameMenuScreenMixin extends Screen {
 	@Unique
 	private static boolean emutils$hasTranslationKey(Text text, String key) {
 		return text.getContent() instanceof TranslatableTextContent content && key.equals(content.getKey());
-	}
-
-	@Unique
-	private void emutils$initClearWaypointsButton() {
-		if (!EMUtilsClient.config().waypointEnabled()) {
-			emutils$clearWaypointsButton = null;
-			return;
-		}
-
-		MinecraftClient client = MinecraftClient.getInstance();
-		emutils$clearWaypointsButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.OPTION_CLEAR_WAYPOINTS), button -> {
-			EMUtilsClient.waypoint().clearForCurrentWorld(client);
-			button.active = false;
-		}).dimensions(BUTTON_MARGIN, BUTTON_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-		emutils$clearWaypointsButton.active = EMUtilsClient.waypoint().hasWaypointForCurrentWorld(client);
-		addDrawableChild(emutils$clearWaypointsButton);
 	}
 
 	@Unique

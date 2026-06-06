@@ -64,6 +64,14 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.clear_weather.desc";
     public static final String HUB_FEATURE_NO_FIRE_OVERLAY_DESC =
         "emutils.hub.feature.no_fire_overlay.desc";
+    public static final String HUB_FEATURE_LOW_FIRE_OVERLAY_DESC =
+        "emutils.hub.feature.low_fire_overlay.desc";
+    public static final String HUB_FEATURE_NO_NAUSEA_DESC =
+        "emutils.hub.feature.no_nausea.desc";
+    public static final String HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC =
+        "emutils.hub.feature.no_spyglass_overlay.desc";
+    public static final String HUB_FEATURE_FAST_PLACE_DESC =
+        "emutils.hub.feature.fast_place.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
         "emutils.hub.feature.no_fog.desc";
     public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
@@ -297,6 +305,8 @@ public final class EMUtilsTexts {
         "emutils.option.zoom_out_speed";
     public static final String OPTION_TWEAK_FULLBRIGHT =
         "emutils.option.tweak_fullbright";
+    public static final String OPTION_TWEAK_FULLBRIGHT_STRENGTH =
+        "emutils.option.tweak_fullbright_strength";
     public static final String OPTION_TWEAK_NO_FOG =
         "emutils.option.tweak_no_fog";
     public static final String OPTION_TWEAK_CLEAR_UNDERWATER =
@@ -323,6 +333,14 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_clear_weather_hide_rain_effects";
     public static final String OPTION_TWEAK_NO_FIRE_OVERLAY =
         "emutils.option.tweak_no_fire_overlay";
+    public static final String OPTION_TWEAK_LOW_FIRE_OVERLAY =
+        "emutils.option.tweak_low_fire_overlay";
+    public static final String OPTION_TWEAK_NO_NAUSEA =
+        "emutils.option.tweak_no_nausea";
+    public static final String OPTION_TWEAK_NO_SPYGLASS_OVERLAY =
+        "emutils.option.tweak_no_spyglass_overlay";
+    public static final String OPTION_TWEAK_FAST_PLACE =
+        "emutils.option.tweak_fast_place";
     public static final String OPTION_TWEAK_OWN_NAMETAG =
         "emutils.option.tweak_own_nametag";
     public static final String OPTION_PACK_MANAGER =

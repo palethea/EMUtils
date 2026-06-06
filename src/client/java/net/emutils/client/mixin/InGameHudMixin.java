@@ -27,6 +27,27 @@ public abstract class InGameHudMixin {
 		FoodHudRenderer.renderOverlays(context, player, top, right, ((InGameHud) (Object) this).getTicks());
 	}
 
+	@Inject(method = "renderSpyglassOverlay", at = @At("HEAD"), cancellable = true)
+	private void emutils$hideSpyglassOverlay(DrawContext context, float scale, CallbackInfo ci) {
+		if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakNoSpyglassOverlay()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "renderPortalOverlay", at = @At("HEAD"), cancellable = true)
+	private void emutils$hidePortalOverlay(DrawContext context, float nauseaStrength, CallbackInfo ci) {
+		if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakNoNausea()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "renderNauseaOverlay", at = @At("HEAD"), cancellable = true)
+	private void emutils$hideNauseaOverlay(DrawContext context, float strength, CallbackInfo ci) {
+		if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakNoNausea()) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V", at = @At("HEAD"))
 	private void emutils$beginVanillaHudDimForLayoutEditor(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
 		if (HudLayoutEditorContext.isActive(MinecraftClient.getInstance())) {
