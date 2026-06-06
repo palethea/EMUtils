@@ -1,8 +1,10 @@
 package net.emutils.client.emutils.tweaks.gui;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
 import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emhelpers.client.gui.widget.IntConfigSlider;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.GridWidget;
@@ -20,6 +22,18 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT,
 			() -> EMUtilsClient.config().tweakFullbright(),
 			EMUtilsClient.config()::setTweakFullbright
+		));
+		adder.add(new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			Text.translatable(EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT_STRENGTH),
+			Text.translatable(EMUtilsTexts.SUFFIX_PERCENT),
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MIN,
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MAX,
+			() -> EMUtilsClient.config().tweakFullbrightStrength(),
+			EMUtilsClient.config()::setTweakFullbrightStrength
 		));
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER,
@@ -60,6 +74,26 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY,
 			() -> EMUtilsClient.config().tweakNoFireOverlay(),
 			EMUtilsClient.config()::setTweakNoFireOverlay
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY,
+			() -> EMUtilsClient.config().tweakLowFireOverlay(),
+			EMUtilsClient.config()::setTweakLowFireOverlay
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA,
+			() -> EMUtilsClient.config().tweakNoNausea(),
+			EMUtilsClient.config()::setTweakNoNausea
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY,
+			() -> EMUtilsClient.config().tweakNoSpyglassOverlay(),
+			EMUtilsClient.config()::setTweakNoSpyglassOverlay
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_FAST_PLACE,
+			() -> EMUtilsClient.config().tweakFastPlace(),
+			EMUtilsClient.config()::setTweakFastPlace
 		));
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG,

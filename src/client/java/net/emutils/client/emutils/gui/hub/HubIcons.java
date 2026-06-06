@@ -19,6 +19,7 @@ public final class HubIcons {
 	public static final Identifier MAP_PIN = icon("map-pin");
 	public static final Identifier MESSAGE_SQUARE = icon("message-square");
 	public static final Identifier MONITOR = icon("monitor");
+	public static final Identifier MOUSE_POINTER_CLICK = icon("mouse-pointer-click");
 	public static final Identifier MUSIC = icon("music");
 	public static final Identifier PACKAGE = icon("package");
 	public static final Identifier PACKAGE_OPEN = icon("package-open");

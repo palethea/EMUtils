@@ -1,5 +1,6 @@
 package net.emutils.client.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.Camera;
@@ -38,5 +39,13 @@ public abstract class GameRendererMixin {
 		if (EMUtilsClient.config().tweakNoHurtCam()) {
 			ci.cancel();
 		}
+	}
+
+	@ModifyExpressionValue(
+		method = "renderWorld",
+		at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(FF)F")
+	)
+	private float emutils$disableNauseaPortalProjection(float strength) {
+		return EMUtilsClient.config() != null && EMUtilsClient.config().tweakNoNausea() ? 0.0F : strength;
 	}
 }

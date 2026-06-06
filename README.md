@@ -22,7 +22,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
 - **Food HUD** — show saturation, held-food, and exhaustion overlays on the vanilla hunger bar, plus food values in item tooltips.
 - **Zoom** — hold a configurable keybind for OptiFine-style zoom with adjustable zoom amount, optional smooth fade in/out, cinematic camera smoothing, hide hand, and F1-style HUD hiding while zoomed.
-- **Tweaks** — toggle fullbright, clear weather with separate rain, snow, and rain-effect controls, no fog, clear underwater/lava vision, no fire overlay, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
+- **Tweaks** — toggle fullbright with strength control, clear weather with separate rain, snow, and rain-effect controls, no fog, clear underwater/lava vision, no fire overlay, low fire, no nausea, no spyglass overlay, fast block placement, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
 - **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.
 - **Script Manager** — when Minescript is installed, browse `minecraft/minescript`, create/edit Python scripts, run them locally through Minescript, and assign EMUtils-managed per-script keybinds.
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
@@ -30,11 +30,19 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
 - **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind.
 
-## Coming Soon
+## Feature Ideas
 
 - **Auto sort** — organize inventories and containers with a quick action.
 - **Quick GIF** — record short shareable gameplay clips from a keybind.
 - **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.
+- **Last server** — add a main-menu button for instantly joining the last server you played on.
+- **No Pumpkin Overlay** — hide the pumpkin overlay while wearing a carved pumpkin.
+- **Armor & Hand Equipment Status HUD** — show equipped armor durability and held item status.
+- **Keypress / Keystrokes Overlay** — display keystrokes and CPS on-screen.
+- **Target Entity Info Overlay** — show targeted mob/player health and active effects.
+- **TPS & Server Lag Monitor** — monitor server-side performance (TPS/MSPT) from the HUD.
+- **Inventory Search & Highlight Filter** — filter and highlight container contents in real-time.
+- **Screenshot Metadata Saver** — save screenshots with location, server, and dimension tags.
 
 ## Requirements
 

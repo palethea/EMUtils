@@ -35,6 +35,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
+		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
 		ROWS.put(HubCategory.TWEAKS, HubSettingsRegistry::tweaksRows);
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
@@ -66,6 +67,7 @@ public final class HubSettingsRegistry {
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case ZOOM -> config::resetZoomDefaults;
+			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
 			case TWEAKS -> config::resetTweaksDefaults;
 			case CAPES -> config::resetCapesDefaults;
@@ -345,18 +347,45 @@ public final class HubSettingsRegistry {
 		return rows;
 	}
 
+	private static List<HubSettingRow> fullbrightRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, config::tweakFullbright, config::setTweakFullbright));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT_STRENGTH,
+			EMUtilsTexts.SUFFIX_PERCENT,
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MIN,
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MAX,
+			config::tweakFullbrightStrength,
+			config::setTweakFullbrightStrength
+		));
+		return rows;
+	}
+
 	private static List<HubSettingRow> tweaksRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, config::tweakFullbright, config::setTweakFullbright));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT_STRENGTH,
+			EMUtilsTexts.SUFFIX_PERCENT,
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MIN,
+			EMUtilsConfig.FULLBRIGHT_STRENGTH_MAX,
+			config::tweakFullbrightStrength,
+			config::setTweakFullbrightStrength
+		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, config::tweakClearWeather, config::setTweakClearWeather));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, config::tweakNoFireOverlay, config::setTweakNoFireOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, config::tweakLowFireOverlay, config::setTweakLowFireOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, config::tweakNoNausea, config::setTweakNoNausea));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FOG, config::tweakNoFog, config::setTweakNoFog));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, config::tweakClearUnderwater, config::setTweakClearUnderwater));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, config::tweakClearLava, config::setTweakClearLava));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, config::tweakNoHurtCam, config::setTweakNoHurtCam));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, config::tweakFastPlace, config::setTweakFastPlace));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, config::tweakOwnNametag, config::setTweakOwnNametag));
 		rows.add(divider());
