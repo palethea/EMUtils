@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "emutils",
+  "version": "${version}",
+  "name": "EMUtils",
+  "description": "A lightweight client-side utilities mod for Minecraft ${minecraft_description} on Fabric.",
+  "authors": ["mwsk75996"],
+  "contact": {
+    "homepage": "https://github.com/palethea/EMUtils",
+    "sources": "https://github.com/palethea/EMUtils"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/emutils/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.emutils.client.EMUtilsClient"]
+  },
+  "mixins": ["emutils.mixins.json"],
+  "accessWidener": "emutils.accesswidener",
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_dependency}",
+    "java": ">=${java_version}",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "iris": "*",
+    "minescript": "*"
+  }
+}

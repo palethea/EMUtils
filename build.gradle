@@ -3,6 +3,39 @@ plugins {
 	id 'com.gradleup.shadow' version '9.3.1'
 }
 
+def mcFamily = (findProperty("mcFamily") ?: "1.21.x").toString()
+def mcFamilies = [
+	"1.21.x": [
+		sourcePath: "src/1_21_x/client/java",
+		resourcePath: "src/1_21_x/resources",
+		minecraftVersion: "1.21.11",
+		yarnMappings: "1.21.11+build.5",
+		fabricApiVersion: "0.141.4+1.21.11",
+		loaderVersion: "0.19.2",
+		javaVersion: 21,
+		mappingNamespace: "yarn",
+		minecraftDependency: ">=1.21.9- <1.21.12-",
+		minecraftDescription: "1.21.9-1.21.11",
+		archiveName: "EMUtils-1.21.x.jar"
+	],
+	"26.x": [
+		sourcePath: "src/26_x/client/java",
+		resourcePath: "src/26_x/resources",
+		minecraftVersion: "26.1.2",
+		fabricApiVersion: "0.150.0+26.1.2",
+		loaderVersion: "0.19.3",
+		javaVersion: 25,
+		mappingNamespace: "mojang",
+		minecraftDependency: "~26.1-",
+		minecraftDescription: "26.1-26.1.2",
+		archiveName: "EMUtils-26.x.jar"
+	]
+]
+def selectedMc = mcFamilies[mcFamily]
+if (selectedMc == null) {
+	throw new GradleException("Unsupported mcFamily '${mcFamily}'. Use one of: ${mcFamilies.keySet().join(', ')}")
+}
+
 version = project.mod_version
 group = project.maven_group
 
@@ -23,7 +56,12 @@ configurations {
 
 loom {
 	splitEnvironmentSourceSets()
-	accessWidenerPath = file("src/main/resources/emutils.accesswidener")
+	accessWidenerPath = file("${selectedMc.resourcePath}/emutils.accesswidener")
+	fabricModJsonPath = file("${selectedMc.resourcePath}/fabric.mod.json")
+
+	if (selectedMc.mappingNamespace == "mojang") {
+		noIntermediateMappings()
+	}
 
 	mods {
 		"emutils" {
@@ -33,11 +71,28 @@ loom {
 	}
 }
 
+sourceSets {
+	main {
+		resources.srcDirs = ["src/main/resources", selectedMc.resourcePath]
+	}
+	client {
+		java.srcDirs = [selectedMc.sourcePath]
+	}
+}
+
 dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	minecraft "com.mojang:minecraft:${selectedMc.minecraftVersion}"
+	if (selectedMc.mappingNamespace == "mojang") {
+		mappings loom.layered {
+			mappings(file("gradle/mappings/26.1.2-official-identity.tiny")) {
+				fallbackNamespaces("official", "named")
+			}
+		}
+	} else {
+		mappings "net.fabricmc:yarn:${selectedMc.yarnMappings}:v2"
+	}
+	modImplementation "net.fabricmc:fabric-loader:${selectedMc.loaderVersion}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedMc.fabricApiVersion}"
 	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
 		exclude group: "net.fabricmc.fabric-api"
 		exclude group: "net.fabricmc", module: "fabric-loader"
@@ -54,21 +109,38 @@ dependencies {
 processResources {
 	def version = project.version
 	inputs.property "version", version
+	inputs.property "minecraft_dependency", selectedMc.minecraftDependency
+	inputs.property "minecraft_description", selectedMc.minecraftDescription
+	inputs.property "java_version", selectedMc.javaVersion
+	inputs.property "loader_version", selectedMc.loaderVersion
 
 	filesMatching("fabric.mod.json") {
-		expand "version": version
+		expand(
+			"version": version,
+			"minecraft_dependency": selectedMc.minecraftDependency,
+			"minecraft_description": selectedMc.minecraftDescription,
+			"java_version": selectedMc.javaVersion,
+			"loader_version": selectedMc.loaderVersion
+		)
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = selectedMc.javaVersion
+	javaCompiler = javaToolchains.compilerFor {
+		languageVersion = JavaLanguageVersion.of(selectedMc.javaVersion)
+	}
 }
 
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.toVersion(selectedMc.javaVersion)
+	targetCompatibility = JavaVersion.toVersion(selectedMc.javaVersion)
+}
+
+tasks.matching { it.name == "remapSourcesJar" }.configureEach {
+	enabled = selectedMc.mappingNamespace != "mojang"
 }
 
 tasks.named("jar") {
@@ -88,5 +160,5 @@ tasks.named("shadowJar") {
 tasks.named("remapJar") {
 	dependsOn tasks.shadowJar
 	inputFile.set(tasks.shadowJar.archiveFile)
-	archiveFileName = "EMUtils.jar"
+	archiveFileName = selectedMc.archiveName
 }
