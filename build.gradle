@@ -8,10 +8,6 @@ group = project.maven_group
 
 repositories {
 	maven {
-		name = "Terraformers"
-		url = "https://maven.terraformersmc.com/releases/"
-	}
-	maven {
 		name = "NotEnoughUpdates"
 		url = "https://maven.notenoughupdates.org/releases/"
 	}
@@ -42,7 +38,6 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
 		exclude group: "net.fabricmc.fabric-api"
 		exclude group: "net.fabricmc", module: "fabric-loader"

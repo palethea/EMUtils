@@ -13,8 +13,7 @@
   "icon": "assets/emutils/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["net.emutils.client.EMUtilsClient"],
-    "modmenu": ["net.emutils.client.emutils.modmenu.EMUtilsModMenu"]
+    "client": ["net.emutils.client.EMUtilsClient"]
   },
   "mixins": ["emutils.mixins.json"],
   "accessWidener": "emutils.accesswidener",
@@ -25,7 +24,6 @@
     "fabric-api": "*"
   },
   "suggests": {
-    "modmenu": "*",
     "iris": "*",
     "minescript": "*"
   }

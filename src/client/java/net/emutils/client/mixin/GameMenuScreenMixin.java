@@ -1,19 +1,16 @@
 package net.emutils.client.mixin;
 
-import java.util.ArrayList;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,15 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameMenuScreen.class)
 public abstract class GameMenuScreenMixin extends Screen {
-	private static final int HALF_BUTTON_WIDTH = 98;
-	private static final int FULL_BUTTON_LEFT = 102;
-	private static final int HALF_BUTTON_RIGHT = 4;
-	private static final int MIN_FULL_MODS_WIDTH = 150;
 	private static final int BUTTON_WIDTH = 140;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int BUTTON_MARGIN = 8;
-	private static final String SERVER_LINKS_KEY = "menu.server_links";
-	private static final String MODMENU_TITLE_KEY = "modmenu.title";
 
 	@Unique
 	private SpotifyPlayerOverlay emutils$spotifyOverlay;
@@ -82,61 +73,19 @@ public abstract class GameMenuScreenMixin extends Screen {
 
 	@Unique
 	private void emutils$layoutGameMenuButtons() {
-		if (!FabricLoader.getInstance().isModLoaded("modmenu")) {
+		if (emutils$hubButton != null) {
 			return;
 		}
 
-		int leftX = width / 2 - FULL_BUTTON_LEFT;
-		int rightX = width / 2 + HALF_BUTTON_RIGHT;
-		ButtonWidget modsButton = null;
-		boolean removedServerLinks = false;
+		emutils$hubButton = addDrawableChild(emutils$createHubButton(BUTTON_MARGIN, BUTTON_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT));
+	}
 
-		for (var child : new ArrayList<>(children())) {
-			if (!(child instanceof ButtonWidget button)) {
-				continue;
-			}
-
-			if (emutils$isServerLinksButton(button)) {
-				remove(button);
-				removedServerLinks = true;
-				continue;
-			}
-
-			if (emutils$isModsButton(button)) {
-				modsButton = button;
-			}
-		}
-
-		if (modsButton == null) {
-			return;
-		}
-
-		int y = modsButton.getY();
-		int height = modsButton.getHeight();
-		modsButton.setPosition(leftX, y);
-		if (modsButton.getWidth() >= MIN_FULL_MODS_WIDTH || removedServerLinks) {
-			modsButton.setDimensions(HALF_BUTTON_WIDTH, height);
-		}
-		emutils$hubButton = addDrawableChild(ButtonWidget.builder(
+	@Unique
+	private ButtonWidget emutils$createHubButton(int x, int y, int width, int height) {
+		return ButtonWidget.builder(
 			Text.translatable(EMUtilsTexts.HUB_TITLE),
 			open -> MinecraftClient.getInstance().setScreen(new CustomHubScreen(this))
-		).dimensions(rightX, y, HALF_BUTTON_WIDTH, height).build());
-	}
-
-	@Unique
-	private static boolean emutils$isServerLinksButton(ButtonWidget button) {
-		return emutils$hasTranslationKey(button.getMessage(), SERVER_LINKS_KEY);
-	}
-
-	@Unique
-	private static boolean emutils$isModsButton(ButtonWidget button) {
-		return emutils$hasTranslationKey(button.getMessage(), MODMENU_TITLE_KEY)
-			|| button.getMessage().getString().startsWith("Mods");
-	}
-
-	@Unique
-	private static boolean emutils$hasTranslationKey(Text text, String key) {
-		return text.getContent() instanceof TranslatableTextContent content && key.equals(content.getKey());
+		).dimensions(x, y, width, height).build();
 	}
 
 	@Unique
