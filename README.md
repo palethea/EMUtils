@@ -15,20 +15,13 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ## Features
 
-- **Automatic reconnect** — reconnect to the last server after being kicked, with a countdown button on the disconnect screen, configurable retry delay, limited attempts, or always-retry mode.
-- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, location/server/dimension metadata saved in a screenshots metadata folder, an open-gallery keybind, and a configurable screenshot gallery for copying, opening, sorting, and deleting recent captures.
-- **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
-- **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts or configurable highlights when you are mentioned.
-- **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
-- **Food HUD** — show saturation, held-food, and exhaustion overlays on the vanilla hunger bar, plus food values in item tooltips.
-- **Zoom** — hold a configurable keybind for OptiFine-style zoom with adjustable zoom amount, optional smooth fade in/out, cinematic camera smoothing, hide hand, and F1-style HUD hiding while zoomed.
-- **Tweaks** — toggle fullbright with strength control, clear weather with separate rain, snow, and rain-effect controls, no fog, clear underwater/lava vision, no fire overlay, low fire, no nausea, no spyglass overlay, fast block placement, no environment fog, no hurt cam, freelook, your own nametag, and shulker or bundle tooltip previews.
-- **Pack Manager** — browse installed and Modrinth resource packs and shader packs in-game, download into pack folders, delete installed packs, enable/disable resource packs, and apply or turn off Iris shader packs when Iris is installed.
-- **Script Manager** — when Minescript is installed, browse `minecraft/minescript`, create/edit Python scripts, run them locally through Minescript, and assign EMUtils-managed per-script keybinds.
-- **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
-- **Spotify player** — show the current Spotify track in the pause menu and optional HUD overlay when Spotify is running (Linux, macOS, and Windows).
-- **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, use Hover Transfer to sweep items in or out of storage containers with Shift + left click, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
-- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...** or the settings keybind.
+EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same way as the in-game settings hub:
+
+- **Render** — zoom, fullbright, clear weather, visibility tweaks, custom capes, and visual overlays.
+- **HUD** — info overlay, food HUD, layout editor, and Spotify now-playing panels.
+- **Utility** — auto reconnect, screenshot helper, screenshot metadata, and waypoints.
+- **Management** — screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
+- **QoL** — chat tools, inventory tools, Hover Transfer, slot locking, slot binding, and fast place.
 
 ## Feature Ideas
 
