@@ -19,9 +19,20 @@ public final class ScreenshotActions {
         MinecraftClient client,
         File screenshot
     ) {
-        boolean copied = ScreenshotClipboard.copyImage(screenshot);
-        postCopyFeedback(client, copied);
-        return copied;
+        if (screenshot == null || !screenshot.isFile()) {
+            postCopyFeedback(client, false);
+            return false;
+        }
+
+        Thread worker = new Thread(() -> {
+            boolean copied = ScreenshotClipboard.copyImage(screenshot);
+            if (client != null) {
+                client.execute(() -> postCopyFeedback(client, copied));
+            }
+        }, "EMUtils-Screenshot-Clipboard");
+        worker.setDaemon(true);
+        worker.start();
+        return true;
     }
 
     public static void openImage(File screenshot) {

@@ -129,7 +129,7 @@ public final class PackIconLoader implements AutoCloseable {
 	private byte[] downloadBytes(String iconUrl) throws IOException, InterruptedException {
 		HttpRequest request = HttpRequest.newBuilder(URI.create(iconUrl))
 			.timeout(Duration.ofSeconds(20))
-			.header("User-Agent", "mwsk75996/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
+			.header("User-Agent", "palethea/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
 			.header("Accept", "image/png,image/jpeg,image/webp,*/*")
 			.GET()
 			.build();

@@ -1,21 +1,39 @@
 package net.emutils.client.emutils.spotify;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import net.emutils.client.EMUtilsClient;
 
 final class WindowsSmtcSpotifyClient implements SpotifyClient {
 	private static final Gson GSON = new Gson();
 	private static final long SCRIPT_TIMEOUT_SECONDS = 5L;
+	// Java SE has no built-in Windows Runtime projection. This transparent
+	// PowerShell bridge only talks to local Windows SMTC APIs for Spotify state
+	// and media controls; it does not install, download, or upload anything.
 	private static final String SCRIPT_RESOURCE = "/assets/emutils/scripts/spotify_smtc.ps1";
+	private static final String NO_ART = "";
+	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+		.connectTimeout(Duration.ofSeconds(3))
+		.followRedirects(HttpClient.Redirect.NORMAL)
+		.build();
+	private static final Map<String, String> ARTWORK_CACHE = new ConcurrentHashMap<>();
 
 	static boolean isSupported() {
 		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("windows");
@@ -78,8 +96,76 @@ final class WindowsSmtcSpotifyClient implements SpotifyClient {
 				artUrl = "data:image/png;base64," + base64.trim();
 			}
 		}
+		if (artUrl.isBlank()) {
+			artUrl = findArtworkUrl(title, artist);
+		}
 
 		return SpotifyTrackState.track(title, artist, playing, artUrl, positionMs, durationMs);
+	}
+
+	private static String findArtworkUrl(String title, String artist) {
+		if (title == null || title.isBlank()) {
+			return "";
+		}
+
+		String key = (title + "\n" + artist).toLowerCase(Locale.ROOT);
+		String cached = ARTWORK_CACHE.get(key);
+		if (cached != null) {
+			return cached;
+		}
+
+		String resolved = lookupItunesArtwork(title, artist).orElse(NO_ART);
+		ARTWORK_CACHE.put(key, resolved);
+		return resolved;
+	}
+
+	private static Optional<String> lookupItunesArtwork(String title, String artist) {
+		try {
+			String term = URLEncoder.encode((title + " " + (artist == null ? "" : artist)).trim(), StandardCharsets.UTF_8);
+			URI uri = URI.create("https://itunes.apple.com/search?media=music&entity=song&limit=1&term=" + term);
+			HttpRequest request = HttpRequest.newBuilder(uri)
+				.timeout(Duration.ofSeconds(4))
+				.header("Accept", "application/json")
+				.header("User-Agent", "palethea/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
+				.GET()
+				.build();
+			HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				return Optional.empty();
+			}
+
+			JsonObject root = GSON.fromJson(response.body(), JsonObject.class);
+			if (root == null || !root.has("results")) {
+				return Optional.empty();
+			}
+
+			JsonArray results = root.getAsJsonArray("results");
+			if (results == null || results.isEmpty()) {
+				return Optional.empty();
+			}
+
+			JsonElement first = results.get(0);
+			if (!first.isJsonObject()) {
+				return Optional.empty();
+			}
+
+			JsonObject result = first.getAsJsonObject();
+			if (!result.has("artworkUrl100")) {
+				return Optional.empty();
+			}
+
+			String url = result.get("artworkUrl100").getAsString();
+			return url == null || url.isBlank()
+				? Optional.empty()
+				: Optional.of(url.replace("100x100bb", "300x300bb"));
+		} catch (IOException | InterruptedException | RuntimeException exception) {
+			if (exception instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
+
+			EMUtilsClient.LOGGER.debug("Failed to resolve Spotify artwork fallback for '{} - {}'.", artist, title, exception);
+			return Optional.empty();
+		}
 	}
 
 	private CommandRunner.OptionalResult runScript(String action) {

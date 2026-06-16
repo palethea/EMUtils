@@ -75,7 +75,7 @@ public final class ModrinthClient {
 	private static HttpRequest.Builder request(String url) {
 		return HttpRequest.newBuilder(URI.create(url))
 			.timeout(Duration.ofSeconds(30))
-			.header("User-Agent", "mwsk75996/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)");
+			.header("User-Agent", "palethea/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)");
 	}
 
 	private static String encode(String value) {
