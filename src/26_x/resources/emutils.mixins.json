@@ -39,6 +39,7 @@
 		"PlayerListEntryMixin",
 		"ScreenMixin",
 		"ScreenshotRecorderMixin",
+		"SodiumWorldRendererMixin",
 		"WeatherRenderingMixin"
 	],
 	"injectors": {

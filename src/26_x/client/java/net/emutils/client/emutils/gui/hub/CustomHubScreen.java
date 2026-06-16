@@ -412,7 +412,9 @@ public final class CustomHubScreen extends Screen {
 				actionRight = toggleX - 10;
 			}
 			int openX = actionRight - ACTION_BUTTON_WIDTH;
-			renderPillButton(context, openX, y + (FEATURE_HEIGHT - 19) / 2, ACTION_BUTTON_WIDTH, 19, Component.literal("Open"), hovered && feature.primaryActionEnabled());
+			boolean actionEnabled = feature.primaryActionEnabled();
+			Component actionLabel = Component.translatable(actionEnabled ? EMUtilsTexts.HUB_ACTION_OPEN : EMUtilsTexts.HUB_ACTION_UNAVAILABLE);
+			renderPillButton(context, openX, y + (FEATURE_HEIGHT - 19) / 2, ACTION_BUTTON_WIDTH, 19, actionLabel, hovered && actionEnabled, actionEnabled);
 		} else if (feature.toggle() == null && canExpand(feature)) {
 			Component label = Component.literal(expanded ? "Hide" : "Settings");
 			int width = textRenderer.width(label) + 16;
@@ -469,14 +471,16 @@ public final class CustomHubScreen extends Screen {
 			int controlWidth = Math.max(80, controlRight - controlX);
 			if (row instanceof HubSettingRow.Action action) {
 				drawClippedText(context, action.label(), x, y + (SETTING_ROW_HEIGHT - textRenderer.lineHeight) / 2, width - ACTION_BUTTON_WIDTH - 12, HubPanelTheme.TEXT_PRIMARY);
+				Component actionLabel = Component.translatable(action.enabled() ? EMUtilsTexts.HUB_ACTION_OPEN : EMUtilsTexts.HUB_ACTION_UNAVAILABLE);
 				renderPillButton(
 					context,
 					controlRight - ACTION_BUTTON_WIDTH,
 					y + 4,
 					ACTION_BUTTON_WIDTH,
 					19,
-					Component.literal("Open"),
-					action.enabled() && contains(mouseX, mouseY, x, y, width, SETTING_ROW_HEIGHT)
+					actionLabel,
+					action.enabled() && contains(mouseX, mouseY, x, y, width, SETTING_ROW_HEIGHT),
+					action.enabled()
 				);
 				y += SETTING_ROW_HEIGHT;
 				continue;
@@ -545,15 +549,22 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private void renderPillButton(GuiGraphicsExtractor context, int x, int y, int width, int height, Component label, boolean hovered) {
-		HubRoundedGraphics.drawRoundedRect(context, x, y, x + width, y + height, hovered ? HubPanelTheme.SURFACE_HOVER : HubPanelTheme.SURFACE, HubRoundedGraphics.RADIUS_MD);
+		renderPillButton(context, x, y, width, height, label, hovered, true);
+	}
+
+	private void renderPillButton(GuiGraphicsExtractor context, int x, int y, int width, int height, Component label, boolean hovered, boolean enabled) {
+		int background = enabled
+			? hovered ? HubPanelTheme.SURFACE_HOVER : HubPanelTheme.SURFACE
+			: 0xFF1B2434;
 		String visible = textRenderer.plainSubstrByWidth(label.getString(), Math.max(0, width - 8));
 		int labelWidth = textRenderer.width(visible);
+		HubRoundedGraphics.drawRoundedRect(context, x, y, x + width, y + height, background, HubRoundedGraphics.RADIUS_MD);
 		context.text(
 			textRenderer,
 			Component.literal(visible),
 			x + Math.max(0, (width - labelWidth) / 2),
 			y + (height - textRenderer.lineHeight + 1) / 2,
-			HubPanelTheme.TEXT_ACCENT,
+			enabled ? HubPanelTheme.TEXT_ACCENT : HubPanelTheme.TEXT_MUTED,
 			false
 		);
 	}

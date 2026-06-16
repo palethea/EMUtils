@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
-	private static final Set<String> SUPPORTED_26_X = Set.of("26.1", "26.1.1", "26.1.2");
+	private static final Set<String> SUPPORTED_SODIUM_26_X = Set.of("26.1", "26.1.1", "26.1.2");
 
 	private String minecraftVersion = "unknown";
 
@@ -27,7 +27,15 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		return SUPPORTED_26_X.contains(minecraftVersion);
+		if (mixinClassName.endsWith(".SodiumWorldRendererMixin")) {
+			return isSupportedSodiumTarget() && FabricLoader.getInstance().isModLoaded("sodium");
+		}
+
+		return true;
+	}
+
+	private boolean isSupportedSodiumTarget() {
+		return SUPPORTED_SODIUM_26_X.contains(minecraftVersion);
 	}
 
 	@Override

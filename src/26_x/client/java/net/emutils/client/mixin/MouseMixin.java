@@ -3,7 +3,6 @@ package net.emutils.client.mixin;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.mixin.MouseAccess;
 import net.minecraft.client.MouseHandler;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.Options;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
@@ -52,15 +51,4 @@ public abstract class MouseMixin {
 		InputConstants.grabOrReleaseMouse(window, mode, x, y);
 	}
 
-	@Redirect(
-		method = "turnPlayer(D)V",
-		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V")
-	)
-	private void emutils$redirectFreelookMouse(LocalPlayer player, double cursorDeltaX, double cursorDeltaY) {
-		if (EMUtilsClient.tweaks() != null) {
-			EMUtilsClient.tweaks().freelook().changeLookDirection(player, cursorDeltaX, cursorDeltaY);
-		} else {
-			player.turn(cursorDeltaX, cursorDeltaY);
-		}
-	}
 }

@@ -17,11 +17,19 @@ public final class ScreenshotClipboard {
 	}
 
 	public static boolean copyImage(File file) {
+		if (isWindows() && WindowsScreenshotClipboard.copyImage(file)) {
+			return true;
+		}
+
 		if (copyWithWlCopy(file)) {
 			return true;
 		}
 
 		return copyWithAwt(file);
+	}
+
+	private static boolean isWindows() {
+		return System.getProperty("os.name", "").toLowerCase().contains("win");
 	}
 
 	private static boolean copyWithWlCopy(File file) {

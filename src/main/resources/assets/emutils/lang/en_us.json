@@ -5,6 +5,8 @@
   "emutils.hub.modern_title": "EMUtils",
   "emutils.hub.modern_open": "Modern Settings Hub...",
   "emutils.hub.classic_open": "Classic Settings...",
+  "emutils.hub.action.open": "Open",
+  "emutils.hub.action.unavailable": "Unavailable",
   "emutils.hub.open_pack_manager": "Open Pack Manager...",
   "emutils.hub.open_script_manager": "Open Script Manager...",
   "emutils.hub.open_command_shortcuts": "Manage Shortcuts...",

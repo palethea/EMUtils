@@ -93,6 +93,9 @@ dependencies {
 	}
 	modImplementation "net.fabricmc:fabric-loader:${selectedMc.loaderVersion}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedMc.fabricApiVersion}"
+	if (mcFamily == "26.x") {
+		modCompileOnly "maven.modrinth:sodium:mc26.1.2-0.8.12-fabric"
+	}
 	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
 		exclude group: "net.fabricmc.fabric-api"
 		exclude group: "net.fabricmc", module: "fabric-loader"
@@ -101,6 +104,7 @@ dependencies {
 		exclude group: "net.fabricmc.fabric-api"
 		exclude group: "net.fabricmc", module: "fabric-loader"
 	}
+	include implementation("net.java.dev.jna:jna:5.17.0")
 	include implementation("org.glavo:webp:0.2.0")
 	modImplementation "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
 	include "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"

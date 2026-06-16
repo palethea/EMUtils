@@ -13,6 +13,9 @@ public final class EMUtilsTexts {
     public static final String HUB_MODERN_TITLE = "emutils.hub.modern_title";
     public static final String HUB_MODERN_OPEN = "emutils.hub.modern_open";
     public static final String HUB_CLASSIC_OPEN = "emutils.hub.classic_open";
+    public static final String HUB_ACTION_OPEN = "emutils.hub.action.open";
+    public static final String HUB_ACTION_UNAVAILABLE =
+        "emutils.hub.action.unavailable";
     public static final String HUB_OPEN_PACK_MANAGER =
         "emutils.hub.open_pack_manager";
     public static final String HUB_OPEN_SCRIPT_MANAGER =

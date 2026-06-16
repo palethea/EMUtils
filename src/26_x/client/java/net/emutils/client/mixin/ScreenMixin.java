@@ -32,25 +32,37 @@ public abstract class ScreenMixin {
 
 	@Inject(method = "defaultHandleClickEvent", at = @At("HEAD"), cancellable = true)
 	private static void emutils$handleCustomClickEvents(ClickEvent event, Minecraft client, Screen screen, CallbackInfo ci) {
+		if (emutils$tryHandleCustomClickEvent(event, client)) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "defaultHandleGameClickEvent", at = @At("HEAD"), cancellable = true)
+	private static void emutils$handleCustomGameClickEvents(ClickEvent event, Minecraft client, Screen screen, CallbackInfo ci) {
+		if (emutils$tryHandleCustomClickEvent(event, client)) {
+			ci.cancel();
+		}
+	}
+
+	private static boolean emutils$tryHandleCustomClickEvent(ClickEvent event, Minecraft client) {
 		if (!(event instanceof ClickEvent.Custom custom)) {
-			return;
+			return false;
 		}
 
 		if (WaypointClickHandler.tryHandle(custom.id(), custom, client)) {
-			ci.cancel();
-			return;
+			return true;
 		}
 
 		if (!ScreenshotMessage.COPY_SCREENSHOT_ACTION.equals(custom.id())) {
-			return;
+			return false;
 		}
 
-		ci.cancel();
 		custom.payload()
 			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty())
 			.ifPresentOrElse(
 				path -> ScreenshotActions.copyWithFeedback(client, new File(path)),
 				() -> client.gui.getChat().addClientSystemMessage(Component.translatable(EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE).withStyle(ChatFormatting.RED))
 			);
+		return true;
 	}
 }

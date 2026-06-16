@@ -150,7 +150,7 @@ public final class SpotifyArtLoader implements AutoCloseable {
 	private byte[] downloadHttpBytes(String artUrl) throws IOException, InterruptedException {
 		HttpRequest request = HttpRequest.newBuilder(URI.create(artUrl))
 			.timeout(Duration.ofSeconds(15))
-			.header("User-Agent", "mwsk75996/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
+			.header("User-Agent", "palethea/EMUtils/" + EMUtilsClient.MOD_ID + " (Minecraft client mod)")
 			.header("Accept", "image/png,image/jpeg,image/webp,*/*")
 			.GET()
 			.build();
