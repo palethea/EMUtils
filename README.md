@@ -6,7 +6,7 @@
 
 <p align="center">
   Tired of installing five different mods just to copy a chat message, zoom in, and reconnect after a kick?<br>
-  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for <strong>Minecraft 1.21.11</strong> on Fabric — so you can stop juggling mods and get back to playing.
+  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for <strong>Minecraft 1.21.9-1.21.11</strong> and <strong>Minecraft 26.1-26.1.2</strong> on Fabric — so you can stop juggling mods and get back to playing.
 </p>
 
 ## Status
@@ -16,7 +16,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 ## Features
 
 - **Automatic reconnect** — reconnect to the last server after being kicked, with a countdown button on the disconnect screen, configurable retry delay, limited attempts, or always-retry mode.
-- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, an open-gallery keybind, and a configurable screenshot gallery for copying, opening, sorting, and deleting recent captures.
+- **Screenshot helper** — replace the default screenshot message with quick actions, optional auto-copy feedback, location/server/dimension metadata saved in a screenshots metadata folder, an open-gallery keybind, and a configurable screenshot gallery for copying, opening, sorting, and deleting recent captures.
 - **Death waypoints** — save multiple deaths per world/server with in-world labels, distance text, configurable opacity, nearby removal prompts, and coordinate copying in plain, comma-separated, or teleport-command formats.
 - **Chat features** — copy full chat messages with Ctrl + left click, optionally prepend chat timestamps, collapse repeated messages, and show sound/toast alerts or configurable highlights when you are mentioned.
 - **HUD overlay** — show a configurable styled info panel with icons, selectable screen position, opacity, scale, coordinates, chunk/region, biome, ping, FPS, facing, memory, world time, and local time. Use anchor positioning or drag overlays into a custom HUD layout.
@@ -27,8 +27,8 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Script Manager** — when Minescript is installed, browse `minecraft/minescript`, create/edit Python scripts, run them locally through Minescript, and assign EMUtils-managed per-script keybinds.
 - **Custom capes** — show player capes from OptiFine, LabyMod, MinecraftCapes, Cosmetica, and Cloaks+, with per-provider toggles and a preferred provider selector when you have more than one.
 - **Spotify player** — show the current Spotify track in the pause menu and optional HUD overlay when Spotify is running (Linux, macOS, and Windows).
-- **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
-- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...**, Mod Menu, or the settings keybind.
+- **Inventory Tools** — lock slots, bind hotbar-safe slot swaps, use Hover Transfer to sweep items in or out of storage containers with Shift + left click, show a small in-game inventory preview above the hotbar, and keep the mouse cursor in place when switching between container screens instead of resetting to center. Slot locks and bindings persist per world/server.
+- **Settings UI** — open the modern EMUtils settings hub from **Options → EMUtils...** or the settings keybind.
 
 ## Feature Ideas
 
@@ -42,35 +42,35 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 - **Target Entity Info Overlay** — show targeted mob/player health and active effects.
 - **TPS & Server Lag Monitor** — monitor server-side performance (TPS/MSPT) from the HUD.
 - **Inventory Search & Highlight Filter** — filter and highlight container contents in real-time.
-- **Screenshot Metadata Saver** — save screenshots with location, server, and dimension tags.
 
 ## Requirements
 
-- Minecraft 1.21.11
-- Java 21 or newer
-- Fabric Loader 0.19.2 or newer
+- Minecraft 1.21.9-1.21.11 or Minecraft 26.1-26.1.2
+- Java 21 or newer for the 1.21.x jar
+- Java 25 or newer for the 26.x jar
+- Fabric Loader 0.19.2 or newer for 1.21.x, or 0.19.3 or newer for 26.x
 - Fabric API
 
 ### Optional integrations
 
-- **Mod Menu** — adds an EMUtils button on the mod list screen (the in-game hub works without it)
 - **Iris** — required for Pack Manager shader apply/disable actions
 - **Minescript** — required for Script Manager browsing, editing, running, and EMUtils script keybinds
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
-2. Download the latest EMUtils jar from releases.
-3. Place `EMUtils.jar` in your `mods` folder.
+1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version.
+2. Download the matching EMUtils jar from releases: `EMUtils-1.21.x.jar` or `EMUtils-26.x.jar`.
+3. Place the jar in your `mods` folder.
 4. Launch the game.
 
 ## Building
 
 ```bash
-./gradlew build
+./gradlew -PmcFamily=1.21.x build
+./gradlew -PmcFamily=26.x build
 ```
 
-The built jar will be created in `build/libs/`.
+The built jars will be created in `build/libs/` as `EMUtils-1.21.x.jar` and `EMUtils-26.x.jar`.
 
 ## License
 
