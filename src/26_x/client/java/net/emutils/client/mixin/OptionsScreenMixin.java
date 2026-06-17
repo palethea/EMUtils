@@ -36,7 +36,7 @@ public abstract class OptionsScreenMixin extends Screen {
 		}
 
 		Button emutilsButton = Button.builder(Component.translatable(EMUtilsTexts.OPTIONS_BUTTON), button -> Minecraft.getInstance()
-			.setScreen(new CustomHubScreen(this))).build();
+			.setScreenAndShow(new CustomHubScreen(this))).build();
 		grid.addChild(emutilsButton, EMUTILS_ROW, 0, 1, 1, grid.defaultCellSetting());
 		addRenderableWidget(emutilsButton);
 

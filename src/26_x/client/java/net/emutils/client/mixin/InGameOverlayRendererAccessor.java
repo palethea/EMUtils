@@ -2,7 +2,7 @@ package net.emutils.client.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,19 +10,19 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(ScreenEffectRenderer.class)
 public interface InGameOverlayRendererAccessor {
-	@Invoker("renderWater")
-	static void emutils$renderWater(
+	@Invoker("submitWater")
+	static void emutils$submitWater(
 		Minecraft client,
 		PoseStack matrices,
-		MultiBufferSource vertexConsumers
+		SubmitNodeCollector submitNodeCollector
 	) {
 		throw new AssertionError();
 	}
 
-	@Invoker("renderFire")
-	static void emutils$renderFire(
+	@Invoker("submitFire")
+	static void emutils$submitFire(
 		PoseStack matrices,
-		MultiBufferSource vertexConsumers,
+		SubmitNodeCollector submitNodeCollector,
 		TextureAtlasSprite sprite
 	) {
 		throw new AssertionError();

@@ -21,13 +21,13 @@ def mcFamilies = [
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
 		resourcePath: "src/26_x/resources",
-		minecraftVersion: "26.1.2",
-		fabricApiVersion: "0.150.0+26.1.2",
+		minecraftVersion: "26.2",
+		fabricApiVersion: "0.152.1+26.2",
 		loaderVersion: "0.19.3",
 		javaVersion: 25,
 		mappingNamespace: "mojang",
-		minecraftDependency: "~26.1-",
-		minecraftDescription: "26.1-26.1.2",
+		minecraftDependency: ">=26- <27-",
+		minecraftDescription: "26.x",
 		archiveName: "EMUtils-26.x.jar"
 	]
 ]
@@ -84,7 +84,7 @@ dependencies {
 	minecraft "com.mojang:minecraft:${selectedMc.minecraftVersion}"
 	if (selectedMc.mappingNamespace == "mojang") {
 		mappings loom.layered {
-			mappings(file("gradle/mappings/26.1.2-official-identity.tiny")) {
+			mappings(file("gradle/mappings/26.2-official-identity.tiny")) {
 				fallbackNamespaces("official", "named")
 			}
 		}
@@ -94,7 +94,7 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${selectedMc.loaderVersion}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedMc.fabricApiVersion}"
 	if (mcFamily == "26.x") {
-		modCompileOnly "maven.modrinth:sodium:mc26.1.2-0.8.12-fabric"
+		modCompileOnly "maven.modrinth:sodium:mc26.2-0.9.0-fabric"
 	}
 	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
 		exclude group: "net.fabricmc.fabric-api"
@@ -165,4 +165,20 @@ tasks.named("remapJar") {
 	dependsOn tasks.shadowJar
 	inputFile.set(tasks.shadowJar.archiveFile)
 	archiveFileName = selectedMc.archiveName
+	if (selectedMc.mappingNamespace == "mojang") {
+		doLast {
+			def remappedJar = archiveFile.get().asFile
+			def shadowClassesDir = layout.buildDirectory.dir("tmp/remapShadowMerge/${mcFamily}").get().asFile
+			delete(shadowClassesDir)
+			copy {
+				from(zipTree(tasks.shadowJar.archiveFile.get().asFile)) {
+					include "net/emutils/client/shadow/**"
+				}
+				into shadowClassesDir
+			}
+			ant.zip(destfile: remappedJar, update: true) {
+				zipfileset(dir: shadowClassesDir, includes: "net/emutils/client/shadow/**")
+			}
+		}
+	}
 }

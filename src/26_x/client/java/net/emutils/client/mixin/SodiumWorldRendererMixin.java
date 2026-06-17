@@ -25,7 +25,7 @@ public abstract class SodiumWorldRendererMixin {
 			return fogParameters;
 		}
 
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (camera == null) {
 			return fogParameters;
 		}

@@ -29,6 +29,11 @@ public final class ScreenshotSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().screenshotAutoCopy(),
 			EMUtilsClient.config()::setScreenshotAutoCopy
 		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_SCREENSHOT_METADATA,
+			() -> EMUtilsClient.config().screenshotMetadataSaver(),
+			EMUtilsClient.config()::setScreenshotMetadataSaver
+		));
 		adder.add(sortButton());
 		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_SCREENSHOT_DELETE_CONFIRMATION,

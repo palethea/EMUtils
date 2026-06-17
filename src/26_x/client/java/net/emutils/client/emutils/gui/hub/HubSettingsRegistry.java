@@ -220,6 +220,7 @@ public final class HubSettingsRegistry {
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCREENSHOT_HELPER, config::screenshotHelper, config::setScreenshotHelper));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCREENSHOT_AUTO_COPY, config::screenshotAutoCopy, config::setScreenshotAutoCopy));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCREENSHOT_METADATA, config::screenshotMetadataSaver, config::setScreenshotMetadataSaver));
 		return rows;
 	}
 
@@ -445,6 +446,17 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_BINDING, config::slotBindingEnabled, config::setSlotBindingEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_BINDING_LOCK_BOUND_SLOTS, config::slotBindingLockBoundSlots, config::setSlotBindingLockBoundSlots));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER, config::hoverTransferEnabled, config::setHoverTransferEnabled));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SORT_BUTTONS, config::sortButtonsEnabled, config::setSortButtonsEnabled));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.OPTION_SORT_SPEED,
+			config::sortSpeed,
+			config::setSortSpeed,
+			() -> config.sortSpeed().next(),
+			() -> Component.translatable(config.sortSpeed().labelKey())
+		));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
 		return rows;
@@ -469,8 +481,8 @@ public final class HubSettingsRegistry {
 			() -> {
 				net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 				if (client != null) {
-					Screen parent = client.screen;
-					client.setScreen(screenFactory.apply(parent));
+					Screen parent = client.gui.screen();
+					client.setScreenAndShow(screenFactory.apply(parent));
 				}
 			},
 			enabled

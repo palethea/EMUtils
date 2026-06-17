@@ -6,12 +6,17 @@
 
 <p align="center">
   Tired of installing five different mods just to copy a chat message, zoom in, and reconnect after a kick?<br>
-  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for <strong>Minecraft 1.21.9-1.21.11</strong> and <strong>Minecraft 26.1-26.1.2</strong> on Fabric — so you can stop juggling mods and get back to playing.
+  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for <strong>Minecraft 1.21.9-1.21.11</strong> and <strong>Minecraft 26.x</strong> on Fabric — so you can stop juggling mods and get back to playing.
 </p>
 
 ## Status
 
 EMUtils is in active development. One settings hub, a pile of quality-of-life features, and zero interest in getting in your way while you play.
+
+### Version support
+
+- **Minecraft 26.x** is the active development version and receives new features and fixes.
+- **Minecraft 1.21.9-1.21.11** enters maintenance mode after EMUtils 0.13.0. It will continue receiving bug fixes and compatibility fixes, but new features will target Minecraft 26.x.
 
 ## Features
 
@@ -21,11 +26,10 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 - **HUD** — info overlay, food HUD, layout editor, and Spotify now-playing panels.
 - **Utility** — auto reconnect, screenshot helper, screenshot metadata, and waypoints.
 - **Management** — screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
-- **QoL** — chat tools, inventory tools, Hover Transfer, slot locking, slot binding, and fast place.
+- **QoL** — chat tools, inventory tools, Sort Buttons, Hover Transfer, slot locking, slot binding, and fast place.
 
 ## Feature Ideas
 
-- **Auto sort** — organize inventories and containers with a quick action.
 - **Quick GIF** — record short shareable gameplay clips from a keybind.
 - **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.
 - **Last server** — add a main-menu button for instantly joining the last server you played on.
@@ -38,7 +42,7 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 
 ## Requirements
 
-- Minecraft 1.21.9-1.21.11 or Minecraft 26.1-26.1.2
+- Minecraft 1.21.9-1.21.11 or Minecraft 26.x
 - Java 21 or newer for the 1.21.x jar
 - Java 25 or newer for the 26.x jar
 - Fabric Loader 0.19.2 or newer for 1.21.x, or 0.19.3 or newer for 26.x

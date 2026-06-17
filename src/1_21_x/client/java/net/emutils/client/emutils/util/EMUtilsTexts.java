@@ -169,6 +169,8 @@ public final class EMUtilsTexts {
         "emutils.option.screenshot_helper";
     public static final String OPTION_SCREENSHOT_AUTO_COPY =
         "emutils.option.screenshot_auto_copy";
+    public static final String OPTION_SCREENSHOT_METADATA =
+        "emutils.option.screenshot_metadata";
     public static final String OPTION_SCREENSHOT_GALLERY =
         "emutils.option.screenshot_gallery";
     public static final String OPTION_SCREENSHOT_SORT =
@@ -391,6 +393,12 @@ public final class EMUtilsTexts {
         "emutils.option.slot_binding_show_icons";
     public static final String OPTION_SLOT_BINDING_LOCK_BOUND_SLOTS =
         "emutils.option.slot_binding_lock_bound_slots";
+    public static final String OPTION_HOVER_TRANSFER =
+        "emutils.option.hover_transfer";
+    public static final String OPTION_SORT_BUTTONS =
+        "emutils.option.sort_buttons";
+    public static final String OPTION_SORT_SPEED =
+        "emutils.option.sort_speed";
     public static final String OPTION_INVENTORY_PREVIEW =
         "emutils.option.inventory_preview";
     public static final String OPTION_PRESERVE_CONTAINER_CURSOR =
@@ -549,6 +557,10 @@ public final class EMUtilsTexts {
         "emutils.waypoint.action.keep";
     public static final String WAYPOINT_ACTION_COPY_COORDS =
         "emutils.waypoint.action.copy_coords";
+    public static final String WAYPOINT_ACTION_HIDE =
+        "emutils.waypoint.action.hide";
+    public static final String WAYPOINT_ACTION_SHOW =
+        "emutils.waypoint.action.show";
     public static final String WAYPOINT_HOVER_REMOVE =
         "emutils.waypoint.hover.remove";
     public static final String WAYPOINT_HOVER_KEEP =

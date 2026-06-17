@@ -38,7 +38,7 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		GridLayout grid = new GridLayout();
 		grid.defaultCellSetting().paddingHorizontal(4).paddingBottom(4).alignHorizontallyCenter();
 		GridLayout.RowHelper adder = grid.createRowHelper(2);
-		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.HUB_MODERN_OPEN), button -> client.setScreen(new CustomHubScreen(this))), SETTINGS_COLUMNS);
+		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.HUB_MODERN_OPEN), button -> client.setScreenAndShow(new CustomHubScreen(this))), SETTINGS_COLUMNS);
 		adder.addChild(navButton(EMUtilsTexts.HUB_WAYPOINTS, () -> EMUtilsClient.config().waypointEnabled(), WaypointSettingsScreen::new));
 		adder.addChild(navButton(EMUtilsTexts.HUB_AUTO_RECONNECT, () -> EMUtilsClient.config().autoReconnect(), AutoReconnectSettingsScreen::new));
 		adder.addChild(navButton(EMUtilsTexts.HUB_SCREENSHOT_HELPER, () -> EMUtilsClient.config().screenshotHelper(), ScreenshotSettingsScreen::new));
@@ -65,7 +65,7 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 	}
 
 	private Button navButton(String labelKey, BooleanSupplier enabled, Function<Screen, Screen> screenFactory) {
-		Button button = Button.builder(statusLabel(labelKey, enabled.getAsBoolean()), ignored -> client.setScreen(screenFactory.apply(this))).build();
+		Button button = Button.builder(statusLabel(labelKey, enabled.getAsBoolean()), ignored -> client.setScreenAndShow(screenFactory.apply(this))).build();
 		navButtons.add(new StatusNavButton(button, labelKey, enabled, () -> true));
 		return button;
 	}

@@ -45,10 +45,10 @@ public final class InventoryPreviewRenderer {
 		if ((!config.inventoryToolsEnabled() || !config.inventoryPreviewEnabled()) && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.screen != null && !HudLayoutManager.isEditing()) {
+		if (client.gui.screen() != null && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.options.hideGui && !HudLayoutManager.isEditing()) {
+		if (client.gui.hud.isHidden() && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {

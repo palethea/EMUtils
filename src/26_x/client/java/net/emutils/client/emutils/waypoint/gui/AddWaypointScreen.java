@@ -173,7 +173,7 @@ public final class AddWaypointScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.setScreenAndShow(parent);
     }
 
     private void cycleColor() {
@@ -239,8 +239,7 @@ public final class AddWaypointScreen extends Screen {
         );
 
         if (minecraft.gui != null) {
-            minecraft.gui
-                .getChat()
+            minecraft.gui.hud.getChat()
                 .addClientSystemMessage(
                     EmUtilsChatPrefix.chat(
                         Component.translatable(
@@ -251,6 +250,6 @@ public final class AddWaypointScreen extends Screen {
                 );
         }
 
-        minecraft.setScreen(parent);
+        minecraft.setScreenAndShow(parent);
     }
 }

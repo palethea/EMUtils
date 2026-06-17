@@ -150,11 +150,11 @@ public final class IrisCompat {
 
 		LoadingOverlay.registerTextures(client.getTextureManager());
 		IrisShaderResourceReload reload = new IrisShaderResourceReload();
-		client.setOverlay(new ShaderPackLoadingOverlay(client, reload, optional -> {
-			client.setOverlay(null);
+		client.gui.setOverlay(new ShaderPackLoadingOverlay(client, reload, optional -> {
+			client.gui.setOverlay(null);
 			client.execute(() -> {
 				callback.accept(optional.isEmpty());
-				client.setScreen(returnScreen);
+				client.setScreenAndShow(returnScreen);
 			});
 		}));
 	}
@@ -188,7 +188,7 @@ public final class IrisCompat {
 			Object api = apiClass.getMethod("getInstance").invoke(null);
 			Object screen = api.getClass().getMethod("openMainIrisScreenObj", Object.class).invoke(api, parent);
 			if (screen instanceof Screen irisScreen) {
-				client.setScreen(irisScreen);
+				client.setScreenAndShow(irisScreen);
 				return true;
 			}
 		} catch (ReflectiveOperationException ignored) {

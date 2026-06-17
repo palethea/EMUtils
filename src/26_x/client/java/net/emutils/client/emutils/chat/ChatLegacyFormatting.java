@@ -18,7 +18,7 @@ public final class ChatLegacyFormatting {
 		text.visit((style, string) -> {
 			if (!stylesEqual(previous[0], style)) {
 				if (!previous[0].isEmpty()) {
-					builder.append('&').append(ChatFormatting.RESET.getChar());
+					builder.append('&').append(formattingCode(ChatFormatting.RESET));
 				}
 				appendCodes(builder, style);
 				previous[0] = style;
@@ -34,24 +34,24 @@ public final class ChatLegacyFormatting {
 		if (color != null && !isHexColor(color)) {
 			ChatFormatting legacyColor = legacyColorChatFormatting(color);
 			if (legacyColor != null) {
-				builder.append('&').append(legacyColor.getChar());
+				builder.append('&').append(formattingCode(legacyColor));
 			}
 		}
 
 		if (style.isObfuscated()) {
-			builder.append('&').append(ChatFormatting.OBFUSCATED.getChar());
+			builder.append('&').append(formattingCode(ChatFormatting.OBFUSCATED));
 		}
 		if (style.isBold()) {
-			builder.append('&').append(ChatFormatting.BOLD.getChar());
+			builder.append('&').append(formattingCode(ChatFormatting.BOLD));
 		}
 		if (style.isStrikethrough()) {
-			builder.append('&').append(ChatFormatting.STRIKETHROUGH.getChar());
+			builder.append('&').append(formattingCode(ChatFormatting.STRIKETHROUGH));
 		}
 		if (style.isUnderlined()) {
-			builder.append('&').append(ChatFormatting.UNDERLINE.getChar());
+			builder.append('&').append(formattingCode(ChatFormatting.UNDERLINE));
 		}
 		if (style.isItalic()) {
-			builder.append('&').append(ChatFormatting.ITALIC.getChar());
+			builder.append('&').append(formattingCode(ChatFormatting.ITALIC));
 		}
 	}
 
@@ -63,17 +63,17 @@ public final class ChatLegacyFormatting {
 	@Nullable
 	private static ChatFormatting legacyColorChatFormatting(TextColor color) {
 		for (ChatFormatting formatting : ChatFormatting.values()) {
-			if (!formatting.isColor() || formatting.getColor() == null) {
-				continue;
-			}
-
 			TextColor legacy = TextColor.fromLegacyFormat(formatting);
-			if (color.equals(legacy)) {
+			if (legacy != null && color.equals(legacy)) {
 				return formatting;
 			}
 		}
 
 		return null;
+	}
+
+	private static char formattingCode(ChatFormatting formatting) {
+		return formatting.toString().charAt(1);
 	}
 
 	private static boolean stylesEqual(Style left, Style right) {

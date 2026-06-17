@@ -2,6 +2,7 @@ package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.emutils.client.EMUtilsClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.state.OptionsRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -16,12 +17,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class GameRendererMixin {
 	@Redirect(
 		method = "renderItemInHand",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/OptionsRenderState;hideGui:Z")
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/OptionsRenderState;hideGui:Z"),
+		require = 0
 	)
 	private boolean emutils$hideHandWhileZooming(OptionsRenderState options) {
+		boolean hidden = Minecraft.getInstance().gui.hud.isHidden();
 		return EMUtilsClient.zoom() == null
-			? options.hideGui
-			: EMUtilsClient.zoom().shouldHideHandWhileZooming(options.hideGui);
+			? hidden
+			: EMUtilsClient.zoom().shouldHideHandWhileZooming(hidden);
 	}
 
 	@Inject(method = "bobHurt", at = @At("HEAD"), cancellable = true)

@@ -30,7 +30,7 @@ public final class MinescriptKeybindManager {
             !MinescriptCompat.isLoaded() ||
             client.player == null ||
             client.level == null ||
-            client.screen != null
+            client.gui.screen() != null
         ) {
             pressed.clear();
             return;

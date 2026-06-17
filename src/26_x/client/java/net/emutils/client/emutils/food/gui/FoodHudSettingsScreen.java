@@ -58,7 +58,7 @@ public final class FoodHudSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetFoodHudDefaults();
-			client.setScreen(new FoodHudSettingsScreen(parent));
+			client.setScreenAndShow(new FoodHudSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 }

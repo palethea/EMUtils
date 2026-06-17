@@ -31,7 +31,7 @@ public final class SpotifyPlayerSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetSpotifyPlayerDefaults();
-			client.setScreen(new SpotifyPlayerSettingsScreen(parent));
+			client.setScreenAndShow(new SpotifyPlayerSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 		layout.addToContents(grid);
 	}

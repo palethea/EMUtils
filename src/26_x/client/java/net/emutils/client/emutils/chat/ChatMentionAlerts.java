@@ -67,7 +67,7 @@ public final class ChatMentionAlerts {
 		}
 		String preview = content.length() > TOAST_PREVIEW_LIMIT ? content.substring(0, TOAST_PREVIEW_LIMIT - 3) + "..." : content;
 		SystemToast.addOrUpdate(
-			client.getToastManager(),
+			client.gui.toastManager(),
 			SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
 			Component.translatable(EMUtilsTexts.CHAT_MENTION_TOAST_TITLE),
 			Component.translatable(EMUtilsTexts.CHAT_MENTION_TOAST_DESCRIPTION, preview)

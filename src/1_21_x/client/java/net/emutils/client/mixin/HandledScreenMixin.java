@@ -119,6 +119,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 			for (Slot slot : handler.slots) {
 				EMUtilsClient.inventoryTools().drawSlotOverlay(context, handler, slot, inventory);
 			}
+			EMUtilsClient.inventoryTools().drawSortButtons(minecraftClient, context, handler, inventory, x, y, mouseX - x, mouseY - y);
 		}
 	}
 
@@ -171,11 +172,20 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 			return;
 		}
 
-		int button = click.button();
-		if (button != 0 && button != 1) {
+		PlayerInventory inventory = emutils$playerInventory();
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (inventory == null || client == null) {
 			return;
 		}
 
+		Slot slot = emutils$slotAt(click.x(), click.y());
+		if (EMUtilsClient.inventoryTools().handleSortButtonMouseClicked(client, handler, click.button(), click.x() - x, click.y() - y, inventory)) {
+			cir.setReturnValue(true);
+			return;
+		}
+		if (EMUtilsClient.inventoryTools().handleHoverTransferMouseClicked(client, handler, slot, click.button(), click.hasShift(), inventory)) {
+			cir.setReturnValue(true);
+		}
 	}
 
 	@Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
@@ -199,6 +209,18 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> {
 	@Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
 	private void emutils$dragHudLayoutEditorOverlay(Click click, double offsetX, double offsetY, CallbackInfoReturnable<Boolean> cir) {
 		if (HudLayoutEditorOverlay.handleMouseDragged(click, offsetX, offsetY)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
+		PlayerInventory inventory = emutils$playerInventory();
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (inventory == null || client == null) {
+			return;
+		}
+
+		Slot slot = emutils$slotAt(click.x(), click.y());
+		if (EMUtilsClient.inventoryTools().handleHoverTransferMouseDragged(client, handler, slot, click.button(), click.hasShift(), inventory)) {
 			cir.setReturnValue(true);
 		}
 	}

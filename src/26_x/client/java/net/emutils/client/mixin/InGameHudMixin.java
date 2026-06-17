@@ -1,21 +1,20 @@
 package net.emutils.client.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.Options;
 import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Gui.class)
+@Mixin(Hud.class)
 public abstract class InGameHudMixin {
 	@Inject(method = "extractFood", at = @At("HEAD"))
 	private void emutils$renderFoodExhaustion(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci) {
@@ -24,7 +23,7 @@ public abstract class InGameHudMixin {
 
 	@Inject(method = "extractFood", at = @At("TAIL"))
 	private void emutils$renderFoodOverlays(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci) {
-		FoodHudRenderer.renderOverlays(context, player, top, right, ((Gui) (Object) this).getGuiTicks());
+		FoodHudRenderer.renderOverlays(context, player, top, right, ((Hud) (Object) this).getGuiTicks());
 	}
 
 	@Inject(method = "extractSpyglassOverlay", at = @At("HEAD"), cancellable = true)
@@ -60,25 +59,33 @@ public abstract class InGameHudMixin {
 		HudLayoutEditorContext.endVanillaHudDim();
 	}
 
-	@Redirect(
+	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 0),
-		require = 0
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 0)
 	)
-	private boolean emutils$hideHudWhileZoomingFirst(Options options) {
+	private boolean emutils$hideHudWhileZoomingRenderState(boolean hidden) {
 		return EMUtilsClient.zoom() == null
-			? options.hideGui
-			: EMUtilsClient.zoom().shouldHideHudWhileZooming(options.hideGui);
+			? hidden
+			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);
 	}
 
-	@Redirect(
+	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 1),
-		require = 0
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 1)
 	)
-	private boolean emutils$hideHudWhileZoomingSecond(Options options) {
+	private boolean emutils$hideHudWhileZoomingFirstGate(boolean hidden) {
 		return EMUtilsClient.zoom() == null
-			? options.hideGui
-			: EMUtilsClient.zoom().shouldHideHudWhileZooming(options.hideGui);
+			? hidden
+			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);
+	}
+
+	@ModifyExpressionValue(
+		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 2)
+	)
+	private boolean emutils$hideHudWhileZoomingSecondGate(boolean hidden) {
+		return EMUtilsClient.zoom() == null
+			? hidden
+			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);
 	}
 }

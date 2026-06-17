@@ -144,7 +144,7 @@ public final class WaypointManager {
 
         try {
             WaypointChat.showNearPrompt(
-                client.gui.getChat(),
+                client.gui.hud.getChat(),
                 nearest.timestamp()
             );
             nearest.setNearPromptShown(true);
@@ -163,9 +163,8 @@ public final class WaypointManager {
             return;
         }
 
-        WaypointChat.removeNearPrompt(client.gui.getChat(), timestamp);
-        client.gui
-            .getChat()
+        WaypointChat.removeNearPrompt(client.gui.hud.getChat(), timestamp);
+        client.gui.hud.getChat()
             .addClientSystemMessage(EmUtilsChatPrefix.chat(WaypointMessage.kept()));
     }
 
@@ -182,8 +181,7 @@ public final class WaypointManager {
             )
         );
         if (client.gui != null) {
-            client.gui
-                .getChat()
+            client.gui.hud.getChat()
                 .addClientSystemMessage(
                     EmUtilsChatPrefix.chat(
                         Component.translatable(
@@ -205,8 +203,7 @@ public final class WaypointManager {
 
         if (!hasWaypointForCurrentWorld(client)) {
             if (client.gui != null) {
-                client.gui
-                    .getChat()
+                client.gui.hud.getChat()
                     .addClientSystemMessage(
                         EmUtilsChatPrefix.chat(WaypointMessage.noneForWorld())
                     );
@@ -221,6 +218,14 @@ public final class WaypointManager {
         Waypoint waypoint = findByTimestamp(timestamp);
         if (waypoint != null) {
             waypoint.setBeaconEnabled(!waypoint.beaconEnabled());
+            save();
+        }
+    }
+
+    public void toggleHidden(long timestamp) {
+        Waypoint waypoint = findByTimestamp(timestamp);
+        if (waypoint != null) {
+            waypoint.setHidden(!waypoint.hidden());
             save();
         }
     }
@@ -269,12 +274,12 @@ public final class WaypointManager {
     public double distanceToCamera(Minecraft client, Waypoint waypoint) {
         if (
             client.gameRenderer == null ||
-            client.gameRenderer.getMainCamera() == null
+            client.gameRenderer.mainCamera() == null
         ) {
             return 1.0D;
         }
 
-        var cameraPos = client.gameRenderer.getMainCamera().position();
+        var cameraPos = client.gameRenderer.mainCamera().position();
         double dx = renderX(waypoint) - cameraPos.x;
         double dy = renderY(waypoint) - cameraPos.y;
         double dz = renderZ(waypoint) - cameraPos.z;
@@ -283,8 +288,8 @@ public final class WaypointManager {
 
     public float labelScale(Minecraft client, Waypoint waypoint) {
         double distance = Math.max(1.0D, distanceToCamera(client, waypoint));
-        float scale = (float) (distance * 0.02666667D);
-        scale = Math.max(0.35F, Math.min(6.0F, scale));
+        float scale = (float) (distance * 0.01333334D);
+        scale = Math.max(0.12F, Math.min(2.5F, scale));
         return scale * EMUtilsClient.config().waypointSizeMultiplier();
     }
 
@@ -301,7 +306,7 @@ public final class WaypointManager {
     }
 
     private static boolean canInteractWithWaypoint(Minecraft client) {
-        if (client.screen instanceof DeathScreen) {
+        if (client.gui.screen() instanceof DeathScreen) {
             return false;
         }
 
@@ -314,7 +319,7 @@ public final class WaypointManager {
         double nearestDistance = Double.MAX_VALUE;
 
         for (Waypoint waypoint : waypointsForCurrentWorld(client)) {
-            if (!waypoint.isDeath() || waypoint.nearPromptShown()) {
+            if (waypoint.hidden() || !waypoint.isDeath() || waypoint.nearPromptShown()) {
                 continue;
             }
 
@@ -385,8 +390,7 @@ public final class WaypointManager {
         save();
 
         if (client.gui != null) {
-            client.gui
-                .getChat()
+            client.gui.hud.getChat()
                 .addClientSystemMessage(EmUtilsChatPrefix.chat(confirmationMessage.get()));
         }
     }
@@ -404,8 +408,7 @@ public final class WaypointManager {
         save();
 
         if (client != null && client.gui != null) {
-            client.gui
-                .getChat()
+            client.gui.hud.getChat()
                 .addClientSystemMessage(EmUtilsChatPrefix.chat(confirmationMessage.get()));
         }
     }
@@ -414,7 +417,7 @@ public final class WaypointManager {
         if (client != null && client.gui != null) {
             try {
                 WaypointChat.removeNearPrompt(
-                    client.gui.getChat(),
+                    client.gui.hud.getChat(),
                     waypoint.timestamp()
                 );
             } catch (RuntimeException exception) {
@@ -593,6 +596,13 @@ public final class WaypointManager {
             serverInfo.ip != null &&
             !serverInfo.ip.isBlank()
         ) {
+            if (
+                serverInfo.isRealm() &&
+                serverInfo.name != null &&
+                !serverInfo.name.isBlank()
+            ) {
+                return "realm:" + normalizeWorldKeyPart(serverInfo.name);
+            }
             return "multiplayer:" + serverInfo.ip;
         }
 
@@ -606,5 +616,9 @@ public final class WaypointManager {
         }
 
         return "";
+    }
+
+    private static String normalizeWorldKeyPart(String value) {
+        return value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

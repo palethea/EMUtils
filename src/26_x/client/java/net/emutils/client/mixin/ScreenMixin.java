@@ -61,7 +61,7 @@ public abstract class ScreenMixin {
 			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty())
 			.ifPresentOrElse(
 				path -> ScreenshotActions.copyWithFeedback(client, new File(path)),
-				() -> client.gui.getChat().addClientSystemMessage(Component.translatable(EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE).withStyle(ChatFormatting.RED))
+				() -> client.gui.hud.getChat().addClientSystemMessage(Component.translatable(EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE).withStyle(ChatFormatting.RED))
 			);
 		return true;
 	}

@@ -264,7 +264,7 @@ public final class PackManagerScreen extends Screen {
         if (list != null) {
             list.close();
         }
-        client.setScreen(parent);
+        client.setScreenAndShow(parent);
     }
 
     private void switchType(PackType type) {
@@ -289,6 +289,7 @@ public final class PackManagerScreen extends Screen {
         refreshTabState();
         repositionElements();
         if (viewMode == ViewMode.INSTALLED) {
+            updateList();
             refreshInstalledOnly();
             return;
         }
@@ -553,10 +554,10 @@ public final class PackManagerScreen extends Screen {
             return;
         }
 
-        client.setScreen(
+        client.setScreenAndShow(
             new ConfirmScreen(
                 confirmed -> {
-                    client.setScreen(this);
+                    client.setScreenAndShow(this);
                     if (confirmed) {
                         deleteConfirmed(item.installed());
                     }
@@ -738,8 +739,7 @@ public final class PackManagerScreen extends Screen {
     }
 
     private void showMessage(Component message) {
-        client.gui
-            .getChat()
+        client.gui.hud.getChat()
             .addClientSystemMessage(EmUtilsChatPrefix.chat(message));
     }
 }

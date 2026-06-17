@@ -50,15 +50,15 @@ public final class AutoReconnectManager {
 	}
 
 	public void tick(Minecraft client) {
-		if (!enabled() || !hasServer() || !(client.screen instanceof DisconnectedScreen)) {
+		if (!enabled() || !hasServer() || !(client.gui.screen() instanceof DisconnectedScreen)) {
 			reconnectButton = null;
 			return;
 		}
 
-		if (trackedDisconnectScreen != client.screen) {
-			trackedDisconnectScreen = client.screen;
+		if (trackedDisconnectScreen != client.gui.screen()) {
+			trackedDisconnectScreen = client.gui.screen();
 			if (reconnectParentScreen == null) {
-				reconnectParentScreen = resolveReconnectParent((DisconnectedScreen) client.screen);
+				reconnectParentScreen = resolveReconnectParent((DisconnectedScreen) client.gui.screen());
 			}
 			if (nextReconnectAt <= System.currentTimeMillis()) {
 				scheduleNextAttempt();
@@ -66,7 +66,7 @@ public final class AutoReconnectManager {
 		}
 
 		if (System.currentTimeMillis() >= nextReconnectAt && hasAttemptsRemaining()) {
-			reconnectNow(client, client.screen);
+			reconnectNow(client, client.gui.screen());
 			return;
 		}
 

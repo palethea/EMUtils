@@ -325,10 +325,10 @@ public final class ScreenshotGalleryWidget extends ObjectSelectionList<Screensho
 				return;
 			}
 
-			Screen galleryScreen = client.screen;
-			client.setScreen(new ConfirmScreen(
+			Screen galleryScreen = client.gui.screen();
+			client.setScreenAndShow(new ConfirmScreen(
 				confirmed -> {
-					client.setScreen(galleryScreen);
+					client.setScreenAndShow(galleryScreen);
 					if (confirmed) {
 						widget.deleteScreenshot(screenshot);
 					}

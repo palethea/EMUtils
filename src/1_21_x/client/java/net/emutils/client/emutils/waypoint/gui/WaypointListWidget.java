@@ -74,6 +74,7 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 		private final MinecraftClient client;
 		private final Waypoint waypoint;
 		private final ButtonWidget copyButton;
+		private final ButtonWidget visibilityButton;
 		private final ButtonWidget beaconButton;
 		private final ButtonWidget removeButton;
 
@@ -82,6 +83,9 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 			this.client = client;
 			this.waypoint = waypoint;
 			copyButton = ButtonWidget.builder(Text.translatable(EMUtilsTexts.WAYPOINT_ACTION_COPY_COORDS), button -> copyCoordinates())
+				.size(BUTTON_WIDTH, 20)
+				.build();
+			visibilityButton = ButtonWidget.builder(visibilityLabel(), button -> toggleVisibility())
 				.size(BUTTON_WIDTH, 20)
 				.build();
 			beaconButton = ButtonWidget.builder(beaconLabel(), button -> toggleBeacon())
@@ -129,11 +133,14 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 				);
 			}
 
-			int buttonX = getContentRightEnd() - BUTTON_WIDTH;
-			copyButton.setPosition(buttonX, y);
-			beaconButton.setPosition(buttonX, y + 24);
-			removeButton.setPosition(buttonX, y + 48);
+			int rightButtonX = getContentRightEnd() - BUTTON_WIDTH;
+			int leftButtonX = rightButtonX - BUTTON_WIDTH - 4;
+			copyButton.setPosition(leftButtonX, y);
+			visibilityButton.setPosition(rightButtonX, y);
+			beaconButton.setPosition(leftButtonX, y + 24);
+			removeButton.setPosition(rightButtonX, y + 24);
 			copyButton.render(context, mouseX, mouseY, deltaTicks);
+			visibilityButton.render(context, mouseX, mouseY, deltaTicks);
 			beaconButton.render(context, mouseX, mouseY, deltaTicks);
 			removeButton.render(context, mouseX, mouseY, deltaTicks);
 		}
@@ -141,6 +148,7 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 		@Override
 		public boolean mouseClicked(Click click, boolean doubled) {
 			return copyButton.mouseClicked(click, doubled)
+				|| visibilityButton.mouseClicked(click, doubled)
 				|| beaconButton.mouseClicked(click, doubled)
 				|| removeButton.mouseClicked(click, doubled);
 		}
@@ -148,6 +156,7 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 		@Override
 		public boolean mouseReleased(Click click) {
 			return copyButton.mouseReleased(click)
+				|| visibilityButton.mouseReleased(click)
 				|| beaconButton.mouseReleased(click)
 				|| removeButton.mouseReleased(click);
 		}
@@ -155,6 +164,7 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 		@Override
 		public void forEachChild(Consumer<ClickableWidget> consumer) {
 			consumer.accept(copyButton);
+			consumer.accept(visibilityButton);
 			consumer.accept(beaconButton);
 			consumer.accept(removeButton);
 		}
@@ -176,6 +186,17 @@ public final class WaypointListWidget extends AlwaysSelectedEntryListWidget<Wayp
 		private void toggleBeacon() {
 			EMUtilsClient.waypoint().toggleBeacon(waypoint.timestamp());
 			beaconButton.setMessage(beaconLabel());
+		}
+
+		private void toggleVisibility() {
+			EMUtilsClient.waypoint().toggleHidden(waypoint.timestamp());
+			visibilityButton.setMessage(visibilityLabel());
+		}
+
+		private Text visibilityLabel() {
+			return Text.translatable(waypoint.hidden()
+				? EMUtilsTexts.WAYPOINT_ACTION_SHOW
+				: EMUtilsTexts.WAYPOINT_ACTION_HIDE);
 		}
 
 		private Text beaconLabel() {

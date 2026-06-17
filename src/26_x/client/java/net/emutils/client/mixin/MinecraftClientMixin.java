@@ -2,6 +2,7 @@ package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.jspecify.annotations.Nullable;
@@ -11,22 +12,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Minecraft.class)
+@Mixin(Gui.class)
 public abstract class MinecraftClientMixin {
 	@Shadow
 	@Nullable
-	public Screen screen;
+	private Screen screen;
 
 	@Inject(method = "setScreen", at = @At("HEAD"))
 	private void emutils$saveContainerCursorBeforeScreenChange(@Nullable Screen screen, CallbackInfo ci) {
 		if (this.screen instanceof AbstractContainerScreen<?>) {
-			EMUtilsClient.inventoryTools().cursor().saveBeforeScreenChange((Minecraft) (Object) this);
+			EMUtilsClient.inventoryTools().cursor().saveBeforeScreenChange(Minecraft.getInstance());
 		}
 	}
 
 	@Inject(method = "setScreen", at = @At("TAIL"))
 	private void emutils$clearContainerCursorAfterScreenChange(@Nullable Screen screen, CallbackInfo ci) {
-		Minecraft client = (Minecraft) (Object) this;
+		Minecraft client = Minecraft.getInstance();
 		if (screen == null) {
 			EMUtilsClient.inventoryTools().cursor().markCloseGracePeriod();
 			return;

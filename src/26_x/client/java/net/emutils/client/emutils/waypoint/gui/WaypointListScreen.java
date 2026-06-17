@@ -27,7 +27,7 @@ public final class WaypointListScreen extends Screen {
 
 		LinearLayout footer = LinearLayout.horizontal().spacing(8);
 		footer.addChild(Button.builder(Component.translatable(EMUtilsTexts.OPTION_ADD_WAYPOINT), button -> {
-			minecraft.setScreen(new AddWaypointScreen(this));
+			minecraft.setScreenAndShow(new AddWaypointScreen(this));
 		}).width(150).build());
 		footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(100).build());
 		clearButton = footer.addChild(Button.builder(Component.translatable(EMUtilsTexts.OPTION_CLEAR_WAYPOINTS), button -> {
@@ -65,6 +65,6 @@ public final class WaypointListScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		minecraft.setScreen(parent);
+		minecraft.setScreenAndShow(parent);
 	}
 }

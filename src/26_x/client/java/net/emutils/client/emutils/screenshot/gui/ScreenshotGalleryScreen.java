@@ -58,7 +58,7 @@ public final class ScreenshotGalleryScreen extends Screen {
 		if (gallery != null) {
 			gallery.close();
 		}
-		minecraft.setScreen(parent);
+		minecraft.setScreenAndShow(parent);
 	}
 
 	@Override

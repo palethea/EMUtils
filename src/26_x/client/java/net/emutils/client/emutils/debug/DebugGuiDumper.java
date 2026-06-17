@@ -66,7 +66,7 @@ public final class DebugGuiDumper {
     }
 
     private static JsonObject serializeScreen(Minecraft client) {
-        Screen screen = client.screen;
+        Screen screen = client.gui.screen();
         JsonObject object = new JsonObject();
         if (screen == null) {
             object.addProperty("type", "none");
