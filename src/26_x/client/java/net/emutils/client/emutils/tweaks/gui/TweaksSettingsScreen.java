@@ -127,7 +127,7 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetTweaksDefaults();
-			client.setScreen(new TweaksSettingsScreen(parent));
+			client.setScreenAndShow(new TweaksSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 }

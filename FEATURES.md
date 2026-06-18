@@ -141,6 +141,7 @@ View and manage saved waypoints for the current world or server.
 
 - Nearby Removal Prompts: remove nearby waypoints quickly while playing.
 - Coordinate Copying: copy waypoint coordinates in the configured format.
+- Waypoint Visibility: hide individual waypoints without deleting them.
 
 ### Pack Manager
 
@@ -191,6 +192,8 @@ Protect important slots and move items faster.
 - Slot Binding: bind hotbar-safe slot swaps.
 - Lock Bound Slots: protect bound slots from unsafe movement.
 - Hover Transfer: hold Shift + left click in a storage container, then hover items to move them in or out quickly while ignoring locked or bound items.
+- Sort Buttons: show three sort buttons beside storage containers and the player inventory for sorting by name, category, or quantity.
+- Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
 

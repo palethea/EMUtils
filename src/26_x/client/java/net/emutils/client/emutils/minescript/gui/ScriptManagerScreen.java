@@ -169,10 +169,10 @@ public final class ScriptManagerScreen extends Screen {
 	@Override
 	public void onClose() {
 		if (editor != null && editor.dirty()) {
-			confirmDiscard(() -> client.setScreen(parent));
+			confirmDiscard(() -> client.setScreenAndShow(parent));
 			return;
 		}
-		client.setScreen(parent);
+		client.setScreenAndShow(parent);
 	}
 
 	private GalleryIconButtonWidget iconButton(String labelKey, net.minecraft.resources.Identifier icon, Button.OnPress action) {
@@ -268,9 +268,9 @@ public final class ScriptManagerScreen extends Screen {
 		if (selectedScript == null || selectedScript.directory() || !selectedScript.editable()) {
 			return;
 		}
-		client.setScreen(new ConfirmScreen(
+		client.setScreenAndShow(new ConfirmScreen(
 			confirmed -> {
-				client.setScreen(this);
+				client.setScreenAndShow(this);
 				if (!confirmed) {
 					return;
 				}
@@ -294,8 +294,8 @@ public final class ScriptManagerScreen extends Screen {
 	}
 
 	private void openCreateScriptScreen() {
-		client.setScreen(new CreateScriptScreen(this, tree == null ? "" : tree.selectedDirectory(), name -> {
-			client.setScreen(this);
+		client.setScreenAndShow(new CreateScriptScreen(this, tree == null ? "" : tree.selectedDirectory(), name -> {
+			client.setScreenAndShow(this);
 			try {
 				MinescriptScript script = repository.createScript(name);
 				refreshScripts();
@@ -310,7 +310,7 @@ public final class ScriptManagerScreen extends Screen {
 		if (selectedScript == null || selectedScript.commandName() == null) {
 			return;
 		}
-		client.setScreen(new ScriptKeybindScreen(
+		client.setScreenAndShow(new ScriptKeybindScreen(
 			this,
 			selectedScript.commandName(),
 			keybindStore.get(selectedScript.commandName()).orElse(null),
@@ -337,9 +337,9 @@ public final class ScriptManagerScreen extends Screen {
 	}
 
 	private void confirmDiscard(Runnable action) {
-		client.setScreen(new ConfirmScreen(
+		client.setScreenAndShow(new ConfirmScreen(
 			confirmed -> {
-				client.setScreen(this);
+				client.setScreenAndShow(this);
 				if (confirmed) {
 					action.run();
 				}

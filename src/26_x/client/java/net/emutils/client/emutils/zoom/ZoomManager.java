@@ -52,7 +52,7 @@ public final class ZoomManager {
 		return keyBinding != null
 			&& keyBinding.isDown()
 			&& client != null
-			&& client.screen == null
+			&& client.gui.screen() == null
 			&& client.player != null
 			&& client.level != null;
 	}

@@ -38,6 +38,9 @@ public final class WaypointWorldRenderBridge {
 
 		List<Waypoint> waypoints = manager.waypointsForCurrentWorld(client);
 		for (Waypoint waypoint : waypoints) {
+			if (waypoint.hidden()) {
+				continue;
+			}
 			if (waypoint.beaconEnabled()) {
 				renderBeacon(context, waypoint);
 			}
@@ -120,9 +123,8 @@ public final class WaypointWorldRenderBridge {
 		MatrixStack matrices = context.matrices();
 		TextRenderer textRenderer = client.textRenderer;
 		int opacity = EMUtilsClient.config().waypointOpacity();
-		int waypointColor = waypoint.color();
-		int textColor = withAlpha(waypointColor, opacity);
-		int backgroundColor = (Math.max(0, Math.min(255, opacity * 64 / 100)) << 24);
+		int textColor = opacity <= 0 ? 0 : 0xFFFFFFFF;
+		int backgroundColor = waypointTextBackground(opacity);
 
 		double cameraX = camera.getCameraPos().x;
 		double cameraY = camera.getCameraPos().y;
@@ -177,5 +179,13 @@ public final class WaypointWorldRenderBridge {
 	private static int withAlpha(int color, int opacityPercent) {
 		int alpha = Math.max(0, Math.min(255, opacityPercent * 255 / 100));
 		return (color & 0x00FFFFFF) | (alpha << 24);
+	}
+
+	private static int waypointTextBackground(int opacityPercent) {
+		if (opacityPercent <= 0) {
+			return 0;
+		}
+		int alpha = Math.max(160, Math.min(220, opacityPercent * 220 / 100));
+		return alpha << 24;
 	}
 }

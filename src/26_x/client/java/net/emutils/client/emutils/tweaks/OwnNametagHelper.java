@@ -24,7 +24,7 @@ public final class OwnNametagHelper {
 			return false;
 		}
 
-		if (client.options.hideGui) {
+		if (client.gui.hud.isHidden()) {
 			return false;
 		}
 

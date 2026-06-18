@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
-	private static final Set<String> SUPPORTED_SODIUM_26_X = Set.of("26.1", "26.1.1", "26.1.2");
+	private static final Set<String> SUPPORTED_SODIUM_26_X = Set.of("26.1", "26.1.1", "26.1.2", "26.2");
 
 	private String minecraftVersion = "unknown";
 

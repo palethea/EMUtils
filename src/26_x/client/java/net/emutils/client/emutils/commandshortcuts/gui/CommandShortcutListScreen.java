@@ -28,7 +28,7 @@ public final class CommandShortcutListScreen extends Screen {
 
 		LinearLayout footer = LinearLayout.horizontal().spacing(8);
 		footer.addChild(Button.builder(Component.translatable(EMUtilsTexts.OPTION_ADD_COMMAND_SHORTCUT), button -> {
-			minecraft.setScreen(new CommandShortcutEditScreen(this, null));
+			minecraft.setScreenAndShow(new CommandShortcutEditScreen(this, null));
 		}).width(150).build());
 		footer.addChild(Button.builder(CommonComponents.GUI_DONE, button -> onClose()).width(100).build());
 		clearButton = footer.addChild(Button.builder(Component.translatable(EMUtilsTexts.OPTION_CLEAR_COMMAND_SHORTCUTS), button -> clearShortcuts()).width(150).build());
@@ -63,13 +63,13 @@ public final class CommandShortcutListScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		minecraft.setScreen(parent);
+		minecraft.setScreenAndShow(parent);
 	}
 
 	private void clearShortcuts() {
-		minecraft.setScreen(new ConfirmScreen(
+		minecraft.setScreenAndShow(new ConfirmScreen(
 			confirmed -> {
-				minecraft.setScreen(this);
+				minecraft.setScreenAndShow(this);
 				if (confirmed) {
 					EMUtilsClient.commandShortcuts().store().clear();
 					EMUtilsClient.commandShortcuts().reload();

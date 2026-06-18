@@ -31,7 +31,7 @@ public final class SpotifyHudRenderer {
 		if (!config.spotifyHudOverlay() && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.screen instanceof ChatScreen && config.spotifyHudAnchor().isBottom() && !HudLayoutManager.isEditing()) {
+		if (client.gui.screen() instanceof ChatScreen && config.spotifyHudAnchor().isBottom() && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (!EMUtilsClient.spotify().state().shouldDisplay() && !HudLayoutManager.isEditing()) {

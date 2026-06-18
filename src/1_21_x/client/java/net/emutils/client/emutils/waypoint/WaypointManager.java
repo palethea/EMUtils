@@ -225,6 +225,14 @@ public final class WaypointManager {
         }
     }
 
+    public void toggleHidden(long timestamp) {
+        Waypoint waypoint = findByTimestamp(timestamp);
+        if (waypoint != null) {
+            waypoint.setHidden(!waypoint.hidden());
+            save();
+        }
+    }
+
     public boolean hasWaypoint() {
         return !waypoints.isEmpty();
     }
@@ -283,8 +291,8 @@ public final class WaypointManager {
 
     public float labelScale(MinecraftClient client, Waypoint waypoint) {
         double distance = Math.max(1.0D, distanceToCamera(client, waypoint));
-        float scale = (float) (distance * 0.02666667D);
-        scale = Math.max(0.35F, Math.min(6.0F, scale));
+        float scale = (float) (distance * 0.01333334D);
+        scale = Math.max(0.12F, Math.min(2.5F, scale));
         return scale * EMUtilsClient.config().waypointSizeMultiplier();
     }
 
@@ -314,7 +322,7 @@ public final class WaypointManager {
         double nearestDistance = Double.MAX_VALUE;
 
         for (Waypoint waypoint : waypointsForCurrentWorld(client)) {
-            if (!waypoint.isDeath() || waypoint.nearPromptShown()) {
+            if (waypoint.hidden() || !waypoint.isDeath() || waypoint.nearPromptShown()) {
                 continue;
             }
 
@@ -593,6 +601,13 @@ public final class WaypointManager {
             serverInfo.address != null &&
             !serverInfo.address.isBlank()
         ) {
+            if (
+                serverInfo.isRealm() &&
+                serverInfo.name != null &&
+                !serverInfo.name.isBlank()
+            ) {
+                return "realm:" + normalizeWorldKeyPart(serverInfo.name);
+            }
             return "multiplayer:" + serverInfo.address;
         }
 
@@ -606,5 +621,9 @@ public final class WaypointManager {
         }
 
         return "";
+    }
+
+    private static String normalizeWorldKeyPart(String value) {
+        return value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

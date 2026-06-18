@@ -930,7 +930,7 @@ public final class CustomHubScreen extends Screen {
 		closeColorPicker();
 		HubRoundedGraphics.clearCache();
 		HubColorPickerGraphics.clearHueWheel(minecraft);
-		minecraft.setScreen(parent);
+		minecraft.setScreenAndShow(parent);
 	}
 
 	@Override
@@ -1378,7 +1378,7 @@ public final class CustomHubScreen extends Screen {
 
 	private Runnable openScreenAction(Function<Screen, Screen> screenFactory) {
 		return () -> {
-			minecraft.setScreen(screenFactory.apply(this));
+			minecraft.setScreenAndShow(screenFactory.apply(this));
 		};
 	}
 

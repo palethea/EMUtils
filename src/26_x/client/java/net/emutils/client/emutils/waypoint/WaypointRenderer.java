@@ -3,30 +3,36 @@ package net.emutils.client.emutils.waypoint;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import com.mojang.math.Axis;
+import net.minecraft.world.phys.Vec3;
 
 public final class WaypointRenderer {
 	private static final int BEACON_HEIGHT = 256;
-	private static final double BEACON_WIDTH = 0.5;
+	private static final double BEACON_WIDTH = 0.08;
 	private static final Identifier BEAM_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/entity/beacon/beacon_beam.png");
+	private static final Identifier LABEL_HUD_ID = Identifier.fromNamespaceAndPath("emutils", "waypoint_labels");
 
 	private WaypointRenderer() {
 	}
 
 	public static void register() {
 		LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(WaypointRenderer::render);
+		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, LABEL_HUD_ID, WaypointRenderer::renderLabels);
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -38,16 +44,18 @@ public final class WaypointRenderer {
 
 		List<Waypoint> waypoints = manager.waypointsForCurrentWorld(client);
 		for (Waypoint waypoint : waypoints) {
+			if (waypoint.hidden()) {
+				continue;
+			}
 			if (waypoint.beaconEnabled()) {
 				renderBeacon(context, waypoint);
 			}
-			renderWaypoint(context, client, manager, waypoint);
 		}
 	}
 
 	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint) {
-		Camera camera = context.gameRenderer().getMainCamera();
-		MultiBufferSource consumers = context.bufferSource();
+		Camera camera = context.gameRenderer().mainCamera();
+		SubmitNodeCollector collector = context.submitNodeCollector();
 		PoseStack matrices = context.poseStack();
 
 		double cameraX = camera.position().x;
@@ -64,121 +72,115 @@ public final class WaypointRenderer {
 		int b = color & 0xFF;
 		float width = (float) BEACON_WIDTH;
 
-		VertexConsumer buffer = consumers.getBuffer(RenderTypes.beaconBeam(BEAM_TEXTURE, true));
 		int segments = 8;
 		float segmentHeight = BEACON_HEIGHT / (float) segments;
 
 		matrices.pushPose();
 		try {
 			matrices.translate(x, y, z);
-			PoseStack.Pose pose = matrices.last();
-			for (int i = 0; i < segments; i++) {
-				float y0 = i * segmentHeight;
-				float y1 = (i + 1) * segmentHeight;
-				float fade = 1.0F - (float) i / segments;
-				int alpha = (int) (fade * 80);
-				int packed = (alpha << 24) | (r << 16) | (g << 8) | b;
+			collector.submitCustomGeometry(matrices, RenderTypes.beaconBeam(BEAM_TEXTURE, true), (pose, buffer) -> {
+				for (int i = 0; i < segments; i++) {
+					float y0 = i * segmentHeight;
+					float y1 = (i + 1) * segmentHeight;
+					float fade = 1.0F - (float) i / segments;
+					int alpha = (int) (fade * 80);
+					int packed = (alpha << 24) | (r << 16) | (g << 8) | b;
 
-				float x0 = -width;
-				float x1 = width;
-				float z0 = -width;
-				float z1 = width;
-				float v0 = (float) i / segments;
-				float v1 = (float) (i + 1) / segments;
+					float v0 = (float) i / segments;
+					float v1 = (float) (i + 1) / segments;
 
-				addBeamVertex(buffer, pose, x0, y0, z0, packed, 0.0F, v0);
-				addBeamVertex(buffer, pose, x0, y1, z0, packed, 0.0F, v1);
-				addBeamVertex(buffer, pose, x1, y1, z0, packed, 1.0F, v1);
-				addBeamVertex(buffer, pose, x1, y0, z0, packed, 1.0F, v0);
+					addBeamVertex(buffer, pose, -width, y0, 0.0F, packed, 0.0F, v0);
+					addBeamVertex(buffer, pose, -width, y1, 0.0F, packed, 0.0F, v1);
+					addBeamVertex(buffer, pose, width, y1, 0.0F, packed, 1.0F, v1);
+					addBeamVertex(buffer, pose, width, y0, 0.0F, packed, 1.0F, v0);
 
-				addBeamVertex(buffer, pose, x1, y0, z1, packed, 0.0F, v0);
-				addBeamVertex(buffer, pose, x1, y1, z1, packed, 0.0F, v1);
-				addBeamVertex(buffer, pose, x0, y1, z1, packed, 1.0F, v1);
-				addBeamVertex(buffer, pose, x0, y0, z1, packed, 1.0F, v0);
+					addBeamVertex(buffer, pose, width, y0, 0.0F, packed, 0.0F, v0);
+					addBeamVertex(buffer, pose, width, y1, 0.0F, packed, 0.0F, v1);
+					addBeamVertex(buffer, pose, -width, y1, 0.0F, packed, 1.0F, v1);
+					addBeamVertex(buffer, pose, -width, y0, 0.0F, packed, 1.0F, v0);
 
-				addBeamVertex(buffer, pose, x0, y0, z1, packed, 0.0F, v0);
-				addBeamVertex(buffer, pose, x0, y1, z1, packed, 0.0F, v1);
-				addBeamVertex(buffer, pose, x0, y1, z0, packed, 1.0F, v1);
-				addBeamVertex(buffer, pose, x0, y0, z0, packed, 1.0F, v0);
+					addBeamVertex(buffer, pose, 0.0F, y0, -width, packed, 0.0F, v0);
+					addBeamVertex(buffer, pose, 0.0F, y1, -width, packed, 0.0F, v1);
+					addBeamVertex(buffer, pose, 0.0F, y1, width, packed, 1.0F, v1);
+					addBeamVertex(buffer, pose, 0.0F, y0, width, packed, 1.0F, v0);
 
-				addBeamVertex(buffer, pose, x1, y0, z0, packed, 0.0F, v0);
-				addBeamVertex(buffer, pose, x1, y1, z0, packed, 0.0F, v1);
-				addBeamVertex(buffer, pose, x1, y1, z1, packed, 1.0F, v1);
-				addBeamVertex(buffer, pose, x1, y0, z1, packed, 1.0F, v0);
-			}
+					addBeamVertex(buffer, pose, 0.0F, y0, width, packed, 0.0F, v0);
+					addBeamVertex(buffer, pose, 0.0F, y1, width, packed, 0.0F, v1);
+					addBeamVertex(buffer, pose, 0.0F, y1, -width, packed, 1.0F, v1);
+					addBeamVertex(buffer, pose, 0.0F, y0, -width, packed, 1.0F, v0);
+				}
+			});
 		} finally {
 			matrices.popPose();
 		}
 	}
 
-	private static void renderWaypoint(
-		LevelRenderContext context,
-		Minecraft client,
-		WaypointManager manager,
-		Waypoint waypoint
-	) {
-		Camera camera = context.gameRenderer().getMainCamera();
-		PoseStack matrices = context.poseStack();
-		MultiBufferSource consumers = context.bufferSource();
-		Font textRenderer = client.font;
+	private static void renderLabels(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+		Minecraft client = Minecraft.getInstance();
+		WaypointManager manager = EMUtilsClient.waypoint();
+		if (!manager.shouldRender(client)) {
+			return;
+		}
+
 		int opacity = EMUtilsClient.config().waypointOpacity();
-		int waypointColor = waypoint.color();
-		int textColor = withAlpha(waypointColor, opacity);
-		int backgroundColor = (Math.max(0, Math.min(255, opacity * 64 / 100)) << 24);
+		if (opacity <= 0) {
+			return;
+		}
 
-		double cameraX = camera.position().x;
-		double cameraY = camera.position().y;
-		double cameraZ = camera.position().z;
-		double x = WaypointManager.renderX(waypoint) - cameraX;
-		double y = WaypointManager.renderY(waypoint) - cameraY;
-		double z = WaypointManager.renderZ(waypoint) - cameraZ;
-		float scale = manager.labelScale(client, waypoint);
+		Font textRenderer = client.font;
+		int textColor = 0xFFFFFFFF;
+		int backgroundColor = waypointTextBackground(opacity);
 
-		Component title = Component.literal(waypoint.label());
-		Component lore = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE, manager.distanceBlocks(client, waypoint));
+		for (Waypoint waypoint : manager.waypointsForCurrentWorld(client)) {
+			if (waypoint.hidden()) {
+				continue;
+			}
+			Vec3 labelPosition = new Vec3(
+				WaypointManager.renderX(waypoint),
+				WaypointManager.renderY(waypoint),
+				WaypointManager.renderZ(waypoint)
+			);
+			Camera camera = client.gameRenderer.mainCamera();
+			Vec3 toWaypoint = labelPosition.subtract(camera.position());
+			Vec3 cameraForward = Vec3.directionFromRotation(camera.xRot(), camera.yaw());
+			if (toWaypoint.dot(cameraForward) <= 0.0D) {
+				continue;
+			}
 
-		matrices.pushPose();
-		matrices.translate(x, y, z);
-		matrices.mulPose(Axis.YP.rotationDegrees(-camera.yaw()));
-		matrices.mulPose(Axis.XP.rotationDegrees(camera.xRot()));
-		matrices.scale(-scale, -scale, scale);
+			Vec3 projected = client.gameRenderer.projectPointToScreen(labelPosition);
+			if (projected.z < -1.0D || projected.z > 1.0D) {
+				continue;
+			}
 
-		org.joml.Matrix4f matrix = matrices.last().pose();
-		int light = 15728880;
-		float titleWidth = -textRenderer.width(title) / 2.0F;
-		float loreWidth = -textRenderer.width(lore) / 2.0F;
+			int screenX = (int) Math.round((projected.x + 1.0D) * 0.5D * graphics.guiWidth());
+			int screenY = (int) Math.round((1.0D - projected.y) * 0.5D * graphics.guiHeight());
+			if (screenX < -80 || screenX > graphics.guiWidth() + 80 || screenY < -40 || screenY > graphics.guiHeight() + 40) {
+				continue;
+			}
 
-		textRenderer.drawInBatch(
-			title,
-			titleWidth,
-			0.0F,
-			textColor,
-			false,
-			matrix,
-			consumers,
-			Font.DisplayMode.SEE_THROUGH,
-			backgroundColor,
-			light
-		);
-		textRenderer.drawInBatch(
-			lore,
-			loreWidth,
-			10.0F,
-			textColor,
-			false,
-			matrix,
-			consumers,
-			Font.DisplayMode.SEE_THROUGH,
-			backgroundColor,
-			light
-		);
+			Component title = Component.literal(waypoint.label());
+			Component lore = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE, manager.distanceBlocks(client, waypoint));
+			int titleWidth = textRenderer.width(title);
+			int loreWidth = textRenderer.width(lore);
+			int labelWidth = Math.max(titleWidth, loreWidth);
+			int panelWidth = labelWidth + 8;
+			int panelHeight = 23;
+			int panelX = screenX - panelWidth / 2;
+			int panelY = screenY - panelHeight / 2;
 
-		matrices.popPose();
+			graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, backgroundColor);
+			graphics.text(textRenderer, title, screenX - titleWidth / 2, panelY + 3, textColor, true);
+			graphics.text(textRenderer, lore, screenX - loreWidth / 2, panelY + 13, textColor, true);
+		}
+
 	}
 
-	private static int withAlpha(int color, int opacityPercent) {
-		int alpha = Math.max(0, Math.min(255, opacityPercent * 255 / 100));
-		return (color & 0x00FFFFFF) | (alpha << 24);
+	private static int waypointTextBackground(int opacityPercent) {
+		if (opacityPercent <= 0) {
+			return 0;
+		}
+		int alpha = Math.max(64, Math.min(112, opacityPercent * 112 / 100));
+		return alpha << 24;
 	}
 
 	private static void addBeamVertex(

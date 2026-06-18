@@ -14,7 +14,7 @@ public final class ChatFeaturesRefresher {
 			return;
 		}
 
-		ChatComponent chatHud = client.gui.getChat();
+		ChatComponent chatHud = client.gui.hud.getChat();
 		if (chatHud instanceof ChatHudAccess access) {
 			access.emutils$refreshDisplayedMessages();
 		}

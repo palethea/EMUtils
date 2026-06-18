@@ -3,6 +3,7 @@ package net.emutils.client.emutils.inventory.gui;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
 import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screen.Screen;
@@ -40,6 +41,17 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setSlotBindingLockBoundSlots
 		));
 		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_HOVER_TRANSFER,
+			() -> EMUtilsClient.config().hoverTransferEnabled(),
+			EMUtilsClient.config()::setHoverTransferEnabled
+		));
+		adder.add(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_SORT_BUTTONS,
+			() -> EMUtilsClient.config().sortButtonsEnabled(),
+			EMUtilsClient.config()::setSortButtonsEnabled
+		));
+		adder.add(sortSpeedButton());
+		adder.add(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_INVENTORY_PREVIEW,
 			() -> EMUtilsClient.config().inventoryPreviewEnabled(),
 			EMUtilsClient.config()::setInventoryPreviewEnabled
@@ -68,6 +80,22 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_VALUE,
 			Text.translatable(EMUtilsTexts.OPTION_SLOT_LOCK_COLOR),
 			Text.translatable(EMUtilsClient.config().slotLockColor().labelKey())
+		);
+	}
+
+	private static ButtonWidget sortSpeedButton() {
+		return ButtonWidget.builder(sortSpeedMessage(), button -> {
+			InventorySortSpeed next = EMUtilsClient.config().sortSpeed().next();
+			EMUtilsClient.config().setSortSpeed(next);
+			button.setMessage(sortSpeedMessage());
+		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Text sortSpeedMessage() {
+		return Text.translatable(
+			EMUtilsTexts.OPTION_VALUE,
+			Text.translatable(EMUtilsTexts.OPTION_SORT_SPEED),
+			Text.translatable(EMUtilsClient.config().sortSpeed().labelKey())
 		);
 	}
 }

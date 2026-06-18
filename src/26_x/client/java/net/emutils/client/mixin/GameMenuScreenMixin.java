@@ -84,7 +84,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 	private Button emutils$createHubButton(int x, int y, int width, int height) {
 		return Button.builder(
 			Component.translatable(EMUtilsTexts.HUB_TITLE),
-			open -> Minecraft.getInstance().setScreen(new CustomHubScreen(this))
+			open -> Minecraft.getInstance().setScreenAndShow(new CustomHubScreen(this))
 		).bounds(x, y, width, height).build();
 	}
 

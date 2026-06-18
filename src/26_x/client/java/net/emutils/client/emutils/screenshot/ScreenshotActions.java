@@ -84,8 +84,7 @@ public final class ScreenshotActions {
             ? EMUtilsTexts.CHAT_SCREENSHOT_DELETE_SUCCESS
             : EMUtilsTexts.CHAT_SCREENSHOT_DELETE_FAILURE;
         ChatFormatting formatting = deleted ? ChatFormatting.GREEN : ChatFormatting.RED;
-        client.gui
-            .getChat()
+        client.gui.hud.getChat()
             .addClientSystemMessage(
                 EmUtilsChatPrefix.chat(
                     Component.translatable(key).withStyle(formatting)
@@ -105,8 +104,7 @@ public final class ScreenshotActions {
             ? EMUtilsTexts.CHAT_SCREENSHOT_COPY_SUCCESS
             : EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE;
         ChatFormatting formatting = copied ? ChatFormatting.GREEN : ChatFormatting.RED;
-        client.gui
-            .getChat()
+        client.gui.hud.getChat()
             .addClientSystemMessage(
                 EmUtilsChatPrefix.chat(
                     Component.translatable(key).withStyle(formatting)

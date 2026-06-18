@@ -22,7 +22,7 @@ public final class ChatCopyHandler {
             return false;
         }
 
-        ChatComponent chatHud = client.gui.getChat();
+        ChatComponent chatHud = client.gui.hud.getChat();
         if (!(chatHud instanceof ChatHudAccess access)) {
             return false;
         }
@@ -60,7 +60,7 @@ public final class ChatCopyHandler {
             return null;
         }
 
-        ChatComponent chatHud = client.gui.getChat();
+        ChatComponent chatHud = client.gui.hud.getChat();
         if (!(chatHud instanceof ChatHudAccess access)) {
             return null;
         }

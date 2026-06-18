@@ -14,6 +14,7 @@ import net.emhelpers.client.hud.layout.HudLayoutConfig;
 import net.emhelpers.client.hud.layout.HudLayoutManager;
 import net.emhelpers.client.hud.layout.HudLayoutMode;
 import net.emutils.client.emutils.inventory.BoundSlotColor;
+import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsPaths;
@@ -66,6 +67,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean autoReconnectUnlimitedTries = Boolean.FALSE;
 	private Boolean screenshotHelper = Boolean.TRUE;
 	private Boolean screenshotAutoCopy = Boolean.FALSE;
+	private Boolean screenshotMetadataSaver = Boolean.TRUE;
 	private Boolean screenshotGalleryDeleteConfirmation = Boolean.TRUE;
 	private String screenshotGallerySort = ScreenshotGallerySort.NEWEST_FIRST.name();
 	private Boolean copyChat = Boolean.TRUE;
@@ -176,6 +178,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean slotBindingEnabled = Boolean.TRUE;
 	private Boolean slotBindingShowIcons = Boolean.TRUE;
 	private Boolean slotBindingLockBoundSlots = Boolean.TRUE;
+	private Boolean hoverTransferEnabled = Boolean.TRUE;
+	private Boolean sortButtonsEnabled = Boolean.TRUE;
+	private String sortSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
 	private Boolean preserveContainerCursor = Boolean.TRUE;
 	private String slotLockColor = SlotLockColor.RED.name();
@@ -249,6 +254,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setScreenshotAutoCopy(boolean enabled) {
 		screenshotAutoCopy = enabled;
+		save();
+	}
+
+	public boolean screenshotMetadataSaver() {
+		return screenshotMetadataSaver == null || screenshotMetadataSaver;
+	}
+
+	public void setScreenshotMetadataSaver(boolean enabled) {
+		screenshotMetadataSaver = enabled;
 		save();
 	}
 
@@ -1181,6 +1195,33 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean hoverTransferEnabled() {
+		return hoverTransferEnabled == null || hoverTransferEnabled;
+	}
+
+	public void setHoverTransferEnabled(boolean enabled) {
+		hoverTransferEnabled = enabled;
+		save();
+	}
+
+	public boolean sortButtonsEnabled() {
+		return sortButtonsEnabled == null || sortButtonsEnabled;
+	}
+
+	public void setSortButtonsEnabled(boolean enabled) {
+		sortButtonsEnabled = enabled;
+		save();
+	}
+
+	public InventorySortSpeed sortSpeed() {
+		return InventorySortSpeed.fromName(sortSpeed);
+	}
+
+	public void setSortSpeed(InventorySortSpeed speed) {
+		sortSpeed = (speed == null ? InventorySortSpeed.NORMAL : speed).name();
+		save();
+	}
+
 	public boolean inventoryPreviewEnabled() {
 		return inventoryPreviewEnabled != null && inventoryPreviewEnabled;
 	}
@@ -1358,6 +1399,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetScreenshotDefaults() {
 		screenshotHelper = Boolean.TRUE;
 		screenshotAutoCopy = Boolean.FALSE;
+		screenshotMetadataSaver = Boolean.TRUE;
 		screenshotGallerySort = ScreenshotGallerySort.NEWEST_FIRST.name();
 		screenshotGalleryDeleteConfirmation = Boolean.TRUE;
 		screenshotGalleryMaxCount = 200;
@@ -1367,6 +1409,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetScreenshotHelperDefaults() {
 		screenshotHelper = Boolean.TRUE;
 		screenshotAutoCopy = Boolean.FALSE;
+		screenshotMetadataSaver = Boolean.TRUE;
 		save();
 	}
 
@@ -1534,6 +1577,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		slotBindingEnabled = Boolean.TRUE;
 		slotBindingShowIcons = Boolean.TRUE;
 		slotBindingLockBoundSlots = Boolean.TRUE;
+		hoverTransferEnabled = Boolean.TRUE;
+		sortButtonsEnabled = Boolean.TRUE;
+		sortSpeed = InventorySortSpeed.NORMAL.name();
 		inventoryPreviewEnabled = Boolean.FALSE;
 		preserveContainerCursor = Boolean.TRUE;
 		slotLockColor = SlotLockColor.RED.name();
@@ -1566,6 +1612,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (screenshotAutoCopy == null) {
 			screenshotAutoCopy = Boolean.FALSE;
+		}
+		if (screenshotMetadataSaver == null) {
+			screenshotMetadataSaver = Boolean.TRUE;
 		}
 		if (screenshotGalleryDeleteConfirmation == null) {
 			screenshotGalleryDeleteConfirmation = Boolean.TRUE;
@@ -1824,6 +1873,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (slotBindingLockBoundSlots == null) {
 			slotBindingLockBoundSlots = Boolean.TRUE;
+		}
+		if (hoverTransferEnabled == null) {
+			hoverTransferEnabled = Boolean.TRUE;
+		}
+		if (sortButtonsEnabled == null) {
+			sortButtonsEnabled = Boolean.TRUE;
+		}
+		if (sortSpeed == null) {
+			sortSpeed = InventorySortSpeed.NORMAL.name();
 		}
 		if (inventoryPreviewEnabled == null) {
 			inventoryPreviewEnabled = Boolean.FALSE;

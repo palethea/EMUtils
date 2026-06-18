@@ -18,7 +18,7 @@ public final class WaypointChat {
 	}
 
 	public static void removeNearPrompt(ChatComponent chatHud, long timestamp) {
-		chatHud.deleteMessage(createNearPromptSignature(timestamp));
+		((WaypointChatAccess) chatHud).emutils$removeMessageSilently(createNearPromptSignature(timestamp));
 	}
 
 	private static MessageSignature createNearPromptSignature(long timestamp) {

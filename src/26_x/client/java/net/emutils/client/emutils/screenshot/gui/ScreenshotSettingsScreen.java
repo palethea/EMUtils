@@ -29,6 +29,11 @@ public final class ScreenshotSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().screenshotAutoCopy(),
 			EMUtilsClient.config()::setScreenshotAutoCopy
 		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_SCREENSHOT_METADATA,
+			() -> EMUtilsClient.config().screenshotMetadataSaver(),
+			EMUtilsClient.config()::setScreenshotMetadataSaver
+		));
 		adder.addChild(sortButton());
 		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_SCREENSHOT_DELETE_CONFIRMATION,
@@ -49,11 +54,11 @@ public final class ScreenshotSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.OPTION_SCREENSHOT_GALLERY),
-			button -> client.setScreen(new ScreenshotGalleryScreen(this))
+			button -> client.setScreenAndShow(new ScreenshotGalleryScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetScreenshotDefaults();
-			client.setScreen(new ScreenshotSettingsScreen(parent));
+			client.setScreenAndShow(new ScreenshotSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 

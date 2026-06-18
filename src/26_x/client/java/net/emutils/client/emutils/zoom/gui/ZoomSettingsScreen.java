@@ -78,7 +78,7 @@ public final class ZoomSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetZoomDefaults();
-			client.setScreen(new ZoomSettingsScreen(parent));
+			client.setScreenAndShow(new ZoomSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 }

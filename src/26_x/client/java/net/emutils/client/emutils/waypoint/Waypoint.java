@@ -12,6 +12,7 @@ public final class Waypoint {
 	private int color;
 	private String type;
 	private Boolean beaconEnabled;
+	private Boolean hidden;
 
 	public Waypoint() {
 	}
@@ -96,6 +97,14 @@ public final class Waypoint {
 		this.beaconEnabled = beaconEnabled;
 	}
 
+	public boolean hidden() {
+		return hidden != null && hidden;
+	}
+
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
 	public boolean matchesDimension(String otherDimension) {
 		return dimension != null && dimension.equals(otherDimension);
 	}
@@ -113,7 +122,23 @@ public final class Waypoint {
 			return ("multiplayer:" + serverAddress).equals(otherWorldKey);
 		}
 
-		return false;
+		String normalizedStored = normalizeWorldKey(serverAddress);
+		String normalizedOther = normalizeWorldKey(otherWorldKey);
+		if (normalizedStored.equals(normalizedOther)) {
+			return true;
+		}
+
+		return normalizedOther.startsWith("realm:")
+			&& normalizedStored.startsWith("multiplayer:")
+			&& isLikelyRealmAddress(normalizedStored);
+	}
+
+	private static String normalizeWorldKey(String key) {
+		return key == null ? "" : key.trim().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	private static boolean isLikelyRealmAddress(String key) {
+		return key.contains("realms.minecraft.net") || key.contains("mco");
 	}
 
 	public boolean sameBlock(int blockX, int blockY, int blockZ) {

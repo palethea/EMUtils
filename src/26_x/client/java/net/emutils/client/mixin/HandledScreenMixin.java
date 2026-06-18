@@ -1,20 +1,31 @@
 package net.emutils.client.mixin;
 
+import java.util.List;
+import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
 import net.emhelpers.client.hud.editor.HudLayoutEditorOverlay;
+import net.emutils.client.emutils.food.FoodHudHelper;
+import net.emutils.client.emutils.food.FoodTooltipData;
+import net.emutils.client.emutils.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -33,6 +44,60 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 	@Shadow
 	protected int topPos;
 
+	@ModifyArg(
+		method = "extractTooltip",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;IILnet/minecraft/resources/Identifier;)V"
+		),
+		index = 1
+	)
+	private List<Component> emutils$stripShulkerContainerText(List<Component> tooltip) {
+		if (this.hoveredSlot == null || !this.hoveredSlot.hasItem()) {
+			return tooltip;
+		}
+
+		ItemStack stack = this.hoveredSlot.getItem();
+		if (TooltipPreviewRenderer.shouldPreviewShulker(stack)) {
+			return TooltipPreviewRenderer.stripContainerLines(tooltip);
+		}
+
+		return tooltip;
+	}
+
+	@ModifyArg(
+		method = "extractTooltip",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;IILnet/minecraft/resources/Identifier;)V"
+		),
+		index = 2
+	)
+	private Optional<TooltipComponent> emutils$injectContainerPreview(Optional<TooltipComponent> tooltipData) {
+		if (this.hoveredSlot == null || !this.hoveredSlot.hasItem()) {
+			return tooltipData;
+		}
+
+		ItemStack stack = this.hoveredSlot.getItem();
+		if (TooltipPreviewRenderer.shouldPreviewShulker(stack)) {
+			return Optional.of(TooltipPreviewRenderer.createShulkerTooltipData(stack));
+		}
+
+		BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
+		if (bundle != null && !bundle.isEmpty() && !EMUtilsClient.config().tweakBundleTooltipPreview()) {
+			return Optional.empty();
+		}
+
+		if (tooltipData.isEmpty()) {
+			FoodTooltipData foodData = FoodHudHelper.tooltipData(stack, Minecraft.getInstance().player);
+			if (foodData != null) {
+				return Optional.of(foodData);
+			}
+		}
+
+		return tooltipData;
+	}
+
 	@Inject(method = "extractSlot", at = @At("TAIL"))
 	private void emutils$drawInventoryToolSlotOverlay(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
 		Inventory inventory = emutils$playerInventory();
@@ -49,6 +114,9 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 			EMUtilsClient.inventoryTools().finishDragIfBindKeyReleased(client, menu, hoveredSlot, inventory);
 		}
 		EMUtilsClient.inventoryTools().drawDragLine(context, hoveredSlot, mouseX - leftPos, mouseY - topPos);
+		if (inventory != null && client != null) {
+			EMUtilsClient.inventoryTools().drawSortButtons(client, context, menu, inventory, leftPos, topPos, mouseX - leftPos, mouseY - topPos);
+		}
 	}
 
 	@Inject(method = "extractRenderState", at = @At("TAIL"))
@@ -97,6 +165,22 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 	private void emutils$handleHudEditorMouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
 		if (HudLayoutEditorOverlay.handleMouseClicked(click)) {
 			cir.setReturnValue(true);
+			return;
+		}
+
+		Inventory inventory = emutils$playerInventory();
+		Minecraft client = Minecraft.getInstance();
+		if (inventory == null || client == null) {
+			return;
+		}
+
+		Slot slot = emutils$slotAt(click.x(), click.y());
+		if (EMUtilsClient.inventoryTools().handleSortButtonMouseClicked(client, menu, click.button(), click.x() - leftPos, click.y() - topPos, inventory)) {
+			cir.setReturnValue(true);
+			return;
+		}
+		if (EMUtilsClient.inventoryTools().handleHoverTransferMouseClicked(client, menu, slot, click.button(), click.hasShiftDown(), inventory)) {
+			cir.setReturnValue(true);
 		}
 	}
 
@@ -121,6 +205,18 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 	@Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
 	private void emutils$dragHudLayoutEditorOverlay(MouseButtonEvent click, double offsetX, double offsetY, CallbackInfoReturnable<Boolean> cir) {
 		if (HudLayoutEditorOverlay.handleMouseDragged(click, offsetX, offsetY)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
+		Inventory inventory = emutils$playerInventory();
+		Minecraft client = Minecraft.getInstance();
+		if (inventory == null || client == null) {
+			return;
+		}
+
+		Slot slot = emutils$slotAt(click.x(), click.y());
+		if (EMUtilsClient.inventoryTools().handleHoverTransferMouseDragged(client, menu, slot, click.button(), click.hasShiftDown(), inventory)) {
 			cir.setReturnValue(true);
 		}
 	}
