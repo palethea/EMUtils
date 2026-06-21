@@ -165,6 +165,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
 	private Boolean tweakSafeWalk = Boolean.FALSE;
+	private Boolean tweakPlaceBelow = Boolean.FALSE;
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
@@ -1033,6 +1034,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakPlaceBelow() {
+		return tweakPlaceBelow != null && tweakPlaceBelow;
+	}
+
+	public void setTweakPlaceBelow(boolean enabled) {
+		tweakPlaceBelow = enabled;
+		save();
+	}
+
 	public boolean tweakAutoSwitchElytra() {
 		return tweakAutoSwitchElytra != null && tweakAutoSwitchElytra;
 	}
@@ -1139,6 +1149,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakFastPlace()
 			|| tweakAntiDurabilityBreak()
 			|| tweakSafeWalk()
+			|| tweakPlaceBelow()
 			|| autoFlightGearEnabled()
 			|| autoToolEnabled()
 			|| tweakOwnNametag();
@@ -1684,6 +1695,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakFastPlace = Boolean.FALSE;
 		tweakAntiDurabilityBreak = Boolean.FALSE;
 		tweakSafeWalk = Boolean.FALSE;
+		tweakPlaceBelow = Boolean.FALSE;
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
@@ -2013,6 +2025,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakSafeWalk == null) {
 			tweakSafeWalk = Boolean.FALSE;
+		}
+		if (tweakPlaceBelow == null) {
+			tweakPlaceBelow = Boolean.FALSE;
 		}
 		if (tweakAutoSwitchElytra == null) {
 			tweakAutoSwitchElytra = Boolean.FALSE;

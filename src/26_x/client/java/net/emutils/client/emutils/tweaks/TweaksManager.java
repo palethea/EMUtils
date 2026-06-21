@@ -11,10 +11,12 @@ public final class TweaksManager {
 	private final FreelookManager freelook = new FreelookManager();
 	private final AutoToolManager autoTool = new AutoToolManager();
 	private final AutoFlightGearManager autoFlightGear = new AutoFlightGearManager();
+	private final PlaceBelowManager placeBelow = new PlaceBelowManager();
 	private boolean removeWorldFog;
 
-	public void setKeyMappings(KeyMapping freelookKey) {
+	public void setKeyMappings(KeyMapping freelookKey, KeyMapping placeBelowKey) {
 		freelook.setKeyMapping(freelookKey);
+		placeBelow.setKeyMapping(placeBelowKey);
 	}
 
 	public void tick(net.minecraft.client.Minecraft client) {
@@ -32,6 +34,10 @@ public final class TweaksManager {
 
 	public FreelookManager freelook() {
 		return freelook;
+	}
+
+	public PlaceBelowManager placeBelow() {
+		return placeBelow;
 	}
 
 	public void updateFogState(Camera camera, Level world) {

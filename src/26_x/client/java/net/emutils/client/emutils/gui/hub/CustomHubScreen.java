@@ -1248,7 +1248,8 @@ public final class CustomHubScreen extends Screen {
 			feature(HubCategory.AUTO_FLIGHT, FeatureGroup.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, IconKind.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),
 			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace)),
 			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, IconKind.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, IconKind.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk))
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, IconKind.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow))
 		);
 	}
 

@@ -102,6 +102,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakSafeWalk
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW,
+			() -> EMUtilsClient.config().tweakPlaceBelow(),
+			EMUtilsClient.config()::setTweakPlaceBelow
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK,
 			() -> EMUtilsClient.config().tweakAntiDurabilityBreak(),
 			EMUtilsClient.config()::setTweakAntiDurabilityBreak

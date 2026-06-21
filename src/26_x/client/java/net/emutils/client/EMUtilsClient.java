@@ -232,6 +232,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping placeBelowKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.place_below",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			InputConstants.Type.KEYSYM,
@@ -247,7 +253,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			debugCategory
 		));
 
-		tweaksManager.setKeyMappings(freelookKey);
+		tweaksManager.setKeyMappings(freelookKey, placeBelowKey);
 		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 

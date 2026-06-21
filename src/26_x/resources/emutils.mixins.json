@@ -37,6 +37,7 @@
 		"MinecraftAntiDurabilityBreakMixin",
 		"MinecraftFastPlaceMixin",
 		"MultiPlayerGameModeAntiDurabilityBreakMixin",
+		"MultiPlayerGameModePlaceBelowMixin",
 		"MouseAccess",
 		"MouseMixin",
 		"OptionsScreenMixin",

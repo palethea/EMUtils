@@ -232,3 +232,7 @@ Temporarily prepare flight gear while falling, then restore the displaced items 
 ### Safe Walk
 
 Prevent walking off ledges without slowing down or holding sneak. Jumping still lets you leave an edge normally.
+
+### Place Below
+
+Hold a configurable keybind while placing against a block to redirect the placement to the underside of the targeted block.
