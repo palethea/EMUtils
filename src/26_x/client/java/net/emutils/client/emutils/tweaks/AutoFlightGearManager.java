@@ -7,6 +7,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /** Handles the temporary inventory swaps used by the automatic flight gear tweaks. */
 public final class AutoFlightGearManager {
@@ -33,7 +36,8 @@ public final class AutoFlightGearManager {
 		boolean grounded = player.onGround();
 		boolean falling = !grounded
 			&& !player.isPassenger()
-			&& player.getDeltaMovement().y < FALLING_VELOCITY;
+			&& player.getDeltaMovement().y < FALLING_VELOCITY
+			&& (!EMUtilsClient.config().autoFlightIgnoreShortFalls() || !hasSelectableGroundBelow(player));
 
 		if (fallCycleActive && canSwap) {
 			if (!EMUtilsClient.config().tweakAutoSwitchRockets()) {
@@ -75,8 +79,21 @@ public final class AutoFlightGearManager {
 
 	private static boolean anyFeatureEnabled() {
 		return EMUtilsClient.config() != null
+			&& EMUtilsClient.config().autoFlightGearEnabled()
 			&& (EMUtilsClient.config().tweakAutoSwitchElytra()
 				|| EMUtilsClient.config().tweakAutoSwitchRockets());
+	}
+
+	private static boolean hasSelectableGroundBelow(Player player) {
+		Vec3 start = player.getEyePosition();
+		Vec3 end = start.add(0.0D, -player.blockInteractionRange(), 0.0D);
+		return player.level().clip(new ClipContext(
+			start,
+			end,
+			ClipContext.Block.OUTLINE,
+			ClipContext.Fluid.NONE,
+			player
+		)).getType() != HitResult.Type.MISS;
 	}
 
 	private void equipElytra(Minecraft client, Player player) {

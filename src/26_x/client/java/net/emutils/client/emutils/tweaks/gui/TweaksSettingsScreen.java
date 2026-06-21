@@ -107,6 +107,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakAntiDurabilityBreak
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR,
+			() -> EMUtilsClient.config().autoFlightGearEnabled(),
+			EMUtilsClient.config()::setAutoFlightGearEnabled
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ELYTRA,
 			() -> EMUtilsClient.config().tweakAutoSwitchElytra(),
 			EMUtilsClient.config()::setTweakAutoSwitchElytra
@@ -115,6 +120,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ROCKETS,
 			() -> EMUtilsClient.config().tweakAutoSwitchRockets(),
 			EMUtilsClient.config()::setTweakAutoSwitchRockets
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS,
+			() -> EMUtilsClient.config().autoFlightIgnoreShortFalls(),
+			EMUtilsClient.config()::setAutoFlightIgnoreShortFalls
 		));
 		adder.addChild(new IntConfigSlider(
 			0,

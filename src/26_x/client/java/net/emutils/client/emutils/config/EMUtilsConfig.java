@@ -165,8 +165,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
 	private Boolean tweakSafeWalk = Boolean.FALSE;
+	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
+	private Boolean autoFlightIgnoreShortFalls = Boolean.TRUE;
 	private Integer autoSwitchRocketsHotbarSlot = 9;
 	private Boolean autoToolEnabled = Boolean.FALSE;
 	private String autoToolMode = AutoToolMode.LEGIT.name();
@@ -1034,6 +1036,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return tweakAutoSwitchElytra != null && tweakAutoSwitchElytra;
 	}
 
+	public boolean autoFlightGearEnabled() {
+		return autoFlightGearEnabled != null && autoFlightGearEnabled;
+	}
+
+	public void setAutoFlightGearEnabled(boolean enabled) {
+		autoFlightGearEnabled = enabled;
+		if (enabled && !tweakAutoSwitchElytra() && !tweakAutoSwitchRockets()) {
+			tweakAutoSwitchElytra = Boolean.TRUE;
+			tweakAutoSwitchRockets = Boolean.TRUE;
+		}
+		save();
+	}
+
 	public void setTweakAutoSwitchElytra(boolean enabled) {
 		tweakAutoSwitchElytra = enabled;
 		save();
@@ -1045,6 +1060,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setTweakAutoSwitchRockets(boolean enabled) {
 		tweakAutoSwitchRockets = enabled;
+		save();
+	}
+
+	public boolean autoFlightIgnoreShortFalls() {
+		return autoFlightIgnoreShortFalls == null || autoFlightIgnoreShortFalls;
+	}
+
+	public void setAutoFlightIgnoreShortFalls(boolean enabled) {
+		autoFlightIgnoreShortFalls = enabled;
 		save();
 	}
 
@@ -1105,8 +1129,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakFastPlace()
 			|| tweakAntiDurabilityBreak()
 			|| tweakSafeWalk()
-			|| tweakAutoSwitchElytra()
-			|| tweakAutoSwitchRockets()
+			|| autoFlightGearEnabled()
 			|| autoToolEnabled()
 			|| tweakOwnNametag();
 	}
@@ -1651,8 +1674,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakFastPlace = Boolean.FALSE;
 		tweakAntiDurabilityBreak = Boolean.FALSE;
 		tweakSafeWalk = Boolean.FALSE;
+		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoFlightIgnoreShortFalls = Boolean.TRUE;
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
@@ -1673,8 +1698,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	}
 
 	public void resetAutoFlightDefaults() {
+		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoFlightIgnoreShortFalls = Boolean.TRUE;
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		save();
 	}
@@ -1980,6 +2007,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakAutoSwitchRockets == null) {
 			tweakAutoSwitchRockets = Boolean.FALSE;
+		}
+		if (autoFlightGearEnabled == null) {
+			autoFlightGearEnabled = tweakAutoSwitchElytra() || tweakAutoSwitchRockets();
+		}
+		if (autoFlightIgnoreShortFalls == null) {
+			autoFlightIgnoreShortFalls = Boolean.TRUE;
 		}
 		autoSwitchRocketsHotbarSlot = autoSwitchRocketsHotbarSlot();
 		if (autoToolEnabled == null) {

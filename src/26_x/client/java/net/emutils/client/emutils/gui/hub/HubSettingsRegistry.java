@@ -442,6 +442,11 @@ public final class HubSettingsRegistry {
 			config::tweakAutoSwitchRockets,
 			config::setTweakAutoSwitchRockets
 		));
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS,
+			config::autoFlightIgnoreShortFalls,
+			config::setAutoFlightIgnoreShortFalls
+		));
 		rows.add(new HubSettingRow.Slider(
 			EMUtilsTexts.OPTION_AUTO_SWITCH_ROCKETS_HOTBAR_SLOT,
 			"",
