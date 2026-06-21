@@ -1188,6 +1188,7 @@ public final class CustomHubScreen extends Screen {
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES, EMUtilsTexts.HUB_FEATURE_NO_NETHER_PARTICLES_DESC, IconKind.SPARKLES, toggle(config::tweakNoNetherParticles, config::setTweakNoNetherParticles)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, IconKind.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, IconKind.EYE, toggle(config::tweakFreelook, config::setTweakFreelook)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, IconKind.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, EMUtilsTexts.HUB_FEATURE_OWN_NAMETAG_DESC, IconKind.TAG, toggle(config::tweakOwnNametag, config::setTweakOwnNametag)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_SHULKER_PREVIEW_DESC, IconKind.BOX, toggle(config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_BUNDLE_PREVIEW_DESC, IconKind.PACKAGE_OPEN, toggle(config::tweakBundleTooltipPreview, config::setTweakBundleTooltipPreview)),

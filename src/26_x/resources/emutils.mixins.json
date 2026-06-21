@@ -4,6 +4,7 @@
 	"plugin": "net.emutils.client.mixin.EMUtilsMixinPlugin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"BeaconBlockEntityAccessor",
 		"CameraMixin",
 		"CapeFeatureRendererMixin",
 		"ChatHudMixin",

@@ -52,6 +52,7 @@
   "emutils.hub.feature.no_nether_particles.desc": "Hide ambient Nether particles such as Basalt Deltas ash.",
   "emutils.hub.feature.no_hurt_cam.desc": "Disable hurt camera shake.",
   "emutils.hub.feature.freelook.desc": "Look around without turning movement.",
+  "emutils.hub.feature.beacon_radius.desc": "Outline the true effect boundary of loaded active beacons.",
   "emutils.hub.feature.own_nametag.desc": "Show your own nametag in third person.",
   "emutils.hub.feature.shulker_preview.desc": "Preview shulker contents in tooltips.",
   "emutils.hub.feature.bundle_preview.desc": "Preview bundle contents in tooltips.",
@@ -196,6 +197,7 @@
   "emutils.option.tweak_no_nether_particles": "No Nether Particles",
   "emutils.option.tweak_no_hurt_cam": "No Hurt Cam",
   "emutils.option.tweak_freelook": "Freelook",
+  "emutils.option.beacon_radius_outline": "Beacon Radius Outline",
   "emutils.option.tweak_shulker_tooltip_preview": "Shulker Preview",
   "emutils.option.tweak_bundle_tooltip_preview": "Bundle Preview",
   "emutils.option.tweak_clear_weather": "Clear Weather",
@@ -469,5 +471,6 @@
   "key.emutils.mass_drop": "Mass Drop Selected Items",
   "key.emutils.place_below": "Place Below Target",
   "key.emutils.free_camera": "Toggle Free Camera",
+  "key.emutils.beacon_radius_outline": "Toggle Beacon Radius Outline",
   "key.emutils.debug_dump_gui": "DEBUG Dump Open GUI"
 }

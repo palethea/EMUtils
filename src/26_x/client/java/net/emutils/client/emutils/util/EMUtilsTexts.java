@@ -101,6 +101,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_hurt_cam.desc";
     public static final String HUB_FEATURE_FREELOOK_DESC =
         "emutils.hub.feature.freelook.desc";
+    public static final String HUB_FEATURE_BEACON_RADIUS_DESC =
+        "emutils.hub.feature.beacon_radius.desc";
     public static final String HUB_FEATURE_OWN_NAMETAG_DESC =
         "emutils.hub.feature.own_nametag.desc";
     public static final String HUB_FEATURE_SHULKER_PREVIEW_DESC =
@@ -342,6 +344,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_hurt_cam";
     public static final String OPTION_TWEAK_FREELOOK =
         "emutils.option.tweak_freelook";
+    public static final String OPTION_BEACON_RADIUS_OUTLINE =
+        "emutils.option.beacon_radius_outline";
     public static final String OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW =
         "emutils.option.tweak_shulker_tooltip_preview";
     public static final String OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW =

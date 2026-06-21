@@ -180,6 +180,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakFreelook
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE,
+			() -> EMUtilsClient.config().beaconRadiusOutline(),
+			EMUtilsClient.config()::setBeaconRadiusOutline
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG,
 			() -> EMUtilsClient.config().tweakOwnNametag(),
 			EMUtilsClient.config()::setTweakOwnNametag

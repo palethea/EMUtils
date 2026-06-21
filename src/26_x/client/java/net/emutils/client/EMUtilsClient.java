@@ -27,6 +27,7 @@ import net.emutils.client.emutils.inventory.InventoryToolsManager;
 import net.emutils.client.emutils.inventory.MassDropManager;
 import net.emutils.client.emutils.minescript.MinescriptKeybindManager;
 import net.emutils.client.emutils.reconnect.AutoReconnectManager;
+import net.emutils.client.emutils.render.BeaconRadiusRenderer;
 import net.emutils.client.emutils.spotify.SpotifyHudElement;
 import net.emutils.client.emutils.spotify.SpotifyPlaybackService;
 import net.emutils.client.emutils.tweaks.TweaksManager;
@@ -94,6 +95,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> tweaksManager.tickAutoTool(client));
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
 		WaypointRenderer.register();
+		BeaconRadiusRenderer.register();
 		registerHudLayoutElements();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
@@ -244,6 +246,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping beaconRadiusKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.beacon_radius_outline",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			InputConstants.Type.KEYSYM,
@@ -260,6 +268,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		));
 
 		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, freeCameraKey);
+		BeaconRadiusRenderer.setKeyMapping(beaconRadiusKey);
 		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 
@@ -295,6 +304,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		while (massDropKeyMapping != null && massDropKeyMapping.consumeClick()) {
 			massDropManager.dropSelected(client);
 		}
+		BeaconRadiusRenderer.tick();
 		DebugGuiDumpTrigger.tryFromBinding(debugDumpGuiKeyMapping);
 	}
 

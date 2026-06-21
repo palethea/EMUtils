@@ -33,6 +33,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - No Spyglass Overlay: hide the spyglass scope overlay.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
+- Beacon Radius Outline: draw the true effect boundary of each loaded active beacon, colored from its beam and toggleable with a configurable keybind.
 - Own Nametag: show your own nametag in third person.
 - Shulker Preview: preview shulker contents in item tooltips.
 - Bundle Preview: preview bundle contents in item tooltips.

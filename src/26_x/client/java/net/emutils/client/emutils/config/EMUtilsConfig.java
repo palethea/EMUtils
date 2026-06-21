@@ -152,6 +152,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearFluidOverlay;
 	private Boolean tweakNoHurtCam = Boolean.FALSE;
 	private Boolean tweakFreelook = Boolean.FALSE;
+	private Boolean beaconRadiusOutline = Boolean.FALSE;
 	private Boolean tweakShulkerTooltipPreview = Boolean.TRUE;
 	private Boolean tweakBundleTooltipPreview = Boolean.TRUE;
 	private Boolean tweakClearWeather = Boolean.FALSE;
@@ -906,6 +907,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean beaconRadiusOutline() {
+		return beaconRadiusOutline != null && beaconRadiusOutline;
+	}
+
+	public void setBeaconRadiusOutline(boolean enabled) {
+		beaconRadiusOutline = enabled;
+		save();
+	}
+
 	public boolean tweakShulkerTooltipPreview() {
 		return tweakShulkerTooltipPreview == null || tweakShulkerTooltipPreview;
 	}
@@ -1149,6 +1159,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakNoNetherParticles()
 			|| tweakNoHurtCam()
 			|| tweakFreelook()
+			|| beaconRadiusOutline()
 			|| tweakShulkerTooltipPreview()
 			|| tweakBundleTooltipPreview()
 			|| tweakClearWeather()
@@ -1693,6 +1704,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoNetherParticles = Boolean.FALSE;
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
+		beaconRadiusOutline = Boolean.FALSE;
 		tweakShulkerTooltipPreview = Boolean.TRUE;
 		tweakBundleTooltipPreview = Boolean.TRUE;
 		tweakClearWeather = Boolean.FALSE;
@@ -1998,6 +2010,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakFreelook == null) {
 			tweakFreelook = Boolean.FALSE;
+		}
+		if (beaconRadiusOutline == null) {
+			beaconRadiusOutline = Boolean.FALSE;
 		}
 		if (tweakShulkerTooltipPreview == null) {
 			tweakShulkerTooltipPreview = Boolean.TRUE;
