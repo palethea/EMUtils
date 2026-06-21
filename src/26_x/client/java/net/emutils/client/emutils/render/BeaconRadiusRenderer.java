@@ -5,9 +5,11 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.compat.XaeroMapIntegration;
 import net.emutils.client.mixin.BeaconBlockEntityAccessor;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -26,10 +28,13 @@ public final class BeaconRadiusRenderer {
 	private static final int SCAN_INTERVAL_TICKS = 20;
 	private static final int HORIZONTAL_GRID_STEP = 4;
 	private static final int VERTICAL_GRID_STEP = 5;
+	private static final double MAP_POINT_SPACING = 0.5D;
+	private static final boolean XAERO_MINIMAP_LOADED = FabricLoader.getInstance().isModLoaded("xaerominimap");
 
 	@Nullable
 	private static KeyMapping keyMapping;
 	private static List<BeaconBlockEntity> cachedBeacons = List.of();
+	private static List<BeaconMapPoint> cachedMapPoints = List.of();
 	@Nullable
 	private static ClientLevel cachedLevel;
 	private static int nextScanTick;
@@ -46,6 +51,10 @@ public final class BeaconRadiusRenderer {
 	}
 
 	public static void tick() {
+		if (XAERO_MINIMAP_LOADED) {
+			XaeroMapIntegration.tick();
+		}
+
 		while (keyMapping != null && keyMapping.consumeClick()) {
 			EMUtilsClient.config().setBeaconRadiusOutline(!EMUtilsClient.config().beaconRadiusOutline());
 		}
@@ -53,6 +62,7 @@ public final class BeaconRadiusRenderer {
 		Minecraft client = Minecraft.getInstance();
 		if (!EMUtilsClient.config().beaconRadiusOutline() || client.level == null || client.player == null) {
 			cachedBeacons = List.of();
+			cachedMapPoints = List.of();
 			cachedLevel = client.level;
 			return;
 		}
@@ -85,8 +95,42 @@ public final class BeaconRadiusRenderer {
 			}
 		}
 		cachedBeacons = List.copyOf(beacons);
+		cachedMapPoints = createMapPoints(beacons);
 		cachedLevel = client.level;
 		nextScanTick = (client.player == null ? 0 : client.player.tickCount) + SCAN_INTERVAL_TICKS;
+	}
+
+	public static List<BeaconMapPoint> mapPoints() {
+		return cachedMapPoints;
+	}
+
+	private static List<BeaconMapPoint> createMapPoints(List<BeaconBlockEntity> beacons) {
+		List<BeaconMapPoint> points = new ArrayList<>();
+		for (BeaconBlockEntity beacon : beacons) {
+			int levels = ((BeaconBlockEntityAccessor) beacon).emutils$getLevels();
+			List<BeaconBeamOwner.Section> sections = beacon.getBeamSections();
+			if (levels <= 0 || sections.isEmpty() || beacon.isRemoved()) {
+				continue;
+			}
+
+			BlockPos pos = beacon.getBlockPos();
+			double radius = levels * 10.0D + 10.0D;
+			double minX = pos.getX() - radius;
+			double maxX = pos.getX() + 1.0D + radius;
+			double minZ = pos.getZ() - radius;
+			double maxZ = pos.getZ() + 1.0D + radius;
+			int color = 0xE6000000 | (sections.getFirst().getColor() & 0x00FFFFFF);
+
+			for (double x = minX; x <= maxX + 0.001D; x += MAP_POINT_SPACING) {
+				points.add(new BeaconMapPoint(x, pos.getY(), minZ, color));
+				points.add(new BeaconMapPoint(x, pos.getY(), maxZ, color));
+			}
+			for (double z = minZ + MAP_POINT_SPACING; z < maxZ - 0.001D; z += MAP_POINT_SPACING) {
+				points.add(new BeaconMapPoint(minX, pos.getY(), z, color));
+				points.add(new BeaconMapPoint(maxX, pos.getY(), z, color));
+			}
+		}
+		return List.copyOf(points);
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -204,5 +248,8 @@ public final class BeaconRadiusRenderer {
 			.setColor(color)
 			.setNormal(pose, nx, ny, nz)
 			.setLineWidth(width);
+	}
+
+	public record BeaconMapPoint(double x, double y, double z, int color) {
 	}
 }
