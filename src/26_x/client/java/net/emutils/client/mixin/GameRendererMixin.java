@@ -15,6 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
+	@Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)
+	private void emutils$hideHandsDuringFreeCamera(
+		CameraRenderState cameraRenderState,
+		float partialTick,
+		org.joml.Matrix4fc projectionMatrix,
+		CallbackInfo ci
+	) {
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+			ci.cancel();
+		}
+	}
+
 	@Redirect(
 		method = "renderItemInHand",
 		at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/OptionsRenderState;hideGui:Z"),

@@ -239,4 +239,4 @@ Hold a configurable keybind while placing against a block to redirect the placem
 
 ### Free Camera
 
-Toggle a detached spectator-like camera while the real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for faster travel. The normal player HUD remains visible, while player attacks, item use, and block picking are suppressed until the camera is restored.
+Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for faster travel. Free Camera uses a clean spectator-style HUD with held items and survival HUD elements hidden, while player attacks, item use, and block picking are suppressed until the camera is restored.
