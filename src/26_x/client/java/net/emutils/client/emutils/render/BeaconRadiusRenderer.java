@@ -103,7 +103,7 @@ public final class BeaconRadiusRenderer {
 			collector.submitCustomGeometry(matrices, RenderTypes.linesTranslucent(), (pose, buffer) -> {
 				for (BeaconBlockEntity beacon : cachedBeacons) {
 					if (!beacon.isRemoved() && beacon.getLevel() == client.level) {
-						renderBeaconRadius(client, beacon, pose, buffer);
+						renderBeaconRadius(client, beacon, camera.position().y, pose, buffer);
 					}
 				}
 			});
@@ -115,6 +115,7 @@ public final class BeaconRadiusRenderer {
 	private static void renderBeaconRadius(
 		Minecraft client,
 		BeaconBlockEntity beacon,
+		double cameraY,
 		PoseStack.Pose pose,
 		VertexConsumer buffer
 	) {
@@ -131,29 +132,26 @@ public final class BeaconRadiusRenderer {
 			.setMinY(Math.max(client.level.getMinY(), pos.getY() - radius))
 			.setMaxY(client.level.getMaxY());
 		int color = (LINE_ALPHA << 24) | (sections.getFirst().getColor() & 0x00FFFFFF);
-		addLineBox(buffer, pose, bounds, color);
+		double outlineY = Math.max(bounds.minY + 0.02D, Math.min(bounds.maxY - 0.02D, cameraY));
+		addHorizontalOutline(buffer, pose, bounds, outlineY, color);
 	}
 
-	private static void addLineBox(VertexConsumer buffer, PoseStack.Pose pose, AABB box, int color) {
+	private static void addHorizontalOutline(
+		VertexConsumer buffer,
+		PoseStack.Pose pose,
+		AABB box,
+		double y,
+		int color
+	) {
 		double minX = box.minX;
-		double minY = box.minY;
 		double minZ = box.minZ;
 		double maxX = box.maxX;
-		double maxY = box.maxY;
 		double maxZ = box.maxZ;
 
-		addLine(buffer, pose, minX, minY, minZ, maxX, minY, minZ, color);
-		addLine(buffer, pose, maxX, minY, minZ, maxX, minY, maxZ, color);
-		addLine(buffer, pose, maxX, minY, maxZ, minX, minY, maxZ, color);
-		addLine(buffer, pose, minX, minY, maxZ, minX, minY, minZ, color);
-		addLine(buffer, pose, minX, maxY, minZ, maxX, maxY, minZ, color);
-		addLine(buffer, pose, maxX, maxY, minZ, maxX, maxY, maxZ, color);
-		addLine(buffer, pose, maxX, maxY, maxZ, minX, maxY, maxZ, color);
-		addLine(buffer, pose, minX, maxY, maxZ, minX, maxY, minZ, color);
-		addLine(buffer, pose, minX, minY, minZ, minX, maxY, minZ, color);
-		addLine(buffer, pose, maxX, minY, minZ, maxX, maxY, minZ, color);
-		addLine(buffer, pose, maxX, minY, maxZ, maxX, maxY, maxZ, color);
-		addLine(buffer, pose, minX, minY, maxZ, minX, maxY, maxZ, color);
+		addLine(buffer, pose, minX, y, minZ, maxX, y, minZ, color);
+		addLine(buffer, pose, maxX, y, minZ, maxX, y, maxZ, color);
+		addLine(buffer, pose, maxX, y, maxZ, minX, y, maxZ, color);
+		addLine(buffer, pose, minX, y, maxZ, minX, y, minZ, color);
 	}
 
 	private static void addLine(
