@@ -16,7 +16,7 @@ public abstract class LevelExtractorFreeCameraMixin {
 		at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/client/Camera;entity()Lnet/minecraft/world/entity/Entity;",
-			ordinal = 1
+			ordinal = 3
 		)
 	)
 	private Entity emutils$renderRealPlayerDuringFreeCamera(Camera camera) {
