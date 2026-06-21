@@ -174,7 +174,13 @@ public final class BeaconRadiusRenderer {
 		float nx = length == 0.0F ? 0.0F : dx / length;
 		float ny = length == 0.0F ? 1.0F : dy / length;
 		float nz = length == 0.0F ? 0.0F : dz / length;
-		buffer.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(color).setNormal(pose, nx, ny, nz);
-		buffer.addVertex(pose, (float) x2, (float) y2, (float) z2).setColor(color).setNormal(pose, nx, ny, nz);
+		buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
+			.setColor(color)
+			.setNormal(pose, nx, ny, nz)
+			.setLineWidth(2.0F);
+		buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
+			.setColor(color)
+			.setNormal(pose, nx, ny, nz)
+			.setLineWidth(2.0F);
 	}
 }
