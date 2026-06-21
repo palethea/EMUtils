@@ -3,6 +3,7 @@ package net.emutils.client.mixin;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.mixin.MouseAccess;
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.Options;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
@@ -15,6 +16,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MouseHandler.class)
 public abstract class MouseMixin {
+	@Redirect(
+		method = "turnPlayer(D)V",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V")
+	)
+	private void emutils$turnFreeCamera(LocalPlayer player, double yawDelta, double pitchDelta) {
+		if (EMUtilsClient.tweaks() == null
+			|| !EMUtilsClient.tweaks().freeCamera().handleMouseTurn(yawDelta, pitchDelta)) {
+			player.turn(yawDelta, pitchDelta);
+		}
+	}
+
 	@Redirect(
 		method = "turnPlayer(D)V",
 		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;smoothCamera:Z")

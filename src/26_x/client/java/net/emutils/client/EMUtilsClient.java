@@ -238,6 +238,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping freeCameraKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.free_camera",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			InputConstants.Type.KEYSYM,
@@ -253,7 +259,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			debugCategory
 		));
 
-		tweaksManager.setKeyMappings(freelookKey, placeBelowKey);
+		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, freeCameraKey);
 		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 

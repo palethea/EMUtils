@@ -85,6 +85,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.safe_walk.desc";
     public static final String HUB_FEATURE_PLACE_BELOW_DESC =
         "emutils.hub.feature.place_below.desc";
+    public static final String HUB_FEATURE_FREE_CAMERA_DESC =
+        "emutils.hub.feature.free_camera.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
         "emutils.hub.feature.no_fog.desc";
     public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
@@ -376,6 +378,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_safe_walk";
     public static final String OPTION_TWEAK_PLACE_BELOW =
         "emutils.option.tweak_place_below";
+    public static final String OPTION_TWEAK_FREE_CAMERA =
+        "emutils.option.tweak_free_camera";
     public static final String OPTION_AUTO_FLIGHT_GEAR =
         "emutils.option.auto_flight_gear";
     public static final String OPTION_TWEAK_AUTO_SWITCH_ELYTRA =

@@ -1199,6 +1199,7 @@ public final class CustomHubScreen extends Screen {
 			feature(HubCategory.AUTO_RECONNECT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, IconKind.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			feature(HubCategory.SCREENSHOT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, IconKind.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
 			feature(HubCategory.DEATH_WAYPOINTS, FeatureGroup.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, IconKind.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)),
+			leaf(FeatureGroup.UTILITY, EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA, EMUtilsTexts.HUB_FEATURE_FREE_CAMERA_DESC, IconKind.EYE, toggle(config::tweakFreeCamera, config::setTweakFreeCamera)),
 			actionFeature(
 				HubCategory.SCREENSHOT_GALLERY,
 				FeatureGroup.MANAGEMENT,

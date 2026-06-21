@@ -236,3 +236,7 @@ Prevent walking off ledges without slowing down or holding sneak. Jumping still 
 ### Place Below
 
 Hold a configurable keybind while placing against a block to redirect the placement to the underside of the targeted block.
+
+### Free Camera
+
+Toggle a detached spectator-like camera while the real player remains frozen in place. Move with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for faster travel. Player attacks, item use, and block picking are suppressed until the camera is restored.

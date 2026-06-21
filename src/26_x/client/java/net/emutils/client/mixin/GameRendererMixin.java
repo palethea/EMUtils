@@ -22,6 +22,9 @@ public abstract class GameRendererMixin {
 	)
 	private boolean emutils$hideHandWhileZooming(OptionsRenderState options) {
 		boolean hidden = Minecraft.getInstance().gui.hud.isHidden();
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+			return true;
+		}
 		return EMUtilsClient.zoom() == null
 			? hidden
 			: EMUtilsClient.zoom().shouldHideHandWhileZooming(hidden);

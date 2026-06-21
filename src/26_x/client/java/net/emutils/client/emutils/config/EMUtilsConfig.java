@@ -166,6 +166,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
 	private Boolean tweakSafeWalk = Boolean.FALSE;
 	private Boolean tweakPlaceBelow = Boolean.FALSE;
+	private Boolean tweakFreeCamera = Boolean.FALSE;
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
@@ -1043,6 +1044,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakFreeCamera() {
+		return tweakFreeCamera != null && tweakFreeCamera;
+	}
+
+	public void setTweakFreeCamera(boolean enabled) {
+		tweakFreeCamera = enabled;
+		save();
+	}
+
 	public boolean tweakAutoSwitchElytra() {
 		return tweakAutoSwitchElytra != null && tweakAutoSwitchElytra;
 	}
@@ -1150,6 +1160,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakAntiDurabilityBreak()
 			|| tweakSafeWalk()
 			|| tweakPlaceBelow()
+			|| tweakFreeCamera()
 			|| autoFlightGearEnabled()
 			|| autoToolEnabled()
 			|| tweakOwnNametag();
@@ -1696,6 +1707,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakAntiDurabilityBreak = Boolean.FALSE;
 		tweakSafeWalk = Boolean.FALSE;
 		tweakPlaceBelow = Boolean.FALSE;
+		tweakFreeCamera = Boolean.FALSE;
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
@@ -2028,6 +2040,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakPlaceBelow == null) {
 			tweakPlaceBelow = Boolean.FALSE;
+		}
+		if (tweakFreeCamera == null) {
+			tweakFreeCamera = Boolean.FALSE;
 		}
 		if (tweakAutoSwitchElytra == null) {
 			tweakAutoSwitchElytra = Boolean.FALSE;

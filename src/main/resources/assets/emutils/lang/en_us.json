@@ -44,6 +44,7 @@
   "emutils.hub.feature.auto_flight.desc": "Equip flight gear while falling and restore your previous items after landing.",
   "emutils.hub.feature.safe_walk.desc": "Prevent walking off ledges without slowing down.",
   "emutils.hub.feature.place_below.desc": "Hold its keybind to place beneath the block you target.",
+  "emutils.hub.feature.free_camera.desc": "Detach the camera while your player remains frozen in place.",
   "emutils.hub.feature.no_fog.desc": "Reduce distance fog where possible.",
   "emutils.hub.feature.clear_underwater.desc": "Keep underwater vision clear.",
   "emutils.hub.feature.clear_lava.desc": "Keep lava vision clear.",
@@ -213,6 +214,7 @@
   "emutils.option.auto_tool_mode.unfair": "Unfair",
   "emutils.option.tweak_safe_walk": "Safe Walk",
   "emutils.option.tweak_place_below": "Place Below",
+  "emutils.option.tweak_free_camera": "Free Camera",
   "emutils.option.auto_flight_gear": "Auto Flight Gear",
   "emutils.option.tweak_auto_switch_elytra": "Auto Switch Elytra",
   "emutils.option.tweak_auto_switch_rockets": "Auto Switch Rockets",
@@ -466,5 +468,6 @@
   "key.emutils.quick_stack": "Quick Stack",
   "key.emutils.mass_drop": "Mass Drop Selected Items",
   "key.emutils.place_below": "Place Below Target",
+  "key.emutils.free_camera": "Toggle Free Camera",
   "key.emutils.debug_dump_gui": "DEBUG Dump Open GUI"
 }

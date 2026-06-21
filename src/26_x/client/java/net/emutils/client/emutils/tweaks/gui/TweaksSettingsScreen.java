@@ -107,6 +107,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakPlaceBelow
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA,
+			() -> EMUtilsClient.config().tweakFreeCamera(),
+			EMUtilsClient.config()::setTweakFreeCamera
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK,
 			() -> EMUtilsClient.config().tweakAntiDurabilityBreak(),
 			EMUtilsClient.config()::setTweakAntiDurabilityBreak
