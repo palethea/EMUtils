@@ -168,6 +168,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
+	private Boolean autoFlightDoubleJump = Boolean.FALSE;
 	private Boolean autoFlightIgnoreShortFalls = Boolean.TRUE;
 	private Integer autoSwitchRocketsHotbarSlot = 9;
 	private Boolean autoToolEnabled = Boolean.FALSE;
@@ -1067,6 +1068,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return autoFlightIgnoreShortFalls == null || autoFlightIgnoreShortFalls;
 	}
 
+	public boolean autoFlightDoubleJump() {
+		return autoFlightDoubleJump != null && autoFlightDoubleJump;
+	}
+
+	public void setAutoFlightDoubleJump(boolean enabled) {
+		autoFlightDoubleJump = enabled;
+		save();
+	}
+
 	public void setAutoFlightIgnoreShortFalls(boolean enabled) {
 		autoFlightIgnoreShortFalls = enabled;
 		save();
@@ -1677,6 +1687,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoFlightDoubleJump = Boolean.FALSE;
 		autoFlightIgnoreShortFalls = Boolean.TRUE;
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		autoToolEnabled = Boolean.FALSE;
@@ -1701,6 +1712,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoFlightDoubleJump = Boolean.FALSE;
 		autoFlightIgnoreShortFalls = Boolean.TRUE;
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		save();
@@ -2013,6 +2025,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (autoFlightIgnoreShortFalls == null) {
 			autoFlightIgnoreShortFalls = Boolean.TRUE;
+		}
+		if (autoFlightDoubleJump == null) {
+			autoFlightDoubleJump = Boolean.FALSE;
 		}
 		autoSwitchRocketsHotbarSlot = autoSwitchRocketsHotbarSlot();
 		if (autoToolEnabled == null) {

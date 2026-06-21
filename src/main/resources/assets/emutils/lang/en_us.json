@@ -216,6 +216,7 @@
   "emutils.option.tweak_auto_switch_rockets": "Auto Switch Rockets",
   "emutils.option.auto_switch_rockets_hotbar_slot": "Rocket Hotbar Slot",
   "emutils.option.auto_flight_ignore_short_falls": "Ignore Normal Jumps",
+  "emutils.option.auto_flight_double_jump": "Start With Double Jump",
   "emutils.option.tweak_own_nametag": "Own Nametag",
   "emutils.option.pack_manager": "Pack Manager",
   "emutils.option.pack_manager_show_shaders_without_iris": "Show Shaders Without Iris",

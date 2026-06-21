@@ -122,6 +122,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakAutoSwitchRockets
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_DOUBLE_JUMP,
+			() -> EMUtilsClient.config().autoFlightDoubleJump(),
+			EMUtilsClient.config()::setAutoFlightDoubleJump
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS,
 			() -> EMUtilsClient.config().autoFlightIgnoreShortFalls(),
 			EMUtilsClient.config()::setAutoFlightIgnoreShortFalls

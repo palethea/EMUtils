@@ -382,6 +382,8 @@ public final class EMUtilsTexts {
         "emutils.option.auto_switch_rockets_hotbar_slot";
     public static final String OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS =
         "emutils.option.auto_flight_ignore_short_falls";
+    public static final String OPTION_AUTO_FLIGHT_DOUBLE_JUMP =
+        "emutils.option.auto_flight_double_jump";
     public static final String OPTION_TWEAK_OWN_NAMETAG =
         "emutils.option.tweak_own_nametag";
     public static final String OPTION_PACK_MANAGER =

@@ -10,6 +10,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 /** Handles the temporary inventory swaps used by the automatic flight gear tweaks. */
 public final class AutoFlightGearManager {
@@ -17,11 +18,14 @@ public final class AutoFlightGearManager {
 	private static final int PLAYER_INVENTORY_SIZE = 36;
 	private static final int CHEST_EQUIPMENT_MENU_SLOT = 6;
 	private static final double FALLING_VELOCITY = -0.08D;
+	private static final int DOUBLE_JUMP_WINDOW_TICKS = 7;
 
 	private int elytraSourceMenuSlot = -1;
 	private int rocketSourceMenuSlot = -1;
 	private int rocketTargetMenuSlot = -1;
 	private boolean fallCycleActive;
+	private boolean jumpWasDown;
+	private int jumpTapTicks;
 
 	public void tick(Minecraft client) {
 		if (client.player == null || client.level == null || client.gameMode == null) {
@@ -34,16 +38,19 @@ public final class AutoFlightGearManager {
 			&& player.containerMenu == player.inventoryMenu
 			&& player.inventoryMenu.getCarried().isEmpty();
 		boolean grounded = player.onGround();
+		boolean doubleJump = detectDoubleJump(client, player);
 		boolean falling = !grounded
 			&& !player.isPassenger()
 			&& player.getDeltaMovement().y < FALLING_VELOCITY
+			&& !EMUtilsClient.config().autoFlightDoubleJump()
 			&& (!EMUtilsClient.config().autoFlightIgnoreShortFalls() || !hasSelectableGroundBelow(player));
 
 		if (fallCycleActive && canSwap) {
 			if (!EMUtilsClient.config().tweakAutoSwitchRockets()) {
 				restoreRockets(client, player);
 			}
-			if (!EMUtilsClient.config().tweakAutoSwitchElytra()) {
+			if (!EMUtilsClient.config().tweakAutoSwitchElytra()
+				&& !EMUtilsClient.config().autoFlightDoubleJump()) {
 				restoreElytra(client, player);
 			}
 		}
@@ -57,16 +64,29 @@ public final class AutoFlightGearManager {
 			return;
 		}
 
-		if (!falling || !canSwap || !anyFeatureEnabled()) {
+		if ((!falling && !doubleJump) || !canSwap || !anyFeatureEnabled()) {
 			return;
 		}
 
 		fallCycleActive = true;
-		if (EMUtilsClient.config().tweakAutoSwitchElytra()) {
+		if (EMUtilsClient.config().tweakAutoSwitchElytra() || doubleJump) {
 			equipElytra(client, player);
 		}
 		if (EMUtilsClient.config().tweakAutoSwitchRockets()) {
 			equipRockets(client, player);
+		}
+		if (doubleJump) {
+			if (player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)
+				&& player.tryToStartFallFlying()) {
+				client.getConnection().send(new ServerboundPlayerCommandPacket(
+					player,
+					ServerboundPlayerCommandPacket.Action.START_FALL_FLYING
+				));
+			} else {
+				restoreRockets(client, player);
+				restoreElytra(client, player);
+				fallCycleActive = false;
+			}
 		}
 	}
 
@@ -75,13 +95,16 @@ public final class AutoFlightGearManager {
 		rocketSourceMenuSlot = -1;
 		rocketTargetMenuSlot = -1;
 		fallCycleActive = false;
+		jumpWasDown = false;
+		jumpTapTicks = 0;
 	}
 
 	private static boolean anyFeatureEnabled() {
 		return EMUtilsClient.config() != null
 			&& EMUtilsClient.config().autoFlightGearEnabled()
 			&& (EMUtilsClient.config().tweakAutoSwitchElytra()
-				|| EMUtilsClient.config().tweakAutoSwitchRockets());
+				|| EMUtilsClient.config().tweakAutoSwitchRockets()
+				|| EMUtilsClient.config().autoFlightDoubleJump());
 	}
 
 	private static boolean hasSelectableGroundBelow(Player player) {
@@ -94,6 +117,33 @@ public final class AutoFlightGearManager {
 			ClipContext.Fluid.NONE,
 			player
 		)).getType() != HitResult.Type.MISS;
+	}
+
+	private boolean detectDoubleJump(Minecraft client, Player player) {
+		boolean jumpDown = client.options.keyJump.isDown();
+		boolean pressed = jumpDown && !jumpWasDown;
+		jumpWasDown = jumpDown;
+
+		if (!EMUtilsClient.config().autoFlightGearEnabled()
+			|| !EMUtilsClient.config().autoFlightDoubleJump()
+			|| client.gui.screen() != null) {
+			jumpTapTicks = 0;
+			return false;
+		}
+
+		if (pressed) {
+			if (jumpTapTicks > 0
+				&& !player.onGround()
+				&& !player.isPassenger()
+				&& !player.getAbilities().mayfly) {
+				jumpTapTicks = 0;
+				return true;
+			}
+			jumpTapTicks = DOUBLE_JUMP_WINDOW_TICKS;
+		} else if (jumpTapTicks > 0) {
+			jumpTapTicks--;
+		}
+		return false;
 	}
 
 	private void equipElytra(Minecraft client, Player player) {

@@ -443,6 +443,11 @@ public final class HubSettingsRegistry {
 			config::setTweakAutoSwitchRockets
 		));
 		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_DOUBLE_JUMP,
+			config::autoFlightDoubleJump,
+			config::setAutoFlightDoubleJump
+		));
+		rows.add(new HubSettingRow.Toggle(
 			EMUtilsTexts.OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS,
 			config::autoFlightIgnoreShortFalls,
 			config::setAutoFlightIgnoreShortFalls

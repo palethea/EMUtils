@@ -227,6 +227,7 @@ Temporarily prepare flight gear while falling, then restore the displaced items 
 - Auto Switch Rockets: move Flight Rockets into a configurable hotbar slot while falling and return both swapped stacks after landing.
 - Rocket Hotbar Slot: choose slots 1-9 as the temporary Flight Rocket destination.
 - Ignore Normal Jumps: wait until no selectable block is directly below within the player's block-interaction reach before switching gear.
+- Start With Double Jump: replace automatic fall activation with a double-tap of the jump key that equips the Elytra and starts gliding immediately.
 
 ### Safe Walk
 
