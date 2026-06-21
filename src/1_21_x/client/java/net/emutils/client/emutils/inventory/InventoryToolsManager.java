@@ -328,7 +328,7 @@ public final class InventoryToolsManager {
 
 		InventorySlotRef ref = InventorySlotRef.from(handler, slot, playerInventory);
 		if (!isLocked(ref)) {
-			return actionType == SlotActionType.PICKUP_ALL && hasAnyLockedSlots();
+			return actionType == SlotActionType.PICKUP_ALL && hasLockedMatchingStack(handler, playerInventory, cursorStack);
 		}
 
 		return switch (actionType) {
@@ -847,6 +847,9 @@ public final class InventoryToolsManager {
 			if (!slot.isEnabled() || !belongsToTarget(slot, playerInventory, target)) {
 				continue;
 			}
+			if (slot.hasStack() && slot.getStack().get(DataComponentTypes.BUNDLE_CONTENTS) != null) {
+				continue;
+			}
 			if (isLocked(InventorySlotRef.from(handler, slot, playerInventory))) {
 				continue;
 			}
@@ -1023,9 +1026,19 @@ public final class InventoryToolsManager {
 		return lockedSlots.contains(ref) || config != null && config.slotBindingLockBoundSlots() && isBound(ref);
 	}
 
-	private boolean hasAnyLockedSlots() {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return !lockedSlots.isEmpty() || config != null && config.slotBindingLockBoundSlots() && !boundSlots.isEmpty();
+	private boolean hasLockedMatchingStack(ScreenHandler handler, PlayerInventory playerInventory, ItemStack targetStack) {
+		if (targetStack.isEmpty()) {
+			return false;
+		}
+
+		for (Slot slot : handler.slots) {
+			if (slot.hasStack()
+				&& isLocked(InventorySlotRef.from(handler, slot, playerInventory))
+				&& ItemStack.areItemsAndComponentsEqual(slot.getStack(), targetStack)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean lockingAvailable() {

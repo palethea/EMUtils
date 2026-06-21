@@ -75,6 +75,14 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_spyglass_overlay.desc";
     public static final String HUB_FEATURE_FAST_PLACE_DESC =
         "emutils.hub.feature.fast_place.desc";
+    public static final String HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC =
+        "emutils.hub.feature.anti_durability_break.desc";
+    public static final String HUB_FEATURE_AUTO_TOOL_DESC =
+        "emutils.hub.feature.auto_tool.desc";
+    public static final String HUB_FEATURE_AUTO_FLIGHT_DESC =
+        "emutils.hub.feature.auto_flight.desc";
+    public static final String HUB_FEATURE_SAFE_WALK_DESC =
+        "emutils.hub.feature.safe_walk.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
         "emutils.hub.feature.no_fog.desc";
     public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
@@ -83,6 +91,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.clear_lava.desc";
     public static final String HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC =
         "emutils.hub.feature.no_environment_fog.desc";
+    public static final String HUB_FEATURE_NO_NETHER_PARTICLES_DESC =
+        "emutils.hub.feature.no_nether_particles.desc";
     public static final String HUB_FEATURE_NO_HURT_CAM_DESC =
         "emutils.hub.feature.no_hurt_cam.desc";
     public static final String HUB_FEATURE_FREELOOK_DESC =
@@ -267,6 +277,8 @@ public final class EMUtilsTexts {
         "emutils.hud.element.inventory_preview";
     public static final String OPTION_HUD_COORDINATES =
         "emutils.option.hud_coordinates";
+    public static final String OPTION_HUD_NETHER_COORDINATES =
+        "emutils.option.hud_nether_coordinates";
     public static final String OPTION_HUD_CHUNK_REGION =
         "emutils.option.hud_chunk_region";
     public static final String OPTION_HUD_BIOME = "emutils.option.hud_biome";
@@ -320,6 +332,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_clear_lava";
     public static final String OPTION_TWEAK_NO_ENVIRONMENT_FOG =
         "emutils.option.tweak_no_environment_fog";
+    public static final String OPTION_TWEAK_NO_NETHER_PARTICLES =
+        "emutils.option.tweak_no_nether_particles";
     public static final String OPTION_TWEAK_NO_HURT_CAM =
         "emutils.option.tweak_no_hurt_cam";
     public static final String OPTION_TWEAK_FREELOOK =
@@ -346,6 +360,26 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_spyglass_overlay";
     public static final String OPTION_TWEAK_FAST_PLACE =
         "emutils.option.tweak_fast_place";
+    public static final String OPTION_TWEAK_ANTI_DURABILITY_BREAK =
+        "emutils.option.tweak_anti_durability_break";
+    public static final String OPTION_AUTO_TOOL =
+        "emutils.option.auto_tool";
+    public static final String OPTION_AUTO_TOOL_MODE =
+        "emutils.option.auto_tool_mode";
+    public static final String OPTION_AUTO_TOOL_MODE_LEGIT =
+        "emutils.option.auto_tool_mode.legit";
+    public static final String OPTION_AUTO_TOOL_MODE_UNFAIR =
+        "emutils.option.auto_tool_mode.unfair";
+    public static final String OPTION_TWEAK_SAFE_WALK =
+        "emutils.option.tweak_safe_walk";
+    public static final String OPTION_AUTO_FLIGHT_GEAR =
+        "emutils.option.auto_flight_gear";
+    public static final String OPTION_TWEAK_AUTO_SWITCH_ELYTRA =
+        "emutils.option.tweak_auto_switch_elytra";
+    public static final String OPTION_TWEAK_AUTO_SWITCH_ROCKETS =
+        "emutils.option.tweak_auto_switch_rockets";
+    public static final String OPTION_AUTO_SWITCH_ROCKETS_HOTBAR_SLOT =
+        "emutils.option.auto_switch_rockets_hotbar_slot";
     public static final String OPTION_TWEAK_OWN_NAMETAG =
         "emutils.option.tweak_own_nametag";
     public static final String OPTION_PACK_MANAGER =
@@ -399,6 +433,10 @@ public final class EMUtilsTexts {
         "emutils.option.sort_buttons";
     public static final String OPTION_SORT_SPEED =
         "emutils.option.sort_speed";
+    public static final String OPTION_QUICK_STACK =
+        "emutils.option.quick_stack";
+    public static final String OPTION_QUICK_STACK_SPEED =
+        "emutils.option.quick_stack_speed";
     public static final String OPTION_INVENTORY_PREVIEW =
         "emutils.option.inventory_preview";
     public static final String OPTION_PRESERVE_CONTAINER_CURSOR =

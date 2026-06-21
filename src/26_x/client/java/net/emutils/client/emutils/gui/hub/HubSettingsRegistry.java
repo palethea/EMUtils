@@ -11,6 +11,7 @@ import net.emutils.client.emutils.chat.ChatMentionAlerts;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.inventory.gui.MassDropScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
@@ -38,6 +39,8 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
 		ROWS.put(HubCategory.TWEAKS, HubSettingsRegistry::tweaksRows);
+		ROWS.put(HubCategory.AUTO_FLIGHT, HubSettingsRegistry::autoFlightRows);
+		ROWS.put(HubCategory.AUTO_TOOL, HubSettingsRegistry::autoToolRows);
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
 		ROWS.put(HubCategory.INVENTORY, HubSettingsRegistry::inventoryRows);
 		ROWS.put(HubCategory.SPOTIFY, HubSettingsRegistry::spotifyRows);
@@ -70,6 +73,8 @@ public final class HubSettingsRegistry {
 			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
 			case TWEAKS -> config::resetTweaksDefaults;
+			case AUTO_FLIGHT -> config::resetAutoFlightDefaults;
+			case AUTO_TOOL -> config::resetAutoToolDefaults;
 			case CAPES -> config::resetCapesDefaults;
 			case INVENTORY -> config::resetInventoryToolsDefaults;
 			case SPOTIFY -> config::resetSpotifyPlayerDefaults;
@@ -282,6 +287,7 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG, config::hudHideWithDebug, config::setHudHideWithDebug));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_COORDINATES, config::hudShowCoordinates, config::setHudShowCoordinates));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_NETHER_COORDINATES, config::hudShowNetherCoordinates, config::setHudShowNetherCoordinates));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_CHUNK_REGION, config::hudShowChunkRegion, config::setHudShowChunkRegion));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_BIOME, config::hudShowBiome, config::setHudShowBiome));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_FACING, config::hudShowFacing, config::setHudShowFacing));
@@ -384,9 +390,12 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, config::tweakClearUnderwater, config::setTweakClearUnderwater));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, config::tweakClearLava, config::setTweakClearLava));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES, config::tweakNoNetherParticles, config::setTweakNoNetherParticles));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, config::tweakNoHurtCam, config::setTweakNoHurtCam));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, config::tweakFastPlace, config::setTweakFastPlace));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, config::tweakSafeWalk, config::setTweakSafeWalk));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, config::tweakOwnNametag, config::setTweakOwnNametag));
 		rows.add(divider());
@@ -403,6 +412,44 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN, config::tweakClearWeatherHideRain, config::setTweakClearWeatherHideRain));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_SNOW, config::tweakClearWeatherHideSnow, config::setTweakClearWeatherHideSnow));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS, config::tweakClearWeatherHideRainEffects, config::setTweakClearWeatherHideRainEffects));
+		return rows;
+	}
+
+	private static List<HubSettingRow> autoToolRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_TOOL, config::autoToolEnabled, config::setAutoToolEnabled));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.OPTION_AUTO_TOOL_MODE,
+			config::autoToolMode,
+			config::setAutoToolMode,
+			() -> config.autoToolMode().next(),
+			() -> Component.translatable(config.autoToolMode().labelKey())
+		));
+		return rows;
+	}
+
+	private static List<HubSettingRow> autoFlightRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ELYTRA,
+			config::tweakAutoSwitchElytra,
+			config::setTweakAutoSwitchElytra
+		));
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ROCKETS,
+			config::tweakAutoSwitchRockets,
+			config::setTweakAutoSwitchRockets
+		));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_AUTO_SWITCH_ROCKETS_HOTBAR_SLOT,
+			"",
+			EMUtilsConfig.HOTBAR_SLOT_MIN,
+			EMUtilsConfig.HOTBAR_SLOT_MAX,
+			config::autoSwitchRocketsHotbarSlot,
+			config::setAutoSwitchRocketsHotbarSlot
+		));
 		return rows;
 	}
 
@@ -457,8 +504,26 @@ public final class HubSettingsRegistry {
 			() -> Component.translatable(config.sortSpeed().labelKey())
 		));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_QUICK_STACK, config::quickStackEnabled, config::setQuickStackEnabled));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.OPTION_QUICK_STACK_SPEED,
+			config::quickStackSpeed,
+			config::setQuickStackSpeed,
+			() -> config.quickStackSpeed().next(),
+			() -> Component.translatable(config.quickStackSpeed().labelKey())
+		));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Action(
+			Component.translatable("emutils.mass_drop.manage"),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				client.setScreenAndShow(new MassDropScreen(client.gui.screen()));
+			},
+			true
+		));
 		return rows;
 	}
 

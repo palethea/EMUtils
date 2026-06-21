@@ -39,6 +39,10 @@ public final class EMUtilsPaths {
 		return configDir().resolve("inventory-tools.json");
 	}
 
+	public static Path massDropFile() {
+		return configDir().resolve("mass-drop.json");
+	}
+
 	public static Path debugDir() {
 		return configDir().resolve("debug");
 	}

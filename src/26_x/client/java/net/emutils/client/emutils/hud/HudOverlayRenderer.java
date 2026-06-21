@@ -170,6 +170,12 @@ public final class HudOverlayRenderer {
 		if (config.hudShowCoordinates()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_COORDS, data.coordinates(), HudOverlayLine.icon("coords")));
 		}
+		Minecraft client = Minecraft.getInstance();
+		if (config.hudShowNetherCoordinates()
+			&& client.level != null
+			&& client.level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+			lines.add(new HudOverlayLine("emutils.hud.nether_coords", data.portalCoordinates(), HudOverlayLine.icon("coords")));
+		}
 		if (config.hudShowChunkRegion()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_CHUNK_REGION, data.chunkRegion(), HudOverlayLine.icon("chunk")));
 		}

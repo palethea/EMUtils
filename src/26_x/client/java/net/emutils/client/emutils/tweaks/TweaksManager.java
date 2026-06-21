@@ -9,6 +9,8 @@ import net.minecraft.world.level.Level;
 
 public final class TweaksManager {
 	private final FreelookManager freelook = new FreelookManager();
+	private final AutoToolManager autoTool = new AutoToolManager();
+	private final AutoFlightGearManager autoFlightGear = new AutoFlightGearManager();
 	private boolean removeWorldFog;
 
 	public void setKeyMappings(KeyMapping freelookKey) {
@@ -17,6 +19,15 @@ public final class TweaksManager {
 
 	public void tick(net.minecraft.client.Minecraft client) {
 		freelook.tick(client);
+		autoFlightGear.tick(client);
+	}
+
+	public void resetSession() {
+		autoFlightGear.reset();
+	}
+
+	public void tickAutoTool(net.minecraft.client.Minecraft client) {
+		autoTool.tick(client);
 	}
 
 	public FreelookManager freelook() {

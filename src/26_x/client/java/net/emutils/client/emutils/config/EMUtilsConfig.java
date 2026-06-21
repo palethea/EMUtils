@@ -17,6 +17,7 @@ import net.emutils.client.emutils.inventory.BoundSlotColor;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
+import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -58,6 +59,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int PACK_MANAGER_SEARCH_LIMIT_MAX = 50;
 	public static final int FULLBRIGHT_STRENGTH_MIN = 1;
 	public static final int FULLBRIGHT_STRENGTH_MAX = 100;
+	public static final int HOTBAR_SLOT_MIN = 1;
+	public static final int HOTBAR_SLOT_MAX = 9;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
@@ -89,6 +92,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String hudLayoutMode = HudLayoutMode.ANCHOR.name();
 	private Map<String, HudCustomLayoutEntry> hudCustomLayout = new LinkedHashMap<>();
 	private Boolean hudShowCoordinates = Boolean.TRUE;
+	private Boolean hudShowNetherCoordinates = Boolean.FALSE;
 	private Boolean hudShowChunkRegion = Boolean.TRUE;
 	private Boolean hudShowBiome = Boolean.TRUE;
 	private Boolean hudShowPing = Boolean.TRUE;
@@ -131,6 +135,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearUnderwater = Boolean.TRUE;
 	private Boolean tweakClearLava = Boolean.TRUE;
 	private Boolean tweakNoEnvironmentFog = Boolean.TRUE;
+	private Boolean tweakNoNetherParticles = Boolean.FALSE;
 	@Deprecated
 	private Boolean tweakNoCaveFog;
 	@Deprecated
@@ -158,6 +163,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakNoNausea = Boolean.FALSE;
 	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
 	private Boolean tweakFastPlace = Boolean.FALSE;
+	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
+	private Boolean tweakSafeWalk = Boolean.FALSE;
+	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
+	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
+	private Integer autoSwitchRocketsHotbarSlot = 9;
+	private Boolean autoToolEnabled = Boolean.FALSE;
+	private String autoToolMode = AutoToolMode.LEGIT.name();
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
@@ -181,6 +193,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean hoverTransferEnabled = Boolean.TRUE;
 	private Boolean sortButtonsEnabled = Boolean.TRUE;
 	private String sortSpeed = InventorySortSpeed.NORMAL.name();
+	private Boolean quickStackEnabled = Boolean.TRUE;
+	private String quickStackSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
 	private Boolean preserveContainerCursor = Boolean.TRUE;
 	private String slotLockColor = SlotLockColor.RED.name();
@@ -494,6 +508,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setHudShowCoordinates(boolean enabled) {
 		hudShowCoordinates = enabled;
+		save();
+	}
+
+	public boolean hudShowNetherCoordinates() {
+		return hudShowNetherCoordinates != null && hudShowNetherCoordinates;
+	}
+
+	public void setHudShowNetherCoordinates(boolean enabled) {
+		hudShowNetherCoordinates = enabled;
 		save();
 	}
 
@@ -851,6 +874,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakNoNetherParticles() {
+		return tweakNoNetherParticles != null && tweakNoNetherParticles;
+	}
+
+	public void setTweakNoNetherParticles(boolean enabled) {
+		tweakNoNetherParticles = enabled;
+		save();
+	}
+
 	public boolean tweakNoHurtCam() {
 		return tweakNoHurtCam != null && tweakNoHurtCam;
 	}
@@ -980,6 +1012,71 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakAntiDurabilityBreak() {
+		return tweakAntiDurabilityBreak != null && tweakAntiDurabilityBreak;
+	}
+
+	public void setTweakAntiDurabilityBreak(boolean enabled) {
+		tweakAntiDurabilityBreak = enabled;
+		save();
+	}
+
+	public boolean tweakSafeWalk() {
+		return tweakSafeWalk != null && tweakSafeWalk;
+	}
+
+	public void setTweakSafeWalk(boolean enabled) {
+		tweakSafeWalk = enabled;
+		save();
+	}
+
+	public boolean tweakAutoSwitchElytra() {
+		return tweakAutoSwitchElytra != null && tweakAutoSwitchElytra;
+	}
+
+	public void setTweakAutoSwitchElytra(boolean enabled) {
+		tweakAutoSwitchElytra = enabled;
+		save();
+	}
+
+	public boolean tweakAutoSwitchRockets() {
+		return tweakAutoSwitchRockets != null && tweakAutoSwitchRockets;
+	}
+
+	public void setTweakAutoSwitchRockets(boolean enabled) {
+		tweakAutoSwitchRockets = enabled;
+		save();
+	}
+
+	public int autoSwitchRocketsHotbarSlot() {
+		return autoSwitchRocketsHotbarSlot == null
+			? HOTBAR_SLOT_MAX
+			: clamp(autoSwitchRocketsHotbarSlot, HOTBAR_SLOT_MIN, HOTBAR_SLOT_MAX);
+	}
+
+	public void setAutoSwitchRocketsHotbarSlot(int slot) {
+		autoSwitchRocketsHotbarSlot = clamp(slot, HOTBAR_SLOT_MIN, HOTBAR_SLOT_MAX);
+		save();
+	}
+
+	public boolean autoToolEnabled() {
+		return autoToolEnabled != null && autoToolEnabled;
+	}
+
+	public void setAutoToolEnabled(boolean enabled) {
+		autoToolEnabled = enabled;
+		save();
+	}
+
+	public AutoToolMode autoToolMode() {
+		return AutoToolMode.fromName(autoToolMode);
+	}
+
+	public void setAutoToolMode(AutoToolMode mode) {
+		autoToolMode = (mode == null ? AutoToolMode.LEGIT : mode).name();
+		save();
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -995,6 +1092,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakClearUnderwater()
 			|| tweakClearLava()
 			|| tweakNoEnvironmentFog()
+			|| tweakNoNetherParticles()
 			|| tweakNoHurtCam()
 			|| tweakFreelook()
 			|| tweakShulkerTooltipPreview()
@@ -1005,6 +1103,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakNoNausea()
 			|| tweakNoSpyglassOverlay()
 			|| tweakFastPlace()
+			|| tweakAntiDurabilityBreak()
+			|| tweakSafeWalk()
+			|| tweakAutoSwitchElytra()
+			|| tweakAutoSwitchRockets()
+			|| autoToolEnabled()
 			|| tweakOwnNametag();
 	}
 
@@ -1219,6 +1322,24 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setSortSpeed(InventorySortSpeed speed) {
 		sortSpeed = (speed == null ? InventorySortSpeed.NORMAL : speed).name();
+		save();
+	}
+
+	public boolean quickStackEnabled() {
+		return quickStackEnabled == null || quickStackEnabled;
+	}
+
+	public void setQuickStackEnabled(boolean enabled) {
+		quickStackEnabled = enabled;
+		save();
+	}
+
+	public InventorySortSpeed quickStackSpeed() {
+		return InventorySortSpeed.fromName(quickStackSpeed);
+	}
+
+	public void setQuickStackSpeed(InventorySortSpeed speed) {
+		quickStackSpeed = (speed == null ? InventorySortSpeed.NORMAL : speed).name();
 		save();
 	}
 
@@ -1468,6 +1589,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
 		hudCustomLayout = new LinkedHashMap<>();
 		hudShowCoordinates = Boolean.TRUE;
+		hudShowNetherCoordinates = Boolean.FALSE;
 		hudShowChunkRegion = Boolean.TRUE;
 		hudShowBiome = Boolean.TRUE;
 		hudShowPing = Boolean.TRUE;
@@ -1513,6 +1635,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakClearUnderwater = Boolean.TRUE;
 		tweakClearLava = Boolean.TRUE;
 		tweakNoEnvironmentFog = Boolean.TRUE;
+		tweakNoNetherParticles = Boolean.FALSE;
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
 		tweakShulkerTooltipPreview = Boolean.TRUE;
@@ -1526,6 +1649,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoNausea = Boolean.FALSE;
 		tweakNoSpyglassOverlay = Boolean.FALSE;
 		tweakFastPlace = Boolean.FALSE;
+		tweakAntiDurabilityBreak = Boolean.FALSE;
+		tweakSafeWalk = Boolean.FALSE;
+		tweakAutoSwitchElytra = Boolean.FALSE;
+		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
+		autoToolEnabled = Boolean.FALSE;
+		autoToolMode = AutoToolMode.LEGIT.name();
 		tweakOwnNametag = Boolean.FALSE;
 		save();
 	}
@@ -1533,6 +1663,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetFullbrightDefaults() {
 		tweakFullbright = Boolean.FALSE;
 		tweakFullbrightStrength = FULLBRIGHT_STRENGTH_MAX;
+		save();
+	}
+
+	public void resetAutoToolDefaults() {
+		autoToolEnabled = Boolean.FALSE;
+		autoToolMode = AutoToolMode.LEGIT.name();
+		save();
+	}
+
+	public void resetAutoFlightDefaults() {
+		tweakAutoSwitchElytra = Boolean.FALSE;
+		tweakAutoSwitchRockets = Boolean.FALSE;
+		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		save();
 	}
 
@@ -1580,6 +1723,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hoverTransferEnabled = Boolean.TRUE;
 		sortButtonsEnabled = Boolean.TRUE;
 		sortSpeed = InventorySortSpeed.NORMAL.name();
+		quickStackEnabled = Boolean.TRUE;
+		quickStackSpeed = InventorySortSpeed.NORMAL.name();
 		inventoryPreviewEnabled = Boolean.FALSE;
 		preserveContainerCursor = Boolean.TRUE;
 		slotLockColor = SlotLockColor.RED.name();
@@ -1663,6 +1808,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (hudShowCoordinates == null) {
 			hudShowCoordinates = Boolean.TRUE;
+		}
+		if (hudShowNetherCoordinates == null) {
+			hudShowNetherCoordinates = Boolean.FALSE;
 		}
 		if (hudShowChunkRegion == null) {
 			hudShowChunkRegion = Boolean.TRUE;
@@ -1779,6 +1927,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakNoEnvironmentFog == null) {
 			tweakNoEnvironmentFog = Boolean.TRUE;
 		}
+		if (tweakNoNetherParticles == null) {
+			tweakNoNetherParticles = Boolean.FALSE;
+		}
 		if (tweakNoHurtCam == null) {
 			tweakNoHurtCam = Boolean.FALSE;
 		}
@@ -1817,6 +1968,25 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakFastPlace == null) {
 			tweakFastPlace = Boolean.FALSE;
+		}
+		if (tweakAntiDurabilityBreak == null) {
+			tweakAntiDurabilityBreak = Boolean.FALSE;
+		}
+		if (tweakSafeWalk == null) {
+			tweakSafeWalk = Boolean.FALSE;
+		}
+		if (tweakAutoSwitchElytra == null) {
+			tweakAutoSwitchElytra = Boolean.FALSE;
+		}
+		if (tweakAutoSwitchRockets == null) {
+			tweakAutoSwitchRockets = Boolean.FALSE;
+		}
+		autoSwitchRocketsHotbarSlot = autoSwitchRocketsHotbarSlot();
+		if (autoToolEnabled == null) {
+			autoToolEnabled = Boolean.FALSE;
+		}
+		if (autoToolMode == null) {
+			autoToolMode = AutoToolMode.LEGIT.name();
 		}
 		if (tweakOwnNametag == null) {
 			tweakOwnNametag = Boolean.FALSE;
@@ -1882,6 +2052,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (sortSpeed == null) {
 			sortSpeed = InventorySortSpeed.NORMAL.name();
+		}
+		if (quickStackEnabled == null) {
+			quickStackEnabled = Boolean.TRUE;
+		}
+		if (quickStackSpeed == null) {
+			quickStackSpeed = InventorySortSpeed.NORMAL.name();
 		}
 		if (inventoryPreviewEnabled == null) {
 			inventoryPreviewEnabled = Boolean.FALSE;

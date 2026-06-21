@@ -26,6 +26,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - Clear Underwater: improve visibility underwater.
 - Clear Lava: improve visibility while inside lava.
 - No Environment Fog: remove biome and dimension fog.
+- No Nether Particles: hide ambient Nether biome particles such as Basalt Deltas ash while preserving gameplay particles.
 - No Fire Overlay: hide the first-person fire overlay while burning.
 - Low Fire: keep flames visible but lower on screen.
 - No Nausea: hide nausea and portal distortion effects.
@@ -69,6 +70,7 @@ Show a configurable info panel with icons and useful world or client stats.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
 - Coordinates: show current XYZ coordinates.
+- Nether Coordinates: show equivalent Nether XYZ while in the Overworld using the 8:1 portal scale; hidden in other dimensions.
 - Chunk / Region: show current chunk and region.
 - Biome: show the current biome.
 - Facing: show the direction you are facing.
@@ -194,9 +196,37 @@ Protect important slots and move items faster.
 - Hover Transfer: hold Shift + left click in a storage container, then hover items to move them in or out quickly while ignoring locked or bound items.
 - Sort Buttons: show three sort buttons beside storage containers and the player inventory for sorting by name, category, or quantity.
 - Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
+- Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
+- Quick Stack Speed: choose Normal transfers or Anti-Cheat transfers that move one stack per tick.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
+- Mass Drop: maintain a searchable list of items by icon, display name, and real item ID, then drop matching inventory stacks with a configurable keybind.
+  - Legit: drop one matching inventory slot per key press.
+  - Unfair: drop every matching inventory slot per key press.
 
 ### Fast Place
 
 Remove the block placement delay for faster building.
+
+### Anti Durability Break
+
+Prevent a held damageable item from attacking, breaking blocks, swinging, or performing item actions once it reaches 5 durability, keeping it safe until repaired or replaced.
+
+### Auto Tool
+
+Automatically select the fastest suitable tool using each item and block's public mining-speed and correct-tool data, including modded content.
+
+- Legit: switch only between tools already in the hotbar.
+- Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
+
+### Auto Flight Gear
+
+Temporarily prepare flight gear while falling, then restore the displaced items after landing.
+
+- Auto Switch Elytra: equip an Elytra from the player inventory while falling and restore the previous chest equipment after landing.
+- Auto Switch Rockets: move Flight Rockets into a configurable hotbar slot while falling and return both swapped stacks after landing.
+- Rocket Hotbar Slot: choose slots 1-9 as the temporary Flight Rocket destination.
+
+### Safe Walk
+
+Prevent walking off ledges without slowing down or holding sneak. Jumping still lets you leave an edge normally.

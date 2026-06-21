@@ -52,6 +52,12 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(sortSpeedButton());
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_QUICK_STACK,
+			() -> EMUtilsClient.config().quickStackEnabled(),
+			EMUtilsClient.config()::setQuickStackEnabled
+		));
+		adder.addChild(quickStackSpeedButton());
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_INVENTORY_PREVIEW,
 			() -> EMUtilsClient.config().inventoryPreviewEnabled(),
 			EMUtilsClient.config()::setInventoryPreviewEnabled
@@ -61,6 +67,9 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().preserveContainerCursor(),
 			EMUtilsClient.config()::setPreserveContainerCursor
 		));
+		adder.addChild(fullWidthSettingsButton(Component.translatable("emutils.mass_drop.manage"), button ->
+			client.setScreenAndShow(new MassDropScreen(this))
+		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetInventoryToolsDefaults();
 			client.setScreenAndShow(new InventoryToolsSettingsScreen(parent));
@@ -96,6 +105,22 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_VALUE,
 			Component.translatable(EMUtilsTexts.OPTION_SORT_SPEED),
 			Component.translatable(EMUtilsClient.config().sortSpeed().labelKey())
+		);
+	}
+
+	private static Button quickStackSpeedButton() {
+		return Button.builder(quickStackSpeedMessage(), button -> {
+			InventorySortSpeed next = EMUtilsClient.config().quickStackSpeed().next();
+			EMUtilsClient.config().setQuickStackSpeed(next);
+			button.setMessage(quickStackSpeedMessage());
+		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Component quickStackSpeedMessage() {
+		return Component.translatable(
+			EMUtilsTexts.OPTION_VALUE,
+			Component.translatable(EMUtilsTexts.OPTION_QUICK_STACK_SPEED),
+			Component.translatable(EMUtilsClient.config().quickStackSpeed().labelKey())
 		);
 	}
 }

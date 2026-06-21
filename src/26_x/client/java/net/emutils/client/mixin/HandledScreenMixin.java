@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -113,7 +114,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 		if (inventory != null && client != null) {
 			EMUtilsClient.inventoryTools().finishDragIfBindKeyReleased(client, menu, hoveredSlot, inventory);
 		}
-		EMUtilsClient.inventoryTools().drawDragLine(context, hoveredSlot, mouseX - leftPos, mouseY - topPos);
+		EMUtilsClient.inventoryTools().drawDragLine(context, hoveredSlot, leftPos, topPos, mouseX, mouseY);
 		if (inventory != null && client != null) {
 			EMUtilsClient.inventoryTools().drawSortButtons(client, context, menu, inventory, leftPos, topPos, mouseX - leftPos, mouseY - topPos);
 		}
@@ -218,6 +219,42 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 		Slot slot = emutils$slotAt(click.x(), click.y());
 		if (EMUtilsClient.inventoryTools().handleHoverTransferMouseDragged(client, menu, slot, click.button(), click.hasShiftDown(), inventory)) {
 			cir.setReturnValue(true);
+		}
+	}
+
+	@Inject(
+		method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
+	private void emutils$guardInventoryToolSlotMouseButtonEvent(
+		@Nullable Slot slot,
+		int slotId,
+		int button,
+		ContainerInput actionType,
+		CallbackInfo ci
+	) {
+		if (HudLayoutEditorOverlay.isActive()) {
+			ci.cancel();
+			return;
+		}
+
+		Inventory inventory = emutils$playerInventory();
+		Minecraft client = Minecraft.getInstance();
+		if (inventory == null || client == null) {
+			return;
+		}
+
+		if (EMUtilsClient.inventoryTools().guardSlotMouseButtonEvent(
+			client,
+			menu,
+			slot,
+			button,
+			actionType,
+			menu.getCarried(),
+			inventory
+		)) {
+			ci.cancel();
 		}
 	}
 
