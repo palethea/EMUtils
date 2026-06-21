@@ -25,6 +25,8 @@ import org.jspecify.annotations.Nullable;
 public final class BeaconRadiusRenderer {
 	private static final int LINE_ALPHA = 190;
 	private static final int SCAN_INTERVAL_TICKS = 20;
+	private static final int HORIZONTAL_GRID_STEP = 4;
+	private static final int VERTICAL_GRID_STEP = 5;
 
 	@Nullable
 	private static KeyMapping keyMapping;
@@ -131,9 +133,41 @@ public final class BeaconRadiusRenderer {
 			.inflate(radius)
 			.setMinY(Math.max(client.level.getMinY(), pos.getY() - radius))
 			.setMaxY(client.level.getMaxY());
-		int color = (LINE_ALPHA << 24) | (sections.getFirst().getColor() & 0x00FFFFFF);
+		int rgb = sections.getFirst().getColor() & 0x00FFFFFF;
+		int gridColor = (100 << 24) | rgb;
+		int borderColor = (LINE_ALPHA << 24) | rgb;
 		double outlineY = Math.max(bounds.minY + 0.02D, Math.min(bounds.maxY - 0.02D, cameraY));
-		addHorizontalOutline(buffer, pose, bounds, outlineY, color);
+		addGridOutline(buffer, pose, bounds, outlineY, gridColor, borderColor);
+	}
+
+	private static void addGridOutline(
+		VertexConsumer buffer,
+		PoseStack.Pose pose,
+		AABB box,
+		double highlightedY,
+		int gridColor,
+		int borderColor
+	) {
+		for (double y = box.minY; y < box.maxY; y += HORIZONTAL_GRID_STEP) {
+			addHorizontalOutline(buffer, pose, box, y, gridColor, 1.0F);
+		}
+		addHorizontalOutline(buffer, pose, box, box.minY, borderColor, 2.0F);
+		addHorizontalOutline(buffer, pose, box, box.maxY, borderColor, 2.0F);
+		addHorizontalOutline(buffer, pose, box, highlightedY, borderColor, 2.0F);
+
+		for (double x = box.minX; x <= box.maxX; x += VERTICAL_GRID_STEP) {
+			addLine(buffer, pose, x, box.minY, box.minZ, x, box.maxY, box.minZ, gridColor, 1.0F);
+			addLine(buffer, pose, x, box.minY, box.maxZ, x, box.maxY, box.maxZ, gridColor, 1.0F);
+		}
+		for (double z = box.minZ; z <= box.maxZ; z += VERTICAL_GRID_STEP) {
+			addLine(buffer, pose, box.minX, box.minY, z, box.minX, box.maxY, z, gridColor, 1.0F);
+			addLine(buffer, pose, box.maxX, box.minY, z, box.maxX, box.maxY, z, gridColor, 1.0F);
+		}
+
+		addLine(buffer, pose, box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ, borderColor, 2.0F);
+		addLine(buffer, pose, box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ, borderColor, 2.0F);
+		addLine(buffer, pose, box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ, borderColor, 2.0F);
+		addLine(buffer, pose, box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ, borderColor, 2.0F);
 	}
 
 	private static void addHorizontalOutline(
@@ -141,17 +175,13 @@ public final class BeaconRadiusRenderer {
 		PoseStack.Pose pose,
 		AABB box,
 		double y,
-		int color
+		int color,
+		float width
 	) {
-		double minX = box.minX;
-		double minZ = box.minZ;
-		double maxX = box.maxX;
-		double maxZ = box.maxZ;
-
-		addLine(buffer, pose, minX, y, minZ, maxX, y, minZ, color);
-		addLine(buffer, pose, maxX, y, minZ, maxX, y, maxZ, color);
-		addLine(buffer, pose, maxX, y, maxZ, minX, y, maxZ, color);
-		addLine(buffer, pose, minX, y, maxZ, minX, y, minZ, color);
+		addLine(buffer, pose, box.minX, y, box.minZ, box.maxX, y, box.minZ, color, width);
+		addLine(buffer, pose, box.maxX, y, box.minZ, box.maxX, y, box.maxZ, color, width);
+		addLine(buffer, pose, box.maxX, y, box.maxZ, box.minX, y, box.maxZ, color, width);
+		addLine(buffer, pose, box.minX, y, box.maxZ, box.minX, y, box.minZ, color, width);
 	}
 
 	private static void addLine(
@@ -163,7 +193,8 @@ public final class BeaconRadiusRenderer {
 		double x2,
 		double y2,
 		double z2,
-		int color
+		int color,
+		float width
 	) {
 		float dx = (float) (x2 - x1);
 		float dy = (float) (y2 - y1);
@@ -175,10 +206,10 @@ public final class BeaconRadiusRenderer {
 		buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
 			.setColor(color)
 			.setNormal(pose, nx, ny, nz)
-			.setLineWidth(2.0F);
+			.setLineWidth(width);
 		buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
 			.setColor(color)
 			.setNormal(pose, nx, ny, nz)
-			.setLineWidth(2.0F);
+			.setLineWidth(width);
 	}
 }
