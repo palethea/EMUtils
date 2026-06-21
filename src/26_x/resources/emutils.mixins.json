@@ -28,6 +28,7 @@
 		"HandledScreenAccessor",
 		"HandledScreenMixin",
 		"HungerManagerAccessor",
+		"HudFreeCameraMixin",
 		"InGameHudMixin",
 		"InGameOverlayRendererAccessor",
 		"InGameOverlayRendererMixin",
