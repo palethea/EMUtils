@@ -23,7 +23,6 @@ import net.minecraft.world.phys.AABB;
 import org.jspecify.annotations.Nullable;
 
 public final class BeaconRadiusRenderer {
-	private static final int LINE_ALPHA = 190;
 	private static final int SCAN_INTERVAL_TICKS = 20;
 	private static final int HORIZONTAL_GRID_STEP = 4;
 	private static final int VERTICAL_GRID_STEP = 5;
@@ -102,10 +101,10 @@ public final class BeaconRadiusRenderer {
 		matrices.pushPose();
 		try {
 			matrices.translate(-camera.position().x, -camera.position().y, -camera.position().z);
-			collector.submitCustomGeometry(matrices, RenderTypes.linesTranslucent(), (pose, buffer) -> {
+			collector.submitCustomGeometry(matrices, RenderTypes.lines(), (pose, buffer) -> {
 				for (BeaconBlockEntity beacon : cachedBeacons) {
 					if (!beacon.isRemoved() && beacon.getLevel() == client.level) {
-						renderBeaconRadius(client, beacon, camera.position().y, pose, buffer);
+						renderBeaconRadius(client, beacon, pose, buffer);
 					}
 				}
 			});
@@ -117,7 +116,6 @@ public final class BeaconRadiusRenderer {
 	private static void renderBeaconRadius(
 		Minecraft client,
 		BeaconBlockEntity beacon,
-		double cameraY,
 		PoseStack.Pose pose,
 		VertexConsumer buffer
 	) {
@@ -134,40 +132,35 @@ public final class BeaconRadiusRenderer {
 			.setMinY(Math.max(client.level.getMinY(), pos.getY() - radius))
 			.setMaxY(client.level.getMaxY());
 		int rgb = sections.getFirst().getColor() & 0x00FFFFFF;
-		int gridColor = (100 << 24) | rgb;
-		int borderColor = (LINE_ALPHA << 24) | rgb;
-		double outlineY = Math.max(bounds.minY + 0.02D, Math.min(bounds.maxY - 0.02D, cameraY));
-		addGridOutline(buffer, pose, bounds, outlineY, gridColor, borderColor);
+		int color = 0xFF000000 | rgb;
+		addGridOutline(buffer, pose, bounds, color);
 	}
 
 	private static void addGridOutline(
 		VertexConsumer buffer,
 		PoseStack.Pose pose,
 		AABB box,
-		double highlightedY,
-		int gridColor,
-		int borderColor
+		int color
 	) {
-		for (double y = box.minY; y < box.maxY; y += HORIZONTAL_GRID_STEP) {
-			addHorizontalOutline(buffer, pose, box, y, gridColor, 1.0F);
+		for (double y = box.minY + HORIZONTAL_GRID_STEP; y < box.maxY; y += HORIZONTAL_GRID_STEP) {
+			addHorizontalOutline(buffer, pose, box, y, color, 1.0F);
 		}
-		addHorizontalOutline(buffer, pose, box, box.minY, borderColor, 2.0F);
-		addHorizontalOutline(buffer, pose, box, box.maxY, borderColor, 2.0F);
-		addHorizontalOutline(buffer, pose, box, highlightedY, borderColor, 2.0F);
+		addHorizontalOutline(buffer, pose, box, box.minY, color, 2.0F);
+		addHorizontalOutline(buffer, pose, box, box.maxY, color, 2.0F);
 
-		for (double x = box.minX; x <= box.maxX; x += VERTICAL_GRID_STEP) {
-			addLine(buffer, pose, x, box.minY, box.minZ, x, box.maxY, box.minZ, gridColor, 1.0F);
-			addLine(buffer, pose, x, box.minY, box.maxZ, x, box.maxY, box.maxZ, gridColor, 1.0F);
+		for (double x = box.minX + VERTICAL_GRID_STEP; x < box.maxX; x += VERTICAL_GRID_STEP) {
+			addLine(buffer, pose, x, box.minY, box.minZ, x, box.maxY, box.minZ, color, 1.0F);
+			addLine(buffer, pose, x, box.minY, box.maxZ, x, box.maxY, box.maxZ, color, 1.0F);
 		}
-		for (double z = box.minZ; z <= box.maxZ; z += VERTICAL_GRID_STEP) {
-			addLine(buffer, pose, box.minX, box.minY, z, box.minX, box.maxY, z, gridColor, 1.0F);
-			addLine(buffer, pose, box.maxX, box.minY, z, box.maxX, box.maxY, z, gridColor, 1.0F);
+		for (double z = box.minZ + VERTICAL_GRID_STEP; z < box.maxZ; z += VERTICAL_GRID_STEP) {
+			addLine(buffer, pose, box.minX, box.minY, z, box.minX, box.maxY, z, color, 1.0F);
+			addLine(buffer, pose, box.maxX, box.minY, z, box.maxX, box.maxY, z, color, 1.0F);
 		}
 
-		addLine(buffer, pose, box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ, borderColor, 2.0F);
-		addLine(buffer, pose, box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ, borderColor, 2.0F);
-		addLine(buffer, pose, box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ, borderColor, 2.0F);
-		addLine(buffer, pose, box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ, borderColor, 2.0F);
+		addLine(buffer, pose, box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ, color, 2.0F);
+		addLine(buffer, pose, box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ, color, 2.0F);
+		addLine(buffer, pose, box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ, color, 2.0F);
+		addLine(buffer, pose, box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ, color, 2.0F);
 	}
 
 	private static void addHorizontalOutline(
