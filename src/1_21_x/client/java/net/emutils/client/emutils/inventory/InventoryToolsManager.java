@@ -508,7 +508,7 @@ public final class InventoryToolsManager {
 		if (sortTask == null) {
 			return;
 		}
-		if (client.player == null || client.interactionManager == null || !isStorageContainerScreen(client) || !sortTask.handler().getCursorStack().isEmpty()) {
+		if (client.player == null || client.interactionManager == null || !isSortableContainerScreen(client) || !sortTask.handler().getCursorStack().isEmpty()) {
 			sortTask = null;
 			return;
 		}
@@ -906,7 +906,7 @@ public final class InventoryToolsManager {
 			&& config.sortButtonsEnabled()
 			&& client.player != null
 			&& client.interactionManager != null
-			&& isStorageContainerScreen(client)
+			&& isSortableContainerScreen(client)
 			&& hasContainerSlots(handler, playerInventory);
 	}
 
@@ -1107,6 +1107,11 @@ public final class InventoryToolsManager {
 			|| client.currentScreen instanceof ShulkerBoxScreen
 			|| client.currentScreen instanceof HopperScreen
 			|| client.currentScreen instanceof Generic3x3ContainerScreen;
+	}
+
+	private static boolean isSortableContainerScreen(MinecraftClient client) {
+		return client.currentScreen instanceof GenericContainerScreen
+			|| client.currentScreen instanceof ShulkerBoxScreen;
 	}
 
 	private static boolean hasContainerSlots(ScreenHandler handler, PlayerInventory playerInventory) {
