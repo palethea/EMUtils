@@ -22,11 +22,11 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same way as the in-game settings hub:
 
-- **Render** — zoom, fullbright, clear weather, visibility tweaks, custom capes, and visual overlays.
-- **HUD** — info overlay, food HUD, layout editor, and Spotify now-playing panels.
+- **Render** — zoom, fullbright, clear weather, visibility tweaks, beacon radius outlines, light level overlay, custom capes, and visual overlays.
+- **HUD** — info overlay, free camera coordinates, food HUD, layout editor, and Spotify now-playing panels.
 - **Utility** — auto reconnect, screenshot helper, screenshot metadata, and waypoints.
 - **Management** — screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
-- **QoL** — chat tools, inventory tools, Sort Buttons, Hover Transfer, slot locking, slot binding, and fast place.
+- **QoL** — chat tools, inventory tools, Sort Buttons, Hover Transfer, Mass Drop, Auto Tool, Auto Flight Gear, Safe Walk, Free Camera, placement helpers, Fast Place, and Fast Use.
 
 ## Feature Ideas
 
@@ -52,6 +52,7 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 
 - **Iris** — required for Pack Manager shader apply/disable actions
 - **Minescript** — required for Script Manager browsing, editing, running, and EMUtils script keybinds
+- **Xaero's Minimap / Xaero's World Map** — optional support for showing Beacon Radius Outline boundaries on Xaero maps
 
 ## Installation
 

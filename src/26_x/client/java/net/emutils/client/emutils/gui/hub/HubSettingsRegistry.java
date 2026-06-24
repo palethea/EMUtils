@@ -394,9 +394,19 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, config::tweakNoHurtCam, config::setTweakNoHurtCam));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, config::tweakFastPlace, config::setTweakFastPlace));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_USE, config::tweakFastUse, config::setTweakFastUse));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, config::tweakSafeWalk, config::setTweakSafeWalk));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA, config::tweakFreeCamera, config::setTweakFreeCamera));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
+			EMUtilsTexts.SUFFIX_MULTIPLIER,
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
+			config::freeCameraBoostMultiplier,
+			config::setFreeCameraBoostMultiplier
+		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, config::tweakOwnNametag, config::setTweakOwnNametag));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview));
@@ -504,6 +514,7 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_BINDING_LOCK_BOUND_SLOTS, config::slotBindingLockBoundSlots, config::setSlotBindingLockBoundSlots));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER, config::hoverTransferEnabled, config::setHoverTransferEnabled));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER_GLOBAL, config::hoverTransferGlobal, config::setHoverTransferGlobal));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SORT_BUTTONS, config::sortButtonsEnabled, config::setSortButtonsEnabled));
 		rows.add(new HubSettingRow.Cycle<>(

@@ -75,6 +75,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_spyglass_overlay.desc";
     public static final String HUB_FEATURE_FAST_PLACE_DESC =
         "emutils.hub.feature.fast_place.desc";
+    public static final String HUB_FEATURE_FAST_USE_DESC =
+        "emutils.hub.feature.fast_use.desc";
     public static final String HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC =
         "emutils.hub.feature.anti_durability_break.desc";
     public static final String HUB_FEATURE_AUTO_TOOL_DESC =
@@ -85,6 +87,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.safe_walk.desc";
     public static final String HUB_FEATURE_PLACE_BELOW_DESC =
         "emutils.hub.feature.place_below.desc";
+    public static final String HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC =
+        "emutils.hub.feature.locked_y_placement.desc";
     public static final String HUB_FEATURE_FREE_CAMERA_DESC =
         "emutils.hub.feature.free_camera.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
@@ -103,6 +107,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.freelook.desc";
     public static final String HUB_FEATURE_BEACON_RADIUS_DESC =
         "emutils.hub.feature.beacon_radius.desc";
+    public static final String HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC =
+        "emutils.hub.feature.light_level_overlay.desc";
     public static final String HUB_FEATURE_OWN_NAMETAG_DESC =
         "emutils.hub.feature.own_nametag.desc";
     public static final String HUB_FEATURE_SHULKER_PREVIEW_DESC =
@@ -113,6 +119,8 @@ public final class EMUtilsTexts {
     public static final String OPTION_ON = "emutils.option.on";
     public static final String OPTION_OFF = "emutils.option.off";
     public static final String OPTION_TOGGLE = "emutils.option.toggle";
+    public static final String OPTION_LIGHT_LEVEL_OVERLAY =
+        "emutils.option.light_level_overlay";
     public static final String OPTION_VALUE = "emutils.option.value";
     public static final String OPTION_RESET_DEFAULTS =
         "emutils.option.reset_defaults";
@@ -368,6 +376,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_spyglass_overlay";
     public static final String OPTION_TWEAK_FAST_PLACE =
         "emutils.option.tweak_fast_place";
+    public static final String OPTION_TWEAK_FAST_USE =
+        "emutils.option.tweak_fast_use";
     public static final String OPTION_TWEAK_ANTI_DURABILITY_BREAK =
         "emutils.option.tweak_anti_durability_break";
     public static final String OPTION_AUTO_TOOL =
@@ -382,8 +392,12 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_safe_walk";
     public static final String OPTION_TWEAK_PLACE_BELOW =
         "emutils.option.tweak_place_below";
+    public static final String OPTION_TWEAK_LOCKED_Y_PLACEMENT =
+        "emutils.option.tweak_locked_y_placement";
     public static final String OPTION_TWEAK_FREE_CAMERA =
         "emutils.option.tweak_free_camera";
+    public static final String OPTION_FREE_CAMERA_BOOST_MULTIPLIER =
+        "emutils.option.free_camera_boost_multiplier";
     public static final String OPTION_AUTO_FLIGHT_GEAR =
         "emutils.option.auto_flight_gear";
     public static final String OPTION_TWEAK_AUTO_SWITCH_ELYTRA =
@@ -445,6 +459,8 @@ public final class EMUtilsTexts {
         "emutils.option.slot_binding_lock_bound_slots";
     public static final String OPTION_HOVER_TRANSFER =
         "emutils.option.hover_transfer";
+    public static final String OPTION_HOVER_TRANSFER_GLOBAL =
+        "emutils.option.hover_transfer_global";
     public static final String OPTION_SORT_BUTTONS =
         "emutils.option.sort_buttons";
     public static final String OPTION_SORT_SPEED =
@@ -499,6 +515,8 @@ public final class EMUtilsTexts {
     public static final String HUD_ANCHOR_BOTTOM_RIGHT =
         "emutils.hud.anchor.bottom_right";
     public static final String HUD_COORDS = "emutils.hud.coords";
+    public static final String HUD_FREE_CAMERA_COORDS =
+        "emutils.hud.free_camera_coords";
     public static final String HUD_CHUNK_REGION = "emutils.hud.chunk_region";
     public static final String HUD_BIOME = "emutils.hud.biome";
     public static final String HUD_PING = "emutils.hud.ping";
@@ -507,9 +525,11 @@ public final class EMUtilsTexts {
     public static final String HUD_MEMORY = "emutils.hud.memory";
     public static final String HUD_SERVER_TIME = "emutils.hud.server_time";
     public static final String HUD_REAL_TIME = "emutils.hud.real_time";
+    public static final String HUD_LOCKED_Y = "emutils.hud.locked_y";
 
     public static final String SUFFIX_SECONDS = "emutils.suffix.seconds";
     public static final String SUFFIX_PERCENT = "emutils.suffix.percent";
+    public static final String SUFFIX_MULTIPLIER = "emutils.suffix.multiplier";
 
     public static final String CHAT_COPY_SUCCESS = "emutils.chat.copy.success";
     public static final String CHAT_SCREENSHOT_COPY_SUCCESS =

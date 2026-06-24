@@ -28,6 +28,7 @@ import net.emutils.client.emutils.inventory.MassDropManager;
 import net.emutils.client.emutils.minescript.MinescriptKeybindManager;
 import net.emutils.client.emutils.reconnect.AutoReconnectManager;
 import net.emutils.client.emutils.render.BeaconRadiusRenderer;
+import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.spotify.SpotifyHudElement;
 import net.emutils.client.emutils.spotify.SpotifyPlaybackService;
 import net.emutils.client.emutils.tweaks.TweaksManager;
@@ -96,6 +97,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
 		WaypointRenderer.register();
 		BeaconRadiusRenderer.register();
+		LightLevelOverlayRenderer.register();
 		registerHudLayoutElements();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
@@ -240,6 +242,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping lockedYPlacementKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.locked_y_placement",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		KeyMapping freeCameraKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.free_camera",
 			InputConstants.Type.KEYSYM,
@@ -248,6 +256,12 @@ public class EMUtilsClient implements ClientModInitializer {
 		));
 		KeyMapping beaconRadiusKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.beacon_radius_outline",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping lightLevelOverlayKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.light_level_overlay",
 			InputConstants.Type.KEYSYM,
 			InputConstants.UNKNOWN.getValue(),
 			category
@@ -267,8 +281,9 @@ public class EMUtilsClient implements ClientModInitializer {
 			debugCategory
 		));
 
-		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, freeCameraKey);
+		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, lockedYPlacementKey, freeCameraKey);
 		BeaconRadiusRenderer.setKeyMapping(beaconRadiusKey);
+		LightLevelOverlayRenderer.setKeyMapping(lightLevelOverlayKey);
 		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 
@@ -305,6 +320,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			massDropManager.dropSelected(client);
 		}
 		BeaconRadiusRenderer.tick();
+		LightLevelOverlayRenderer.tick();
 		DebugGuiDumpTrigger.tryFromBinding(debugDumpGuiKeyMapping);
 	}
 

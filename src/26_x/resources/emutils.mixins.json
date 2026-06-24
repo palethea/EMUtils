@@ -43,6 +43,7 @@
 		"MinecraftFastPlaceMixin",
 		"MinecraftFreeCameraInputMixin",
 		"MultiPlayerGameModeAntiDurabilityBreakMixin",
+		"MultiPlayerGameModeFastPlaceMixin",
 		"MultiPlayerGameModePlaceBelowMixin",
 		"MouseAccess",
 		"MouseMixin",

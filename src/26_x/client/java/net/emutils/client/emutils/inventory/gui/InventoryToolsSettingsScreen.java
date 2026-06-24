@@ -46,6 +46,11 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setHoverTransferEnabled
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_HOVER_TRANSFER_GLOBAL,
+			() -> EMUtilsClient.config().hoverTransferGlobal(),
+			EMUtilsClient.config()::setHoverTransferGlobal
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_SORT_BUTTONS,
 			() -> EMUtilsClient.config().sortButtonsEnabled(),
 			EMUtilsClient.config()::setSortButtonsEnabled

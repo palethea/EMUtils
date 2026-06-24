@@ -97,6 +97,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakFastPlace
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_FAST_USE,
+			() -> EMUtilsClient.config().tweakFastUse(),
+			EMUtilsClient.config()::setTweakFastUse
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_SAFE_WALK,
 			() -> EMUtilsClient.config().tweakSafeWalk(),
 			EMUtilsClient.config()::setTweakSafeWalk
@@ -107,9 +112,26 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakPlaceBelow
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT,
+			() -> EMUtilsClient.config().tweakLockedYPlacement(),
+			EMUtilsClient.config()::setTweakLockedYPlacement
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA,
 			() -> EMUtilsClient.config().tweakFreeCamera(),
 			EMUtilsClient.config()::setTweakFreeCamera
+		));
+		adder.addChild(new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			Component.translatable(EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER),
+			Component.translatable(EMUtilsTexts.SUFFIX_MULTIPLIER),
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
+			() -> EMUtilsClient.config().freeCameraBoostMultiplier(),
+			EMUtilsClient.config()::setFreeCameraBoostMultiplier
 		));
 		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK,

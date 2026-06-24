@@ -14,6 +14,7 @@ import net.minecraft.world.level.ChunkPos;
 
 public record HudOverlayData(
 	String coordinates,
+	String freeCameraCoordinates,
 	String portalCoordinates,
 	String chunkRegion,
 	String biome,
@@ -23,12 +24,13 @@ public record HudOverlayData(
 	int memoryPercent,
 	String facing,
 	String serverTime,
-	String realTime
+	String realTime,
+	String lockedYPlacement
 ) {
 	private static final DateTimeFormatter TWENTY_FOUR_HOUR_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
 	private static final DateTimeFormatter TWELVE_HOUR_FORMAT = DateTimeFormatter.ofPattern("h:mm:ssa", Locale.ENGLISH);
 	private static final long MEMORY_UPDATE_INTERVAL_MS = 2_000L;
-	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--:--", "--:--");
+	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--:--", "--:--", "--");
 	private static MemoryUsage cachedMemoryUsage = new MemoryUsage("--/-- GB (--%)", 0);
 	private static long lastMemoryUpdateMillis;
 
@@ -49,6 +51,7 @@ public record HudOverlayData(
 
 		return new HudOverlayData(
 			pos.getX() + " " + pos.getY() + " " + pos.getZ(),
+			collectFreeCameraCoordinates(),
 			portalCoordinates(client, pos),
 			chunkPos.x() + " " + chunkPos.z() + " / " + regionX + " " + regionZ,
 			biomeName(client, pos),
@@ -58,8 +61,27 @@ public record HudOverlayData(
 			memoryUsage.percent(),
 			prettify(client.player.getDirection().name().toLowerCase(Locale.ENGLISH)),
 			serverTime(client.level.getOverworldClockTime()),
-			currentRealTime()
+			currentRealTime(),
+			lockedYPlacementValue()
 		);
+	}
+
+	private static String collectFreeCameraCoordinates() {
+		if (EMUtilsClient.tweaks() == null || !EMUtilsClient.tweaks().freeCamera().isActive()) {
+			return "-- -- --";
+		}
+
+		BlockPos pos = EMUtilsClient.tweaks().freeCamera().cameraBlockPosition();
+		return pos == null ? "-- -- --" : pos.getX() + " " + pos.getY() + " " + pos.getZ();
+	}
+
+	private static String lockedYPlacementValue() {
+		if (EMUtilsClient.tweaks() == null) {
+			return "--";
+		}
+
+		Integer y = EMUtilsClient.tweaks().lockedYPlacement().lockedY();
+		return y == null ? "--" : Integer.toString(y);
 	}
 
 	private static String portalCoordinates(Minecraft client, BlockPos pos) {

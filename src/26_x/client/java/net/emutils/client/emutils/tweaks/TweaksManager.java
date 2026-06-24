@@ -12,23 +12,27 @@ public final class TweaksManager {
 	private final AutoToolManager autoTool = new AutoToolManager();
 	private final AutoFlightGearManager autoFlightGear = new AutoFlightGearManager();
 	private final PlaceBelowManager placeBelow = new PlaceBelowManager();
+	private final LockedYPlacementManager lockedYPlacement = new LockedYPlacementManager();
 	private final FreeCameraManager freeCamera = new FreeCameraManager();
 	private boolean removeWorldFog;
 
-	public void setKeyMappings(KeyMapping freelookKey, KeyMapping placeBelowKey, KeyMapping freeCameraKey) {
+	public void setKeyMappings(KeyMapping freelookKey, KeyMapping placeBelowKey, KeyMapping lockedYPlacementKey, KeyMapping freeCameraKey) {
 		freelook.setKeyMapping(freelookKey);
 		placeBelow.setKeyMapping(placeBelowKey);
+		lockedYPlacement.setKeyMapping(lockedYPlacementKey);
 		freeCamera.setKeyMapping(freeCameraKey);
 	}
 
 	public void tick(net.minecraft.client.Minecraft client) {
 		freelook.tick(client);
 		autoFlightGear.tick(client);
+		lockedYPlacement.tick(client);
 		freeCamera.tick(client);
 	}
 
 	public void resetSession() {
 		autoFlightGear.reset();
+		lockedYPlacement.reset();
 		freeCamera.reset();
 	}
 
@@ -42,6 +46,10 @@ public final class TweaksManager {
 
 	public PlaceBelowManager placeBelow() {
 		return placeBelow;
+	}
+
+	public LockedYPlacementManager lockedYPlacement() {
+		return lockedYPlacement;
 	}
 
 	public FreeCameraManager freeCamera() {

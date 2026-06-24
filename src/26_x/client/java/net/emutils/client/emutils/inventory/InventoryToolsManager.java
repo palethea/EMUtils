@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.DispenserScreen;
@@ -1280,8 +1281,7 @@ public final class InventoryToolsManager {
 			&& client.player != null
 			&& client.gameMode != null
 			&& handler.getCarried().isEmpty()
-			&& isStorageContainerScreen(client)
-			&& hasContainerSlots(handler, playerInventory);
+			&& hoverTransferAllowedOnScreen(client, handler, playerInventory);
 	}
 
 	private void tryHoverTransferSlot(
@@ -1317,6 +1317,18 @@ public final class InventoryToolsManager {
 			|| client.gui.screen() instanceof ShulkerBoxScreen
 			|| client.gui.screen() instanceof HopperScreen
 			|| client.gui.screen() instanceof DispenserScreen;
+	}
+
+	private static boolean hoverTransferAllowedOnScreen(Minecraft client, AbstractContainerMenu handler, Inventory playerInventory) {
+		if (isStorageContainerScreen(client) && hasContainerSlots(handler, playerInventory)) {
+			return true;
+		}
+
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null
+			&& config.hoverTransferGlobal()
+			&& client.gui.screen() instanceof AbstractContainerScreen<?>
+			&& !(client.gui.screen() instanceof CreativeModeInventoryScreen);
 	}
 
 	private static boolean isSortableContainerScreen(Minecraft client) {

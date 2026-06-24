@@ -59,6 +59,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int PACK_MANAGER_SEARCH_LIMIT_MAX = 50;
 	public static final int FULLBRIGHT_STRENGTH_MIN = 1;
 	public static final int FULLBRIGHT_STRENGTH_MAX = 100;
+	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MIN = 1;
+	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MAX = 10;
 	public static final int HOTBAR_SLOT_MIN = 1;
 	public static final int HOTBAR_SLOT_MAX = 9;
 
@@ -153,6 +155,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakNoHurtCam = Boolean.FALSE;
 	private Boolean tweakFreelook = Boolean.FALSE;
 	private Boolean beaconRadiusOutline = Boolean.FALSE;
+	private Boolean lightLevelOverlay = Boolean.FALSE;
 	private Boolean tweakShulkerTooltipPreview = Boolean.TRUE;
 	private Boolean tweakBundleTooltipPreview = Boolean.TRUE;
 	private Boolean tweakClearWeather = Boolean.FALSE;
@@ -164,10 +167,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakNoNausea = Boolean.FALSE;
 	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
 	private Boolean tweakFastPlace = Boolean.FALSE;
+	private Boolean tweakFastUse = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
 	private Boolean tweakSafeWalk = Boolean.FALSE;
 	private Boolean tweakPlaceBelow = Boolean.FALSE;
+	private Boolean tweakLockedYPlacement = Boolean.FALSE;
 	private Boolean tweakFreeCamera = Boolean.FALSE;
+	private Integer freeCameraBoostMultiplier = 3;
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
@@ -197,6 +203,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean slotBindingShowIcons = Boolean.TRUE;
 	private Boolean slotBindingLockBoundSlots = Boolean.TRUE;
 	private Boolean hoverTransferEnabled = Boolean.TRUE;
+	private Boolean hoverTransferGlobal = Boolean.FALSE;
 	private Boolean sortButtonsEnabled = Boolean.TRUE;
 	private String sortSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean quickStackEnabled = Boolean.TRUE;
@@ -916,6 +923,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean lightLevelOverlay() {
+		return lightLevelOverlay != null && lightLevelOverlay;
+	}
+
+	public void setLightLevelOverlay(boolean enabled) {
+		lightLevelOverlay = enabled;
+		save();
+	}
+
 	public boolean tweakShulkerTooltipPreview() {
 		return tweakShulkerTooltipPreview == null || tweakShulkerTooltipPreview;
 	}
@@ -1027,6 +1043,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakFastUse() {
+		return tweakFastUse != null && tweakFastUse;
+	}
+
+	public void setTweakFastUse(boolean enabled) {
+		tweakFastUse = enabled;
+		save();
+	}
+
 	public boolean tweakAntiDurabilityBreak() {
 		return tweakAntiDurabilityBreak != null && tweakAntiDurabilityBreak;
 	}
@@ -1054,12 +1079,33 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakLockedYPlacement() {
+		return tweakLockedYPlacement != null && tweakLockedYPlacement;
+	}
+
+	public void setTweakLockedYPlacement(boolean enabled) {
+		tweakLockedYPlacement = enabled;
+		if (!enabled && net.emutils.client.EMUtilsClient.tweaks() != null) {
+			net.emutils.client.EMUtilsClient.tweaks().lockedYPlacement().reset();
+		}
+		save();
+	}
+
 	public boolean tweakFreeCamera() {
 		return tweakFreeCamera != null && tweakFreeCamera;
 	}
 
 	public void setTweakFreeCamera(boolean enabled) {
 		tweakFreeCamera = enabled;
+		save();
+	}
+
+	public int freeCameraBoostMultiplier() {
+		return clamp(freeCameraBoostMultiplier == null ? 3 : freeCameraBoostMultiplier, FREE_CAMERA_BOOST_MULTIPLIER_MIN, FREE_CAMERA_BOOST_MULTIPLIER_MAX);
+	}
+
+	public void setFreeCameraBoostMultiplier(int multiplier) {
+		freeCameraBoostMultiplier = clamp(multiplier, FREE_CAMERA_BOOST_MULTIPLIER_MIN, FREE_CAMERA_BOOST_MULTIPLIER_MAX);
 		save();
 	}
 
@@ -1160,6 +1206,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakNoHurtCam()
 			|| tweakFreelook()
 			|| beaconRadiusOutline()
+			|| lightLevelOverlay()
 			|| tweakShulkerTooltipPreview()
 			|| tweakBundleTooltipPreview()
 			|| tweakClearWeather()
@@ -1168,9 +1215,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakNoNausea()
 			|| tweakNoSpyglassOverlay()
 			|| tweakFastPlace()
+			|| tweakFastUse()
 			|| tweakAntiDurabilityBreak()
 			|| tweakSafeWalk()
 			|| tweakPlaceBelow()
+			|| tweakLockedYPlacement()
 			|| tweakFreeCamera()
 			|| autoFlightGearEnabled()
 			|| autoToolEnabled()
@@ -1370,6 +1419,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setHoverTransferEnabled(boolean enabled) {
 		hoverTransferEnabled = enabled;
+		save();
+	}
+
+	public boolean hoverTransferGlobal() {
+		return hoverTransferGlobal != null && hoverTransferGlobal;
+	}
+
+	public void setHoverTransferGlobal(boolean enabled) {
+		hoverTransferGlobal = enabled;
 		save();
 	}
 
@@ -1705,6 +1763,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
 		beaconRadiusOutline = Boolean.FALSE;
+		lightLevelOverlay = Boolean.FALSE;
 		tweakShulkerTooltipPreview = Boolean.TRUE;
 		tweakBundleTooltipPreview = Boolean.TRUE;
 		tweakClearWeather = Boolean.FALSE;
@@ -1716,10 +1775,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoNausea = Boolean.FALSE;
 		tweakNoSpyglassOverlay = Boolean.FALSE;
 		tweakFastPlace = Boolean.FALSE;
+		tweakFastUse = Boolean.FALSE;
 		tweakAntiDurabilityBreak = Boolean.FALSE;
 		tweakSafeWalk = Boolean.FALSE;
 		tweakPlaceBelow = Boolean.FALSE;
+		tweakLockedYPlacement = Boolean.FALSE;
 		tweakFreeCamera = Boolean.FALSE;
+		freeCameraBoostMultiplier = 3;
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
@@ -1796,6 +1858,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		slotBindingShowIcons = Boolean.TRUE;
 		slotBindingLockBoundSlots = Boolean.TRUE;
 		hoverTransferEnabled = Boolean.TRUE;
+		hoverTransferGlobal = Boolean.FALSE;
 		sortButtonsEnabled = Boolean.TRUE;
 		sortSpeed = InventorySortSpeed.NORMAL.name();
 		quickStackEnabled = Boolean.TRUE;
@@ -2014,6 +2077,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (beaconRadiusOutline == null) {
 			beaconRadiusOutline = Boolean.FALSE;
 		}
+		if (lightLevelOverlay == null) {
+			lightLevelOverlay = Boolean.FALSE;
+		}
 		if (tweakShulkerTooltipPreview == null) {
 			tweakShulkerTooltipPreview = Boolean.TRUE;
 		}
@@ -2047,6 +2113,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakFastPlace == null) {
 			tweakFastPlace = Boolean.FALSE;
 		}
+		if (tweakFastUse == null) {
+			tweakFastUse = Boolean.FALSE;
+		}
 		if (tweakAntiDurabilityBreak == null) {
 			tweakAntiDurabilityBreak = Boolean.FALSE;
 		}
@@ -2056,9 +2125,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakPlaceBelow == null) {
 			tweakPlaceBelow = Boolean.FALSE;
 		}
+		if (tweakLockedYPlacement == null) {
+			tweakLockedYPlacement = Boolean.FALSE;
+		}
 		if (tweakFreeCamera == null) {
 			tweakFreeCamera = Boolean.FALSE;
 		}
+		freeCameraBoostMultiplier = freeCameraBoostMultiplier();
 		if (tweakAutoSwitchElytra == null) {
 			tweakAutoSwitchElytra = Boolean.FALSE;
 		}
@@ -2139,6 +2212,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (hoverTransferEnabled == null) {
 			hoverTransferEnabled = Boolean.TRUE;
+		}
+		if (hoverTransferGlobal == null) {
+			hoverTransferGlobal = Boolean.FALSE;
 		}
 		if (sortButtonsEnabled == null) {
 			sortButtonsEnabled = Boolean.TRUE;

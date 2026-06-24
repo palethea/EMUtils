@@ -3,6 +3,7 @@ package net.emutils.client.emutils.tweaks;
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -10,7 +11,6 @@ import org.jspecify.annotations.Nullable;
 public final class FreeCameraManager {
 	private static final float RAMP_STEP = 0.15F;
 	private static final double MOVE_SPEED = 0.7D;
-	private static final double SPRINT_MULTIPLIER = 3.0D;
 
 	@Nullable
 	private KeyMapping keyMapping;
@@ -47,6 +47,11 @@ public final class FreeCameraManager {
 
 	public boolean isActive() {
 		return camera != null;
+	}
+
+	@Nullable
+	public BlockPos cameraBlockPosition() {
+		return camera == null ? null : camera.blockPosition();
 	}
 
 	public boolean handleMouseTurn(double yawDelta, double pitchDelta) {
@@ -101,7 +106,7 @@ public final class FreeCameraManager {
 		verticalRamped = ramp(verticalRamped, vertical);
 
 		double diagonal = forwardRamped != 0.0F && strafeRamped != 0.0F ? Math.sqrt(0.5D) : 1.0D;
-		double speed = MOVE_SPEED * (client.options.keySprint.isDown() ? SPRINT_MULTIPLIER : 1.0D);
+		double speed = MOVE_SPEED * (client.options.keySprint.isDown() ? EMUtilsClient.config().freeCameraBoostMultiplier() : 1.0D);
 		double yaw = Math.toRadians(camera.getYRot());
 		double sin = Math.sin(yaw);
 		double cos = Math.cos(yaw);
