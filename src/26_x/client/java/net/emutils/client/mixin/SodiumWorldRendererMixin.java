@@ -18,6 +18,17 @@ public abstract class SodiumWorldRendererMixin {
 		argsOnly = true,
 		ordinal = 0
 	)
+	private boolean emutils$treatFreeCameraAsSpectator(boolean spectator) {
+		return spectator
+			|| (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive());
+	}
+
+	@ModifyVariable(
+		method = "setupTerrain",
+		at = @At("HEAD"),
+		argsOnly = true,
+		ordinal = 0
+	)
 	private FogParameters emutils$removeSodiumTerrainFog(FogParameters fogParameters) {
 		TweaksManager tweaks = EMUtilsClient.tweaks();
 		Minecraft client = Minecraft.getInstance();

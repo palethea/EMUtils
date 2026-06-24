@@ -78,6 +78,20 @@ sourceSets {
 	client {
 		java.srcDirs = [selectedMc.sourcePath]
 	}
+	if (mcFamily == "26.x") {
+		xaeroApi {
+			java.srcDirs = ["src/26_x/xaero_api/java"]
+		}
+	}
+}
+
+if (mcFamily == "26.x") {
+	// Compile-only ABI stubs keep Xaero integration optional and out of the release jar.
+	sourceSets.xaeroApi.compileClasspath = configurations.clientCompileClasspath + sourceSets.main.output
+	sourceSets.client.compileClasspath += sourceSets.xaeroApi.output
+	tasks.named("compileClientJava").configure {
+		dependsOn tasks.named("compileXaeroApiJava")
+	}
 }
 
 dependencies {

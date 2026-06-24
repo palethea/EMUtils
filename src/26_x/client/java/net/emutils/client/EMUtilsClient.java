@@ -24,8 +24,11 @@ import net.emutils.client.emutils.hud.layout.HudLayoutMigration;
 import net.emhelpers.client.hud.layout.HudLayoutRegistry;
 import net.emutils.client.emutils.inventory.InventoryPreviewHudElement;
 import net.emutils.client.emutils.inventory.InventoryToolsManager;
+import net.emutils.client.emutils.inventory.MassDropManager;
 import net.emutils.client.emutils.minescript.MinescriptKeybindManager;
 import net.emutils.client.emutils.reconnect.AutoReconnectManager;
+import net.emutils.client.emutils.render.BeaconRadiusRenderer;
+import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.spotify.SpotifyHudElement;
 import net.emutils.client.emutils.spotify.SpotifyPlaybackService;
 import net.emutils.client.emutils.tweaks.TweaksManager;
@@ -60,6 +63,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static TweaksManager tweaksManager;
 	private static SpotifyPlaybackService spotifyPlaybackService;
 	private static InventoryToolsManager inventoryToolsManager;
+	private static MassDropManager massDropManager;
 	private static CommandShortcutsManager commandShortcutsManager;
 	private static MinescriptKeybindManager minescriptKeybindManager;
 	private static KeyMapping openGalleryKeyMapping;
@@ -68,6 +72,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping openHudLayoutEditorKeyMapping;
 	private static KeyMapping openWaypointsKeyMapping;
 	private static KeyMapping addWaypointKeyMapping;
+	private static KeyMapping massDropKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
 
 	@Override
@@ -82,13 +87,17 @@ public class EMUtilsClient implements ClientModInitializer {
 		tweaksManager = new TweaksManager();
 		spotifyPlaybackService = new SpotifyPlaybackService();
 		inventoryToolsManager = new InventoryToolsManager();
+		massDropManager = new MassDropManager();
 		commandShortcutsManager = new CommandShortcutsManager();
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyMappings();
 		registerTooltipComponents();
 
+		ClientTickEvents.START_CLIENT_TICK.register(client -> tweaksManager.tickAutoTool(client));
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
 		WaypointRenderer.register();
+		BeaconRadiusRenderer.register();
+		LightLevelOverlayRenderer.register();
 		registerHudLayoutElements();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
@@ -100,6 +109,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
+			tweaksManager.resetSession();
 			autoReconnectManager.onDisconnected();
 		});
 
@@ -220,6 +230,48 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping quickStackKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.quick_stack",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping placeBelowKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.place_below",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping lockedYPlacementKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.locked_y_placement",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping freeCameraKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.free_camera",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping beaconRadiusKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.beacon_radius_outline",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		KeyMapping lightLevelOverlayKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.light_level_overlay",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.mass_drop",
+			InputConstants.Type.KEYSYM,
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 
 		KeyMapping.Category debugCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "debug"));
 		debugDumpGuiKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
@@ -229,8 +281,10 @@ public class EMUtilsClient implements ClientModInitializer {
 			debugCategory
 		));
 
-		tweaksManager.setKeyMappings(freelookKey);
-		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey);
+		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, lockedYPlacementKey, freeCameraKey);
+		BeaconRadiusRenderer.setKeyMapping(beaconRadiusKey);
+		LightLevelOverlayRenderer.setKeyMapping(lightLevelOverlayKey);
+		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 
 	private static void handleKeyMappings(Minecraft client) {
@@ -262,6 +316,11 @@ public class EMUtilsClient implements ClientModInitializer {
 		while (openHudLayoutEditorKeyMapping != null && openHudLayoutEditorKeyMapping.consumeClick()) {
 			openHudLayoutEditor(client);
 		}
+		while (massDropKeyMapping != null && massDropKeyMapping.consumeClick()) {
+			massDropManager.dropSelected(client);
+		}
+		BeaconRadiusRenderer.tick();
+		LightLevelOverlayRenderer.tick();
 		DebugGuiDumpTrigger.tryFromBinding(debugDumpGuiKeyMapping);
 	}
 
@@ -313,6 +372,10 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	public static InventoryToolsManager inventoryTools() {
 		return inventoryToolsManager;
+	}
+
+	public static MassDropManager massDrop() {
+		return massDropManager;
 	}
 
 	public static CommandShortcutsManager commandShortcuts() {

@@ -25,6 +25,8 @@
   },
   "suggests": {
     "iris": "*",
-    "minescript": "*"
+    "minescript": "*",
+    "xaerominimap": ">=26.1.3",
+    "xaeroworldmap": ">=1.41.1"
   }
 }

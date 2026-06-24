@@ -250,6 +250,9 @@ public final class AddWaypointScreen extends Screen {
                 );
         }
 
+        if (parent instanceof WaypointListScreen waypointList) {
+            waypointList.refreshList();
+        }
         client.setScreen(parent);
     }
 }

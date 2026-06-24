@@ -26,12 +26,16 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - Clear Underwater: improve visibility underwater.
 - Clear Lava: improve visibility while inside lava.
 - No Environment Fog: remove biome and dimension fog.
+- No Nether Particles: hide ambient Nether biome particles such as Basalt Deltas ash while preserving gameplay particles.
 - No Fire Overlay: hide the first-person fire overlay while burning.
 - Low Fire: keep flames visible but lower on screen.
 - No Nausea: hide nausea and portal distortion effects.
 - No Spyglass Overlay: hide the spyglass scope overlay.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
+- Beacon Radius Outline: draw a stable chunk-border-style grid cage around each loaded active beacon's true effect boundary, colored from its beam and toggleable with a configurable keybind.
+  - Xaero Map Integration: show the same colored beacon boundary on Xaero's Minimap and World Map when those optional mods are installed.
+- Light Level Overlay: show fixed north-facing Minecraft-font block-light numbers on nearby spawnable floors, with yellow or red square markers only at block light level 0; the loaded-chunk scan and geometry are cached and the overlay is toggleable with a configurable keybind.
 - Own Nametag: show your own nametag in third person.
 - Shulker Preview: preview shulker contents in item tooltips.
 - Bundle Preview: preview bundle contents in item tooltips.
@@ -69,6 +73,8 @@ Show a configurable info panel with icons and useful world or client stats.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
 - Coordinates: show current XYZ coordinates.
+- Free Camera Coordinates: show the free camera XYZ as an extra line while Free Camera is active and Coordinates are enabled.
+- Nether Coordinates: show equivalent Nether XYZ while in the Overworld using the 8:1 portal scale; hidden in other dimensions.
 - Chunk / Region: show current chunk and region.
 - Biome: show the current biome.
 - Facing: show the direction you are facing.
@@ -192,11 +198,58 @@ Protect important slots and move items faster.
 - Slot Binding: bind hotbar-safe slot swaps.
 - Lock Bound Slots: protect bound slots from unsafe movement.
 - Hover Transfer: hold Shift + left click in a storage container, then hover items to move them in or out quickly while ignoring locked or bound items.
+  - Global Hover Transfer: optionally allow hover transfer in normal inventory-style screens too, including the player inventory.
 - Sort Buttons: show three sort buttons beside storage containers and the player inventory for sorting by name, category, or quantity.
 - Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
+- Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
+- Quick Stack Speed: choose Normal transfers or Anti-Cheat transfers that move one stack per tick.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
+- Mass Drop: maintain a searchable list of items by icon, display name, and real item ID, then drop matching inventory stacks with a configurable keybind.
+  - Legit: drop one matching inventory slot per key press.
+  - Unfair: drop every matching inventory slot per key press.
 
 ### Fast Place
 
 Remove the block placement delay for faster building.
+
+### Fast Use
+
+Remove the delay between non-placement uses, including doors, levers, buttons, snowballs, eggs, and other item actions.
+
+### Anti Durability Break
+
+Prevent a held damageable item from attacking, breaking blocks, swinging, or performing item actions once it reaches 5 durability, keeping it safe until repaired or replaced.
+
+### Auto Tool
+
+Automatically select the fastest suitable tool using each item and block's public mining-speed and correct-tool data, including modded content.
+
+- Legit: switch only between tools already in the hotbar.
+- Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
+
+### Auto Flight Gear
+
+Temporarily prepare flight gear while falling, then restore the displaced items after landing.
+
+- Auto Switch Elytra: equip an Elytra from the player inventory while falling and restore the previous chest equipment after landing.
+- Auto Switch Rockets: move Flight Rockets into a configurable hotbar slot while falling and return both swapped stacks after landing.
+- Rocket Hotbar Slot: choose slots 1-9 as the temporary Flight Rocket destination.
+- Ignore Normal Jumps: wait until no selectable block is directly below within the player's block-interaction reach before switching gear.
+- Start With Double Jump: replace automatic fall activation with a double-tap of the jump key that equips the Elytra and starts gliding immediately.
+
+### Safe Walk
+
+Prevent walking off ledges without slowing down or holding sneak. Jumping still lets you leave an edge normally.
+
+### Place Below
+
+Hold a configurable keybind while placing against a block to redirect the placement to the underside of the targeted block.
+
+### Locked Y Placement
+
+Press a configurable keybind while targeting a block to lock block placements to that block's Y coordinate. The HUD overlay shows the active placement Y, and pressing the keybind while looking in the air or toggling the feature off clears the lock.
+
+### Free Camera
+
+Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera uses a clean spectator-style HUD with held items and survival HUD elements hidden, while left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored.

@@ -169,6 +169,15 @@ public final class HudOverlayRenderer {
 		List<HudOverlayLine> lines = new ArrayList<>();
 		if (config.hudShowCoordinates()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_COORDS, data.coordinates(), HudOverlayLine.icon("coords")));
+			if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+				lines.add(new HudOverlayLine(EMUtilsTexts.HUD_FREE_CAMERA_COORDS, data.freeCameraCoordinates(), HudOverlayLine.icon("coords")));
+			}
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (config.hudShowNetherCoordinates()
+			&& client.level != null
+			&& client.level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+			lines.add(new HudOverlayLine("emutils.hud.nether_coords", data.portalCoordinates(), HudOverlayLine.icon("coords")));
 		}
 		if (config.hudShowChunkRegion()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_CHUNK_REGION, data.chunkRegion(), HudOverlayLine.icon("chunk")));
@@ -190,6 +199,9 @@ public final class HudOverlayRenderer {
 		}
 		if (config.hudShowRealTime()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_REAL_TIME, data.realTime(), HudOverlayLine.icon("real_time")));
+		}
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().lockedYPlacement().active()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOCKED_Y, data.lockedYPlacement(), HudOverlayLine.icon("coords")));
 		}
 		return lines;
 	}

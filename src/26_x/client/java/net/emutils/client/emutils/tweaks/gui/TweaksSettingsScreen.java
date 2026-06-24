@@ -7,6 +7,7 @@ import net.emhelpers.client.gui.widget.ConfigToggleButton;
 import net.emhelpers.client.gui.widget.IntConfigSlider;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.network.chat.Component;
 
@@ -96,9 +97,99 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakFastPlace
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_FAST_USE,
+			() -> EMUtilsClient.config().tweakFastUse(),
+			EMUtilsClient.config()::setTweakFastUse
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_SAFE_WALK,
+			() -> EMUtilsClient.config().tweakSafeWalk(),
+			EMUtilsClient.config()::setTweakSafeWalk
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW,
+			() -> EMUtilsClient.config().tweakPlaceBelow(),
+			EMUtilsClient.config()::setTweakPlaceBelow
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT,
+			() -> EMUtilsClient.config().tweakLockedYPlacement(),
+			EMUtilsClient.config()::setTweakLockedYPlacement
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA,
+			() -> EMUtilsClient.config().tweakFreeCamera(),
+			EMUtilsClient.config()::setTweakFreeCamera
+		));
+		adder.addChild(new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			Component.translatable(EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER),
+			Component.translatable(EMUtilsTexts.SUFFIX_MULTIPLIER),
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
+			EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
+			() -> EMUtilsClient.config().freeCameraBoostMultiplier(),
+			EMUtilsClient.config()::setFreeCameraBoostMultiplier
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK,
+			() -> EMUtilsClient.config().tweakAntiDurabilityBreak(),
+			EMUtilsClient.config()::setTweakAntiDurabilityBreak
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR,
+			() -> EMUtilsClient.config().autoFlightGearEnabled(),
+			EMUtilsClient.config()::setAutoFlightGearEnabled
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ELYTRA,
+			() -> EMUtilsClient.config().tweakAutoSwitchElytra(),
+			EMUtilsClient.config()::setTweakAutoSwitchElytra
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_AUTO_SWITCH_ROCKETS,
+			() -> EMUtilsClient.config().tweakAutoSwitchRockets(),
+			EMUtilsClient.config()::setTweakAutoSwitchRockets
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_DOUBLE_JUMP,
+			() -> EMUtilsClient.config().autoFlightDoubleJump(),
+			EMUtilsClient.config()::setAutoFlightDoubleJump
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_FLIGHT_IGNORE_SHORT_FALLS,
+			() -> EMUtilsClient.config().autoFlightIgnoreShortFalls(),
+			EMUtilsClient.config()::setAutoFlightIgnoreShortFalls
+		));
+		adder.addChild(new IntConfigSlider(
+			0,
+			0,
+			SETTINGS_BUTTON_WIDTH,
+			20,
+			Component.translatable(EMUtilsTexts.OPTION_AUTO_SWITCH_ROCKETS_HOTBAR_SLOT),
+			Component.empty(),
+			EMUtilsConfig.HOTBAR_SLOT_MIN,
+			EMUtilsConfig.HOTBAR_SLOT_MAX,
+			() -> EMUtilsClient.config().autoSwitchRocketsHotbarSlot(),
+			EMUtilsClient.config()::setAutoSwitchRocketsHotbarSlot
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_TOOL,
+			() -> EMUtilsClient.config().autoToolEnabled(),
+			EMUtilsClient.config()::setAutoToolEnabled
+		));
+		adder.addChild(autoToolModeButton());
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG,
 			() -> EMUtilsClient.config().tweakNoEnvironmentFog(),
 			EMUtilsClient.config()::setTweakNoEnvironmentFog
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES,
+			() -> EMUtilsClient.config().tweakNoNetherParticles(),
+			EMUtilsClient.config()::setTweakNoNetherParticles
 		));
 		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM,
@@ -109,6 +200,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsTexts.OPTION_TWEAK_FREELOOK,
 			() -> EMUtilsClient.config().tweakFreelook(),
 			EMUtilsClient.config()::setTweakFreelook
+		));
+		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE,
+			() -> EMUtilsClient.config().beaconRadiusOutline(),
+			EMUtilsClient.config()::setBeaconRadiusOutline
 		));
 		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG,
@@ -129,5 +225,20 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config().resetTweaksDefaults();
 			client.setScreenAndShow(new TweaksSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
+	}
+
+	private static Button autoToolModeButton() {
+		return Button.builder(autoToolModeMessage(), button -> {
+			EMUtilsClient.config().setAutoToolMode(EMUtilsClient.config().autoToolMode().next());
+			button.setMessage(autoToolModeMessage());
+		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Component autoToolModeMessage() {
+		return Component.translatable(
+			EMUtilsTexts.OPTION_VALUE,
+			Component.translatable(EMUtilsTexts.OPTION_AUTO_TOOL_MODE),
+			Component.translatable(EMUtilsClient.config().autoToolMode().labelKey())
+		);
 	}
 }

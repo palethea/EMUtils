@@ -1111,7 +1111,7 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private boolean canExpand(FeatureSpec feature) {
-		return feature.category() != null && !rows(feature).isEmpty();
+		return !rows(feature).isEmpty();
 	}
 
 	private static int settingLabelWidth(int width) {
@@ -1185,8 +1185,11 @@ public final class CustomHubScreen extends Screen {
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, EMUtilsTexts.HUB_FEATURE_NO_NAUSEA_DESC, IconKind.EYE, toggle(config::tweakNoNausea, config::setTweakNoNausea)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC, IconKind.ZOOM, toggle(config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, EMUtilsTexts.HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES, EMUtilsTexts.HUB_FEATURE_NO_NETHER_PARTICLES_DESC, IconKind.SPARKLES, toggle(config::tweakNoNetherParticles, config::setTweakNoNetherParticles)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, IconKind.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, IconKind.EYE, toggle(config::tweakFreelook, config::setTweakFreelook)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, IconKind.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, IconKind.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, EMUtilsTexts.HUB_FEATURE_OWN_NAMETAG_DESC, IconKind.TAG, toggle(config::tweakOwnNametag, config::setTweakOwnNametag)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_SHULKER_PREVIEW_DESC, IconKind.BOX, toggle(config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_BUNDLE_PREVIEW_DESC, IconKind.PACKAGE_OPEN, toggle(config::tweakBundleTooltipPreview, config::setTweakBundleTooltipPreview)),
@@ -1198,6 +1201,21 @@ public final class CustomHubScreen extends Screen {
 			feature(HubCategory.AUTO_RECONNECT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, IconKind.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			feature(HubCategory.SCREENSHOT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, IconKind.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
 			feature(HubCategory.DEATH_WAYPOINTS, FeatureGroup.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, IconKind.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)),
+			feature(
+				FeatureGroup.UTILITY,
+				EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA,
+				EMUtilsTexts.HUB_FEATURE_FREE_CAMERA_DESC,
+				IconKind.EYE,
+				toggle(config::tweakFreeCamera, config::setTweakFreeCamera),
+				List.of(new HubSettingRow.Slider(
+					EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
+					EMUtilsTexts.SUFFIX_MULTIPLIER,
+					EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
+					EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
+					config::freeCameraBoostMultiplier,
+					config::setFreeCameraBoostMultiplier
+				))
+			),
 			actionFeature(
 				HubCategory.SCREENSHOT_GALLERY,
 				FeatureGroup.MANAGEMENT,
@@ -1243,7 +1261,14 @@ public final class CustomHubScreen extends Screen {
 			),
 			feature(HubCategory.CHAT, FeatureGroup.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, IconKind.CHAT, toggle(config::copyChat, config::setCopyChat)),
 			feature(HubCategory.INVENTORY, FeatureGroup.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, IconKind.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace))
+			feature(HubCategory.AUTO_TOOL, FeatureGroup.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, IconKind.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),
+			feature(HubCategory.AUTO_FLIGHT, FeatureGroup.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, IconKind.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_USE, EMUtilsTexts.HUB_FEATURE_FAST_USE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastUse, config::setTweakFastUse)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, IconKind.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, IconKind.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow)),
+			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement))
 		);
 	}
 
@@ -1434,6 +1459,7 @@ public final class CustomHubScreen extends Screen {
 		BOX(HubIcons.BOX),
 		PACKAGE(HubIcons.PACKAGE),
 		PACKAGE_OPEN(HubIcons.PACKAGE_OPEN),
+		SPARKLES(HubIcons.SPARKLES),
 		SCRIPT(HubIcons.PACKAGE_OPEN);
 
 		private final Identifier texture;

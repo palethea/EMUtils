@@ -44,6 +44,11 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setHudShowCoordinates
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_HUD_NETHER_COORDINATES,
+			() -> EMUtilsClient.config().hudShowNetherCoordinates(),
+			EMUtilsClient.config()::setHudShowNetherCoordinates
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_HUD_CHUNK_REGION,
 			() -> EMUtilsClient.config().hudShowChunkRegion(),
 			EMUtilsClient.config()::setHudShowChunkRegion

@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.DispenserScreen;
@@ -49,6 +50,7 @@ public final class InventoryToolsManager {
 	private static final int SORT_NORMAL_OPERATION_LIMIT = 512;
 	private static final int SORT_ICON_SIZE = 12;
 	private static final int SORT_ICON_TEXTURE_SIZE = 64;
+	private static final int PLAYER_STORAGE_SLOT_COUNT = 36;
 	private static final int SORT_BUTTON_BORDER = 0xFF5A5A5A;
 	private static final int SORT_BUTTON_FILL = 0xFFBEBEBE;
 	private static final int SORT_BUTTON_FILL_HOVERED = 0xFFD0D0D0;
@@ -68,21 +70,26 @@ public final class InventoryToolsManager {
 	@Nullable
 	private KeyMapping slotBindKey;
 	@Nullable
+	private KeyMapping quickStackKey;
+	@Nullable
 	private DragState dragState;
 	private final Set<Integer> hoverTransferSlots = new HashSet<>();
 	private boolean hoverTransferActive;
 	private boolean slotLockKeyConsumed;
 	@Nullable
 	private SortTask sortTask;
+	@Nullable
+	private QuickStackTask quickStackTask;
 	private final InventoryCursorManager cursorManager = new InventoryCursorManager();
 
 	public InventoryCursorManager cursor() {
 		return cursorManager;
 	}
 
-	public void setKeyMappings(KeyMapping slotLockKey, KeyMapping slotBindKey) {
+	public void setKeyMappings(KeyMapping slotLockKey, KeyMapping slotBindKey, KeyMapping quickStackKey) {
 		this.slotLockKey = slotLockKey;
 		this.slotBindKey = slotBindKey;
+		this.quickStackKey = quickStackKey;
 	}
 
 	public void onWorldJoin(Minecraft client) {
@@ -103,6 +110,7 @@ public final class InventoryToolsManager {
 	public void tick(Minecraft client) {
 		cursorManager.tick(client);
 		runQueuedSort(client);
+		runQueuedQuickStack(client);
 
 		if (slotLockKey == null || isLockKeyDown(client)) {
 			return;
@@ -121,7 +129,21 @@ public final class InventoryToolsManager {
 
 	public boolean handleKeyPressed(AbstractContainerMenu handler, @Nullable Slot focusedSlot, KeyEvent input, Inventory playerInventory) {
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || !config.inventoryToolsEnabled() || focusedSlot == null) {
+		if (config == null || !config.inventoryToolsEnabled()) {
+			return false;
+		}
+
+		Minecraft client = Minecraft.getInstance();
+		if (quickStackKey != null
+			&& quickStackKey.matches(input)
+			&& quickStackAvailable(client, handler, playerInventory)
+			&& handler.getCarried().isEmpty()
+			&& !inventoryActionRunning()) {
+			startQuickStack(client, handler, playerInventory);
+			return true;
+		}
+
+		if (focusedSlot == null) {
 			return false;
 		}
 
@@ -167,6 +189,7 @@ public final class InventoryToolsManager {
 		dragState = null;
 		clearHoverTransfer();
 		sortTask = null;
+		quickStackTask = null;
 	}
 
 	public void finishDragIfBindKeyReleased(
@@ -329,7 +352,7 @@ public final class InventoryToolsManager {
 
 		InventorySlotRef ref = InventorySlotRef.from(handler, slot, playerInventory);
 		if (!isLocked(ref)) {
-			return actionType == ContainerInput.PICKUP_ALL && hasAnyLockedSlots();
+			return actionType == ContainerInput.PICKUP_ALL && hasLockedMatchingStack(handler, playerInventory, cursorStack);
 		}
 
 		return switch (actionType) {
@@ -420,15 +443,29 @@ public final class InventoryToolsManager {
 		}
 	}
 
-	public void drawDragLine(GuiGraphicsExtractor context, @Nullable Slot focusedSlot, int mouseX, int mouseY) {
+	public void drawDragLine(
+		GuiGraphicsExtractor context,
+		@Nullable Slot focusedSlot,
+		int screenX,
+		int screenY,
+		int mouseX,
+		int mouseY
+	) {
 		EMUtilsConfig config = EMUtilsClient.config();
 		if (config == null || !config.inventoryToolsEnabled() || !config.slotBindingEnabled() || dragState == null) {
 			return;
 		}
 
-		int endX = focusedSlot == null ? mouseX : focusedSlot.x + SLOT_SIZE / 2;
-		int endY = focusedSlot == null ? mouseY : focusedSlot.y + SLOT_SIZE / 2;
-		drawLine(context, dragState.startX(), dragState.startY(), endX, endY, LINE_COLOR);
+		int endX = focusedSlot == null ? mouseX : screenX + focusedSlot.x + SLOT_SIZE / 2;
+		int endY = focusedSlot == null ? mouseY : screenY + focusedSlot.y + SLOT_SIZE / 2;
+		drawLine(
+			context,
+			screenX + dragState.startX(),
+			screenY + dragState.startY(),
+			endX,
+			endY,
+			LINE_COLOR
+		);
 	}
 
 	public void drawSortButtons(
@@ -441,13 +478,42 @@ public final class InventoryToolsManager {
 		int mouseX,
 		int mouseY
 	) {
-		if (!sortButtonsAvailable(client, handler, playerInventory)) {
+		boolean sortButtonsAvailable = sortButtonsAvailable(client, handler, playerInventory);
+		boolean quickStackAvailable = quickStackAvailable(client, handler, playerInventory);
+		if (!sortButtonsAvailable && !quickStackAvailable) {
 			return;
 		}
 
-		boolean enabled = handler.getCarried().isEmpty() && sortTask == null;
-		for (SortButton button : sortButtons(handler, playerInventory)) {
-			drawSortButton(context, button, screenX, screenY, enabled, button.contains(mouseX, mouseY));
+		boolean enabled = handler.getCarried().isEmpty() && !inventoryActionRunning();
+		Component tooltip = null;
+		if (sortButtonsAvailable) {
+			for (SortButton sortButton : sortButtons(handler, playerInventory)) {
+				boolean hovered = sortButton.contains(mouseX, mouseY);
+				drawSortButton(context, sortButton, screenX, screenY, enabled, hovered);
+				if (hovered) {
+					tooltip = Component.translatable(sortButton.mode().labelKey());
+				}
+			}
+		}
+
+		QuickStackButton quickStackButton = quickStackButton(handler, playerInventory, sortButtonsAvailable);
+		if (quickStackButton != null && quickStackAvailable) {
+			boolean hovered = quickStackButton.contains(mouseX, mouseY);
+			drawQuickStackButton(context, quickStackButton, screenX, screenY, enabled, hovered);
+			if (hovered) {
+				tooltip = Component.translatable("emutils.inventory.quick_stack");
+			}
+		}
+
+		if (tooltip != null) {
+			context.setTooltipForNextFrame(
+				client.font,
+				List.of(tooltip),
+				Optional.empty(),
+				screenX + mouseX,
+				screenY + mouseY,
+				null
+			);
 		}
 	}
 
@@ -459,18 +525,111 @@ public final class InventoryToolsManager {
 		double mouseY,
 		Inventory playerInventory
 	) {
-		if (button != 0 || !sortButtonsAvailable(client, handler, playerInventory) || !handler.getCarried().isEmpty()) {
+		if (button != 0 || !handler.getCarried().isEmpty() || inventoryActionRunning()) {
 			return false;
 		}
 
-		for (SortButton sortButton : sortButtons(handler, playerInventory)) {
-			if (sortButton.contains(mouseX, mouseY)) {
-				startSort(client, handler, playerInventory, sortButton.target(), sortButton.mode());
-				return true;
+		boolean sortButtonsAvailable = sortButtonsAvailable(client, handler, playerInventory);
+		if (sortButtonsAvailable) {
+			for (SortButton sortButton : sortButtons(handler, playerInventory)) {
+				if (sortButton.contains(mouseX, mouseY)) {
+					startSort(client, handler, playerInventory, sortButton.target(), sortButton.mode());
+					return true;
+				}
 			}
 		}
 
+		QuickStackButton quickStackButton = quickStackButton(handler, playerInventory, sortButtonsAvailable);
+		if (quickStackButton != null
+			&& quickStackAvailable(client, handler, playerInventory)
+			&& quickStackButton.contains(mouseX, mouseY)) {
+			startQuickStack(client, handler, playerInventory);
+			return true;
+		}
+
 		return false;
+	}
+
+	private void startQuickStack(Minecraft client, AbstractContainerMenu handler, Inventory playerInventory) {
+		if (client.player == null || client.gameMode == null) {
+			return;
+		}
+
+		List<Integer> slotIds = quickStackSlotIds(handler, playerInventory, client.player);
+		if (slotIds.isEmpty()) {
+			return;
+		}
+
+		if (EMUtilsClient.config().quickStackSpeed() == InventorySortSpeed.ANTI_CHEAT) {
+			quickStackTask = new QuickStackTask(handler, slotIds);
+			runQueuedQuickStack(client);
+			return;
+		}
+
+		for (int index = 0; index < Math.min(slotIds.size(), SORT_NORMAL_OPERATION_LIMIT); index++) {
+			executeQuickStackOperation(client, handler, slotIds.get(index));
+		}
+	}
+
+	private void runQueuedQuickStack(Minecraft client) {
+		if (quickStackTask == null) {
+			return;
+		}
+		if (client.player == null
+			|| client.gameMode == null
+			|| client.player.containerMenu != quickStackTask.handler()
+			|| !isStorageContainerScreen(client)
+			|| !quickStackTask.handler().getCarried().isEmpty()) {
+			quickStackTask = null;
+			return;
+		}
+
+		Integer slotId = quickStackTask.next();
+		if (slotId == null) {
+			quickStackTask = null;
+			return;
+		}
+
+		executeQuickStackOperation(client, quickStackTask.handler(), slotId);
+		if (quickStackTask.done()) {
+			quickStackTask = null;
+		}
+	}
+
+	private static void executeQuickStackOperation(Minecraft client, AbstractContainerMenu handler, int slotId) {
+		if (client.player != null && client.gameMode != null) {
+			client.gameMode.handleContainerInput(handler.containerId, slotId, 0, ContainerInput.QUICK_MOVE, client.player);
+		}
+	}
+
+	private List<Integer> quickStackSlotIds(AbstractContainerMenu handler, Inventory playerInventory, Player player) {
+		List<ItemStack> containerStacks = new ArrayList<>();
+		for (Slot slot : handler.slots) {
+			if (slot.isActive() && slot.container != playerInventory && slot.hasItem()) {
+				containerStacks.add(slot.getItem().copy());
+			}
+		}
+
+		List<Integer> slotIds = new ArrayList<>();
+		for (int slotId = 0; slotId < handler.slots.size(); slotId++) {
+			Slot slot = handler.slots.get(slotId);
+			int inventoryIndex = slot.getContainerSlot();
+			if (!slot.isActive()
+				|| slot.container != playerInventory
+				|| inventoryIndex < 0
+				|| inventoryIndex >= PLAYER_STORAGE_SLOT_COUNT
+				|| !slot.hasItem()
+				|| !slot.mayPickup(player)
+				|| isLocked(InventorySlotRef.from(handler, slot, playerInventory))) {
+				continue;
+			}
+
+			ItemStack playerStack = slot.getItem();
+			if (containerStacks.stream().anyMatch(containerStack -> ItemStack.isSameItemSameComponents(containerStack, playerStack))) {
+				slotIds.add(slotId);
+			}
+		}
+		return slotIds;
 	}
 
 	private void startSort(
@@ -509,7 +668,7 @@ public final class InventoryToolsManager {
 		if (sortTask == null) {
 			return;
 		}
-		if (client.player == null || client.gameMode == null || !isStorageContainerScreen(client) || !sortTask.handler().getCarried().isEmpty()) {
+		if (client.player == null || client.gameMode == null || !isSortableContainerScreen(client) || !sortTask.handler().getCarried().isEmpty()) {
 			sortTask = null;
 			return;
 		}
@@ -848,6 +1007,9 @@ public final class InventoryToolsManager {
 			if (!slot.isActive() || !belongsToTarget(slot, playerInventory, target)) {
 				continue;
 			}
+			if (slot.hasItem() && slot.getItem().get(DataComponents.BUNDLE_CONTENTS) != null) {
+				continue;
+			}
 			if (isLocked(InventorySlotRef.from(handler, slot, playerInventory))) {
 				continue;
 			}
@@ -904,8 +1066,41 @@ public final class InventoryToolsManager {
 			&& config.sortButtonsEnabled()
 			&& client.player != null
 			&& client.gameMode != null
+			&& isSortableContainerScreen(client)
+			&& hasContainerSlots(handler, playerInventory);
+	}
+
+	private boolean quickStackAvailable(Minecraft client, AbstractContainerMenu handler, Inventory playerInventory) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null
+			&& config.inventoryToolsEnabled()
+			&& config.quickStackEnabled()
+			&& client.player != null
+			&& client.gameMode != null
 			&& isStorageContainerScreen(client)
 			&& hasContainerSlots(handler, playerInventory);
+	}
+
+	@Nullable
+	private QuickStackButton quickStackButton(
+		AbstractContainerMenu handler,
+		Inventory playerInventory,
+		boolean sortButtonsAvailable
+	) {
+		Bounds bounds = boundsFor(handler, playerInventory, SortTarget.CONTAINER);
+		if (bounds == null) {
+			return null;
+		}
+
+		int sortButtonCount = sortButtonsAvailable ? InventorySortMode.values().length : 0;
+		return new QuickStackButton(
+			bounds.right() + SORT_BUTTON_OFFSET,
+			bounds.top() - SORT_TITLE_BAR_HEIGHT + sortButtonCount * (SORT_BUTTON_SIZE + SORT_BUTTON_GAP)
+		);
+	}
+
+	private boolean inventoryActionRunning() {
+		return sortTask != null || quickStackTask != null;
 	}
 
 	private static boolean belongsToTarget(Slot slot, Inventory playerInventory, SortTarget target) {
@@ -927,6 +1122,25 @@ public final class InventoryToolsManager {
 	private static void drawSortButton(GuiGraphicsExtractor context, SortButton button, int screenX, int screenY, boolean enabled, boolean hovered) {
 		int x = screenX + button.x();
 		int y = screenY + button.y();
+		drawInventoryActionButton(context, x, y, enabled, hovered);
+		drawSortIcon(context, button.mode(), x, y);
+	}
+
+	private static void drawQuickStackButton(GuiGraphicsExtractor context, QuickStackButton button, int screenX, int screenY, boolean enabled, boolean hovered) {
+		int x = screenX + button.x();
+		int y = screenY + button.y();
+		drawInventoryActionButton(context, x, y, enabled, hovered);
+
+		int iconColor = enabled ? 0xFF303030 : 0xFF666666;
+		context.fill(x + 7, y + 3, x + 9, y + 8, iconColor);
+		context.fill(x + 5, y + 6, x + 11, y + 8, iconColor);
+		context.fill(x + 6, y + 8, x + 10, y + 9, iconColor);
+		context.fill(x + 4, y + 10, x + 5, y + 13, iconColor);
+		context.fill(x + 11, y + 10, x + 12, y + 13, iconColor);
+		context.fill(x + 4, y + 12, x + 12, y + 13, iconColor);
+	}
+
+	private static void drawInventoryActionButton(GuiGraphicsExtractor context, int x, int y, boolean enabled, boolean hovered) {
 		int fill = enabled ? hovered ? SORT_BUTTON_FILL_HOVERED : SORT_BUTTON_FILL : SORT_BUTTON_FILL_DISABLED;
 		context.fill(x, y, x + SORT_BUTTON_SIZE, y + SORT_BUTTON_SIZE, SORT_BUTTON_BORDER);
 		context.fill(x + 1, y + 1, x + SORT_BUTTON_SIZE - 1, y + SORT_BUTTON_SIZE - 1, fill);
@@ -934,7 +1148,6 @@ public final class InventoryToolsManager {
 		context.fill(x + 1, y + 1, x + 2, y + SORT_BUTTON_SIZE - 1, SORT_BUTTON_HIGHLIGHT);
 		context.fill(x + 1, y + SORT_BUTTON_SIZE - 2, x + SORT_BUTTON_SIZE - 1, y + SORT_BUTTON_SIZE - 1, SORT_BUTTON_SHADOW);
 		context.fill(x + SORT_BUTTON_SIZE - 2, y + 1, x + SORT_BUTTON_SIZE - 1, y + SORT_BUTTON_SIZE - 1, SORT_BUTTON_SHADOW);
-		drawSortIcon(context, button.mode(), x, y);
 	}
 
 	private static void drawSortIcon(GuiGraphicsExtractor context, InventorySortMode mode, int x, int y) {
@@ -1024,9 +1237,19 @@ public final class InventoryToolsManager {
 		return lockedSlots.contains(ref) || config != null && config.slotBindingLockBoundSlots() && isBound(ref);
 	}
 
-	private boolean hasAnyLockedSlots() {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return !lockedSlots.isEmpty() || config != null && config.slotBindingLockBoundSlots() && !boundSlots.isEmpty();
+	private boolean hasLockedMatchingStack(AbstractContainerMenu handler, Inventory playerInventory, ItemStack targetStack) {
+		if (targetStack.isEmpty()) {
+			return false;
+		}
+
+		for (Slot slot : handler.slots) {
+			if (slot.hasItem()
+				&& isLocked(InventorySlotRef.from(handler, slot, playerInventory))
+				&& ItemStack.isSameItemSameComponents(slot.getItem(), targetStack)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean lockingAvailable() {
@@ -1058,8 +1281,7 @@ public final class InventoryToolsManager {
 			&& client.player != null
 			&& client.gameMode != null
 			&& handler.getCarried().isEmpty()
-			&& isStorageContainerScreen(client)
-			&& hasContainerSlots(handler, playerInventory);
+			&& hoverTransferAllowedOnScreen(client, handler, playerInventory);
 	}
 
 	private void tryHoverTransferSlot(
@@ -1095,6 +1317,23 @@ public final class InventoryToolsManager {
 			|| client.gui.screen() instanceof ShulkerBoxScreen
 			|| client.gui.screen() instanceof HopperScreen
 			|| client.gui.screen() instanceof DispenserScreen;
+	}
+
+	private static boolean hoverTransferAllowedOnScreen(Minecraft client, AbstractContainerMenu handler, Inventory playerInventory) {
+		if (isStorageContainerScreen(client) && hasContainerSlots(handler, playerInventory)) {
+			return true;
+		}
+
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null
+			&& config.hoverTransferGlobal()
+			&& client.gui.screen() instanceof AbstractContainerScreen<?>
+			&& !(client.gui.screen() instanceof CreativeModeInventoryScreen);
+	}
+
+	private static boolean isSortableContainerScreen(Minecraft client) {
+		return client.gui.screen() instanceof ContainerScreen
+			|| client.gui.screen() instanceof ShulkerBoxScreen;
 	}
 
 	private static boolean hasContainerSlots(AbstractContainerMenu handler, Inventory playerInventory) {
@@ -1207,6 +1446,15 @@ public final class InventoryToolsManager {
 		}
 	}
 
+	private record QuickStackButton(int x, int y) {
+		private boolean contains(double mouseX, double mouseY) {
+			return mouseX >= x
+				&& mouseX < x + SORT_BUTTON_SIZE
+				&& mouseY >= y
+				&& mouseY < y + SORT_BUTTON_SIZE;
+		}
+	}
+
 	private record SortSlot(int slotId, ItemStack stack) {
 	}
 
@@ -1237,6 +1485,30 @@ public final class InventoryToolsManager {
 
 		private boolean done() {
 			return index >= operations.size();
+		}
+	}
+
+	private static final class QuickStackTask {
+		private final AbstractContainerMenu handler;
+		private final List<Integer> slotIds;
+		private int index;
+
+		private QuickStackTask(AbstractContainerMenu handler, List<Integer> slotIds) {
+			this.handler = handler;
+			this.slotIds = slotIds;
+		}
+
+		private AbstractContainerMenu handler() {
+			return handler;
+		}
+
+		@Nullable
+		private Integer next() {
+			return index >= slotIds.size() ? null : slotIds.get(index++);
+		}
+
+		private boolean done() {
+			return index >= slotIds.size();
 		}
 	}
 
