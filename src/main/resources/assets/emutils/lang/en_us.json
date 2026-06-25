@@ -261,6 +261,7 @@
   "emutils.option.sort_speed": "Sort Speed",
   "emutils.option.quick_stack": "Quick Stack",
   "emutils.option.quick_stack_speed": "Quick Stack Speed",
+  "emutils.option.auto_refill": "Auto Refill",
   "emutils.inventory.sort.name": "Sort by Name",
   "emutils.inventory.sort.category": "Sort by Category",
   "emutils.inventory.sort.quantity": "Sort by Quantity",

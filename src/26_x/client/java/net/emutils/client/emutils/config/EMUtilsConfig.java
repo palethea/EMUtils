@@ -209,6 +209,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String sortSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean quickStackEnabled = Boolean.TRUE;
 	private String quickStackSpeed = InventorySortSpeed.NORMAL.name();
+	private Boolean autoRefillEnabled = Boolean.FALSE;
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
 	private Boolean preserveContainerCursor = Boolean.TRUE;
 	private String slotLockColor = SlotLockColor.RED.name();
@@ -1477,6 +1478,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean autoRefillEnabled() {
+		return autoRefillEnabled != null && autoRefillEnabled;
+	}
+
+	public void setAutoRefillEnabled(boolean enabled) {
+		autoRefillEnabled = enabled;
+		save();
+	}
+
 	public boolean inventoryPreviewEnabled() {
 		return inventoryPreviewEnabled != null && inventoryPreviewEnabled;
 	}
@@ -1875,6 +1885,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		sortSpeed = InventorySortSpeed.NORMAL.name();
 		quickStackEnabled = Boolean.TRUE;
 		quickStackSpeed = InventorySortSpeed.NORMAL.name();
+		autoRefillEnabled = Boolean.FALSE;
 		inventoryPreviewEnabled = Boolean.FALSE;
 		preserveContainerCursor = Boolean.TRUE;
 		slotLockColor = SlotLockColor.RED.name();
@@ -2242,6 +2253,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (quickStackSpeed == null) {
 			quickStackSpeed = InventorySortSpeed.NORMAL.name();
+		}
+		if (autoRefillEnabled == null) {
+			autoRefillEnabled = Boolean.FALSE;
 		}
 		if (inventoryPreviewEnabled == null) {
 			inventoryPreviewEnabled = Boolean.FALSE;

@@ -471,6 +471,8 @@ public final class EMUtilsTexts {
         "emutils.option.quick_stack";
     public static final String OPTION_QUICK_STACK_SPEED =
         "emutils.option.quick_stack_speed";
+    public static final String OPTION_AUTO_REFILL =
+        "emutils.option.auto_refill";
     public static final String OPTION_INVENTORY_PREVIEW =
         "emutils.option.inventory_preview";
     public static final String OPTION_PRESERVE_CONTAINER_CURSOR =

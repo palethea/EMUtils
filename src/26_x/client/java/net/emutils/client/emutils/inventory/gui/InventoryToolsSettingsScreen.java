@@ -63,6 +63,11 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(quickStackSpeedButton());
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_REFILL,
+			() -> EMUtilsClient.config().autoRefillEnabled(),
+			EMUtilsClient.config()::setAutoRefillEnabled
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_INVENTORY_PREVIEW,
 			() -> EMUtilsClient.config().inventoryPreviewEnabled(),
 			EMUtilsClient.config()::setInventoryPreviewEnabled
