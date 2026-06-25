@@ -182,6 +182,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer autoSwitchRocketsHotbarSlot = 9;
 	private Boolean autoToolEnabled = Boolean.FALSE;
 	private String autoToolMode = AutoToolMode.LEGIT.name();
+	private Boolean autoToolReturnToPreviousItem = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
@@ -1187,6 +1188,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean autoToolReturnToPreviousItem() {
+		return autoToolReturnToPreviousItem != null && autoToolReturnToPreviousItem;
+	}
+
+	public void setAutoToolReturnToPreviousItem(boolean enabled) {
+		autoToolReturnToPreviousItem = enabled;
+		save();
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -1790,6 +1800,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
+		autoToolReturnToPreviousItem = Boolean.FALSE;
 		tweakOwnNametag = Boolean.FALSE;
 		save();
 	}
@@ -1803,6 +1814,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetAutoToolDefaults() {
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
+		autoToolReturnToPreviousItem = Boolean.FALSE;
 		save();
 	}
 
@@ -2153,6 +2165,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (autoToolMode == null) {
 			autoToolMode = AutoToolMode.LEGIT.name();
+		}
+		if (autoToolReturnToPreviousItem == null) {
+			autoToolReturnToPreviousItem = Boolean.FALSE;
 		}
 		if (tweakOwnNametag == null) {
 			tweakOwnNametag = Boolean.FALSE;

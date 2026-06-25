@@ -14,20 +14,29 @@ public final class AutoToolManager {
 	private static final int MAIN_INVENTORY_END = 36;
 	private static final float EPSILON = 0.0001F;
 
+	private int restoreHotbarSlot = -1;
+	private int restoreInventorySlot = -1;
+
 	public void tick(Minecraft client) {
 		if (EMUtilsClient.config() == null
-			|| !EMUtilsClient.config().autoToolEnabled()
 			|| client.player == null
 			|| client.level == null
-			|| client.gameMode == null
+			|| client.gameMode == null) {
+			clearRestore();
+			return;
+		}
+
+		if (!EMUtilsClient.config().autoToolEnabled()
 			|| client.gui.screen() != null
 			|| !client.options.keyAttack.isDown()
 			|| !(client.hitResult instanceof BlockHitResult blockHit)) {
+			restorePreviousItem(client);
 			return;
 		}
 
 		BlockState state = client.level.getBlockState(blockHit.getBlockPos());
 		if (state.isAir()) {
+			restorePreviousItem(client);
 			return;
 		}
 
@@ -42,6 +51,7 @@ public final class AutoToolManager {
 			return;
 		}
 
+		rememberPreviousItem(selected, bestSlot);
 		if (bestSlot < HOTBAR_SIZE) {
 			inventory.setSelectedSlot(bestSlot);
 			return;
@@ -55,6 +65,43 @@ public final class AutoToolManager {
 			ContainerInput.SWAP,
 			player
 		);
+	}
+
+	private void rememberPreviousItem(int selected, int bestSlot) {
+		if (!EMUtilsClient.config().autoToolReturnToPreviousItem() || restoreHotbarSlot >= 0) {
+			return;
+		}
+
+		restoreHotbarSlot = selected;
+		if (bestSlot >= HOTBAR_SIZE) {
+			restoreInventorySlot = bestSlot;
+		}
+	}
+
+	private void restorePreviousItem(Minecraft client) {
+		if (restoreHotbarSlot < 0 || client.player == null || client.gameMode == null) {
+			clearRestore();
+			return;
+		}
+
+		Player player = client.player;
+		Inventory inventory = player.getInventory();
+		if (restoreInventorySlot >= HOTBAR_SIZE && restoreInventorySlot < MAIN_INVENTORY_END) {
+			client.gameMode.handleContainerInput(
+				player.inventoryMenu.containerId,
+				restoreInventorySlot,
+				restoreHotbarSlot,
+				ContainerInput.SWAP,
+				player
+			);
+		}
+		inventory.setSelectedSlot(restoreHotbarSlot);
+		clearRestore();
+	}
+
+	private void clearRestore() {
+		restoreHotbarSlot = -1;
+		restoreInventorySlot = -1;
 	}
 
 	private static int findBestSlot(Inventory inventory, BlockState state, int selected, int searchEnd) {

@@ -436,6 +436,11 @@ public final class HubSettingsRegistry {
 			() -> config.autoToolMode().next(),
 			() -> Component.translatable(config.autoToolMode().labelKey())
 		));
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_AUTO_TOOL_RETURN_TO_PREVIOUS_ITEM,
+			config::autoToolReturnToPreviousItem,
+			config::setAutoToolReturnToPreviousItem
+		));
 		return rows;
 	}
 

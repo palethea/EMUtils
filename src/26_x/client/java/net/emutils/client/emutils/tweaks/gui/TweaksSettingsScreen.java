@@ -182,6 +182,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(autoToolModeButton());
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_AUTO_TOOL_RETURN_TO_PREVIOUS_ITEM,
+			() -> EMUtilsClient.config().autoToolReturnToPreviousItem(),
+			EMUtilsClient.config()::setAutoToolReturnToPreviousItem
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG,
 			() -> EMUtilsClient.config().tweakNoEnvironmentFog(),
 			EMUtilsClient.config()::setTweakNoEnvironmentFog

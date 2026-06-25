@@ -227,6 +227,7 @@ Automatically select the fastest suitable tool using each item and block's publi
 
 - Legit: switch only between tools already in the hotbar.
 - Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
+- Return to Previous Item: switch back to the item you were holding after Auto Tool stops using a tool.
 
 ### Auto Flight Gear
 
