@@ -30,12 +30,26 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".SodiumWorldRendererMixin")) {
 			return isSupportedSodiumTarget() && FabricLoader.getInstance().isModLoaded("sodium");
 		}
+		if (mixinClassName.endsWith(".ClientLevelWeatherEffectsMixin") || mixinClassName.endsWith(".WeatherRenderingMixin")) {
+			return isMinecraft26_2OrNewer();
+		}
+		if (mixinClassName.endsWith(".WeatherEffectRenderer26_1Mixin")) {
+			return isMinecraft26_1();
+		}
 
 		return true;
 	}
 
 	private boolean isSupportedSodiumTarget() {
 		return SUPPORTED_SODIUM_26_X.contains(minecraftVersion);
+	}
+
+	private boolean isMinecraft26_1() {
+		return minecraftVersion.equals("26.1") || minecraftVersion.equals("26.1.1") || minecraftVersion.equals("26.1.2");
+	}
+
+	private boolean isMinecraft26_2OrNewer() {
+		return !isMinecraft26_1();
 	}
 
 	@Override

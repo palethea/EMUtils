@@ -54,6 +54,7 @@
 		"ScreenMixin",
 		"ScreenshotRecorderMixin",
 		"SodiumWorldRendererMixin",
+		"WeatherEffectRenderer26_1Mixin",
 		"WeatherRenderingMixin"
 	],
 	"injectors": {
