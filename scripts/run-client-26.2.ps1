@@ -1,5 +1,6 @@
 param(
-    [switch] $WaitForDebugger
+    [switch] $WaitForDebugger,
+    [switch] $NoLaunchTestWorld
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,6 +16,10 @@ $args = @(
     "-PmcVersion=26.2",
     '--stacktrace'
 )
+
+if (-not $NoLaunchTestWorld) {
+    $args += "-PemutilsLaunchTestWorld=true"
+}
 
 if ($WaitForDebugger) {
     $args += '--debug-jvm'

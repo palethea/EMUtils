@@ -37,7 +37,7 @@ try {
     }
 
     foreach ($version in $Versions) {
-        Write-Host "Launching Minecraft $version with EMUtils smoke verifier..."
+        Write-Host "Launching Minecraft $version into a singleplayer test world with EMUtils smoke verifier..."
 
         $stdout = Join-Path $logDir "26x-$version.out.log"
         $stderr = Join-Path $logDir "26x-$version.err.log"
@@ -76,7 +76,7 @@ try {
         }
 
         $latestLog = Join-Path $repo "run\26x-smoke\$version\logs\latest.log"
-        $marker = 'EMUtils smoke launch verifier reached client tick loop; stopping Minecraft.'
+        $marker = 'EMUtils smoke launch verifier reached singleplayer world; stopping Minecraft.'
         $stdoutHasMarker = (Test-Path -LiteralPath $stdout) -and (Select-String -LiteralPath $stdout -SimpleMatch $marker -Quiet)
         $latestHasMarker = (Test-Path -LiteralPath $latestLog) -and (Select-String -LiteralPath $latestLog -SimpleMatch $marker -Quiet)
         if (-not ($stdoutHasMarker -or $latestHasMarker)) {
@@ -86,11 +86,11 @@ try {
             throw "Minecraft $version exited without the EMUtils smoke verifier success marker."
         }
 
-        Write-Host "Minecraft $version reached the client tick loop and shut down cleanly."
+        Write-Host "Minecraft $version reached a singleplayer world and shut down cleanly."
     }
 }
 finally {
     Pop-Location
 }
 
-Write-Host "All supported 26.x launch smoke tests passed."
+Write-Host "All supported 26.x singleplayer launch smoke tests passed."
