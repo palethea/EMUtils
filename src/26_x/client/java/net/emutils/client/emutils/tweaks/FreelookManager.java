@@ -28,7 +28,7 @@ public final class FreelookManager {
 			&& EMUtilsClient.config().tweakFreelook()
 			&& client.player != null
 			&& client.level != null
-			&& client.gui.screen() == null;
+			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null;
 
 		if (shouldBeActive && !active) {
 			playerYaw = client.player.getYRot();

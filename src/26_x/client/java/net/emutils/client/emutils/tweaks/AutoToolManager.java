@@ -27,7 +27,7 @@ public final class AutoToolManager {
 		}
 
 		if (!EMUtilsClient.config().autoToolEnabled()
-			|| client.gui.screen() != null
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null
 			|| !client.options.keyAttack.isDown()
 			|| !(client.hitResult instanceof BlockHitResult blockHit)) {
 			restorePreviousItem(client);

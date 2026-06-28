@@ -1,20 +1,20 @@
 package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import java.lang.reflect.InvocationTargetException;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.Hud;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Hud.class)
+@Mixin(targets = "net.minecraft.client.gui.Hud")
 public abstract class InGameHudMixin {
 	@Inject(method = "extractFood", at = @At("HEAD"))
 	private void emutils$renderFoodExhaustion(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci) {
@@ -23,7 +23,24 @@ public abstract class InGameHudMixin {
 
 	@Inject(method = "extractFood", at = @At("TAIL"))
 	private void emutils$renderFoodOverlays(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci) {
-		FoodHudRenderer.renderOverlays(context, player, top, right, ((Hud) (Object) this).getGuiTicks());
+		FoodHudRenderer.renderOverlays(context, player, top, right, emutils$getGuiTicks());
+	}
+
+	private int emutils$getGuiTicks() {
+		try {
+			return (Integer) Class.forName("net.minecraft.client.gui.Hud").getMethod("getGuiTicks").invoke(this);
+		} catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e) {
+			throw new IllegalStateException("Missing Hud.getGuiTicks on Minecraft 26.2", e);
+		} catch (InvocationTargetException e) {
+			Throwable cause = e.getCause();
+			if (cause instanceof RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new IllegalStateException("Failed to call Hud.getGuiTicks on Minecraft 26.2", cause);
+		}
 	}
 
 	@Inject(method = "extractSpyglassOverlay", at = @At("HEAD"), cancellable = true)

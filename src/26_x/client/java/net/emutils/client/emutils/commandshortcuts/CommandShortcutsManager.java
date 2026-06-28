@@ -64,6 +64,6 @@ public final class CommandShortcutsManager {
 			&& client != null
 			&& client.player != null
 			&& client.level != null
-			&& client.gui.screen() == null;
+			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null;
 	}
 }

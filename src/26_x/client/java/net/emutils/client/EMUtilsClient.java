@@ -142,7 +142,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			return;
 		}
 
-		boolean pauseMenu = client.gui.screen() instanceof PauseScreen && config.spotifyPlayerEnabled();
+		boolean pauseMenu = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof PauseScreen && config.spotifyPlayerEnabled();
 		boolean hud = config.spotifyHudOverlay() && client.player != null && client.level != null;
 		if (pauseMenu || hud) {
 			spotifyPlaybackService.tick(true);
@@ -289,28 +289,28 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void handleKeyMappings(Minecraft client) {
 		while (openGalleryKeyMapping != null && openGalleryKeyMapping.consumeClick()) {
-			if (!(client.gui.screen() instanceof ScreenshotGalleryScreen)) {
-				client.setScreenAndShow(new ScreenshotGalleryScreen(client.gui.screen()));
+			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ScreenshotGalleryScreen)) {
+				client.setScreenAndShow(new ScreenshotGalleryScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openScriptManagerKeyMapping != null && openScriptManagerKeyMapping.consumeClick()) {
-			if (MinescriptCompat.isLoaded() && !(client.gui.screen() instanceof ScriptManagerScreen)) {
-				client.setScreenAndShow(new ScriptManagerScreen(client.gui.screen()));
+			if (MinescriptCompat.isLoaded() && !(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ScriptManagerScreen)) {
+				client.setScreenAndShow(new ScriptManagerScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openSettingsHubKeyMapping != null && openSettingsHubKeyMapping.consumeClick()) {
-			if (!(client.gui.screen() instanceof CustomHubScreen)) {
-				client.setScreenAndShow(new CustomHubScreen(client.gui.screen()));
+			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CustomHubScreen)) {
+				client.setScreenAndShow(new CustomHubScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openWaypointsKeyMapping != null && openWaypointsKeyMapping.consumeClick()) {
-			if (!(client.gui.screen() instanceof WaypointListScreen)) {
-				client.setScreenAndShow(new WaypointListScreen(client.gui.screen()));
+			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof WaypointListScreen)) {
+				client.setScreenAndShow(new WaypointListScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {
-			if (!(client.gui.screen() instanceof AddWaypointScreen)) {
-				client.setScreenAndShow(new AddWaypointScreen(client.gui.screen()));
+			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AddWaypointScreen)) {
+				client.setScreenAndShow(new AddWaypointScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openHudLayoutEditorKeyMapping != null && openHudLayoutEditorKeyMapping.consumeClick()) {
@@ -338,7 +338,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	}
 
 	private static void openHudLayoutEditor(Minecraft client) {
-		if (client != null && client.gui.screen() instanceof AbstractContainerScreen<?>) {
+		if (client != null && net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>) {
 			HudLayoutEditorOverlay.open(MOD_ID, client);
 			return;
 		}

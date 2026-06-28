@@ -4,6 +4,23 @@ plugins {
 }
 
 def mcFamily = (findProperty("mcFamily") ?: "1.21.x").toString()
+def mcVersionOverride = findProperty("mcVersion")?.toString()
+def mc26Versions = [
+	"26.1.2": [
+		minecraftVersion: "26.1.2",
+		fabricApiVersion: "0.153.0+26.1.2",
+		mappingFile: "gradle/mappings/26.1.2-official-identity.tiny"
+	],
+	"26.2": [
+		minecraftVersion: "26.2",
+		fabricApiVersion: "0.152.1+26.2",
+		mappingFile: "gradle/mappings/26.2-official-identity.tiny"
+	]
+]
+def selected26Version = mcVersionOverride ?: "26.2"
+if (mcFamily == "26.x" && !mc26Versions.containsKey(selected26Version)) {
+	throw new GradleException("Unsupported 26.x mcVersion '${selected26Version}'. Use one of: ${mc26Versions.keySet().join(', ')}")
+}
 def mcFamilies = [
 	"1.21.x": [
 		sourcePath: "src/1_21_x/client/java",
@@ -21,11 +38,12 @@ def mcFamilies = [
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
 		resourcePath: "src/26_x/resources",
-		minecraftVersion: "26.2",
-		fabricApiVersion: "0.152.1+26.2",
+		minecraftVersion: mc26Versions[selected26Version].minecraftVersion,
+		fabricApiVersion: mc26Versions[selected26Version].fabricApiVersion,
 		loaderVersion: "0.19.3",
 		javaVersion: 25,
 		mappingNamespace: "mojang",
+		mappingFile: mc26Versions[selected26Version].mappingFile,
 		minecraftDependency: ">=26- <27-",
 		minecraftDescription: "26.x",
 		archiveName: "EMUtils-26.x.jar"
@@ -98,7 +116,7 @@ dependencies {
 	minecraft "com.mojang:minecraft:${selectedMc.minecraftVersion}"
 	if (selectedMc.mappingNamespace == "mojang") {
 		mappings loom.layered {
-			mappings(file("gradle/mappings/26.2-official-identity.tiny")) {
+			mappings(file(selectedMc.mappingFile)) {
 				fallbackNamespaces("official", "named")
 			}
 		}

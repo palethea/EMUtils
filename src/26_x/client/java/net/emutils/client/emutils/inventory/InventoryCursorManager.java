@@ -21,7 +21,7 @@ public final class InventoryCursorManager {
 	private int closeGraceTicks;
 
 	public void saveBeforeScreenChange(Minecraft client) {
-		if (!enabled() || client.gui.screen() == null) {
+		if (!enabled() || net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null) {
 			return;
 		}
 
@@ -44,7 +44,7 @@ public final class InventoryCursorManager {
 		}
 
 		closeGraceTicks--;
-		if (closeGraceTicks == 0 && !(client.gui.screen() instanceof AbstractContainerScreen<?>)) {
+		if (closeGraceTicks == 0 && !(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>)) {
 			clearSaved();
 		}
 	}
@@ -74,7 +74,7 @@ public final class InventoryCursorManager {
 			return;
 		}
 
-		if (!(client.gui.screen() instanceof AbstractContainerScreen<?>)) {
+		if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>)) {
 			return;
 		}
 
@@ -84,7 +84,7 @@ public final class InventoryCursorManager {
 		restoreCursor(client, x, y);
 		client.execute(() -> {
 			restoreCursor(client, x, y);
-			if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
+			if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>) {
 				clearSaved();
 			}
 		});

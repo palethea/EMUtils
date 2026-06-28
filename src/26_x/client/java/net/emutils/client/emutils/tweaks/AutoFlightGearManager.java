@@ -36,7 +36,7 @@ public final class AutoFlightGearManager {
 		}
 
 		Player player = client.player;
-		boolean canSwap = client.gui.screen() == null
+		boolean canSwap = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null
 			&& player.containerMenu == player.inventoryMenu
 			&& player.inventoryMenu.getCarried().isEmpty();
 		boolean grounded = player.onGround();
@@ -148,7 +148,7 @@ public final class AutoFlightGearManager {
 
 		if (!EMUtilsClient.config().autoFlightGearEnabled()
 			|| !EMUtilsClient.config().autoFlightDoubleJump()
-			|| client.gui.screen() != null) {
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null) {
 			jumpTapTicks = 0;
 			return false;
 		}

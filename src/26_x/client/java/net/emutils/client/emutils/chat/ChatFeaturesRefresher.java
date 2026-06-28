@@ -14,7 +14,7 @@ public final class ChatFeaturesRefresher {
 			return;
 		}
 
-		ChatComponent chatHud = client.gui.hud.getChat();
+		ChatComponent chatHud = net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client);
 		if (chatHud instanceof ChatHudAccess access) {
 			access.emutils$refreshDisplayedMessages();
 		}

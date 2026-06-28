@@ -1,6 +1,5 @@
 package net.emutils.client.emutils.render;
 
-import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
@@ -26,7 +25,6 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.block.Blocks;
@@ -34,6 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -94,7 +93,9 @@ public final class LightLevelOverlayRenderer {
 			invokeBuilder(builder, "withBindGroupLayout", new Class<?>[] { bindGroupLayoutClass }, sampler0);
 			invokeBuilder(builder, "withVertexBinding", new Class<?>[] { int.class, VertexFormat.class },
 				0, DefaultVertexFormat.POSITION_TEX_COLOR);
-			invokeBuilder(builder, "withPrimitiveTopology", new Class<?>[] { PrimitiveTopology.class }, PrimitiveTopology.QUADS);
+			Class<?> primitiveTopologyClass = classForName("com.mojang.blaze3d.PrimitiveTopology");
+			invokeBuilder(builder, "withPrimitiveTopology", new Class<?>[] { primitiveTopologyClass },
+				enumConstant(primitiveTopologyClass, "QUADS"));
 		} catch (ClassNotFoundException ignored) {
 			Class<?> vertexFormatModeClass = classForName("com.mojang.blaze3d.vertex.VertexFormat$Mode");
 			Object quads = enumConstant(vertexFormatModeClass, "QUADS");
@@ -259,14 +260,29 @@ public final class LightLevelOverlayRenderer {
 
 	private static boolean isSpawnSurface(LevelChunk chunk, BlockPos pos, BlockPos below, BlockPos above) {
 		BlockState floor = chunk.getBlockState(below);
+		EntityType<?> zombie = zombieType();
 		if (floor.is(Blocks.BEDROCK) || floor.is(Blocks.BARRIER)
-			|| !floor.isValidSpawn(chunk, below, EntityTypes.ZOMBIE)) {
+			|| !floor.isValidSpawn(chunk, below, zombie)) {
 			return false;
 		}
 		BlockState state = chunk.getBlockState(pos);
 		BlockState stateAbove = chunk.getBlockState(above);
-		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), EntityTypes.ZOMBIE)
-			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE);
+		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), zombie)
+			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), zombie);
+	}
+
+	private static EntityType<?> zombieType() {
+		try {
+			return (EntityType<?>) Class.forName("net.minecraft.world.entity.EntityTypes").getField("ZOMBIE").get(null);
+		} catch (ClassNotFoundException ignored) {
+			try {
+				return (EntityType<?>) EntityType.class.getField("ZOMBIE").get(null);
+			} catch (IllegalAccessException | NoSuchFieldException e) {
+				throw new IllegalStateException("Missing zombie entity type", e);
+			}
+		} catch (IllegalAccessException | NoSuchFieldException e) {
+			throw new IllegalStateException("Missing zombie entity type", e);
+		}
 	}
 
 	private static void addSquare(List<Line> lines, double x, double y, double z, int color) {

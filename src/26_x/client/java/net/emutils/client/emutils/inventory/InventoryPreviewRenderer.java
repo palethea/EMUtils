@@ -45,10 +45,10 @@ public final class InventoryPreviewRenderer {
 		if ((!config.inventoryToolsEnabled() || !config.inventoryPreviewEnabled()) && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.gui.screen() != null && !HudLayoutManager.isEditing()) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.gui.hud.isHidden() && !HudLayoutManager.isEditing()) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.isHudHidden(client) && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {

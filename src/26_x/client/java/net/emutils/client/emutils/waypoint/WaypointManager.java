@@ -144,7 +144,7 @@ public final class WaypointManager {
 
         try {
             WaypointChat.showNearPrompt(
-                client.gui.hud.getChat(),
+                net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
                 nearest.timestamp()
             );
             nearest.setNearPromptShown(true);
@@ -163,8 +163,8 @@ public final class WaypointManager {
             return;
         }
 
-        WaypointChat.removeNearPrompt(client.gui.hud.getChat(), timestamp);
-        client.gui.hud.getChat()
+        WaypointChat.removeNearPrompt(net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client), timestamp);
+        net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
             .addClientSystemMessage(EmUtilsChatPrefix.chat(WaypointMessage.kept()));
     }
 
@@ -181,7 +181,7 @@ public final class WaypointManager {
             )
         );
         if (client.gui != null) {
-            client.gui.hud.getChat()
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
                 .addClientSystemMessage(
                     EmUtilsChatPrefix.chat(
                         Component.translatable(
@@ -203,7 +203,7 @@ public final class WaypointManager {
 
         if (!hasWaypointForCurrentWorld(client)) {
             if (client.gui != null) {
-                client.gui.hud.getChat()
+                net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
                     .addClientSystemMessage(
                         EmUtilsChatPrefix.chat(WaypointMessage.noneForWorld())
                     );
@@ -274,12 +274,12 @@ public final class WaypointManager {
     public double distanceToCamera(Minecraft client, Waypoint waypoint) {
         if (
             client.gameRenderer == null ||
-            client.gameRenderer.mainCamera() == null
+            net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client) == null
         ) {
             return 1.0D;
         }
 
-        var cameraPos = client.gameRenderer.mainCamera().position();
+        var cameraPos = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client).position();
         double dx = renderX(waypoint) - cameraPos.x;
         double dy = renderY(waypoint) - cameraPos.y;
         double dz = renderZ(waypoint) - cameraPos.z;
@@ -306,7 +306,7 @@ public final class WaypointManager {
     }
 
     private static boolean canInteractWithWaypoint(Minecraft client) {
-        if (client.gui.screen() instanceof DeathScreen) {
+        if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof DeathScreen) {
             return false;
         }
 
@@ -390,7 +390,7 @@ public final class WaypointManager {
         save();
 
         if (client.gui != null) {
-            client.gui.hud.getChat()
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
                 .addClientSystemMessage(EmUtilsChatPrefix.chat(confirmationMessage.get()));
         }
     }
@@ -408,7 +408,7 @@ public final class WaypointManager {
         save();
 
         if (client != null && client.gui != null) {
-            client.gui.hud.getChat()
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
                 .addClientSystemMessage(EmUtilsChatPrefix.chat(confirmationMessage.get()));
         }
     }
@@ -417,7 +417,7 @@ public final class WaypointManager {
         if (client != null && client.gui != null) {
             try {
                 WaypointChat.removeNearPrompt(
-                    client.gui.hud.getChat(),
+                    net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
                     waypoint.timestamp()
                 );
             } catch (RuntimeException exception) {

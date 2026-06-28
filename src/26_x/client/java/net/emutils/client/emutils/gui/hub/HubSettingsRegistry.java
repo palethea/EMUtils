@@ -548,7 +548,7 @@ public final class HubSettingsRegistry {
 			Component.translatable("emutils.mass_drop.manage"),
 			() -> {
 				Minecraft client = Minecraft.getInstance();
-				client.setScreenAndShow(new MassDropScreen(client.gui.screen()));
+				client.setScreenAndShow(new MassDropScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			},
 			true
 		));
@@ -574,7 +574,7 @@ public final class HubSettingsRegistry {
 			() -> {
 				net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 				if (client != null) {
-					Screen parent = client.gui.screen();
+					Screen parent = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 					client.setScreenAndShow(screenFactory.apply(parent));
 				}
 			},

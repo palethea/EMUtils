@@ -94,7 +94,7 @@ public final class FreeCameraManager {
 	}
 
 	private void moveCamera(Minecraft client) {
-		if (camera == null || client.gui.screen() != null) {
+		if (camera == null || net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null) {
 			return;
 		}
 

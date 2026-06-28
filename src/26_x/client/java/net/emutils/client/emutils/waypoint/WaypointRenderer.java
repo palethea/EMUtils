@@ -54,7 +54,7 @@ public final class WaypointRenderer {
 	}
 
 	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint) {
-		Camera camera = context.gameRenderer().mainCamera();
+		Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(context.gameRenderer());
 		SubmitNodeCollector collector = context.submitNodeCollector();
 		PoseStack matrices = context.poseStack();
 
@@ -140,7 +140,7 @@ public final class WaypointRenderer {
 				WaypointManager.renderY(waypoint),
 				WaypointManager.renderZ(waypoint)
 			);
-			Camera camera = client.gameRenderer.mainCamera();
+			Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client);
 			Vec3 toWaypoint = labelPosition.subtract(camera.position());
 			Vec3 cameraForward = Vec3.directionFromRotation(camera.xRot(), camera.yaw());
 			if (toWaypoint.dot(cameraForward) <= 0.0D) {

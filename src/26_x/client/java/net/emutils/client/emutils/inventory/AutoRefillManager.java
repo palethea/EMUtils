@@ -63,7 +63,7 @@ public final class AutoRefillManager {
 			&& client.player != null
 			&& client.level != null
 			&& client.gameMode != null
-			&& client.gui.screen() == null
+			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null
 			&& client.player.containerMenu == client.player.inventoryMenu
 			&& client.player.inventoryMenu.getCarried().isEmpty();
 	}
