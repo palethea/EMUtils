@@ -33,6 +33,7 @@
 		"HungerManagerAccessor",
 		"HudFreeCameraMixin",
 		"InGameHudMixin",
+		"InGameOverlayRenderer26_1Mixin",
 		"InGameOverlayRendererAccessor",
 		"InGameOverlayRendererMixin",
 		"KeyBindingAccessorMixin",
