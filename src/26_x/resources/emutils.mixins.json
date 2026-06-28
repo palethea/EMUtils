@@ -42,6 +42,7 @@
 		"LevelRendererFreeCamera26_1Mixin",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
+		"MinecraftClient26_1Mixin",
 		"MinecraftClientMixin",
 		"MinecraftAntiDurabilityBreakMixin",
 		"MinecraftFastPlaceMixin",

@@ -179,6 +179,22 @@ tasks.matching { it.name == "remapSourcesJar" }.configureEach {
 	enabled = selectedMc.mappingNamespace != "mojang"
 }
 
+tasks.matching { it.name == "runClient" }.configureEach {
+	if (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()) {
+		jvmArgs "-Demutils.smokeLaunch=true"
+		workingDir = file("run/26x-smoke/${selected26Version}")
+	}
+	if (mcFamily == "26.x") {
+		File emHelpersDir = file("../EMHelpers")
+		if (emHelpersDir.isDirectory()) {
+			classpath += files(
+				"${emHelpersDir}/build/classes/java/main",
+				"${emHelpersDir}/build/classes/java/client"
+			)
+		}
+	}
+}
+
 tasks.named("jar") {
 	archiveClassifier.set("dev")
 }

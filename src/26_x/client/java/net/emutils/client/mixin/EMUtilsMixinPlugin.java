@@ -37,7 +37,8 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 			|| mixinClassName.endsWith(".InGameHudMixin")
 			|| mixinClassName.endsWith(".LevelExtractorFreeCameraMixin")
 			|| mixinClassName.endsWith(".InGameOverlayRendererAccessor")
-			|| mixinClassName.endsWith(".InGameOverlayRendererMixin")) {
+			|| mixinClassName.endsWith(".InGameOverlayRendererMixin")
+			|| mixinClassName.endsWith(".MinecraftClientMixin")) {
 			return isMinecraft26_2OrNewer();
 		}
 		if (mixinClassName.endsWith(".WeatherEffectRenderer26_1Mixin")) {
@@ -46,7 +47,8 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".GuiFreeCamera26_1Mixin")
 			|| mixinClassName.endsWith(".Gui26_1Mixin")
 			|| mixinClassName.endsWith(".LevelRendererFreeCamera26_1Mixin")
-			|| mixinClassName.endsWith(".InGameOverlayRenderer26_1Mixin")) {
+			|| mixinClassName.endsWith(".InGameOverlayRenderer26_1Mixin")
+			|| mixinClassName.endsWith(".MinecraftClient26_1Mixin")) {
 			return isMinecraft26_1();
 		}
 

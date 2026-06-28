@@ -3,6 +3,7 @@ build/
 .gradle/
 out/
 bin/
+run/
 
 # Local environment files
 .env

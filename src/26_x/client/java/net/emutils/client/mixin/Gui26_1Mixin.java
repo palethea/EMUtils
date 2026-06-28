@@ -79,7 +79,7 @@ public abstract class Gui26_1Mixin {
 
 	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Gui;isHidden:Z", ordinal = 0)
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 0)
 	)
 	private boolean emutils$hideHudWhileZoomingRenderState(boolean hidden) {
 		return EMUtilsClient.zoom() == null
@@ -89,19 +89,9 @@ public abstract class Gui26_1Mixin {
 
 	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Gui;isHidden:Z", ordinal = 1)
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 1)
 	)
 	private boolean emutils$hideHudWhileZoomingFirstGate(boolean hidden) {
-		return EMUtilsClient.zoom() == null
-			? hidden
-			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);
-	}
-
-	@ModifyExpressionValue(
-		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Gui;isHidden:Z", ordinal = 2)
-	)
-	private boolean emutils$hideHudWhileZoomingSecondGate(boolean hidden) {
 		return EMUtilsClient.zoom() == null
 			? hidden
 			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);

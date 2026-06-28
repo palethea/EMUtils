@@ -6,6 +6,7 @@ import net.emutils.client.emutils.commandshortcuts.CommandShortcutsManager;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
+import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
@@ -92,6 +93,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyMappings();
 		registerTooltipComponents();
+		SmokeLaunchVerifier.registerIfEnabled();
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> tweaksManager.tickAutoTool(client));
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
@@ -134,6 +136,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
+		SmokeLaunchVerifier.tick(client);
 	}
 
 	private static void tickSpotify(Minecraft client) {
