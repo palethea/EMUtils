@@ -33,7 +33,17 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".ClientLevelWeatherEffectsMixin") || mixinClassName.endsWith(".WeatherRenderingMixin")) {
 			return isMinecraft26_2OrNewer();
 		}
+		if (mixinClassName.endsWith(".HudFreeCameraMixin")
+			|| mixinClassName.endsWith(".InGameHudMixin")
+			|| mixinClassName.endsWith(".LevelExtractorFreeCameraMixin")) {
+			return isMinecraft26_2OrNewer();
+		}
 		if (mixinClassName.endsWith(".WeatherEffectRenderer26_1Mixin")) {
+			return isMinecraft26_1();
+		}
+		if (mixinClassName.endsWith(".GuiFreeCamera26_1Mixin")
+			|| mixinClassName.endsWith(".Gui26_1Mixin")
+			|| mixinClassName.endsWith(".LevelRendererFreeCamera26_1Mixin")) {
 			return isMinecraft26_1();
 		}
 
