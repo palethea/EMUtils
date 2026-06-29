@@ -6,6 +6,16 @@ plugins {
 def mcFamily = (findProperty("mcFamily") ?: "1.21.x").toString()
 def mcVersionOverride = findProperty("mcVersion")?.toString()
 def mc26Versions = [
+	"26.1": [
+		minecraftVersion: "26.1",
+		fabricApiVersion: "0.153.0+26.1.2",
+		mappingFile: "gradle/mappings/26.1-official-identity.tiny"
+	],
+	"26.1.1": [
+		minecraftVersion: "26.1.1",
+		fabricApiVersion: "0.153.0+26.1.2",
+		mappingFile: "gradle/mappings/26.1.1-official-identity.tiny"
+	],
 	"26.1.2": [
 		minecraftVersion: "26.1.2",
 		fabricApiVersion: "0.153.0+26.1.2",

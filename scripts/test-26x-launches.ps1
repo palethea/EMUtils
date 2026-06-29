@@ -1,5 +1,5 @@
 param(
-    [string[]] $Versions = @('26.1.2', '26.2'),
+    [string[]] $Versions = @('26.1', '26.1.1', '26.1.2', '26.2'),
     [int] $TimeoutSeconds = 180
 )
 
