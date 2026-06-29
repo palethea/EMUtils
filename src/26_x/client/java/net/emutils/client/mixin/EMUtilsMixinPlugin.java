@@ -30,12 +30,41 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".SodiumWorldRendererMixin")) {
 			return isSupportedSodiumTarget() && FabricLoader.getInstance().isModLoaded("sodium");
 		}
+		if (mixinClassName.endsWith(".ClientLevelWeatherEffectsMixin") || mixinClassName.endsWith(".WeatherRenderingMixin")) {
+			return isMinecraft26_2OrNewer();
+		}
+		if (mixinClassName.endsWith(".HudFreeCameraMixin")
+			|| mixinClassName.endsWith(".InGameHudMixin")
+			|| mixinClassName.endsWith(".LevelExtractorFreeCameraMixin")
+			|| mixinClassName.endsWith(".InGameOverlayRendererAccessor")
+			|| mixinClassName.endsWith(".InGameOverlayRendererMixin")
+			|| mixinClassName.endsWith(".MinecraftClientMixin")) {
+			return isMinecraft26_2OrNewer();
+		}
+		if (mixinClassName.endsWith(".WeatherEffectRenderer26_1Mixin")) {
+			return isMinecraft26_1();
+		}
+		if (mixinClassName.endsWith(".GuiFreeCamera26_1Mixin")
+			|| mixinClassName.endsWith(".Gui26_1Mixin")
+			|| mixinClassName.endsWith(".LevelRendererFreeCamera26_1Mixin")
+			|| mixinClassName.endsWith(".InGameOverlayRenderer26_1Mixin")
+			|| mixinClassName.endsWith(".MinecraftClient26_1Mixin")) {
+			return isMinecraft26_1();
+		}
 
 		return true;
 	}
 
 	private boolean isSupportedSodiumTarget() {
 		return SUPPORTED_SODIUM_26_X.contains(minecraftVersion);
+	}
+
+	private boolean isMinecraft26_1() {
+		return minecraftVersion.equals("26.1") || minecraftVersion.equals("26.1.1") || minecraftVersion.equals("26.1.2");
+	}
+
+	private boolean isMinecraft26_2OrNewer() {
+		return !isMinecraft26_1();
 	}
 
 	@Override

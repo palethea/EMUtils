@@ -203,6 +203,7 @@ Protect important slots and move items faster.
 - Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
 - Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
 - Quick Stack Speed: choose Normal transfers or Anti-Cheat transfers that move one stack per tick.
+- Auto Refill: refill the active hotbar slot with a matching block stack when block placement empties it.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
 - Mass Drop: maintain a searchable list of items by icon, display name, and real item ID, then drop matching inventory stacks with a configurable keybind.
@@ -227,6 +228,7 @@ Automatically select the fastest suitable tool using each item and block's publi
 
 - Legit: switch only between tools already in the hotbar.
 - Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
+- Return to Previous Item: switch back to the item you were holding after Auto Tool stops using a tool.
 
 ### Auto Flight Gear
 

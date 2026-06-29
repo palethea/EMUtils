@@ -268,7 +268,7 @@ public final class InventoryToolsManager {
 			return;
 		}
 
-		if (client.gui.screen() instanceof CreativeModeInventoryScreen) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CreativeModeInventoryScreen) {
 			player.containerMenu.clicked(swap.slotId(), swap.hotbarButton(), ContainerInput.SWAP, player);
 			player.containerMenu.broadcastChanges();
 			return;
@@ -286,7 +286,7 @@ public final class InventoryToolsManager {
 		@Nullable Slot clickedSlot,
 		Inventory playerInventory
 	) {
-		if (client.gui.screen() instanceof CreativeModeInventoryScreen) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CreativeModeInventoryScreen) {
 			if (clicked.isHotbar()) {
 				return findPlayerHandlerSlot(client.player, target);
 			}
@@ -1313,10 +1313,10 @@ public final class InventoryToolsManager {
 	}
 
 	private static boolean isStorageContainerScreen(Minecraft client) {
-		return client.gui.screen() instanceof ContainerScreen
-			|| client.gui.screen() instanceof ShulkerBoxScreen
-			|| client.gui.screen() instanceof HopperScreen
-			|| client.gui.screen() instanceof DispenserScreen;
+		return net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ContainerScreen
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ShulkerBoxScreen
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof HopperScreen
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof DispenserScreen;
 	}
 
 	private static boolean hoverTransferAllowedOnScreen(Minecraft client, AbstractContainerMenu handler, Inventory playerInventory) {
@@ -1327,13 +1327,13 @@ public final class InventoryToolsManager {
 		EMUtilsConfig config = EMUtilsClient.config();
 		return config != null
 			&& config.hoverTransferGlobal()
-			&& client.gui.screen() instanceof AbstractContainerScreen<?>
-			&& !(client.gui.screen() instanceof CreativeModeInventoryScreen);
+			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>
+			&& !(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CreativeModeInventoryScreen);
 	}
 
 	private static boolean isSortableContainerScreen(Minecraft client) {
-		return client.gui.screen() instanceof ContainerScreen
-			|| client.gui.screen() instanceof ShulkerBoxScreen;
+		return net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ContainerScreen
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ShulkerBoxScreen;
 	}
 
 	private static boolean hasContainerSlots(AbstractContainerMenu handler, Inventory playerInventory) {

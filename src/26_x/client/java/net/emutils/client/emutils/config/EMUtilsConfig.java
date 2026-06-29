@@ -182,6 +182,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer autoSwitchRocketsHotbarSlot = 9;
 	private Boolean autoToolEnabled = Boolean.FALSE;
 	private String autoToolMode = AutoToolMode.LEGIT.name();
+	private Boolean autoToolReturnToPreviousItem = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
@@ -208,6 +209,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String sortSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean quickStackEnabled = Boolean.TRUE;
 	private String quickStackSpeed = InventorySortSpeed.NORMAL.name();
+	private Boolean autoRefillEnabled = Boolean.FALSE;
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
 	private Boolean preserveContainerCursor = Boolean.TRUE;
 	private String slotLockColor = SlotLockColor.RED.name();
@@ -1187,6 +1189,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean autoToolReturnToPreviousItem() {
+		return autoToolReturnToPreviousItem != null && autoToolReturnToPreviousItem;
+	}
+
+	public void setAutoToolReturnToPreviousItem(boolean enabled) {
+		autoToolReturnToPreviousItem = enabled;
+		save();
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -1464,6 +1475,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setQuickStackSpeed(InventorySortSpeed speed) {
 		quickStackSpeed = (speed == null ? InventorySortSpeed.NORMAL : speed).name();
+		save();
+	}
+
+	public boolean autoRefillEnabled() {
+		return autoRefillEnabled != null && autoRefillEnabled;
+	}
+
+	public void setAutoRefillEnabled(boolean enabled) {
+		autoRefillEnabled = enabled;
 		save();
 	}
 
@@ -1790,6 +1810,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoSwitchRocketsHotbarSlot = HOTBAR_SLOT_MAX;
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
+		autoToolReturnToPreviousItem = Boolean.FALSE;
 		tweakOwnNametag = Boolean.FALSE;
 		save();
 	}
@@ -1803,6 +1824,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetAutoToolDefaults() {
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
+		autoToolReturnToPreviousItem = Boolean.FALSE;
 		save();
 	}
 
@@ -1863,6 +1885,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		sortSpeed = InventorySortSpeed.NORMAL.name();
 		quickStackEnabled = Boolean.TRUE;
 		quickStackSpeed = InventorySortSpeed.NORMAL.name();
+		autoRefillEnabled = Boolean.FALSE;
 		inventoryPreviewEnabled = Boolean.FALSE;
 		preserveContainerCursor = Boolean.TRUE;
 		slotLockColor = SlotLockColor.RED.name();
@@ -2154,6 +2177,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (autoToolMode == null) {
 			autoToolMode = AutoToolMode.LEGIT.name();
 		}
+		if (autoToolReturnToPreviousItem == null) {
+			autoToolReturnToPreviousItem = Boolean.FALSE;
+		}
 		if (tweakOwnNametag == null) {
 			tweakOwnNametag = Boolean.FALSE;
 		}
@@ -2227,6 +2253,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (quickStackSpeed == null) {
 			quickStackSpeed = InventorySortSpeed.NORMAL.name();
+		}
+		if (autoRefillEnabled == null) {
+			autoRefillEnabled = Boolean.FALSE;
 		}
 		if (inventoryPreviewEnabled == null) {
 			inventoryPreviewEnabled = Boolean.FALSE;

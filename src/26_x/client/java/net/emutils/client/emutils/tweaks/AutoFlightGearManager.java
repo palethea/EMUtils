@@ -19,10 +19,12 @@ public final class AutoFlightGearManager {
 	private static final int CHEST_EQUIPMENT_MENU_SLOT = 6;
 	private static final double FALLING_VELOCITY = -0.08D;
 	private static final int DOUBLE_JUMP_WINDOW_TICKS = 7;
+	private static final int WATER_DOUBLE_JUMP_LAUNCH_TICKS = 20;
 
 	private int elytraSourceMenuSlot = -1;
 	private int rocketSourceMenuSlot = -1;
 	private int rocketTargetMenuSlot = -1;
+	private int delayedDoubleJumpLaunchTicks;
 	private boolean fallCycleActive;
 	private boolean jumpWasDown;
 	private int jumpTapTicks;
@@ -34,7 +36,7 @@ public final class AutoFlightGearManager {
 		}
 
 		Player player = client.player;
-		boolean canSwap = client.gui.screen() == null
+		boolean canSwap = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null
 			&& player.containerMenu == player.inventoryMenu
 			&& player.inventoryMenu.getCarried().isEmpty();
 		boolean grounded = player.onGround();
@@ -44,6 +46,25 @@ public final class AutoFlightGearManager {
 			&& player.getDeltaMovement().y < FALLING_VELOCITY
 			&& !EMUtilsClient.config().autoFlightDoubleJump()
 			&& (!EMUtilsClient.config().autoFlightIgnoreShortFalls() || !hasSelectableGroundBelow(player));
+
+		if (fallCycleActive && delayedDoubleJumpLaunchTicks > 0) {
+			if (!canSwap || !anyFeatureEnabled()) {
+				return;
+			}
+			equipElytra(client, player);
+			if (EMUtilsClient.config().tweakAutoSwitchRockets()) {
+				equipRockets(client, player);
+			}
+			if (tryStartFallFlying(client, player)) {
+				delayedDoubleJumpLaunchTicks = 0;
+			} else if (!player.isInWater() || --delayedDoubleJumpLaunchTicks <= 0) {
+				restoreRockets(client, player);
+				restoreElytra(client, player);
+				fallCycleActive = false;
+				delayedDoubleJumpLaunchTicks = 0;
+			}
+			return;
+		}
 
 		if (fallCycleActive && canSwap) {
 			if (!EMUtilsClient.config().tweakAutoSwitchRockets()) {
@@ -60,6 +81,7 @@ public final class AutoFlightGearManager {
 				restoreRockets(client, player);
 				restoreElytra(client, player);
 				fallCycleActive = false;
+				delayedDoubleJumpLaunchTicks = 0;
 			}
 			return;
 		}
@@ -76,16 +98,15 @@ public final class AutoFlightGearManager {
 			equipRockets(client, player);
 		}
 		if (doubleJump) {
-			if (player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)
-				&& player.tryToStartFallFlying()) {
-				client.getConnection().send(new ServerboundPlayerCommandPacket(
-					player,
-					ServerboundPlayerCommandPacket.Action.START_FALL_FLYING
-				));
+			if (tryStartFallFlying(client, player)) {
+				delayedDoubleJumpLaunchTicks = 0;
+			} else if (player.isInWater()) {
+				delayedDoubleJumpLaunchTicks = WATER_DOUBLE_JUMP_LAUNCH_TICKS;
 			} else {
 				restoreRockets(client, player);
 				restoreElytra(client, player);
 				fallCycleActive = false;
+				delayedDoubleJumpLaunchTicks = 0;
 			}
 		}
 	}
@@ -94,6 +115,7 @@ public final class AutoFlightGearManager {
 		elytraSourceMenuSlot = -1;
 		rocketSourceMenuSlot = -1;
 		rocketTargetMenuSlot = -1;
+		delayedDoubleJumpLaunchTicks = 0;
 		fallCycleActive = false;
 		jumpWasDown = false;
 		jumpTapTicks = 0;
@@ -126,7 +148,7 @@ public final class AutoFlightGearManager {
 
 		if (!EMUtilsClient.config().autoFlightGearEnabled()
 			|| !EMUtilsClient.config().autoFlightDoubleJump()
-			|| client.gui.screen() != null) {
+			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null) {
 			jumpTapTicks = 0;
 			return false;
 		}
@@ -144,6 +166,19 @@ public final class AutoFlightGearManager {
 			jumpTapTicks--;
 		}
 		return false;
+	}
+
+	private static boolean tryStartFallFlying(Minecraft client, Player player) {
+		if (!player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)
+			|| !player.tryToStartFallFlying()) {
+			return false;
+		}
+
+		client.getConnection().send(new ServerboundPlayerCommandPacket(
+			player,
+			ServerboundPlayerCommandPacket.Action.START_FALL_FLYING
+		));
+		return true;
 	}
 
 	private void equipElytra(Minecraft client, Player player) {

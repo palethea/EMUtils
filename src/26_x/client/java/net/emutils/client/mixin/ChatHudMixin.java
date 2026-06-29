@@ -381,7 +381,7 @@ public abstract class ChatHudMixin implements WaypointChatAccess, ChatHudAccess 
 		@Nullable MessageSignature signatureData,
 		@Nullable GuiMessageTag indicator
 	) {
-		GuiMessage line = new GuiMessage(minecraft.gui.hud.getGuiTicks(), message, signatureData, GuiMessageSource.SYSTEM_CLIENT, indicator);
+		GuiMessage line = new GuiMessage(net.emutils.client.emutils.compat.MinecraftClientCompat.guiTicks(minecraft), message, signatureData, GuiMessageSource.SYSTEM_CLIENT, indicator);
 		emutils$invokeLogChatMessage(line);
 		emutils$invokeAddVisibleMessage(line);
 		emutils$invokeStoreMessage(line);

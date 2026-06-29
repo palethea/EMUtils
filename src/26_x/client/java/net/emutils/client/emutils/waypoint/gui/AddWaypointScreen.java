@@ -239,7 +239,7 @@ public final class AddWaypointScreen extends Screen {
         );
 
         if (minecraft.gui != null) {
-            minecraft.gui.hud.getChat()
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(minecraft)
                 .addClientSystemMessage(
                     EmUtilsChatPrefix.chat(
                         Component.translatable(

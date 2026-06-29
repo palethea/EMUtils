@@ -2,20 +2,21 @@ package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import java.lang.reflect.InvocationTargetException;
+import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.food.FoodHudRenderer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
 import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "net.minecraft.client.gui.Hud")
-public abstract class InGameHudMixin {
+@Mixin(Gui.class)
+public abstract class Gui26_1Mixin {
 	@Inject(method = "extractFood", at = @At("HEAD"))
 	private void emutils$renderFoodExhaustion(GuiGraphicsExtractor context, Player player, int top, int right, CallbackInfo ci) {
 		FoodHudRenderer.renderExhaustion(context, player, top, right);
@@ -28,9 +29,9 @@ public abstract class InGameHudMixin {
 
 	private int emutils$getGuiTicks() {
 		try {
-			return (Integer) Class.forName("net.minecraft.client.gui.Hud").getMethod("getGuiTicks").invoke(this);
-		} catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e) {
-			throw new IllegalStateException("Missing Hud.getGuiTicks on Minecraft 26.2", e);
+			return (Integer) Gui.class.getMethod("getGuiTicks").invoke(this);
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new IllegalStateException("Missing Gui.getGuiTicks on Minecraft 26.1.x", e);
 		} catch (InvocationTargetException e) {
 			Throwable cause = e.getCause();
 			if (cause instanceof RuntimeException runtimeException) {
@@ -39,7 +40,7 @@ public abstract class InGameHudMixin {
 			if (cause instanceof Error error) {
 				throw error;
 			}
-			throw new IllegalStateException("Failed to call Hud.getGuiTicks on Minecraft 26.2", cause);
+			throw new IllegalStateException("Failed to call Gui.getGuiTicks on Minecraft 26.1.x", cause);
 		}
 	}
 
@@ -78,7 +79,7 @@ public abstract class InGameHudMixin {
 
 	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 0)
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 0)
 	)
 	private boolean emutils$hideHudWhileZoomingRenderState(boolean hidden) {
 		return EMUtilsClient.zoom() == null
@@ -88,19 +89,9 @@ public abstract class InGameHudMixin {
 
 	@ModifyExpressionValue(
 		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 1)
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;hideGui:Z", ordinal = 1)
 	)
 	private boolean emutils$hideHudWhileZoomingFirstGate(boolean hidden) {
-		return EMUtilsClient.zoom() == null
-			? hidden
-			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);
-	}
-
-	@ModifyExpressionValue(
-		method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/Hud;isHidden:Z", ordinal = 2)
-	)
-	private boolean emutils$hideHudWhileZoomingSecondGate(boolean hidden) {
 		return EMUtilsClient.zoom() == null
 			? hidden
 			: EMUtilsClient.zoom().shouldHideHudWhileZooming(hidden);

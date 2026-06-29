@@ -150,8 +150,8 @@ public final class IrisCompat {
 
 		LoadingOverlay.registerTextures(client.getTextureManager());
 		IrisShaderResourceReload reload = new IrisShaderResourceReload();
-		client.gui.setOverlay(new ShaderPackLoadingOverlay(client, reload, optional -> {
-			client.gui.setOverlay(null);
+		net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, new ShaderPackLoadingOverlay(client, reload, optional -> {
+			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, null);
 			client.execute(() -> {
 				callback.accept(optional.isEmpty());
 				client.setScreenAndShow(returnScreen);

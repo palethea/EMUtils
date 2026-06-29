@@ -24,7 +24,7 @@ public final class OwnNametagHelper {
 			return false;
 		}
 
-		if (client.gui.hud.isHidden()) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.isHudHidden(client)) {
 			return false;
 		}
 

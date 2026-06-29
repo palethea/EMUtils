@@ -20,7 +20,7 @@ public abstract class ClientPlayNetworkHandlerMixin {
 	@Inject(method = "handleContainerClose", at = @At("HEAD"))
 	private void emutils$saveContainerCursorOnClose(ClientboundContainerClosePacket packet, CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>) {
 			EMUtilsClient.inventoryTools().cursor().saveBeforeScreenChange(client);
 		}
 	}

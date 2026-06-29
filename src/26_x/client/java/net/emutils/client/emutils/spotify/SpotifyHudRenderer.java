@@ -31,7 +31,7 @@ public final class SpotifyHudRenderer {
 		if (!config.spotifyHudOverlay() && !HudLayoutManager.isEditing()) {
 			return;
 		}
-		if (client.gui.screen() instanceof ChatScreen && config.spotifyHudAnchor().isBottom() && !HudLayoutManager.isEditing()) {
+		if (net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ChatScreen && config.spotifyHudAnchor().isBottom() && !HudLayoutManager.isEditing()) {
 			return;
 		}
 		if (!EMUtilsClient.spotify().state().shouldDisplay() && !HudLayoutManager.isEditing()) {

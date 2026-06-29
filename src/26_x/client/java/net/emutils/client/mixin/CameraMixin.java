@@ -1,5 +1,6 @@
 package net.emutils.client.mixin;
 
+import java.lang.reflect.Field;
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -35,7 +36,18 @@ public abstract class CameraMixin {
 			&& EMUtilsClient.tweaks() != null
 			&& EMUtilsClient.tweaks().freeCamera().isActive()
 			&& client.level.getBlockState(renderState.blockPos).isSolidRender()) {
-			renderState.smartCull = false;
+			emutils$setSmartCull(renderState, false);
+		}
+	}
+
+	private static void emutils$setSmartCull(CameraRenderState renderState, boolean enabled) {
+		try {
+			Field field = CameraRenderState.class.getField("smartCull");
+			field.setBoolean(renderState, enabled);
+		} catch (NoSuchFieldException ignored) {
+			// 26.1.x has no smart-cull flag; its camera render state uses the older culling path.
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException("Could not update camera smart culling", e);
 		}
 	}
 

@@ -325,7 +325,7 @@ public final class ScreenshotGalleryWidget extends ObjectSelectionList<Screensho
 				return;
 			}
 
-			Screen galleryScreen = client.gui.screen();
+			Screen galleryScreen = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 			client.setScreenAndShow(new ConfirmScreen(
 				confirmed -> {
 					client.setScreenAndShow(galleryScreen);

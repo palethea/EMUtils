@@ -36,7 +36,7 @@ public abstract class SodiumWorldRendererMixin {
 			return fogParameters;
 		}
 
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client);
 		if (camera == null) {
 			return fogParameters;
 		}

@@ -17,7 +17,7 @@ public final class MassDropManager {
 	}
 
 	public void dropSelected(Minecraft client) {
-		if (client.player == null || client.level == null || client.gameMode == null || client.gui.screen() != null) {
+		if (client.player == null || client.level == null || client.gameMode == null || net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null) {
 			return;
 		}
 		Set<String> selected = store.itemIds();

@@ -30,7 +30,7 @@ public final class MinescriptKeybindManager {
             !MinescriptCompat.isLoaded() ||
             client.player == null ||
             client.level == null ||
-            client.gui.screen() != null
+            net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null
         ) {
             pressed.clear();
             return;

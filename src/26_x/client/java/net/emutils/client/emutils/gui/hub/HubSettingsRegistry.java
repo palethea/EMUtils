@@ -436,6 +436,11 @@ public final class HubSettingsRegistry {
 			() -> config.autoToolMode().next(),
 			() -> Component.translatable(config.autoToolMode().labelKey())
 		));
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_AUTO_TOOL_RETURN_TO_PREVIOUS_ITEM,
+			config::autoToolReturnToPreviousItem,
+			config::setAutoToolReturnToPreviousItem
+		));
 		return rows;
 	}
 
@@ -534,6 +539,8 @@ public final class HubSettingsRegistry {
 			() -> Component.translatable(config.quickStackSpeed().labelKey())
 		));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_REFILL, config::autoRefillEnabled, config::setAutoRefillEnabled));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
 		rows.add(divider());
@@ -541,7 +548,7 @@ public final class HubSettingsRegistry {
 			Component.translatable("emutils.mass_drop.manage"),
 			() -> {
 				Minecraft client = Minecraft.getInstance();
-				client.setScreenAndShow(new MassDropScreen(client.gui.screen()));
+				client.setScreenAndShow(new MassDropScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			},
 			true
 		));
@@ -567,7 +574,7 @@ public final class HubSettingsRegistry {
 			() -> {
 				net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 				if (client != null) {
-					Screen parent = client.gui.screen();
+					Screen parent = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 					client.setScreenAndShow(screenFactory.apply(parent));
 				}
 			},

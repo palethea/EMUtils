@@ -52,7 +52,7 @@ public final class ZoomManager {
 		return keyBinding != null
 			&& keyBinding.isDown()
 			&& client != null
-			&& client.gui.screen() == null
+			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null
 			&& client.player != null
 			&& client.level != null;
 	}

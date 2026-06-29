@@ -77,7 +77,7 @@ public final class BeaconRadiusRenderer {
 		if (client.level == null) {
 			return;
 		}
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client);
 		BlockPos cameraPos = camera.blockPosition();
 		int cameraChunkX = cameraPos.getX() >> 4;
 		int cameraChunkZ = cameraPos.getZ() >> 4;

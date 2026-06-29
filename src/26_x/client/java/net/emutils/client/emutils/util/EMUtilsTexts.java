@@ -388,6 +388,8 @@ public final class EMUtilsTexts {
         "emutils.option.auto_tool_mode.legit";
     public static final String OPTION_AUTO_TOOL_MODE_UNFAIR =
         "emutils.option.auto_tool_mode.unfair";
+    public static final String OPTION_AUTO_TOOL_RETURN_TO_PREVIOUS_ITEM =
+        "emutils.option.auto_tool_return_to_previous_item";
     public static final String OPTION_TWEAK_SAFE_WALK =
         "emutils.option.tweak_safe_walk";
     public static final String OPTION_TWEAK_PLACE_BELOW =
@@ -469,6 +471,8 @@ public final class EMUtilsTexts {
         "emutils.option.quick_stack";
     public static final String OPTION_QUICK_STACK_SPEED =
         "emutils.option.quick_stack_speed";
+    public static final String OPTION_AUTO_REFILL =
+        "emutils.option.auto_refill";
     public static final String OPTION_INVENTORY_PREVIEW =
         "emutils.option.inventory_preview";
     public static final String OPTION_PRESERVE_CONTAINER_CURSOR =

@@ -1,6 +1,5 @@
 package net.emutils.client.emutils.render;
 
-import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
@@ -8,6 +7,9 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
@@ -16,7 +18,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -24,7 +25,6 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.block.Blocks;
@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -42,19 +43,7 @@ import org.jspecify.annotations.Nullable;
 public final class LightLevelOverlayRenderer {
 	private static final Identifier NUMBER_TEXTURE =
 		Identifier.fromNamespaceAndPath("emutils", "textures/misc/light_level_numbers.png");
-	private static final RenderPipeline NUMBER_PIPELINE = RenderPipelines.register(
-		RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-			.withLocation("pipeline/emutils_light_level_numbers")
-			.withVertexShader("core/position_tex_color")
-			.withFragmentShader("core/position_tex_color")
-			.withBindGroupLayout(BindGroupLayouts.SAMPLER0)
-			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withCull(false)
-			.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
-			.withPrimitiveTopology(PrimitiveTopology.QUADS)
-			.withDepthStencilState(DepthStencilState.DEFAULT)
-			.build()
-	);
+	private static final RenderPipeline NUMBER_PIPELINE = createNumberPipeline();
 	private static final RenderType NUMBER_RENDER_TYPE = RenderType.create(
 		"emutils_light_level_numbers",
 		RenderSetup.builder(NUMBER_PIPELINE)
@@ -81,6 +70,72 @@ public final class LightLevelOverlayRenderer {
 	private static BlockPos lastUpdatePos;
 
 	private LightLevelOverlayRenderer() {
+	}
+
+	private static RenderPipeline createNumberPipeline() {
+		RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+			.withLocation("pipeline/emutils_light_level_numbers")
+			.withVertexShader("core/position_tex_color")
+			.withFragmentShader("core/position_tex_color")
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+			.withCull(false)
+			.withDepthStencilState(DepthStencilState.DEFAULT);
+		configureNumberPipelineGeometry(builder);
+		return RenderPipelines.register(builder.build());
+	}
+
+	private static void configureNumberPipelineGeometry(RenderPipeline.Builder builder) {
+		try {
+			Class<?> bindGroupLayoutClass = Class.forName("com.mojang.blaze3d.pipeline.BindGroupLayout");
+			Object sampler0 = Class.forName("net.minecraft.client.renderer.BindGroupLayouts")
+				.getField("SAMPLER0")
+				.get(null);
+			invokeBuilder(builder, "withBindGroupLayout", new Class<?>[] { bindGroupLayoutClass }, sampler0);
+			invokeBuilder(builder, "withVertexBinding", new Class<?>[] { int.class, VertexFormat.class },
+				0, DefaultVertexFormat.POSITION_TEX_COLOR);
+			Class<?> primitiveTopologyClass = classForName("com.mojang.blaze3d.PrimitiveTopology");
+			invokeBuilder(builder, "withPrimitiveTopology", new Class<?>[] { primitiveTopologyClass },
+				enumConstant(primitiveTopologyClass, "QUADS"));
+		} catch (ClassNotFoundException ignored) {
+			Class<?> vertexFormatModeClass = classForName("com.mojang.blaze3d.vertex.VertexFormat$Mode");
+			Object quads = enumConstant(vertexFormatModeClass, "QUADS");
+			invokeBuilder(builder, "withSampler", new Class<?>[] { String.class }, "Sampler0");
+			invokeBuilder(builder, "withVertexFormat", new Class<?>[] { VertexFormat.class, vertexFormatModeClass },
+				DefaultVertexFormat.POSITION_TEX_COLOR, quads);
+		} catch (IllegalAccessException | NoSuchFieldException e) {
+			throw new IllegalStateException("Failed to configure light-level number pipeline", e);
+		}
+	}
+
+	private static Class<?> classForName(String className) {
+		try {
+			return Class.forName(className);
+		} catch (ClassNotFoundException e) {
+			throw new IllegalStateException("Missing light-level pipeline class: " + className, e);
+		}
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static Object enumConstant(Class<?> enumClass, String name) {
+		return Enum.valueOf((Class<? extends Enum>) enumClass.asSubclass(Enum.class), name);
+	}
+
+	private static void invokeBuilder(RenderPipeline.Builder builder, String methodName, Class<?>[] parameterTypes, Object... args) {
+		try {
+			Method method = RenderPipeline.Builder.class.getMethod(methodName, parameterTypes);
+			method.invoke(builder, args);
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new IllegalStateException("Missing light-level pipeline builder method: " + methodName, e);
+		} catch (InvocationTargetException e) {
+			Throwable cause = e.getCause();
+			if (cause instanceof RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new IllegalStateException("Failed to invoke light-level pipeline builder method: " + methodName, cause);
+		}
 	}
 
 	public static void register() {
@@ -205,14 +260,29 @@ public final class LightLevelOverlayRenderer {
 
 	private static boolean isSpawnSurface(LevelChunk chunk, BlockPos pos, BlockPos below, BlockPos above) {
 		BlockState floor = chunk.getBlockState(below);
+		EntityType<?> zombie = zombieType();
 		if (floor.is(Blocks.BEDROCK) || floor.is(Blocks.BARRIER)
-			|| !floor.isValidSpawn(chunk, below, EntityTypes.ZOMBIE)) {
+			|| !floor.isValidSpawn(chunk, below, zombie)) {
 			return false;
 		}
 		BlockState state = chunk.getBlockState(pos);
 		BlockState stateAbove = chunk.getBlockState(above);
-		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), EntityTypes.ZOMBIE)
-			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE);
+		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), zombie)
+			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), zombie);
+	}
+
+	private static EntityType<?> zombieType() {
+		try {
+			return (EntityType<?>) Class.forName("net.minecraft.world.entity.EntityTypes").getField("ZOMBIE").get(null);
+		} catch (ClassNotFoundException ignored) {
+			try {
+				return (EntityType<?>) EntityType.class.getField("ZOMBIE").get(null);
+			} catch (IllegalAccessException | NoSuchFieldException e) {
+				throw new IllegalStateException("Missing zombie entity type", e);
+			}
+		} catch (IllegalAccessException | NoSuchFieldException e) {
+			throw new IllegalStateException("Missing zombie entity type", e);
+		}
 	}
 
 	private static void addSquare(List<Line> lines, double x, double y, double z, int color) {

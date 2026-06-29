@@ -739,7 +739,7 @@ public final class PackManagerScreen extends Screen {
     }
 
     private void showMessage(Component message) {
-        client.gui.hud.getChat()
+        net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
             .addClientSystemMessage(EmUtilsChatPrefix.chat(message));
     }
 }

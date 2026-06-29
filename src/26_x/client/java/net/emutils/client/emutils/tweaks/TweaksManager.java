@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.tweaks;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.inventory.AutoRefillManager;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Camera;
@@ -11,6 +12,7 @@ public final class TweaksManager {
 	private final FreelookManager freelook = new FreelookManager();
 	private final AutoToolManager autoTool = new AutoToolManager();
 	private final AutoFlightGearManager autoFlightGear = new AutoFlightGearManager();
+	private final AutoRefillManager autoRefill = new AutoRefillManager();
 	private final PlaceBelowManager placeBelow = new PlaceBelowManager();
 	private final LockedYPlacementManager lockedYPlacement = new LockedYPlacementManager();
 	private final FreeCameraManager freeCamera = new FreeCameraManager();
@@ -26,12 +28,14 @@ public final class TweaksManager {
 	public void tick(net.minecraft.client.Minecraft client) {
 		freelook.tick(client);
 		autoFlightGear.tick(client);
+		autoRefill.tick(client);
 		lockedYPlacement.tick(client);
 		freeCamera.tick(client);
 	}
 
 	public void resetSession() {
 		autoFlightGear.reset();
+		autoRefill.reset();
 		lockedYPlacement.reset();
 		freeCamera.reset();
 	}
