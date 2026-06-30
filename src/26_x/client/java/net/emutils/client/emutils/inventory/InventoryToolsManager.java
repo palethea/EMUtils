@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import net.emutils.client.EMUtilsClient;
 import net.emhelpers.client.accessor.KeyBindingAccess;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -48,6 +49,8 @@ public final class InventoryToolsManager {
 	private static final int SORT_BUTTON_OFFSET = 10;
 	private static final int SORT_TITLE_BAR_HEIGHT = 14;
 	private static final int SORT_NORMAL_OPERATION_LIMIT = 512;
+	private static final int QUICK_STACK_LEGIT_MIN_DELAY_TICKS = 3;
+	private static final int QUICK_STACK_LEGIT_MAX_DELAY_TICKS = 5;
 	private static final int SORT_ICON_SIZE = 12;
 	private static final int SORT_ICON_TEXTURE_SIZE = 64;
 	private static final int PLAYER_STORAGE_SLOT_COUNT = 36;
@@ -586,13 +589,17 @@ public final class InventoryToolsManager {
 
 		Integer slotId = quickStackTask.next();
 		if (slotId == null) {
-			quickStackTask = null;
+			if (quickStackTask.done()) {
+				quickStackTask = null;
+			}
 			return;
 		}
 
 		executeQuickStackOperation(client, quickStackTask.handler(), slotId);
 		if (quickStackTask.done()) {
 			quickStackTask = null;
+		} else {
+			quickStackTask.resetDelay();
 		}
 	}
 
@@ -1492,6 +1499,7 @@ public final class InventoryToolsManager {
 		private final AbstractContainerMenu handler;
 		private final List<Integer> slotIds;
 		private int index;
+		private int delayTicks;
 
 		private QuickStackTask(AbstractContainerMenu handler, List<Integer> slotIds) {
 			this.handler = handler;
@@ -1504,7 +1512,18 @@ public final class InventoryToolsManager {
 
 		@Nullable
 		private Integer next() {
+			if (delayTicks > 0) {
+				delayTicks--;
+				return null;
+			}
 			return index >= slotIds.size() ? null : slotIds.get(index++);
+		}
+
+		private void resetDelay() {
+			delayTicks = ThreadLocalRandom.current().nextInt(
+				QUICK_STACK_LEGIT_MIN_DELAY_TICKS,
+				QUICK_STACK_LEGIT_MAX_DELAY_TICKS + 1
+			);
 		}
 
 		private boolean done() {

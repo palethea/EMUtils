@@ -200,9 +200,9 @@ Protect important slots and move items faster.
 - Hover Transfer: hold Shift + left click in a storage container, then hover items to move them in or out quickly while ignoring locked or bound items.
   - Global Hover Transfer: optionally allow hover transfer in normal inventory-style screens too, including the player inventory.
 - Sort Buttons: show three sort buttons beside storage containers and the player inventory for sorting by name, category, or quantity.
-- Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
+- Sort Speed: choose Normal sorting or Legit sorting that spaces operations out over ticks.
 - Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
-- Quick Stack Speed: choose Normal transfers or Anti-Cheat transfers that move one stack per tick.
+- Quick Stack Speed: choose Normal transfers or Legit transfers that add a short varied delay between matching stacks.
 - Auto Refill: refill the active hotbar slot with a matching block stack when block placement empties it.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
