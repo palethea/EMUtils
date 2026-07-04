@@ -399,6 +399,13 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, config::tweakSafeWalk, config::setTweakSafeWalk));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA, config::tweakFreeCamera, config::setTweakFreeCamera));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE,
+			config::freeCameraHudMode,
+			config::setFreeCameraHudMode,
+			() -> config.freeCameraHudMode().next(),
+			() -> Component.translatable(config.freeCameraHudMode().labelKey())
+		));
 		rows.add(new HubSettingRow.Slider(
 			EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
 			EMUtilsTexts.SUFFIX_MULTIPLIER,

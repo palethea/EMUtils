@@ -3,6 +3,7 @@ package net.emutils.client.emutils.tweaks.gui;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
+import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emhelpers.client.gui.widget.ConfigToggleButton;
 import net.emhelpers.client.gui.widget.IntConfigSlider;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -121,6 +122,7 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			() -> EMUtilsClient.config().tweakFreeCamera(),
 			EMUtilsClient.config()::setTweakFreeCamera
 		));
+		adder.addChild(freeCameraHudModeButton());
 		adder.addChild(new IntConfigSlider(
 			0,
 			0,
@@ -237,6 +239,22 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config().setAutoToolMode(EMUtilsClient.config().autoToolMode().next());
 			button.setMessage(autoToolModeMessage());
 		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Button freeCameraHudModeButton() {
+		return Button.builder(freeCameraHudModeMessage(), button -> {
+			EMUtilsClient.config().setFreeCameraHudMode(EMUtilsClient.config().freeCameraHudMode().next());
+			button.setMessage(freeCameraHudModeMessage());
+		}).width(SETTINGS_BUTTON_WIDTH).build();
+	}
+
+	private static Component freeCameraHudModeMessage() {
+		FreeCameraHudMode mode = EMUtilsClient.config().freeCameraHudMode();
+		return Component.translatable(
+			EMUtilsTexts.OPTION_VALUE,
+			Component.translatable(EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE),
+			Component.translatable(mode.labelKey())
+		);
 	}
 
 	private static Component autoToolModeMessage() {

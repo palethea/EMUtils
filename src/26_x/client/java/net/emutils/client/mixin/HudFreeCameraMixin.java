@@ -16,7 +16,7 @@ public abstract class HudFreeCameraMixin {
 		DeltaTracker deltaTracker,
 		CallbackInfo ci
 	) {
-		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
 			ci.cancel();
 		}
 	}

@@ -18,6 +18,7 @@ import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
+import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -173,6 +174,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakPlaceBelow = Boolean.FALSE;
 	private Boolean tweakLockedYPlacement = Boolean.FALSE;
 	private Boolean tweakFreeCamera = Boolean.FALSE;
+	private String freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
 	private Integer freeCameraBoostMultiplier = 3;
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
@@ -1102,6 +1104,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public FreeCameraHudMode freeCameraHudMode() {
+		return FreeCameraHudMode.fromName(freeCameraHudMode);
+	}
+
+	public void setFreeCameraHudMode(FreeCameraHudMode mode) {
+		freeCameraHudMode = (mode == null ? FreeCameraHudMode.SPECTATOR : mode).name();
+		save();
+	}
+
 	public int freeCameraBoostMultiplier() {
 		return clamp(freeCameraBoostMultiplier == null ? 3 : freeCameraBoostMultiplier, FREE_CAMERA_BOOST_MULTIPLIER_MIN, FREE_CAMERA_BOOST_MULTIPLIER_MAX);
 	}
@@ -1801,6 +1812,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakPlaceBelow = Boolean.FALSE;
 		tweakLockedYPlacement = Boolean.FALSE;
 		tweakFreeCamera = Boolean.FALSE;
+		freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
 		freeCameraBoostMultiplier = 3;
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
@@ -2154,6 +2166,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakFreeCamera == null) {
 			tweakFreeCamera = Boolean.FALSE;
 		}
+		freeCameraHudMode = freeCameraHudMode().name();
 		freeCameraBoostMultiplier = freeCameraBoostMultiplier();
 		if (tweakAutoSwitchElytra == null) {
 			tweakAutoSwitchElytra = Boolean.FALSE;

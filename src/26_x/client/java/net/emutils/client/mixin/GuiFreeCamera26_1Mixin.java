@@ -17,7 +17,7 @@ public abstract class GuiFreeCamera26_1Mixin {
 		DeltaTracker deltaTracker,
 		CallbackInfo ci
 	) {
-		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
 			ci.cancel();
 		}
 	}
