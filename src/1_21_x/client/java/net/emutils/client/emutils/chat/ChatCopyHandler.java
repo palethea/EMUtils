@@ -76,6 +76,6 @@ public final class ChatCopyHandler {
             return ChatLegacyFormatting.toAmpersandString(message);
         }
 
-        return message.getString();
+        return ChatLegacyFormatting.stripSectionFormattingCodes(message.getString());
     }
 }

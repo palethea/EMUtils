@@ -9,24 +9,63 @@ import net.minecraft.ChatFormatting;
 import org.jspecify.annotations.Nullable;
 
 public final class ChatLegacyFormatting {
+	private static final char SECTION_FORMAT_PREFIX = '\u00A7';
+	private static final char AMPERSAND_FORMAT_PREFIX = '&';
+
 	private ChatLegacyFormatting() {
 	}
 
 	public static String toAmpersandString(Component text) {
 		StringBuilder builder = new StringBuilder();
 		Style[] previous = new Style[] {Style.EMPTY};
+		boolean[] forceStyleRefresh = new boolean[] {false};
 		text.visit((style, string) -> {
-			if (!stylesEqual(previous[0], style)) {
-				if (!previous[0].isEmpty()) {
-					builder.append('&').append(formattingCode(ChatFormatting.RESET));
+			if (forceStyleRefresh[0] || !stylesEqual(previous[0], style)) {
+				if (forceStyleRefresh[0] || !previous[0].isEmpty()) {
+					builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.RESET));
 				}
 				appendCodes(builder, style);
 				previous[0] = style;
+				forceStyleRefresh[0] = false;
 			}
-			builder.append(string);
+			if (appendWithAmpersandFormattingCodes(builder, string)) {
+				forceStyleRefresh[0] = true;
+			}
 			return Optional.empty();
 		}, Style.EMPTY);
 		return builder.toString();
+	}
+
+	public static String stripSectionFormattingCodes(String string) {
+		StringBuilder builder = new StringBuilder(string.length());
+		for (int index = 0; index < string.length(); index++) {
+			char character = string.charAt(index);
+			if (character == SECTION_FORMAT_PREFIX && index + 1 < string.length() && isLegacyFormattingCode(string.charAt(index + 1))) {
+				index++;
+				continue;
+			}
+			builder.append(character);
+		}
+		return builder.toString();
+	}
+
+	private static boolean appendWithAmpersandFormattingCodes(StringBuilder builder, String string) {
+		boolean foundFormattingCode = false;
+		for (int index = 0; index < string.length(); index++) {
+			char character = string.charAt(index);
+			if (character == SECTION_FORMAT_PREFIX && index + 1 < string.length() && isLegacyFormattingCode(string.charAt(index + 1))) {
+				builder.append(AMPERSAND_FORMAT_PREFIX).append(Character.toLowerCase(string.charAt(index + 1)));
+				index++;
+				foundFormattingCode = true;
+				continue;
+			}
+			builder.append(character);
+		}
+		return foundFormattingCode;
+	}
+
+	private static boolean isLegacyFormattingCode(char code) {
+		return "0123456789abcdefklmnorx".indexOf(Character.toLowerCase(code)) >= 0;
 	}
 
 	private static void appendCodes(StringBuilder builder, Style style) {
@@ -34,24 +73,24 @@ public final class ChatLegacyFormatting {
 		if (color != null && !isHexColor(color)) {
 			ChatFormatting legacyColor = legacyColorChatFormatting(color);
 			if (legacyColor != null) {
-				builder.append('&').append(formattingCode(legacyColor));
+				builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(legacyColor));
 			}
 		}
 
 		if (style.isObfuscated()) {
-			builder.append('&').append(formattingCode(ChatFormatting.OBFUSCATED));
+			builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.OBFUSCATED));
 		}
 		if (style.isBold()) {
-			builder.append('&').append(formattingCode(ChatFormatting.BOLD));
+			builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.BOLD));
 		}
 		if (style.isStrikethrough()) {
-			builder.append('&').append(formattingCode(ChatFormatting.STRIKETHROUGH));
+			builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.STRIKETHROUGH));
 		}
 		if (style.isUnderlined()) {
-			builder.append('&').append(formattingCode(ChatFormatting.UNDERLINE));
+			builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.UNDERLINE));
 		}
 		if (style.isItalic()) {
-			builder.append('&').append(formattingCode(ChatFormatting.ITALIC));
+			builder.append(AMPERSAND_FORMAT_PREFIX).append(formattingCode(ChatFormatting.ITALIC));
 		}
 	}
 
