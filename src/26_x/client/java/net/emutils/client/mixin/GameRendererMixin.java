@@ -22,7 +22,7 @@ public abstract class GameRendererMixin {
 		org.joml.Matrix4fc projectionMatrix,
 		CallbackInfo ci
 	) {
-		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
 			ci.cancel();
 		}
 	}
@@ -34,7 +34,7 @@ public abstract class GameRendererMixin {
 	)
 	private boolean emutils$hideHandWhileZooming(OptionsRenderState options) {
 		boolean hidden = net.emutils.client.emutils.compat.MinecraftClientCompat.isHudHidden(Minecraft.getInstance());
-		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
+		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
 			return true;
 		}
 		return EMUtilsClient.zoom() == null

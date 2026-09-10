@@ -398,6 +398,12 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_locked_y_placement";
     public static final String OPTION_TWEAK_FREE_CAMERA =
         "emutils.option.tweak_free_camera";
+    public static final String OPTION_FREE_CAMERA_HUD_MODE =
+        "emutils.option.free_camera_hud_mode";
+    public static final String OPTION_FREE_CAMERA_HUD_MODE_SPECTATOR =
+        "emutils.option.free_camera_hud_mode.spectator";
+    public static final String OPTION_FREE_CAMERA_HUD_MODE_REGULAR =
+        "emutils.option.free_camera_hud_mode.regular";
     public static final String OPTION_FREE_CAMERA_BOOST_MULTIPLIER =
         "emutils.option.free_camera_boost_multiplier";
     public static final String OPTION_AUTO_FLIGHT_GEAR =

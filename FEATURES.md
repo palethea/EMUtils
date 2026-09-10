@@ -200,9 +200,9 @@ Protect important slots and move items faster.
 - Hover Transfer: hold Shift + left click in a storage container, then hover items to move them in or out quickly while ignoring locked or bound items.
   - Global Hover Transfer: optionally allow hover transfer in normal inventory-style screens too, including the player inventory.
 - Sort Buttons: show three sort buttons beside storage containers and the player inventory for sorting by name, category, or quantity.
-- Sort Speed: choose Normal sorting or Anti-Cheat sorting that spaces operations out over ticks.
+- Sort Speed: choose Normal sorting or Legit sorting that spaces operations out over ticks.
 - Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
-- Quick Stack Speed: choose Normal transfers or Anti-Cheat transfers that move one stack per tick.
+- Quick Stack Speed: choose Normal transfers or Legit transfers that add a short varied delay between matching stacks.
 - Auto Refill: refill the active hotbar slot with a matching block stack when block placement empties it.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
@@ -254,4 +254,4 @@ Press a configurable keybind while targeting a block to lock block placements to
 
 ### Free Camera
 
-Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera uses a clean spectator-style HUD with held items and survival HUD elements hidden, while left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored.
+Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera defaults to a clean spectator-style HUD with held items and survival HUD elements hidden, and can switch to the regular HUD to show the real player's hand, hotbar, health, armor, food, and XP while the camera is detached. Left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored.

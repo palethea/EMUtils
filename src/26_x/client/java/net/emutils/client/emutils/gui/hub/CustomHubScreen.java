@@ -1207,14 +1207,23 @@ public final class CustomHubScreen extends Screen {
 				EMUtilsTexts.HUB_FEATURE_FREE_CAMERA_DESC,
 				IconKind.EYE,
 				toggle(config::tweakFreeCamera, config::setTweakFreeCamera),
-				List.of(new HubSettingRow.Slider(
-					EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
-					EMUtilsTexts.SUFFIX_MULTIPLIER,
-					EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
-					EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
-					config::freeCameraBoostMultiplier,
-					config::setFreeCameraBoostMultiplier
-				))
+				List.of(
+					new HubSettingRow.Cycle<>(
+						EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE,
+						config::freeCameraHudMode,
+						config::setFreeCameraHudMode,
+						() -> config.freeCameraHudMode().next(),
+						() -> Component.translatable(config.freeCameraHudMode().labelKey())
+					),
+					new HubSettingRow.Slider(
+						EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
+						EMUtilsTexts.SUFFIX_MULTIPLIER,
+						EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
+						EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
+						config::freeCameraBoostMultiplier,
+						config::setFreeCameraBoostMultiplier
+					)
+				)
 			),
 			actionFeature(
 				HubCategory.SCREENSHOT_GALLERY,

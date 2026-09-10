@@ -49,6 +49,14 @@ public final class FreeCameraManager {
 		return camera != null;
 	}
 
+	public boolean shouldUseSpectatorHud() {
+		return isActive() && EMUtilsClient.config().freeCameraHudMode() == FreeCameraHudMode.SPECTATOR;
+	}
+
+	public boolean shouldUseRegularHud() {
+		return isActive() && EMUtilsClient.config().freeCameraHudMode() == FreeCameraHudMode.REGULAR;
+	}
+
 	@Nullable
 	public BlockPos cameraBlockPosition() {
 		return camera == null ? null : camera.blockPosition();
