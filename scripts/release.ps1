@@ -109,7 +109,13 @@ try {
 
     $token = $env:MODRINTH_TOKEN
     if (-not $token) {
-        throw "MODRINTH_TOKEN is not set. Create a token at https://modrinth.com/settings/pats and set it as an environment variable."
+        $tokenFile = Join-Path $env:USERPROFILE '.modrinth-token'
+        if (Test-Path -LiteralPath $tokenFile) {
+            $token = (Get-Content -LiteralPath $tokenFile -Raw).Trim()
+        }
+    }
+    if (-not $token) {
+        throw "MODRINTH_TOKEN is not set. Create a token at https://modrinth.com/settings/pats and either set the MODRINTH_TOKEN environment variable or save it to $env:USERPROFILE\.modrinth-token."
     }
 
     $payload = [ordered]@{
