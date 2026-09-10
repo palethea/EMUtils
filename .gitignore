@@ -9,6 +9,10 @@ run/
 .env
 .env.*
 
+# Local secrets
+.modrinth-token
+*.token
+
 # IDE files
 .idea/
 *.iml
