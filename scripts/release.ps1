@@ -131,6 +131,8 @@ try {
         project_id     = $projectId
         featured       = $false
         status         = 'listed'
+        file_parts     = @('file')
+        primary_file   = 'file'
     } | ConvertTo-Json -Depth 6 -Compress
 
     $payloadPath = Join-Path $repo "build\release-payload-$version.json"
