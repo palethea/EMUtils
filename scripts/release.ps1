@@ -133,12 +133,24 @@ try {
         status         = 'listed'
     } | ConvertTo-Json -Depth 6 -Compress
 
+    $payloadPath = Join-Path $repo "build\release-payload-$version.json"
+    Set-Content -LiteralPath $payloadPath -Value $payload -Encoding utf8 -NoNewline
+
     Write-Host "Uploading to Modrinth..."
-    $response = Invoke-RestMethod `
-        -Method Post `
-        -Uri 'https://api.modrinth.com/v2/version' `
-        -Headers @{ Authorization = $token } `
-        -Form @{ data = $payload; file = Get-Item -LiteralPath $jar }
+    $responseOutput = & curl.exe --fail-with-body -sS -X POST 'https://api.modrinth.com/v2/version' `
+        -H "Authorization: $token" `
+        -F "data=<$payloadPath" `
+        -F "file=@$jar;type=application/java-archive"
+    $responseText = ($responseOutput -join "`n")
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Modrinth upload failed: $responseText"
+    }
+
+    $response = $responseText | ConvertFrom-Json
+    if ($response.error) {
+        throw "Modrinth rejected the upload: $($response.description)"
+    }
 
     Write-Host "Published Modrinth version $($response.version_number) (id $($response.id))."
 
