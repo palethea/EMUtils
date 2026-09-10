@@ -3,8 +3,10 @@ plugins {
 	id 'com.gradleup.shadow' version '9.3.1'
 }
 
-def mcFamily = (findProperty("mcFamily") ?: "1.21.x").toString()
+def mcFamily = (findProperty("mcFamily") ?: "26.x").toString()
 def mcVersionOverride = findProperty("mcVersion")?.toString()
+// Supported: 26.1.2 and 26.2. 26.1 / 26.1.1 stay listed so they can still be
+// built and launched for emergency bug fixes, but they are not validated.
 def mc26Versions = [
 	"26.1": [
 		minecraftVersion: "26.1",
@@ -32,19 +34,6 @@ if (mcFamily == "26.x" && !mc26Versions.containsKey(selected26Version)) {
 	throw new GradleException("Unsupported 26.x mcVersion '${selected26Version}'. Use one of: ${mc26Versions.keySet().join(', ')}")
 }
 def mcFamilies = [
-	"1.21.x": [
-		sourcePath: "src/1_21_x/client/java",
-		resourcePath: "src/1_21_x/resources",
-		minecraftVersion: "1.21.11",
-		yarnMappings: "1.21.11+build.5",
-		fabricApiVersion: "0.141.4+1.21.11",
-		loaderVersion: "0.19.2",
-		javaVersion: 21,
-		mappingNamespace: "yarn",
-		minecraftDependency: ">=1.21.9- <1.21.12-",
-		minecraftDescription: "1.21.9-1.21.11",
-		archiveName: "EMUtils-1.21.x.jar"
-	],
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
 		resourcePath: "src/26_x/resources",
@@ -124,14 +113,10 @@ if (mcFamily == "26.x") {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${selectedMc.minecraftVersion}"
-	if (selectedMc.mappingNamespace == "mojang") {
-		mappings loom.layered {
-			mappings(file(selectedMc.mappingFile)) {
-				fallbackNamespaces("official", "named")
-			}
+	mappings loom.layered {
+		mappings(file(selectedMc.mappingFile)) {
+			fallbackNamespaces("official", "named")
 		}
-	} else {
-		mappings "net.fabricmc:yarn:${selectedMc.yarnMappings}:v2"
 	}
 	modImplementation "net.fabricmc:fabric-loader:${selectedMc.loaderVersion}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedMc.fabricApiVersion}"
