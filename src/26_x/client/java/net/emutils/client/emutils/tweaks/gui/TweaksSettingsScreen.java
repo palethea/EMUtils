@@ -93,6 +93,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakNoSpyglassOverlay
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_PUMPKIN_OVERLAY,
+			() -> EMUtilsClient.config().tweakNoPumpkinOverlay(),
+			EMUtilsClient.config()::setTweakNoPumpkinOverlay
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_FAST_PLACE,
 			() -> EMUtilsClient.config().tweakFastPlace(),
 			EMUtilsClient.config()::setTweakFastPlace

@@ -73,6 +73,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_nausea.desc";
     public static final String HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC =
         "emutils.hub.feature.no_spyglass_overlay.desc";
+    public static final String HUB_FEATURE_NO_PUMPKIN_OVERLAY_DESC =
+        "emutils.hub.feature.no_pumpkin_overlay.desc";
     public static final String HUB_FEATURE_FAST_PLACE_DESC =
         "emutils.hub.feature.fast_place.desc";
     public static final String HUB_FEATURE_FAST_USE_DESC =
@@ -374,6 +376,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_nausea";
     public static final String OPTION_TWEAK_NO_SPYGLASS_OVERLAY =
         "emutils.option.tweak_no_spyglass_overlay";
+    public static final String OPTION_TWEAK_NO_PUMPKIN_OVERLAY =
+        "emutils.option.tweak_no_pumpkin_overlay";
     public static final String OPTION_TWEAK_FAST_PLACE =
         "emutils.option.tweak_fast_place";
     public static final String OPTION_TWEAK_FAST_USE =

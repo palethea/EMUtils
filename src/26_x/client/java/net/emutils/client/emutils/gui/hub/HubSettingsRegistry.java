@@ -386,6 +386,7 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, config::tweakLowFireOverlay, config::setTweakLowFireOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, config::tweakNoNausea, config::setTweakNoNausea));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_PUMPKIN_OVERLAY, config::tweakNoPumpkinOverlay, config::setTweakNoPumpkinOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FOG, config::tweakNoFog, config::setTweakNoFog));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, config::tweakClearUnderwater, config::setTweakClearUnderwater));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, config::tweakClearLava, config::setTweakClearLava));

@@ -1184,6 +1184,7 @@ public final class CustomHubScreen extends Screen {
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_LOW_FIRE_OVERLAY_DESC, IconKind.FLAME, toggle(config::tweakLowFireOverlay, config::setTweakLowFireOverlay)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, EMUtilsTexts.HUB_FEATURE_NO_NAUSEA_DESC, IconKind.EYE, toggle(config::tweakNoNausea, config::setTweakNoNausea)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC, IconKind.ZOOM, toggle(config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay)),
+			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_PUMPKIN_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_PUMPKIN_OVERLAY_DESC, IconKind.EYE, toggle(config::tweakNoPumpkinOverlay, config::setTweakNoPumpkinOverlay)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, EMUtilsTexts.HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES, EMUtilsTexts.HUB_FEATURE_NO_NETHER_PARTICLES_DESC, IconKind.SPARKLES, toggle(config::tweakNoNetherParticles, config::setTweakNoNetherParticles)),
 			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, IconKind.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam)),
