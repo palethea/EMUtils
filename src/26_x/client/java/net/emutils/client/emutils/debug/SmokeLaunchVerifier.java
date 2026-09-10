@@ -50,7 +50,7 @@ public final class SmokeLaunchVerifier {
 		}
 
 		ticks++;
-		if (launchTestWorld) {
+		if (launchTestWorld && client.level == null) {
 			launchOrContinueTestWorld(client);
 		}
 
@@ -76,15 +76,19 @@ public final class SmokeLaunchVerifier {
 	}
 
 	private static void launchOrContinueTestWorld(Minecraft client) {
-		if (!requestedWorldCreation && client.isGameLoadFinished() && client.level == null) {
+		if (!requestedWorldCreation && client.isGameLoadFinished()) {
 			requestedWorldCreation = true;
 			EMUtilsClient.LOGGER.info("EMUtils debug launch is preparing a singleplayer test world.");
-			CreateWorldScreen.testWorld(client, () -> {
+			CreateWorldScreen.openFresh(client, () -> {
 			});
 			return;
 		}
 
-		if (requestedWorldCreation && !clickedCreateWorld) {
+		if (!requestedWorldCreation) {
+			return;
+		}
+
+		if (!clickedCreateWorld) {
 			Screen screen = currentScreen(client);
 			if (screen instanceof CreateWorldScreen createWorldScreen) {
 				clickedCreateWorld = true;
@@ -95,13 +99,18 @@ public final class SmokeLaunchVerifier {
 	}
 
 	private static Screen currentScreen(Minecraft client) {
-		Object guiScreen = tryInvokeNoArgs(client.gui, "screen");
-		if (guiScreen instanceof Screen currentScreen) {
-			return currentScreen;
+		if (client.gui != null) {
+			Object guiScreen = tryInvokeNoArgs(client.gui, "screen");
+			if (guiScreen instanceof Screen currentScreen) {
+				return currentScreen;
+			}
 		}
 
 		if (minecraftScreenField == null) {
 			minecraftScreenField = findScreenField();
+		}
+		if (minecraftScreenField == null) {
+			return null;
 		}
 		try {
 			Object screen = minecraftScreenField.get(client);
@@ -154,7 +163,7 @@ public final class SmokeLaunchVerifier {
 				return field;
 			}
 		}
-		throw new IllegalStateException("Failed to find current Minecraft screen field");
+		return null;
 	}
 
 	private static void invokeCreateWorld(CreateWorldScreen createWorldScreen) {
