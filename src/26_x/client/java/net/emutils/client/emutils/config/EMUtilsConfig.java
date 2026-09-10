@@ -167,6 +167,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakLowFireOverlay = Boolean.FALSE;
 	private Boolean tweakNoNausea = Boolean.FALSE;
 	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
+	private Boolean tweakNoPumpkinOverlay = Boolean.FALSE;
 	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakFastUse = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
@@ -1038,6 +1039,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakNoPumpkinOverlay() {
+		return tweakNoPumpkinOverlay != null && tweakNoPumpkinOverlay;
+	}
+
+	public void setTweakNoPumpkinOverlay(boolean enabled) {
+		tweakNoPumpkinOverlay = enabled;
+		save();
+	}
+
 	public boolean tweakFastPlace() {
 		return tweakFastPlace != null && tweakFastPlace;
 	}
@@ -1236,6 +1246,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakLowFireOverlay()
 			|| tweakNoNausea()
 			|| tweakNoSpyglassOverlay()
+			|| tweakNoPumpkinOverlay()
 			|| tweakFastPlace()
 			|| tweakFastUse()
 			|| tweakAntiDurabilityBreak()
@@ -1805,6 +1816,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakLowFireOverlay = Boolean.FALSE;
 		tweakNoNausea = Boolean.FALSE;
 		tweakNoSpyglassOverlay = Boolean.FALSE;
+		tweakNoPumpkinOverlay = Boolean.FALSE;
 		tweakFastPlace = Boolean.FALSE;
 		tweakFastUse = Boolean.FALSE;
 		tweakAntiDurabilityBreak = Boolean.FALSE;
@@ -2144,6 +2156,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakNoSpyglassOverlay == null) {
 			tweakNoSpyglassOverlay = Boolean.FALSE;
+		}
+		if (tweakNoPumpkinOverlay == null) {
+			tweakNoPumpkinOverlay = Boolean.FALSE;
 		}
 		if (tweakFastPlace == null) {
 			tweakFastPlace = Boolean.FALSE;

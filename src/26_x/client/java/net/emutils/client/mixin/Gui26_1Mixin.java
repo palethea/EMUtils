@@ -2,6 +2,7 @@ package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.food.FoodHudRenderer;
@@ -9,10 +10,13 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.equipment.Equippable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Gui.class)
@@ -63,6 +67,25 @@ public abstract class Gui26_1Mixin {
 		if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakNoNausea()) {
 			ci.cancel();
 		}
+	}
+
+	@Redirect(
+		method = "extractCameraOverlays",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/world/item/equipment/Equippable;cameraOverlay()Ljava/util/Optional;"
+		)
+	)
+	private Optional<Identifier> emutils$skipPumpkinOverlay(Equippable equippable) {
+		Optional<Identifier> overlay = equippable.cameraOverlay();
+		if (overlay.isEmpty() || EMUtilsClient.config() == null || !EMUtilsClient.config().tweakNoPumpkinOverlay()) {
+			return overlay;
+		}
+
+		Identifier texture = overlay.get();
+		return "minecraft".equals(texture.getNamespace()) && texture.getPath().contains("pumpkinblur")
+			? Optional.empty()
+			: overlay;
 	}
 
 	@Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"))

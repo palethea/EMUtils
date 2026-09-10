@@ -31,6 +31,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - Low Fire: keep flames visible but lower on screen.
 - No Nausea: hide nausea and portal distortion effects.
 - No Spyglass Overlay: hide the spyglass scope overlay.
+- No Pumpkin Overlay: hide the carved pumpkin blur while wearing one.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
 - Beacon Radius Outline: draw a stable chunk-border-style grid cage around each loaded active beacon's true effect boundary, colored from its beam and toggleable with a configurable keybind.
