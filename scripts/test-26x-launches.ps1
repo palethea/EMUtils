@@ -1,12 +1,22 @@
 param(
-    [string[]] $Versions = @('26.1.2', '26.2'),
-    [int] $TimeoutSeconds = 180
+    [string[]] $Versions,
+    [switch] $Latest,
+    [int] $TimeoutSeconds = 240
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $env:JAVA_HOME = 'C:\Users\matti\.jdks\jdk-25.0.3+9'
 $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+
+$latestVersion = '26.2'
+$supportedVersions = @('26.1.2', '26.2')
+if ($Latest) {
+    $Versions = @($latestVersion)
+}
+elseif (-not $Versions -or $Versions.Count -eq 0) {
+    $Versions = $supportedVersions
+}
 
 $logDir = Join-Path $repo 'build\launch-smoke-logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
@@ -46,7 +56,6 @@ try {
         $arguments = @(
             '-classpath', '.\gradle\wrapper\gradle-wrapper.jar',
             'org.gradle.wrapper.GradleWrapperMain',
-            '--no-daemon',
             'runClient',
             "-PmcFamily=26.x",
             "-PmcVersion=$version",
@@ -93,4 +102,4 @@ finally {
     Pop-Location
 }
 
-Write-Host "All supported 26.x singleplayer launch smoke tests passed."
+Write-Host "All requested 26.x singleplayer launch smoke tests passed."

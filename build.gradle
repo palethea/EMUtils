@@ -33,6 +33,9 @@ def selected26Version = mcVersionOverride ?: "26.2"
 if (mcFamily == "26.x" && !mc26Versions.containsKey(selected26Version)) {
 	throw new GradleException("Unsupported 26.x mcVersion '${selected26Version}'. Use one of: ${mc26Versions.keySet().join(', ')}")
 }
+def smokeRunDir = (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
+	? "run/26x-smoke/${selected26Version}"
+	: null
 def mcFamilies = [
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
@@ -84,6 +87,14 @@ loom {
 		"emutils" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
+		}
+	}
+
+	if (smokeRunDir != null) {
+		runs {
+			client {
+				runDir smokeRunDir
+			}
 		}
 	}
 }
@@ -178,7 +189,6 @@ tasks.matching { it.name == "runClient" }.configureEach {
 	if (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.smokeLaunch=true"
 		jvmArgs "-Demutils.launchTestWorld=true"
-		workingDir = file("run/26x-smoke/${selected26Version}")
 	}
 	if (mcFamily == "26.x" && findProperty("emutilsLaunchTestWorld")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.launchTestWorld=true"
