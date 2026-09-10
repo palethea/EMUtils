@@ -6,7 +6,7 @@
 
 <p align="center">
   Tired of installing five different mods just to copy a chat message, zoom in, and reconnect after a kick?<br>
-  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for <strong>Minecraft 1.21.9-1.21.11</strong> and <strong>Minecraft 26.x</strong> on Fabric — so you can stop juggling mods and get back to playing.
+  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for the <strong>latest two Minecraft 26.x releases</strong> on Fabric — so you can stop juggling mods and get back to playing.
 </p>
 
 ## Status
@@ -15,8 +15,9 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ### Version support
 
-- **Minecraft 26.x** is the active development version and receives new features and fixes.
-- **Minecraft 1.21.9-1.21.11** enters maintenance mode after EMUtils 0.13.0. It will continue receiving bug fixes and compatibility fixes, but new features will target Minecraft 26.x.
+- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.1.2** and **26.2**.
+- New features and fixes target the supported versions. Older 26.x releases (`26.1`, `26.1.1`) are unsupported and are only patched when a bug is reported.
+- **Minecraft 1.21.x** is preserved on the `legacy/1.21.x` branch and is no longer part of `main`.
 
 ## Features
 
@@ -42,10 +43,9 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 
 ## Requirements
 
-- Minecraft 1.21.9-1.21.11 or Minecraft 26.x
-- Java 21 or newer for the 1.21.x jar
-- Java 25 or newer for the 26.x jar
-- Fabric Loader 0.19.2 or newer for 1.21.x, or 0.19.3 or newer for 26.x
+- Minecraft 26.1.2 or 26.2
+- Java 25 or newer
+- Fabric Loader 0.19.3 or newer
 - Fabric API
 
 ### Optional integrations
@@ -57,18 +57,17 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version.
-2. Download the matching EMUtils jar from releases: `EMUtils-1.21.x.jar` or `EMUtils-26.x.jar`.
+2. Download `EMUtils-26.x.jar` from releases.
 3. Place the jar in your `mods` folder.
 4. Launch the game.
 
 ## Building
 
 ```bash
-./gradlew -PmcFamily=1.21.x build
 ./gradlew -PmcFamily=26.x build
 ```
 
-The built jars will be created in `build/libs/` as `EMUtils-1.21.x.jar` and `EMUtils-26.x.jar`.
+The built jar will be created in `build/libs/` as `EMUtils-26.x.jar`.
 
 ## License
 
