@@ -31,15 +31,7 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 
 ## Feature Ideas
 
-- **Quick GIF** — record short shareable gameplay clips from a keybind.
-- **Keybind wheel** — create profile-based wheel actions that run chat commands or send saved messages.
-- **Last server** — add a main-menu button for instantly joining the last server you played on.
-- **No Pumpkin Overlay** — hide the pumpkin overlay while wearing a carved pumpkin.
-- **Armor & Hand Equipment Status HUD** — show equipped armor durability and held item status.
-- **Keypress / Keystrokes Overlay** — display keystrokes and CPS on-screen.
-- **Target Entity Info Overlay** — show targeted mob/player health and active effects.
-- **TPS & Server Lag Monitor** — monitor server-side performance (TPS/MSPT) from the HUD.
-- **Inventory Search & Highlight Filter** — filter and highlight container contents in real-time.
+Suggested and planned features are tracked in the [feature ideas backlog](https://github.com/palethea/EMUtils/issues/55).
 
 ## Requirements
 
