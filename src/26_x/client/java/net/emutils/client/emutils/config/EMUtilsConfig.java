@@ -1930,6 +1930,42 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 	}
 
+	public String toJson() {
+		return GSON.toJson(this);
+	}
+
+	@Nullable
+	public static EMUtilsConfig fromJson(String json) {
+		if (json == null || json.isBlank()) {
+			return null;
+		}
+
+		try {
+			EMUtilsConfig config = GSON.fromJson(json, EMUtilsConfig.class);
+			if (config == null) {
+				return null;
+			}
+
+			config.applyDefaults();
+			config.save();
+			return config;
+		} catch (JsonParseException | IllegalStateException ignored) {
+			return null;
+		}
+	}
+
+	/**
+	 * Re-runs the runtime refreshes that the individual setters perform, so replacing the whole
+	 * config (config import) behaves like changing each setting by hand.
+	 */
+	public void applyRuntimeState() {
+		ChatFeaturesRefresher.onTimestampSettingsChanged();
+		CustomCapeManager.reload();
+		if (!tweakLockedYPlacement() && net.emutils.client.EMUtilsClient.tweaks() != null) {
+			net.emutils.client.EMUtilsClient.tweaks().lockedYPlacement().reset();
+		}
+	}
+
 	private void applyDefaults() {
 		if (autoReconnect == null) {
 			autoReconnect = Boolean.TRUE;

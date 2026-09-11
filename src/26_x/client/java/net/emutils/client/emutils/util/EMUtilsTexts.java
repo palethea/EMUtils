@@ -848,6 +848,25 @@ public final class EMUtilsTexts {
     public static final String COMMAND_SHORTCUT_CLEAR_MESSAGE =
         "emutils.command_shortcut.clear_message";
 
+    public static final String COMMAND_FEEDBACK_UNKNOWN_FEATURE =
+        "emutils.command.feedback.unknown_feature";
+    public static final String COMMAND_FEEDBACK_NOT_TOGGLEABLE =
+        "emutils.command.feedback.not_toggleable";
+    public static final String COMMAND_FEEDBACK_TOGGLED_ON =
+        "emutils.command.feedback.toggled_on";
+    public static final String COMMAND_FEEDBACK_TOGGLED_OFF =
+        "emutils.command.feedback.toggled_off";
+    public static final String COMMAND_FEEDBACK_RESET =
+        "emutils.command.feedback.reset";
+    public static final String COMMAND_FEEDBACK_NO_RESET =
+        "emutils.command.feedback.no_reset";
+    public static final String COMMAND_FEEDBACK_EXPORTED =
+        "emutils.command.feedback.exported";
+    public static final String COMMAND_FEEDBACK_IMPORTED =
+        "emutils.command.feedback.imported";
+    public static final String COMMAND_FEEDBACK_IMPORT_FAILED =
+        "emutils.command.feedback.import_failed";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

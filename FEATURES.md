@@ -134,6 +134,13 @@ Save death and custom waypoints per world or server.
 
 ## Management
 
+### Settings Hub
+
+Open the EMUtils hub from the pause menu, the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command.
+
+- Mod Menu Integration: open the EMUtils hub from Mod Menu's config button when Mod Menu is installed.
+- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, and export or import the config through the clipboard.
+
 ### Screenshot Gallery
 
 Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.
