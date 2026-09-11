@@ -25,6 +25,7 @@ AGENTS.md
 .copilot/
 .cursor/
 .continue/
+.commandcode/
 
 # Local project notes
 guides.md
