@@ -1954,6 +1954,18 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 	}
 
+	/**
+	 * Re-runs the runtime refreshes that the individual setters perform, so replacing the whole
+	 * config (config import) behaves like changing each setting by hand.
+	 */
+	public void applyRuntimeState() {
+		ChatFeaturesRefresher.onTimestampSettingsChanged();
+		CustomCapeManager.reload();
+		if (!tweakLockedYPlacement() && net.emutils.client.EMUtilsClient.tweaks() != null) {
+			net.emutils.client.EMUtilsClient.tweaks().lockedYPlacement().reset();
+		}
+	}
+
 	private void applyDefaults() {
 		if (autoReconnect == null) {
 			autoReconnect = Boolean.TRUE;

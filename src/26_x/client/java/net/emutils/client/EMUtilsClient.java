@@ -353,7 +353,7 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	public static void replaceConfig(EMUtilsConfig next) {
 		config = next;
-		CustomCapeManager.reload();
+		next.applyRuntimeState();
 	}
 
 	public static EMUtilsConfig config() {
