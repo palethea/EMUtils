@@ -13,7 +13,8 @@
   "icon": "assets/emutils/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["net.emutils.client.EMUtilsClient"]
+    "client": ["net.emutils.client.EMUtilsClient"],
+    "modmenu": ["net.emutils.client.emutils.compat.modmenu.EMUtilsModMenu"]
   },
   "mixins": ["emutils.mixins.json"],
   "accessWidener": "emutils.accesswidener",
@@ -26,6 +27,7 @@
   "suggests": {
     "iris": "*",
     "minescript": "*",
+    "modmenu": "*",
     "xaerominimap": ">=26.1.3",
     "xaeroworldmap": ">=1.41.1"
   }

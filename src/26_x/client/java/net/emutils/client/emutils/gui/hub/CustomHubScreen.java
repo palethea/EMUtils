@@ -3,18 +3,8 @@ package net.emutils.client.emutils.gui.hub;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
-import net.emutils.client.emutils.compat.MinescriptCompat;
-import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
-import net.emutils.client.emutils.packs.gui.PackManagerScreen;
-import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -66,14 +56,14 @@ public final class CustomHubScreen extends Screen {
 	private static final float COLLAPSE_ANIMATION_STEP = 1.0F / COLLAPSE_ANIMATION_FRAMES;
 
 	private final Screen parent;
-	private final List<FeatureSpec> features;
+	private final List<HubFeature> features;
 	private final Component versionText;
 	private Font textRenderer;
-	private FeatureGroup selectedGroup = FeatureGroup.RENDER;
+	private HubFeature.Group selectedGroup = HubFeature.Group.RENDER;
 	@Nullable
-	private FeatureSpec expandedFeature;
+	private HubFeature expandedFeature;
 	@Nullable
-	private FeatureSpec collapsingFeature;
+	private HubFeature collapsingFeature;
 	private float expandProgress = 1.0F;
 	private float collapseProgress;
 	private HubSettingRow.Slider draggingSlider;
@@ -113,7 +103,7 @@ public final class CustomHubScreen extends Screen {
 	public CustomHubScreen(Screen parent) {
 		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE));
 		this.parent = parent;
-		this.features = createFeatures();
+		this.features = HubFeatureCatalog.all();
 		String version = FabricLoader.getInstance()
 			.getModContainer(EMUtilsClient.MOD_ID)
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
@@ -245,7 +235,7 @@ public final class CustomHubScreen extends Screen {
 
 	private void renderSidebar(GuiGraphicsExtractor context, int mouseX, int mouseY) {
 		int y = sidebarY;
-		for (FeatureGroup group : FeatureGroup.values()) {
+		for (HubFeature.Group group : HubFeature.Group.values()) {
 			boolean selected = group == selectedGroup;
 			boolean hovered = contains(mouseX, mouseY, sidebarX, y, sidebarWidth, HubPanelTheme.ROW_HEIGHT);
 			if (selected) {
@@ -322,7 +312,7 @@ public final class CustomHubScreen extends Screen {
 	}
 
 	private void renderFeatureList(GuiGraphicsExtractor context, int mouseX, int mouseY) {
-		List<FeatureSpec> visible = visibleFeatures();
+		List<HubFeature> visible = visibleFeatures();
 		if (visible.isEmpty()) {
 			Component empty = Component.translatable(EMUtilsTexts.HUB_EMPTY_SEARCH);
 			context.text(
@@ -337,7 +327,7 @@ public final class CustomHubScreen extends Screen {
 		}
 
 		int y = contentY - (int) Math.round(scrollOffset);
-		for (FeatureSpec feature : visible) {
+		for (HubFeature feature : visible) {
 			int rowY = y;
 			if (feature == expandedFeature || feature == collapsingFeature) {
 				int menuY = rowY + FEATURE_HEIGHT + EXPANDED_MENU_GAP;
@@ -362,7 +352,7 @@ public final class CustomHubScreen extends Screen {
 		}
 	}
 
-	private void renderFeatureRow(GuiGraphicsExtractor context, FeatureSpec feature, int y, int mouseX, int mouseY) {
+	private void renderFeatureRow(GuiGraphicsExtractor context, HubFeature feature, int y, int mouseX, int mouseY) {
 		boolean expanded = isFeatureVisuallyExpanded(feature);
 		boolean hovered = contains(mouseX, mouseY, contentX, y, contentWidth - scrollbarReserve(), FEATURE_HEIGHT);
 		int right = contentX + contentWidth - scrollbarReserve();
@@ -424,7 +414,7 @@ public final class CustomHubScreen extends Screen {
 		}
 	}
 
-	private void renderSettingsMenu(GuiGraphicsExtractor context, FeatureSpec feature, int y, int height, int mouseX, int mouseY) {
+	private void renderSettingsMenu(GuiGraphicsExtractor context, HubFeature feature, int y, int height, int mouseX, int mouseY) {
 		if (feature == collapsingFeature && height < COLLAPSE_DRAW_THRESHOLD) {
 			return;
 		}
@@ -453,7 +443,7 @@ public final class CustomHubScreen extends Screen {
 		}
 	}
 
-	private void renderSettingRows(GuiGraphicsExtractor context, FeatureSpec feature, int x, int y, int width, int mouseX, int mouseY) {
+	private void renderSettingRows(GuiGraphicsExtractor context, HubFeature feature, int x, int y, int width, int mouseX, int mouseY) {
 		for (HubSettingRow row : rows(feature)) {
 			if (row instanceof HubSettingRow.Spacer spacer) {
 				y += spacer.height();
@@ -666,7 +656,7 @@ public final class CustomHubScreen extends Screen {
 
 	private boolean handleSidebarMouseButtonEvent(double mouseX, double mouseY) {
 		int y = sidebarY;
-		for (FeatureGroup group : FeatureGroup.values()) {
+		for (HubFeature.Group group : HubFeature.Group.values()) {
 			if (contains(mouseX, mouseY, sidebarX, y, sidebarWidth, HubPanelTheme.ROW_HEIGHT)) {
 				selectedGroup = group;
 				expandedFeature = null;
@@ -690,7 +680,7 @@ public final class CustomHubScreen extends Screen {
 			return false;
 		}
 		int y = contentY - (int) Math.round(scrollOffset);
-		for (FeatureSpec feature : visibleFeatures()) {
+		for (HubFeature feature : visibleFeatures()) {
 			int rowRight = contentX + contentWidth - scrollbarReserve();
 			if (contains(mouseX, mouseY, contentX, y, rowRight - contentX, FEATURE_HEIGHT)) {
 				boolean opened = false;
@@ -743,7 +733,7 @@ public final class CustomHubScreen extends Screen {
 		return false;
 	}
 
-	private boolean toggleExpanded(FeatureSpec feature) {
+	private boolean toggleExpanded(HubFeature feature) {
 		boolean opened = expandedFeature != feature;
 		if (opened) {
 			collapsingFeature = null;
@@ -957,7 +947,7 @@ public final class CustomHubScreen extends Screen {
 
 	private int listContentHeight() {
 		int height = 0;
-		for (FeatureSpec feature : visibleFeatures()) {
+		for (HubFeature feature : visibleFeatures()) {
 			if (feature == expandedFeature) {
 				height += FEATURE_HEIGHT + EXPANDED_MENU_GAP + expandedMenuHeight(feature) + FEATURE_GAP;
 			} else if (feature == collapsingFeature) {
@@ -969,14 +959,14 @@ public final class CustomHubScreen extends Screen {
 		return Math.max(0, height - FEATURE_GAP);
 	}
 
-	private int expandedMenuHeight(FeatureSpec feature) {
+	private int expandedMenuHeight(HubFeature feature) {
 		if (!canExpand(feature)) {
 			return 0;
 		}
 		return Math.min(MENU_MAX_HEIGHT, settingsContentHeight(feature) + MENU_PADDING * 2);
 	}
 
-	private int animatedExpandedMenuHeight(FeatureSpec feature) {
+	private int animatedExpandedMenuHeight(HubFeature feature) {
 		int height = expandedMenuHeight(feature);
 		if (feature != expandedFeature) {
 			return height;
@@ -984,11 +974,11 @@ public final class CustomHubScreen extends Screen {
 		return menuHeightForProgress(height, expandProgress);
 	}
 
-	private int collapsingMenuHeight(FeatureSpec feature) {
+	private int collapsingMenuHeight(HubFeature feature) {
 		return menuHeightForProgress(expandedMenuHeight(feature), collapseProgress);
 	}
 
-	private int animatedMenuHeight(FeatureSpec feature) {
+	private int animatedMenuHeight(HubFeature feature) {
 		if (feature == expandedFeature) {
 			return animatedExpandedMenuHeight(feature);
 		}
@@ -998,7 +988,7 @@ public final class CustomHubScreen extends Screen {
 		return 0;
 	}
 
-	private boolean isFeatureVisuallyExpanded(FeatureSpec feature) {
+	private boolean isFeatureVisuallyExpanded(HubFeature feature) {
 		return feature == expandedFeature || feature == collapsingFeature;
 	}
 
@@ -1011,7 +1001,7 @@ public final class CustomHubScreen extends Screen {
 		return Math.max(1, Math.round(height * progress));
 	}
 
-	private int settingsContentHeight(FeatureSpec feature) {
+	private int settingsContentHeight(HubFeature feature) {
 		int height = 0;
 		for (HubSettingRow row : rows(feature)) {
 			height += settingRowHeight(row);
@@ -1034,7 +1024,7 @@ public final class CustomHubScreen extends Screen {
 			return null;
 		}
 		int y = contentY - (int) Math.round(scrollOffset);
-		for (FeatureSpec feature : visibleFeatures()) {
+		for (HubFeature feature : visibleFeatures()) {
 			y += FEATURE_HEIGHT;
 			if (feature == expandedFeature) {
 				y += EXPANDED_MENU_GAP;
@@ -1051,10 +1041,10 @@ public final class CustomHubScreen extends Screen {
 		return null;
 	}
 
-	private List<FeatureSpec> visibleFeatures() {
-		String query = normalized(search);
-		List<FeatureSpec> visible = new ArrayList<>();
-		for (FeatureSpec feature : features) {
+	private List<HubFeature> visibleFeatures() {
+		String query = HubFeatureCatalog.normalize(search);
+		List<HubFeature> visible = new ArrayList<>();
+		for (HubFeature feature : features) {
 			if (query.isEmpty() && feature.group() != selectedGroup) {
 				continue;
 			}
@@ -1071,7 +1061,7 @@ public final class CustomHubScreen extends Screen {
 			return;
 		}
 		int y = contentY - (int) Math.round(scrollOffsetTarget);
-		for (FeatureSpec feature : visibleFeatures()) {
+		for (HubFeature feature : visibleFeatures()) {
 			int rowTop = y;
 			int menuTop = rowTop + FEATURE_HEIGHT + EXPANDED_MENU_GAP;
 			if (feature == expandedFeature) {
@@ -1100,7 +1090,7 @@ public final class CustomHubScreen extends Screen {
 		}
 	}
 
-	private List<HubSettingRow> rows(FeatureSpec feature) {
+	private List<HubSettingRow> rows(HubFeature feature) {
 		if (feature.rows() != null) {
 			return feature.rows();
 		}
@@ -1110,7 +1100,7 @@ public final class CustomHubScreen extends Screen {
 		return HubSettingsRegistry.rows(feature.category(), this::updateScrollBounds);
 	}
 
-	private boolean canExpand(FeatureSpec feature) {
+	private boolean canExpand(HubFeature feature) {
 		return !rows(feature).isEmpty();
 	}
 
@@ -1172,116 +1162,6 @@ public final class CustomHubScreen extends Screen {
 		return Component.literal(String.valueOf(slider.getter().getAsInt())).append(suffix);
 	}
 
-	private List<FeatureSpec> createFeatures() {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return List.of(
-			feature(HubCategory.FULLBRIGHT, FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, EMUtilsTexts.HUB_FEATURE_FULLBRIGHT_DESC, IconKind.SUN, toggle(config::tweakFullbright, config::setTweakFullbright)),
-			feature(HubCategory.CLEAR_WEATHER, FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, EMUtilsTexts.HUB_FEATURE_CLEAR_WEATHER_DESC, IconKind.CLOUD_SUN, toggle(config::tweakClearWeather, config::setTweakClearWeather)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, EMUtilsTexts.HUB_FEATURE_CLEAR_UNDERWATER_DESC, IconKind.DROPLETS, toggle(config::tweakClearUnderwater, config::setTweakClearUnderwater)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, IconKind.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_FIRE_OVERLAY_DESC, IconKind.FLAME, toggle(config::tweakNoFireOverlay, config::setTweakNoFireOverlay)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_LOW_FIRE_OVERLAY_DESC, IconKind.FLAME, toggle(config::tweakLowFireOverlay, config::setTweakLowFireOverlay)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, EMUtilsTexts.HUB_FEATURE_NO_NAUSEA_DESC, IconKind.EYE, toggle(config::tweakNoNausea, config::setTweakNoNausea)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC, IconKind.ZOOM, toggle(config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_PUMPKIN_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_PUMPKIN_OVERLAY_DESC, IconKind.EYE, toggle(config::tweakNoPumpkinOverlay, config::setTweakNoPumpkinOverlay)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_ENVIRONMENT_FOG, EMUtilsTexts.HUB_FEATURE_NO_ENVIRONMENT_FOG_DESC, IconKind.CLOUD_OFF, toggle(config::tweakNoEnvironmentFog, config::setTweakNoEnvironmentFog)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NETHER_PARTICLES, EMUtilsTexts.HUB_FEATURE_NO_NETHER_PARTICLES_DESC, IconKind.SPARKLES, toggle(config::tweakNoNetherParticles, config::setTweakNoNetherParticles)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, IconKind.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, IconKind.EYE, toggle(config::tweakFreelook, config::setTweakFreelook)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, IconKind.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, IconKind.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, EMUtilsTexts.HUB_FEATURE_OWN_NAMETAG_DESC, IconKind.TAG, toggle(config::tweakOwnNametag, config::setTweakOwnNametag)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_SHULKER_PREVIEW_DESC, IconKind.BOX, toggle(config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview)),
-			leaf(FeatureGroup.RENDER, EMUtilsTexts.OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_BUNDLE_PREVIEW_DESC, IconKind.PACKAGE_OPEN, toggle(config::tweakBundleTooltipPreview, config::setTweakBundleTooltipPreview)),
-			feature(HubCategory.ZOOM, FeatureGroup.RENDER, EMUtilsTexts.HUB_ZOOM, EMUtilsTexts.HUB_FEATURE_ZOOM_DESC, IconKind.ZOOM, toggle(config::zoomEnabled, config::setZoomEnabled)),
-			feature(HubCategory.CAPES, FeatureGroup.RENDER, EMUtilsTexts.HUB_CAPES, EMUtilsTexts.HUB_FEATURE_CAPES_DESC, IconKind.CAPE, toggle(config::customCapes, config::setCustomCapes)),
-			feature(HubCategory.HUD_OVERLAY, FeatureGroup.HUD, EMUtilsTexts.HUB_HUD_OVERLAY, EMUtilsTexts.HUB_FEATURE_HUD_DESC, IconKind.HUD, toggle(config::hudOverlay, config::setHudOverlay)),
-			feature(HubCategory.FOOD_HUD, FeatureGroup.HUD, EMUtilsTexts.HUB_FOOD_HUD, EMUtilsTexts.HUB_FEATURE_FOOD_HUD_DESC, IconKind.APPLE, toggle(config::foodHud, config::setFoodHud)),
-			feature(HubCategory.SPOTIFY, FeatureGroup.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, IconKind.MUSIC, toggle(config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled)),
-			feature(HubCategory.AUTO_RECONNECT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, IconKind.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
-			feature(HubCategory.SCREENSHOT, FeatureGroup.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, IconKind.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
-			feature(HubCategory.DEATH_WAYPOINTS, FeatureGroup.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, IconKind.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)),
-			feature(
-				FeatureGroup.UTILITY,
-				EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA,
-				EMUtilsTexts.HUB_FEATURE_FREE_CAMERA_DESC,
-				IconKind.EYE,
-				toggle(config::tweakFreeCamera, config::setTweakFreeCamera),
-				List.of(
-					new HubSettingRow.Cycle<>(
-						EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE,
-						config::freeCameraHudMode,
-						config::setFreeCameraHudMode,
-						() -> config.freeCameraHudMode().next(),
-						() -> Component.translatable(config.freeCameraHudMode().labelKey())
-					),
-					new HubSettingRow.Slider(
-						EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
-						EMUtilsTexts.SUFFIX_MULTIPLIER,
-						EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MIN,
-						EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
-						config::freeCameraBoostMultiplier,
-						config::setFreeCameraBoostMultiplier
-					)
-				)
-			),
-			actionFeature(
-				HubCategory.SCREENSHOT_GALLERY,
-				FeatureGroup.MANAGEMENT,
-				EMUtilsTexts.SCREEN_SCREENSHOT_GALLERY,
-				EMUtilsTexts.HUB_FEATURE_SCREENSHOT_GALLERY_DESC,
-				IconKind.IMAGE,
-				openScreenAction(ScreenshotGalleryScreen::new),
-				true
-			),
-			actionFeature(
-				FeatureGroup.MANAGEMENT,
-				EMUtilsTexts.SCREEN_CURRENT_WAYPOINTS,
-				EMUtilsTexts.HUB_FEATURE_CURRENT_WAYPOINTS_DESC,
-				IconKind.PIN,
-				openScreenAction(WaypointListScreen::new),
-				true
-			),
-			actionFeature(
-				FeatureGroup.MANAGEMENT,
-				EMUtilsTexts.OPTION_PACK_MANAGER,
-				EMUtilsTexts.HUB_FEATURE_PACK_MANAGER_DESC,
-				IconKind.PACKAGE,
-				toggle(config::packManagerEnabled, config::setPackManagerEnabled),
-				openScreenAction(PackManagerScreen::new),
-				true
-			),
-			actionFeature(
-				FeatureGroup.MANAGEMENT,
-				EMUtilsTexts.SCREEN_SCRIPT_MANAGER,
-				EMUtilsTexts.HUB_FEATURE_SCRIPT_MANAGER_DESC,
-				IconKind.SCRIPT,
-				openScreenAction(ScriptManagerScreen::new),
-				MinescriptCompat.isLoaded()
-			),
-			actionFeature(
-				FeatureGroup.MANAGEMENT,
-				EMUtilsTexts.OPTION_COMMAND_SHORTCUTS,
-				EMUtilsTexts.HUB_FEATURE_COMMAND_SHORTCUTS_DESC,
-				IconKind.TOOL,
-				toggle(config::commandShortcutsEnabled, config::setCommandShortcutsEnabled),
-				openScreenAction(CommandShortcutListScreen::new),
-				true
-			),
-			feature(HubCategory.CHAT, FeatureGroup.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, IconKind.CHAT, toggle(config::copyChat, config::setCopyChat)),
-			feature(HubCategory.INVENTORY, FeatureGroup.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, IconKind.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)),
-			feature(HubCategory.AUTO_TOOL, FeatureGroup.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, IconKind.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),
-			feature(HubCategory.AUTO_FLIGHT, FeatureGroup.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, IconKind.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_USE, EMUtilsTexts.HUB_FEATURE_FAST_USE_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakFastUse, config::setTweakFastUse)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, IconKind.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, IconKind.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow)),
-			leaf(FeatureGroup.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, IconKind.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement))
-		);
-	}
-
 	private static void drawIcon(GuiGraphicsExtractor context, Identifier texture, int x, int y, int size) {
 		context.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, size, size, 32, 32, 32, 32);
 	}
@@ -1331,182 +1211,11 @@ public final class CustomHubScreen extends Screen {
 		return title.getString().replace("...", "").trim();
 	}
 
-	private static String normalized(String value) {
-		return value == null ? "" : value.toLowerCase(Locale.ROOT).trim();
-	}
-
 	private static String clampSearch(String value) {
 		String safe = value == null ? "" : value.replace('\n', ' ').replace('\r', ' ');
 		return safe.length() > 48 ? safe.substring(0, 48) : safe;
 	}
 
-	private static FeatureSpec feature(
-		@Nullable HubCategory category,
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		@Nullable ToggleBinding toggle
-	) {
-		return new FeatureSpec(category, group, titleKey, descriptionKey, icon, toggle, null, null, true);
-	}
-
-	private static FeatureSpec feature(
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		@Nullable ToggleBinding toggle,
-		List<HubSettingRow> rows
-	) {
-		return new FeatureSpec(null, group, titleKey, descriptionKey, icon, toggle, rows, null, true);
-	}
-
-	private static FeatureSpec actionFeature(
-		@Nullable HubCategory category,
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		Runnable action,
-		boolean actionEnabled
-	) {
-		return new FeatureSpec(category, group, titleKey, descriptionKey, icon, null, null, action, actionEnabled);
-	}
-
-	private static FeatureSpec actionFeature(
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		Runnable action,
-		boolean actionEnabled
-	) {
-		return new FeatureSpec(null, group, titleKey, descriptionKey, icon, null, List.of(), action, actionEnabled);
-	}
-
-	private static FeatureSpec actionFeature(
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		ToggleBinding toggle,
-		Runnable action,
-		boolean actionEnabled
-	) {
-		return new FeatureSpec(null, group, titleKey, descriptionKey, icon, toggle, List.of(), action, actionEnabled);
-	}
-
-	private static FeatureSpec leaf(
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		ToggleBinding toggle
-	) {
-		return feature(null, group, titleKey, descriptionKey, icon, toggle);
-	}
-
-	private HubSettingRow.Action openAction(String labelKey, Function<Screen, Screen> screenFactory, boolean enabled) {
-		return new HubSettingRow.Action(Component.translatable(labelKey), openScreenAction(screenFactory), enabled);
-	}
-
-	private Runnable openScreenAction(Function<Screen, Screen> screenFactory) {
-		return () -> {
-			minecraft.setScreenAndShow(screenFactory.apply(this));
-		};
-	}
-
-	private static ToggleBinding toggle(BooleanSupplier getter, Consumer<Boolean> setter) {
-		return new ToggleBinding(getter, setter);
-	}
-
-	private enum FeatureGroup {
-		RENDER(EMUtilsTexts.HUB_GROUP_RENDER, HubIcons.SUN),
-		HUD(EMUtilsTexts.HUB_GROUP_HUD, HubIcons.MONITOR),
-		UTILITY(EMUtilsTexts.HUB_GROUP_UTILITY, HubIcons.WRENCH),
-		MANAGEMENT(EMUtilsTexts.HUB_GROUP_MANAGEMENT, HubIcons.FOLDER_COG),
-		QOL(EMUtilsTexts.HUB_GROUP_QOL, HubIcons.SPARKLES);
-
-		private final String labelKey;
-		private final Identifier icon;
-
-		FeatureGroup(String labelKey, Identifier icon) {
-			this.labelKey = labelKey;
-			this.icon = icon;
-		}
-
-		private String labelKey() {
-			return labelKey;
-		}
-
-		private Identifier icon() {
-			return icon;
-		}
-	}
-
-	private enum IconKind {
-		CHAT(HubIcons.MESSAGE_SQUARE),
-		PIN(HubIcons.MAP_PIN),
-		RECONNECT(HubIcons.REFRESH_CW),
-		IMAGE(HubIcons.IMAGE),
-		TOOL(HubIcons.FOLDER_COG),
-		HUD(HubIcons.MONITOR),
-		MOUSE_CLICK(HubIcons.MOUSE_POINTER_CLICK),
-		APPLE(HubIcons.APPLE),
-		ZOOM(HubIcons.ZOOM_IN),
-		CAPE(HubIcons.SHIRT),
-		BAG(HubIcons.BACKPACK),
-		MUSIC(HubIcons.MUSIC),
-		SUN(HubIcons.SUN),
-		CLOUD_SUN(HubIcons.CLOUD_SUN),
-		CLOUD_OFF(HubIcons.CLOUD_OFF),
-		DROPLETS(HubIcons.DROPLETS),
-		FLAME(HubIcons.FLAME),
-		SHIELD(HubIcons.SHIELD),
-		EYE(HubIcons.EYE),
-		TAG(HubIcons.TAG),
-		BOX(HubIcons.BOX),
-		PACKAGE(HubIcons.PACKAGE),
-		PACKAGE_OPEN(HubIcons.PACKAGE_OPEN),
-		SPARKLES(HubIcons.SPARKLES),
-		SCRIPT(HubIcons.PACKAGE_OPEN);
-
-		private final Identifier texture;
-
-		IconKind(Identifier texture) {
-			this.texture = texture;
-		}
-
-		private Identifier texture() {
-			return texture;
-		}
-	}
-
-	private record ToggleBinding(BooleanSupplier getter, Consumer<Boolean> setter) {
-	}
-
 	private record MenuBounds(int x, int y, int width, int height) {
-	}
-
-	private record FeatureSpec(
-		@Nullable HubCategory category,
-		FeatureGroup group,
-		String titleKey,
-		String descriptionKey,
-		IconKind icon,
-		@Nullable ToggleBinding toggle,
-		@Nullable List<HubSettingRow> rows,
-		@Nullable Runnable primaryAction,
-		boolean primaryActionEnabled
-	) {
-		private Component title() {
-			return Component.translatable(titleKey);
-		}
-
-		private boolean matches(String query) {
-			return normalized(Component.translatable(titleKey).getString()).contains(query)
-				|| normalized(Component.translatable(descriptionKey).getString()).contains(query);
-		}
 	}
 }

@@ -26,7 +26,7 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 - **Render** — zoom, fullbright, clear weather, visibility tweaks, beacon radius outlines, light level overlay, custom capes, and visual overlays.
 - **HUD** — info overlay, free camera coordinates, food HUD, layout editor, and Spotify now-playing panels.
 - **Utility** — auto reconnect, screenshot helper, screenshot metadata, and waypoints.
-- **Management** — screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
+- **Management** — settings hub, screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
 - **QoL** — chat tools, inventory tools, Sort Buttons, Hover Transfer, Mass Drop, Auto Tool, Auto Flight Gear, Safe Walk, Free Camera, placement helpers, Fast Place, and Fast Use.
 
 ## Feature Ideas
@@ -50,6 +50,7 @@ EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same 
 
 ### Optional integrations
 
+- **Mod Menu** — adds an EMUtils config button that opens the settings hub
 - **Iris** — required for Pack Manager shader apply/disable actions
 - **Minescript** — required for Script Manager browsing, editing, running, and EMUtils script keybinds
 - **Xaero's Minimap / Xaero's World Map** — optional support for showing Beacon Radius Outline boundaries on Xaero maps

@@ -3,6 +3,7 @@ package net.emutils.client;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcutsManager;
+import net.emutils.client.emutils.command.EMUtilsCommand;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
@@ -93,6 +94,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyMappings();
 		registerTooltipComponents();
+		EMUtilsCommand.register();
 		SmokeLaunchVerifier.registerIfEnabled();
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> tweaksManager.tickAutoTool(client));
@@ -347,6 +349,11 @@ public class EMUtilsClient implements ClientModInitializer {
 		}
 
 		HudLayoutManager.openEditor(MOD_ID, client);
+	}
+
+	public static void replaceConfig(EMUtilsConfig next) {
+		config = next;
+		CustomCapeManager.reload();
 	}
 
 	public static EMUtilsConfig config() {
