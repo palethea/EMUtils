@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import net.emutils.client.EMUtilsClient;
-import net.emhelpers.client.accessor.KeyBindingAccess;
+import net.emutils.client.emutils.accessor.KeyBindingAccess;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.mixin.CreativeSlotAccess;
 import net.emutils.client.versioned.VersionedInput;

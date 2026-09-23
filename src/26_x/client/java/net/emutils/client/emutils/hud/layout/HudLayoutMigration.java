@@ -1,9 +1,9 @@
 package net.emutils.client.emutils.hud.layout;
 
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emhelpers.client.hud.layout.HudCustomLayoutEntry;
-import net.emhelpers.client.hud.layout.HudElementId;
-import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.hud.layout.HudCustomLayoutEntry;
+import net.emutils.client.emutils.hud.layout.HudElementId;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 
 /**
  * One-time migration of legacy per-feature scale sliders into {@link HudCustomLayoutEntry#scale}.

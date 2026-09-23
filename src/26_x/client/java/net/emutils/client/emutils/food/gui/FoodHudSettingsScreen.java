@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.food.gui;
 
-import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.gui.widget.ConfigToggleButton;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
 import net.emutils.client.emutils.util.EMUtilsTexts;

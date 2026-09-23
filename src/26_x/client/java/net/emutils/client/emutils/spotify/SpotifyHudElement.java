@@ -3,9 +3,9 @@ package net.emutils.client.emutils.spotify;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
-import net.emhelpers.client.hud.HudOverlayPlacement;
-import net.emhelpers.client.hud.layout.AbstractHudLayoutElement;
-import net.emhelpers.client.hud.layout.HudLayoutConfig;
+import net.emutils.client.emutils.hud.HudOverlayPlacement;
+import net.emutils.client.emutils.hud.layout.AbstractHudLayoutElement;
+import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -56,7 +56,7 @@ public final class SpotifyHudElement extends AbstractHudLayoutElement {
 			x,
 			y,
 			EMUtilsClient.spotify().state(),
-			net.emhelpers.client.hud.layout.HudLayoutManager.layoutOpacity(id(), config),
+			net.emutils.client.emutils.hud.layout.HudLayoutManager.layoutOpacity(id(), config),
 			scalePercent / 100.0F
 		);
 	}

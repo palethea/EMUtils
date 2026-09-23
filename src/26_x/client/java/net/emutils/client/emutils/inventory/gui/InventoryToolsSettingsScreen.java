@@ -2,7 +2,7 @@ package net.emutils.client.emutils.inventory.gui;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
-import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.gui.widget.ConfigToggleButton;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.util.EMUtilsTexts;

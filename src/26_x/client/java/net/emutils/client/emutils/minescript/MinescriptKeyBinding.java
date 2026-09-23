@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.minescript;
 
-import net.emhelpers.client.input.StoredKeyCombo;
+import net.emutils.client.emutils.input.StoredKeyCombo;
 import net.minecraft.client.input.KeyEvent;
 import com.mojang.blaze3d.platform.InputConstants;
 

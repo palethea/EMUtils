@@ -1,9 +1,9 @@
 package net.emutils.client.emutils.hud;
 
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emhelpers.client.hud.HudOverlayPlacement;
-import net.emhelpers.client.hud.layout.AbstractHudLayoutElement;
-import net.emhelpers.client.hud.layout.HudLayoutConfig;
+import net.emutils.client.emutils.hud.HudOverlayPlacement;
+import net.emutils.client.emutils.hud.layout.AbstractHudLayoutElement;
+import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -68,7 +68,7 @@ public final class InfoOverlayHudElement extends AbstractHudLayoutElement {
 				0,
 				panelWidth,
 				panelHeight,
-				net.emhelpers.client.hud.layout.HudLayoutManager.layoutOpacity(id(), config)
+				net.emutils.client.emutils.hud.layout.HudLayoutManager.layoutOpacity(id(), config)
 			)
 		);
 	}

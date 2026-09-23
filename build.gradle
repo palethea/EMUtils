@@ -1,6 +1,5 @@
 plugins {
 	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
-	id 'com.gradleup.shadow' version '9.3.1'
 }
 
 def mcFamily = (findProperty("mcFamily") ?: "26.x").toString()
@@ -77,10 +76,6 @@ repositories {
 	}
 }
 
-configurations {
-	shadowModImpl
-}
-
 loom {
 	splitEnvironmentSourceSets()
 	accessWidenerPath = file("${selectedMc.resourcePath}/emutils.accesswidener")
@@ -143,14 +138,6 @@ dependencies {
 		// Mod Menu publishes in official mappings, so it needs no Loom remapping here.
 		compileOnly "com.terraformersmc:modmenu:${selected26.modMenuVersion}"
 	}
-	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
-		exclude group: "net.fabricmc.fabric-api"
-		exclude group: "net.fabricmc", module: "fabric-loader"
-	}
-	shadowModImpl("net.emhelpers:emhelpers:${project.emhelpers_version}") {
-		exclude group: "net.fabricmc.fabric-api"
-		exclude group: "net.fabricmc", module: "fabric-loader"
-	}
 	include implementation("net.java.dev.jna:jna:5.17.0")
 	include implementation("org.glavo:webp:0.2.0")
 	modImplementation "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_version}"
@@ -202,49 +189,12 @@ tasks.matching { it.name == "runClient" }.configureEach {
 	if (mcFamily == "26.x" && findProperty("emutilsLaunchTestWorld")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.launchTestWorld=true"
 	}
-	if (mcFamily == "26.x") {
-		File emHelpersDir = file("../EMHelpers")
-		if (emHelpersDir.isDirectory()) {
-			classpath += files(
-				"${emHelpersDir}/build/classes/java/main",
-				"${emHelpersDir}/build/classes/java/client"
-			)
-		}
-	}
 }
 
 tasks.named("jar") {
 	archiveClassifier.set("dev")
 }
 
-tasks.named("shadowJar") {
-	dependsOn tasks.named("jar")
-	from(tasks.named("jar").flatMap { it.archiveFile }.map { zipTree(it) })
-	archiveClassifier.set("dev-shadow")
-	configurations = [project.configurations.shadowModImpl]
-	relocate "net.emhelpers", "net.emutils.client.shadow.emhelpers"
-	mergeServiceFiles()
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
 tasks.named("remapJar") {
-	dependsOn tasks.shadowJar
-	inputFile.set(tasks.shadowJar.archiveFile)
 	archiveFileName = selectedMc.archiveName
-	if (selectedMc.mappingNamespace == "mojang") {
-		doLast {
-			def remappedJar = archiveFile.get().asFile
-			def shadowClassesDir = layout.buildDirectory.dir("tmp/remapShadowMerge/${mcFamily}").get().asFile
-			delete(shadowClassesDir)
-			copy {
-				from(zipTree(tasks.shadowJar.archiveFile.get().asFile)) {
-					include "net/emutils/client/shadow/**"
-				}
-				into shadowClassesDir
-			}
-			ant.zip(destfile: remappedJar, update: true) {
-				zipfileset(dir: shadowClassesDir, includes: "net/emutils/client/shadow/**")
-			}
-		}
-	}
 }
