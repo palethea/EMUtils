@@ -9,7 +9,7 @@ import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.emutils.client.versioned.VersionedPlatform;
 
 public final class ScreenshotActions {
 
@@ -36,13 +36,13 @@ public final class ScreenshotActions {
     }
 
     public static void openImage(File screenshot) {
-        Util.getPlatform().openFile(screenshot);
+        VersionedPlatform.openFile(screenshot);
     }
 
     public static void openFolder(File screenshot) {
         File parent = screenshot.getParentFile();
         if (parent != null) {
-            Util.getPlatform().openFile(parent);
+            VersionedPlatform.openFile(parent);
         }
     }
 

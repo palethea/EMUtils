@@ -1,4 +1,4 @@
-package net.emutils.client.mixin;
+package net.emutils.client.versioned.mixin;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;

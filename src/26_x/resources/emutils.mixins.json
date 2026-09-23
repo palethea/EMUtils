@@ -21,7 +21,6 @@
 		"DeathScreenMixin",
 		"DisconnectedScreenAccess",
 		"DisconnectedScreenMixin",
-		"FogRendererMixin",
 		"GameMenuScreenMixin",
 		"GameRendererMixin",
 		"GuiRenderStateMixin",

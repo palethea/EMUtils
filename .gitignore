@@ -1,5 +1,6 @@
 # Gradle / build output
 build/
+dist/
 .gradle/
 out/
 bin/
