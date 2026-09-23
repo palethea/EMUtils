@@ -67,7 +67,24 @@ if (selectedMc == null) {
 	throw new GradleException("Unsupported mcFamily '${mcFamily}'. Use one of: ${mcFamilies.keySet().join(', ')}")
 }
 
-version = project.mod_version
+// Release builds (-PemutilsRelease=true) use the plain mod_version. Every other build is tagged with the
+// commit it was built from, e.g. 0.14.0+dev.1f39bdd (+ ".dirty" with uncommitted changes), so a jar in
+// a test instance or crash report can be traced back to its exact source.
+def devBuildMetadata = {
+	try {
+		def commit = providers.exec {
+			commandLine "git", "rev-parse", "--short", "HEAD"
+		}.standardOutput.asText.get().trim()
+		def dirty = !providers.exec {
+			commandLine "git", "status", "--porcelain", "--untracked-files=no"
+		}.standardOutput.asText.get().trim().isEmpty()
+		return "dev.${commit}${dirty ? '.dirty' : ''}"
+	} catch (Exception ignored) {
+		return "dev.unknown"
+	}
+}
+def releaseBuild = findProperty("emutilsRelease")?.toString()?.toBoolean() ?: false
+version = releaseBuild ? project.mod_version : "${project.mod_version}+${devBuildMetadata()}"
 group = project.maven_group
 
 repositories {

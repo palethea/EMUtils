@@ -83,7 +83,7 @@ try {
     Write-Host $changelogText
     Write-Host "-------------------"
 
-    & (Join-Path $PSScriptRoot 'build-release-jars.ps1') -Versions $mcVersions
+    & (Join-Path $PSScriptRoot 'build-release-jars.ps1') -Versions $mcVersions -Release
 
     $releases = @($mcVersions | ForEach-Object {
         [pscustomobject]@{
