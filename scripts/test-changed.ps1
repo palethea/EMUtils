@@ -32,7 +32,7 @@ if ($Full -or $sensitive.Count -gt 0) {
         Write-Host "Version-sensitive files changed:"
         $sensitive | ForEach-Object { Write-Host "  $_" }
     }
-    Write-Host "Running the full supported 26.x matrix (26.1.2, 26.2)."
+    Write-Host "Running the full supported 26.x matrix (26.2)."
     & $runner
 }
 else {

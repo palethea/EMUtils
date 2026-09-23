@@ -14,7 +14,7 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
 $projectId = 'pf8Myc7A'
 $fabricApiProjectId = 'P7dR8mSH'
-$gameVersions = @('26.1.2', '26.2')
+$gameVersions = @('26.2')
 $loaders = @('fabric')
 
 function Get-Section {
