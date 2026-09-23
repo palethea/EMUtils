@@ -6,5 +6,6 @@ function Get-SupportedMcVersions {
     if (-not $match) { throw "Could not read supported_mc_versions from $properties" }
     $versions = @($match.Matches[0].Groups[1].Value.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     if ($versions.Count -eq 0) { throw "supported_mc_versions in $properties is empty" }
-    return $versions
+    # The leading comma stops PowerShell from unwrapping a one-version list into a plain string.
+    return , $versions
 }

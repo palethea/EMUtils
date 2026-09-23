@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -102,7 +102,7 @@ public final class LightLevelOverlayRenderer {
 
 		Vec3 cameraPos = cameraEntity.position();
 		if (Math.abs(cameraPos.x - (chunkX << 4) - 8) <= 48.0D
-			|| Math.abs(cameraPos.z - (chunkZ << 4) - 8) <= 48.0D) {
+			&& Math.abs(cameraPos.z - (chunkZ << 4) - 8) <= 48.0D) {
 			invalidate();
 		}
 	}
@@ -179,29 +179,14 @@ public final class LightLevelOverlayRenderer {
 
 	private static boolean isSpawnSurface(LevelChunk chunk, BlockPos pos, BlockPos below, BlockPos above) {
 		BlockState floor = chunk.getBlockState(below);
-		EntityType<?> zombie = zombieType();
 		if (floor.is(Blocks.BEDROCK) || floor.is(Blocks.BARRIER)
-			|| !floor.isValidSpawn(chunk, below, zombie)) {
+			|| !floor.isValidSpawn(chunk, below, EntityTypes.ZOMBIE)) {
 			return false;
 		}
 		BlockState state = chunk.getBlockState(pos);
 		BlockState stateAbove = chunk.getBlockState(above);
-		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), zombie)
-			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), zombie);
-	}
-
-	private static EntityType<?> zombieType() {
-		try {
-			return (EntityType<?>) Class.forName("net.minecraft.world.entity.EntityTypes").getField("ZOMBIE").get(null);
-		} catch (ClassNotFoundException ignored) {
-			try {
-				return (EntityType<?>) EntityType.class.getField("ZOMBIE").get(null);
-			} catch (IllegalAccessException | NoSuchFieldException e) {
-				throw new IllegalStateException("Missing zombie entity type", e);
-			}
-		} catch (IllegalAccessException | NoSuchFieldException e) {
-			throw new IllegalStateException("Missing zombie entity type", e);
-		}
+		return NaturalSpawner.isValidEmptySpawnBlock(chunk, pos, state, state.getFluidState(), EntityTypes.ZOMBIE)
+			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE);
 	}
 
 	private static void addSquare(List<Line> lines, double x, double y, double z, int color) {
