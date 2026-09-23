@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.layout.HudLayoutRegistry;
 import net.emutils.client.emutils.hud.layout.HudLayoutSnapping;
 import net.emutils.client.emutils.util.EMHelpersTexts;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -339,8 +340,8 @@ public final class HudLayoutEditorScreen extends Screen {
 			return false;
 		}
 
-		return InputConstants.isKeyDown(minecraft.getWindow(), InputConstants.KEY_LCONTROL)
-			|| InputConstants.isKeyDown(minecraft.getWindow(), InputConstants.KEY_RCONTROL);
+		return VersionedInput.isKeyCodeDown(minecraft.getWindow().handle(), InputConstants.KEY_LCONTROL)
+			|| VersionedInput.isKeyCodeDown(minecraft.getWindow().handle(), InputConstants.KEY_RCONTROL);
 	}
 
 	private void resetAllLayouts() {

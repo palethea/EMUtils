@@ -15,12 +15,4 @@ public abstract class ClientPlayerEntityMixin {
 			cir.setReturnValue(true);
 		}
 	}
-
-	@Inject(method = "drop", at = @At("HEAD"), cancellable = true)
-	private void emutils$blockLockedHotbarDrop(boolean entireStack, CallbackInfoReturnable<Boolean> cir) {
-		LocalPlayer player = (LocalPlayer) (Object) this;
-		if (EMUtilsClient.inventoryTools().isPlayerSlotLocked(player.getInventory().getSelectedSlot())) {
-			cir.setReturnValue(false);
-		}
-	}
 }

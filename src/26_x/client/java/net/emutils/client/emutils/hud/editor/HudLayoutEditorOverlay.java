@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.layout.HudLayoutRegistry;
 import net.emutils.client.emutils.hud.layout.HudLayoutSnapping;
 import net.emutils.client.emutils.util.EMHelpersTexts;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -474,8 +475,8 @@ public final class HudLayoutEditorOverlay {
 	}
 
 	private static boolean isSnapModifierDown(Minecraft client) {
-		return InputConstants.isKeyDown(client.getWindow(), InputConstants.KEY_LCONTROL)
-			|| InputConstants.isKeyDown(client.getWindow(), InputConstants.KEY_RCONTROL);
+		return VersionedInput.isKeyCodeDown(client.getWindow().handle(), InputConstants.KEY_LCONTROL)
+			|| VersionedInput.isKeyCodeDown(client.getWindow().handle(), InputConstants.KEY_RCONTROL);
 	}
 
 	private static int resetX(int width) {

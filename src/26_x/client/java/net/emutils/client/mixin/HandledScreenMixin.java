@@ -45,11 +45,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 	@Shadow
 	protected int topPos;
 
+	// No descriptor on purpose: extractTooltip makes a single setTooltipForNextFrame call whose trailing
+	// arguments differ between Minecraft versions (26.3 adds a boolean), while argument 1 is always the
+	// tooltip line list.
 	@ModifyArg(
 		method = "extractTooltip",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;IILnet/minecraft/resources/Identifier;)V"
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame"
 		),
 		index = 1
 	)
@@ -66,11 +69,12 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 		return tooltip;
 	}
 
+	// No descriptor, for the same reason as above; argument 2 is always the tooltip image.
 	@ModifyArg(
 		method = "extractTooltip",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;IILnet/minecraft/resources/Identifier;)V"
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame"
 		),
 		index = 2
 	)

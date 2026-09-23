@@ -16,12 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
 	@Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)
-	private void emutils$hideHandsDuringFreeCamera(
-		CameraRenderState cameraRenderState,
-		float partialTick,
-		org.joml.Matrix4fc projectionMatrix,
-		CallbackInfo ci
-	) {
+	private void emutils$hideHandsDuringFreeCamera(CallbackInfo ci) {
 		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
 			ci.cancel();
 		}
