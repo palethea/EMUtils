@@ -1,9 +1,12 @@
 param(
-    [string[]] $Versions
+    [string[]] $Versions,
+    [switch] $Release
 )
 
-# Builds and verifies one release jar per supported Minecraft version and collects them in dist\.
+# Builds and verifies one jar per supported Minecraft version and collects them in dist\.
 # Each version gets a clean build because every target compiles into the shared build\ directory.
+# Without -Release the jars are dev builds whose version carries the commit (0.14.0+dev.1f39bdd);
+# -Release builds report the plain mod_version and are what scripts\release.ps1 publishes.
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -27,7 +30,9 @@ Push-Location $repo
 try {
     foreach ($mcVersion in $Versions) {
         Write-Host "Building EMUtils $modVersion for Minecraft $mcVersion..."
-        java -classpath '.\gradle\wrapper\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain clean build -PmcFamily='26.x' "-PmcVersion=$mcVersion"
+        $gradleArgs = @('clean', 'build', "-PmcFamily=26.x", "-PmcVersion=$mcVersion")
+        if ($Release) { $gradleArgs += '-PemutilsRelease=true' }
+        java -classpath '.\gradle\wrapper\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain @gradleArgs
         if ($LASTEXITCODE -ne 0) { throw "Build failed for Minecraft $mcVersion" }
 
         $jar = Join-Path $repo "build\libs\EMUtils-$mcVersion.jar"
@@ -44,7 +49,9 @@ try {
         finally { $zip.Dispose() }
 
         if ($meta.id -ne 'emutils') { throw "Unexpected mod id in ${jar}: $($meta.id)" }
-        if ($meta.version -ne $modVersion) { throw "Unexpected mod version in ${jar}: $($meta.version), expected $modVersion" }
+        $expected = if ($Release) { $modVersion } else { "$modVersion+dev." }
+        $versionOk = if ($Release) { $meta.version -eq $modVersion } else { $meta.version.StartsWith($expected) }
+        if (-not $versionOk) { throw "Unexpected mod version in ${jar}: $($meta.version), expected $expected" }
         if ($meta.depends.minecraft -notmatch [regex]::Escape(">=$mcVersion-")) {
             throw "Unexpected Minecraft dependency in ${jar}: $($meta.depends.minecraft)"
         }

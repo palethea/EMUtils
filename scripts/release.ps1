@@ -60,6 +60,12 @@ try {
     $version = $match.Matches[0].Groups[1].Value.Trim()
     Write-Host "Releasing EMUtils $version"
 
+    # Release jars carry the plain version and get tagged at HEAD, so they must be built from committed code.
+    $uncommitted = @(git status --porcelain --untracked-files=no)
+    if ($uncommitted.Count -gt 0 -and -not $DryRun) {
+        throw "Uncommitted changes would ship in the release jars without being in the v$version tag. Commit or stash them first:`n$($uncommitted -join "`n")"
+    }
+
     if ($Changelog) {
         if (-not (Test-Path -LiteralPath $Changelog)) { throw "Changelog file not found: $Changelog" }
         $changelogText = (Get-Content -LiteralPath $Changelog -Raw).Trim()
@@ -83,7 +89,7 @@ try {
     Write-Host $changelogText
     Write-Host "-------------------"
 
-    & (Join-Path $PSScriptRoot 'build-release-jars.ps1') -Versions $mcVersions
+    & (Join-Path $PSScriptRoot 'build-release-jars.ps1') -Versions $mcVersions -Release
 
     $releases = @($mcVersions | ForEach-Object {
         [pscustomobject]@{
