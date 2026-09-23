@@ -2,15 +2,12 @@ package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.emutils.client.EMUtilsClient;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.state.OptionsRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
@@ -22,16 +19,13 @@ public abstract class GameRendererMixin {
 		}
 	}
 
-	@Redirect(
+	// renderItemInHand skips the hand when the HUD is hidden (F1); Zoom's Hide Hand reuses that check.
+	// Free Camera hides the hand through emutils$hideHandsDuringFreeCamera above.
+	@ModifyExpressionValue(
 		method = "renderItemInHand",
-		at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/OptionsRenderState;hideGui:Z"),
-		require = 0
+		at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/gui/GuiRenderState;isHudHidden:Z")
 	)
-	private boolean emutils$hideHandWhileZooming(OptionsRenderState options) {
-		boolean hidden = net.emutils.client.emutils.compat.MinecraftClientCompat.isHudHidden(Minecraft.getInstance());
-		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().shouldUseSpectatorHud()) {
-			return true;
-		}
+	private boolean emutils$hideHandWhileZooming(boolean hidden) {
 		return EMUtilsClient.zoom() == null
 			? hidden
 			: EMUtilsClient.zoom().shouldHideHandWhileZooming(hidden);
