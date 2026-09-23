@@ -14,6 +14,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emhelpers.client.accessor.KeyBindingAccess;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.mixin.CreativeSlotAccess;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,7 +39,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 
 public final class InventoryToolsManager {
 	private static final int SLOT_SIZE = 16;
@@ -1362,11 +1362,8 @@ public final class InventoryToolsManager {
 		if (key.getValue() == InputConstants.UNKNOWN.getValue()) {
 			return false;
 		}
-		if (key.getType() == InputConstants.Type.MOUSE) {
-			return GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
-		}
 
-		return InputConstants.isKeyDown(client.getWindow(), key.getValue());
+		return VersionedInput.isDown(client, key);
 	}
 
 	private boolean isLockKeyDown(Minecraft client) {
@@ -1378,11 +1375,8 @@ public final class InventoryToolsManager {
 		if (key.getValue() == InputConstants.UNKNOWN.getValue()) {
 			return false;
 		}
-		if (key.getType() == InputConstants.Type.MOUSE) {
-			return GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
-		}
 
-		return InputConstants.isKeyDown(client.getWindow(), key.getValue());
+		return VersionedInput.isDown(client, key);
 	}
 
 	private boolean blocksPickup(Slot slot, ItemStack cursorStack) {

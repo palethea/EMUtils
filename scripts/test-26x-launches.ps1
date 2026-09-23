@@ -9,8 +9,9 @@ $repo = Split-Path -Parent $PSScriptRoot
 $env:JAVA_HOME = 'C:\Users\matti\.jdks\jdk-25.0.3+9'
 $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
-$latestVersion = '26.2'
-$supportedVersions = @('26.2')
+. (Join-Path $PSScriptRoot 'mc-versions.ps1')
+$supportedVersions = Get-SupportedMcVersions
+$latestVersion = $supportedVersions[-1]
 if ($Latest) {
     $Versions = @($latestVersion)
 }

@@ -21,7 +21,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.CommonColors;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
+import net.emutils.client.versioned.VersionedPlatform;
 
 public final class ScriptManagerScreen extends Screen {
 	private static final int TITLE_HEIGHT = 28;
@@ -66,7 +66,7 @@ public final class ScriptManagerScreen extends Screen {
 		openFolderButton = addRenderableWidget(iconButton(
 			EMUtilsTexts.SCRIPT_MANAGER_OPEN_FOLDER,
 			ScriptIcons.OPEN_FOLDER,
-			button -> Util.getPlatform().openFile(MinescriptCompat.scriptsDir().toFile())
+			button -> VersionedPlatform.openFile(MinescriptCompat.scriptsDir().toFile())
 		));
 		newScriptButton = addRenderableWidget(iconButton(
 			EMUtilsTexts.SCRIPT_MANAGER_NEW_SCRIPT,

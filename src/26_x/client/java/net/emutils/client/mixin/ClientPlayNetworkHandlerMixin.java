@@ -2,6 +2,7 @@ package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
+import net.emutils.client.versioned.VersionedPackets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -47,6 +48,6 @@ public abstract class ClientPlayNetworkHandlerMixin {
 	private void emutils$refreshLightOverlayAfterChunkData(
 		ClientboundLevelChunkWithLightPacket packet, CallbackInfo ci
 	) {
-		LightLevelOverlayRenderer.onChunkChanged(packet.getX(), packet.getZ());
+		LightLevelOverlayRenderer.onChunkChanged(VersionedPackets.chunkX(packet), VersionedPackets.chunkZ(packet));
 	}
 }

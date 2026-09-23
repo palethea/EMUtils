@@ -3,8 +3,8 @@ package net.emutils.client.emutils.food;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.mixin.HungerManagerAccessor;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.food.FoodProperties;
@@ -14,7 +14,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.consume_effects.ApplyStatusEffectsConsumeEffect;
 import net.minecraft.world.item.consume_effects.ConsumeEffect;
-import org.lwjgl.glfw.GLFW;
 import org.jspecify.annotations.Nullable;
 
 public final class FoodHudHelper {
@@ -109,7 +108,6 @@ public final class FoodHudHelper {
 		if (client == null || client.getWindow() == null) {
 			return false;
 		}
-		return InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
-			|| InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+		return VersionedInput.isShiftDown(client);
 	}
 }

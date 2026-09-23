@@ -35,6 +35,7 @@ import net.emutils.client.emutils.spotify.SpotifyHudElement;
 import net.emutils.client.emutils.spotify.SpotifyPlaybackService;
 import net.emutils.client.emutils.tweaks.TweaksManager;
 import net.emutils.client.emutils.zoom.ZoomManager;
+import net.emutils.client.versioned.VersionedInput;
 import net.emhelpers.client.EMHelpers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -177,103 +178,103 @@ public class EMUtilsClient implements ClientModInitializer {
 		KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "general"));
 		zoomManager.setKeyMapping(KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.zoom",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.KEY_C,
 			category
 		)));
 		KeyMapping freelookKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.freelook",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.KEY_LALT,
 			category
 		));
 		openSettingsHubKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_settings_hub",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		openWaypointsKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_waypoints",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		addWaypointKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.add_waypoint",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		openGalleryKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_gallery",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		openScriptManagerKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_script_manager",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		openHudLayoutEditorKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_hud_layout_editor",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping slotLockKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.slot_lock",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping slotBindKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.slot_bind",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping quickStackKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.quick_stack",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping placeBelowKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.place_below",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping lockedYPlacementKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.locked_y_placement",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping freeCameraKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.free_camera",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping beaconRadiusKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.beacon_radius_outline",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		KeyMapping lightLevelOverlayKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.light_level_overlay",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
@@ -281,7 +282,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		KeyMapping.Category debugCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "debug"));
 		debugDumpGuiKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.debug_dump_gui",
-			InputConstants.Type.KEYSYM,
+			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			debugCategory
 		));

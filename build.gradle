@@ -5,17 +5,34 @@ plugins {
 
 def mcFamily = (findProperty("mcFamily") ?: "26.x").toString()
 def mcVersionOverride = findProperty("mcVersion")?.toString()
-// Supported: 26.2. Minecraft 26.1.x lives on the legacy/26.1.x branch.
+// Each Minecraft version builds its own jar from the shared src/26_x code plus its
+// version folder (src/26_2 for 26.2), which holds the code that differs between versions.
+// Minecraft 26.1.x lives on the legacy/26.1.x branch.
 def mc26Versions = [
 	"26.2": [
 		minecraftVersion: "26.2",
 		fabricApiVersion: "0.152.1+26.2",
-		mappingFile: "gradle/mappings/26.2-official-identity.tiny"
+		mappingFile: "gradle/mappings/26.2-official-identity.tiny",
+		minecraftDependency: ">=26.2- <26.3-",
+		sodiumVersion: "mc26.2-0.9.0-fabric",
+		modMenuVersion: "20.0.2"
 	]
 ]
-def selected26Version = mcVersionOverride ?: "26.2"
+// supported_mc_versions (gradle.properties) is the release and test matrix; the last entry is the default target.
+def supportedMcVersions = project.supported_mc_versions.toString().split(",")*.trim().findAll { it }
+supportedMcVersions.each { version ->
+	if (!mc26Versions.containsKey(version)) {
+		throw new GradleException("supported_mc_versions lists '${version}', which has no build target in build.gradle")
+	}
+}
+def selected26Version = mcVersionOverride ?: supportedMcVersions.last()
 if (mcFamily == "26.x" && !mc26Versions.containsKey(selected26Version)) {
 	throw new GradleException("Unsupported 26.x mcVersion '${selected26Version}'. Use one of: ${mc26Versions.keySet().join(', ')}")
+}
+def selected26 = mc26Versions[selected26Version]
+def versionPath = "src/${selected26Version.replace('.', '_')}"
+if (mcFamily == "26.x" && !file("${versionPath}/resources/emutils.versioned.mixins.json").isFile()) {
+	throw new GradleException("Missing ${versionPath}/resources/emutils.versioned.mixins.json for Minecraft ${selected26Version}")
 }
 def smokeRunDir = (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
 	? "run/26x-smoke/${selected26Version}"
@@ -24,15 +41,17 @@ def mcFamilies = [
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
 		resourcePath: "src/26_x/resources",
-		minecraftVersion: mc26Versions[selected26Version].minecraftVersion,
-		fabricApiVersion: mc26Versions[selected26Version].fabricApiVersion,
+		versionSourcePath: "${versionPath}/client/java",
+		versionResourcePath: "${versionPath}/resources",
+		minecraftVersion: selected26.minecraftVersion,
+		fabricApiVersion: selected26.fabricApiVersion,
 		loaderVersion: "0.19.3",
 		javaVersion: 25,
 		mappingNamespace: "mojang",
-		mappingFile: mc26Versions[selected26Version].mappingFile,
-		minecraftDependency: ">=26.2- <27-",
-		minecraftDescription: "26.x",
-		archiveName: "EMUtils-26.x.jar"
+		mappingFile: selected26.mappingFile,
+		minecraftDependency: selected26.minecraftDependency,
+		minecraftDescription: selected26Version,
+		archiveName: "EMUtils-${selected26Version}.jar"
 	]
 ]
 def selectedMc = mcFamilies[mcFamily]
@@ -89,10 +108,10 @@ loom {
 
 sourceSets {
 	main {
-		resources.srcDirs = ["src/main/resources", selectedMc.resourcePath]
+		resources.srcDirs = ["src/main/resources", selectedMc.resourcePath, selectedMc.versionResourcePath]
 	}
 	client {
-		java.srcDirs = [selectedMc.sourcePath]
+		java.srcDirs = [selectedMc.sourcePath, selectedMc.versionSourcePath]
 	}
 	if (mcFamily == "26.x") {
 		xaeroApi {
@@ -120,9 +139,9 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${selectedMc.loaderVersion}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedMc.fabricApiVersion}"
 	if (mcFamily == "26.x") {
-		modCompileOnly "maven.modrinth:sodium:mc26.2-0.9.0-fabric"
+		modCompileOnly "maven.modrinth:sodium:${selected26.sodiumVersion}"
 		// Mod Menu publishes in official mappings, so it needs no Loom remapping here.
-		compileOnly "com.terraformersmc:modmenu:20.0.2"
+		compileOnly "com.terraformersmc:modmenu:${selected26.modMenuVersion}"
 	}
 	modCompileOnly("net.emhelpers:emhelpers:${project.emhelpers_version}") {
 		exclude group: "net.fabricmc.fabric-api"

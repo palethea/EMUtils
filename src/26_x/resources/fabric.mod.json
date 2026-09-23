@@ -16,7 +16,7 @@
     "client": ["net.emutils.client.EMUtilsClient"],
     "modmenu": ["net.emutils.client.emutils.compat.modmenu.EMUtilsModMenu"]
   },
-  "mixins": ["emutils.mixins.json"],
+  "mixins": ["emutils.mixins.json", "emutils.versioned.mixins.json"],
   "accessWidener": "emutils.accesswidener",
   "depends": {
     "fabricloader": ">=${loader_version}",

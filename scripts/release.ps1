@@ -14,8 +14,10 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
 $projectId = 'pf8Myc7A'
 $fabricApiProjectId = 'P7dR8mSH'
-$gameVersions = @('26.2')
 $loaders = @('fabric')
+
+. (Join-Path $PSScriptRoot 'mc-versions.ps1')
+$mcVersions = Get-SupportedMcVersions
 
 function Get-Section {
     param([string[]] $Subjects, [string] $Pattern, [string] $Heading)
@@ -81,21 +83,15 @@ try {
     Write-Host $changelogText
     Write-Host "-------------------"
 
-    Write-Host "Building EMUtils-26.x.jar..."
-    java -classpath '.\gradle\wrapper\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain clean build -PmcFamily='26.x'
+    & (Join-Path $PSScriptRoot 'build-release-jars.ps1') -Versions $mcVersions
 
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $jar = Join-Path $repo 'build\libs\EMUtils-26.x.jar'
-    if (-not (Test-Path -LiteralPath $jar)) { throw "Missing release jar: $jar" }
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($jar)
-    try {
-        $entry = $zip.GetEntry('fabric.mod.json')
-        $reader = [System.IO.StreamReader]::new($entry.Open())
-        try { $meta = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-    }
-    finally { $zip.Dispose() }
-    if ($meta.id -ne 'emutils') { throw "Unexpected mod id in jar: $($meta.id)" }
-    Write-Host "Verified jar: $($meta.id) $($meta.version)"
+    $releases = @($mcVersions | ForEach-Object {
+        [pscustomobject]@{
+            McVersion     = $_
+            VersionNumber = "$version+$_"
+            Jar           = Join-Path $repo "dist\EMUtils-$_.jar"
+        }
+    })
 
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $changelogPath) | Out-Null
     Set-Content -LiteralPath $changelogPath -Value $changelogText -Encoding utf8
@@ -103,7 +99,10 @@ try {
     if ($DryRun) {
         Write-Host ""
         Write-Host "Dry run complete. Changelog: $changelogPath"
-        Write-Host "Would upload $jar to Modrinth project $projectId as $version ($VersionType), game versions $($gameVersions -join ', ')."
+        foreach ($release in $releases) {
+            Write-Host "Would upload $($release.Jar) to Modrinth project $projectId as $($release.VersionNumber) ($VersionType), game version $($release.McVersion)."
+        }
+        Write-Host "Would tag v$version and create one GitHub release with $($releases.Count) jar(s)."
         return
     }
 
@@ -118,43 +117,55 @@ try {
         throw "MODRINTH_TOKEN is not set. Create a token at https://modrinth.com/settings/pats and either set the MODRINTH_TOKEN environment variable or save it to $env:USERPROFILE\.modrinth-token."
     }
 
-    $payload = [ordered]@{
-        name           = "EMUtils $version"
-        version_number = $version
-        changelog      = $changelogText
-        dependencies   = @(
-            [ordered]@{ project_id = $fabricApiProjectId; dependency_type = 'required' }
-        )
-        game_versions  = $gameVersions
-        version_type   = $VersionType
-        loaders        = $loaders
-        project_id     = $projectId
-        featured       = $false
-        status         = 'listed'
-        file_parts     = @('file')
-        primary_file   = 'file'
-    } | ConvertTo-Json -Depth 6 -Compress
+    # Modrinth applies game versions to a whole version, so each Minecraft version is its own upload.
+    # Uploads stop at the first failure; the tag and GitHub release are only created once all succeed.
+    # Versions already on Modrinth are skipped, so rerunning after a partial failure finishes the release.
+    $published = @(Invoke-RestMethod -Uri "https://api.modrinth.com/v2/project/$projectId/version" -Headers @{ Authorization = $token } |
+        ForEach-Object { $_.version_number })
+    foreach ($release in $releases) {
+        if ($published -contains $release.VersionNumber) {
+            Write-Host "Modrinth version $($release.VersionNumber) is already published; skipping its upload."
+            continue
+        }
 
-    $payloadPath = Join-Path $repo "build\release-payload-$version.json"
-    Set-Content -LiteralPath $payloadPath -Value $payload -Encoding utf8 -NoNewline
+        $payload = [ordered]@{
+            name           = "EMUtils $version for Minecraft $($release.McVersion)"
+            version_number = $release.VersionNumber
+            changelog      = $changelogText
+            dependencies   = @(
+                [ordered]@{ project_id = $fabricApiProjectId; dependency_type = 'required' }
+            )
+            game_versions  = @($release.McVersion)
+            version_type   = $VersionType
+            loaders        = $loaders
+            project_id     = $projectId
+            featured       = $false
+            status         = 'listed'
+            file_parts     = @('file')
+            primary_file   = 'file'
+        } | ConvertTo-Json -Depth 6 -Compress
 
-    Write-Host "Uploading to Modrinth..."
-    $responseOutput = & curl.exe --fail-with-body -sS -X POST 'https://api.modrinth.com/v2/version' `
-        -H "Authorization: $token" `
-        -F "data=<$payloadPath" `
-        -F "file=@$jar;type=application/java-archive"
-    $responseText = ($responseOutput -join "`n")
+        $payloadPath = Join-Path $repo "build\release-payload-$($release.VersionNumber).json"
+        Set-Content -LiteralPath $payloadPath -Value $payload -Encoding utf8 -NoNewline
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Modrinth upload failed: $responseText"
+        Write-Host "Uploading $($release.VersionNumber) to Modrinth..."
+        $responseOutput = & curl.exe --fail-with-body -sS -X POST 'https://api.modrinth.com/v2/version' `
+            -H "Authorization: $token" `
+            -F "data=<$payloadPath" `
+            -F "file=@$($release.Jar);type=application/java-archive"
+        $responseText = ($responseOutput -join "`n")
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Modrinth upload of $($release.VersionNumber) failed: $responseText"
+        }
+
+        $response = $responseText | ConvertFrom-Json
+        if ($response.error) {
+            throw "Modrinth rejected $($release.VersionNumber): $($response.description)"
+        }
+
+        Write-Host "Published Modrinth version $($response.version_number) (id $($response.id))."
     }
-
-    $response = $responseText | ConvertFrom-Json
-    if ($response.error) {
-        throw "Modrinth rejected the upload: $($response.description)"
-    }
-
-    Write-Host "Published Modrinth version $($response.version_number) (id $($response.id))."
 
     if (-not $NoTag) {
         $tag = "v$version"
@@ -162,8 +173,9 @@ try {
             git tag $tag
             git push origin $tag
         }
-        gh release create $tag $jar --title "EMUtils $version" --notes-file $changelogPath
-        Write-Host "Created GitHub release $tag."
+        $jars = @($releases | ForEach-Object { $_.Jar })
+        gh release create $tag @jars --title "EMUtils $version" --notes-file $changelogPath
+        Write-Host "Created GitHub release $tag with $($jars.Count) jar(s)."
     }
 }
 finally {

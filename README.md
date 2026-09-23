@@ -51,17 +51,17 @@ Suggested and planned features are tracked in the [feature ideas backlog](https:
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version.
-2. Download `EMUtils-26.x.jar` from releases.
+2. Download the jar for your Minecraft version from releases, for example `EMUtils-26.2.jar` for Minecraft 26.2.
 3. Place the jar in your `mods` folder.
 4. Launch the game.
 
 ## Building
 
 ```bash
-./gradlew -PmcFamily=26.x build
+./gradlew -PmcFamily=26.x -PmcVersion=26.2 build
 ```
 
-The built jar will be created in `build/libs/` as `EMUtils-26.x.jar`.
+The built jar will be created in `build/libs/` as `EMUtils-<version>.jar`, for example `EMUtils-26.2.jar`. Without `-PmcVersion`, the latest supported version is built. Each Minecraft version gets its own jar, built from the shared code in `src/26_x` plus that version's folder, such as `src/26_2`.
 
 ## License
 

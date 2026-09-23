@@ -3,10 +3,10 @@ package net.emutils.client.emutils.inventory;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.mixin.MouseAccess;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import org.jspecify.annotations.Nullable;
 
@@ -96,7 +96,7 @@ public final class InventoryCursorManager {
 		mouse.emutils$setX(x);
 		mouse.emutils$setY(y);
 		if (!client.mouseHandler.isMouseGrabbed()) {
-			InputConstants.grabOrReleaseMouse(window, InputConstants.CURSOR_NORMAL, x, y);
+			VersionedInput.showCursorAt(window, x, y);
 		}
 	}
 
