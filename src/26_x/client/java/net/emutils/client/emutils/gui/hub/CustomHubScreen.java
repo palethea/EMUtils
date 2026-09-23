@@ -862,41 +862,22 @@ public final class CustomHubScreen extends Screen {
 		}
 		if (input.isEscape()) {
 			setSearchFocused(false);
-			search = "";
-			scrollOffset = 0.0;
-			scrollOffsetTarget = 0.0;
-			suppressListBottomFade = false;
-			suppressSettingsBottomFade = false;
-			updateScrollBounds();
+			setSearch("");
 			return true;
 		}
 		if (input.isPaste()) {
-			search = clampSearch(search + minecraft.keyboardHandler.getClipboard());
-			scrollOffset = 0.0;
-			scrollOffsetTarget = 0.0;
-			suppressListBottomFade = false;
-			suppressSettingsBottomFade = false;
-			updateScrollBounds();
+			setSearch(clampSearch(search + minecraft.keyboardHandler.getClipboard()));
 			return true;
 		}
 		if (input.key() == InputConstants.KEY_BACKSPACE) {
 			if (!search.isEmpty()) {
-				search = search.substring(0, search.length() - 1);
-				scrollOffset = 0.0;
-				scrollOffsetTarget = 0.0;
-				suppressListBottomFade = false;
-				suppressSettingsBottomFade = false;
-				updateScrollBounds();
+				// Ctrl+Backspace (Cmd on macOS, like vanilla text fields) removes the previous word.
+				setSearch(search.substring(0, input.hasControlDownWithQuirk() ? previousWordStart(search) : search.length() - 1));
 			}
 			return true;
 		}
 		if (input.key() == InputConstants.KEY_DELETE) {
-			search = "";
-			scrollOffset = 0.0;
-			scrollOffsetTarget = 0.0;
-			suppressListBottomFade = false;
-			suppressSettingsBottomFade = false;
-			updateScrollBounds();
+			setSearch("");
 			return true;
 		}
 		return super.keyPressed(input);
@@ -907,13 +888,29 @@ public final class CustomHubScreen extends Screen {
 		if (!searchFocused || !input.isAllowedChatCharacter() || input.codepoint() == '\t') {
 			return super.charTyped(input);
 		}
-		search = clampSearch(search + input.codepointAsString());
+		setSearch(clampSearch(search + input.codepointAsString()));
+		return true;
+	}
+
+	private void setSearch(String value) {
+		search = value;
 		scrollOffset = 0.0;
 		scrollOffsetTarget = 0.0;
 		suppressListBottomFade = false;
 		suppressSettingsBottomFade = false;
 		updateScrollBounds();
-		return true;
+	}
+
+	/** Start of the word before the end of {@code text}, matching vanilla EditBox: trailing spaces go with the word. */
+	private static int previousWordStart(String text) {
+		int index = text.length();
+		while (index > 0 && text.charAt(index - 1) == ' ') {
+			index--;
+		}
+		while (index > 0 && text.charAt(index - 1) != ' ') {
+			index--;
+		}
+		return index;
 	}
 
 	private void setSearchFocused(boolean focused) {
