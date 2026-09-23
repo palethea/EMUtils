@@ -119,7 +119,15 @@ try {
 
     # Modrinth applies game versions to a whole version, so each Minecraft version is its own upload.
     # Uploads stop at the first failure; the tag and GitHub release are only created once all succeed.
+    # Versions already on Modrinth are skipped, so rerunning after a partial failure finishes the release.
+    $published = @(Invoke-RestMethod -Uri "https://api.modrinth.com/v2/project/$projectId/version" -Headers @{ Authorization = $token } |
+        ForEach-Object { $_.version_number })
     foreach ($release in $releases) {
+        if ($published -contains $release.VersionNumber) {
+            Write-Host "Modrinth version $($release.VersionNumber) is already published; skipping its upload."
+            continue
+        }
+
         $payload = [ordered]@{
             name           = "EMUtils $version for Minecraft $($release.McVersion)"
             version_number = $release.VersionNumber
