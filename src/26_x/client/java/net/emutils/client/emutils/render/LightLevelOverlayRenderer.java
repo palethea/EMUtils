@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.block.Blocks;
@@ -244,9 +245,11 @@ public final class LightLevelOverlayRenderer {
 			VertexConsumer buffer, PoseStack.Pose pose, double x, double y, double z,
 			float u, float v, int color
 		) {
+			// Full-bright light keeps the digit colors unchanged on versions whose number shader samples the lightmap.
 			buffer.addVertex(pose, (float) x, (float) y, (float) z)
 				.setColor(color)
-				.setUv(u, v);
+				.setUv(u, v)
+				.setLight(LightCoordsUtil.FULL_BRIGHT);
 		}
 	}
 

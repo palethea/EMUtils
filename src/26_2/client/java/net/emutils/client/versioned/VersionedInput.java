@@ -3,6 +3,7 @@ package net.emutils.client.versioned;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
+import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -10,12 +11,29 @@ import org.lwjgl.glfw.GLFW;
  * with the same method signatures; shared code calls it instead of the platform input API.
  */
 public final class VersionedInput {
+	public static final int KEY_LEFT_SUPER = InputConstants.KEY_LSUPER;
+	public static final int KEY_RIGHT_SUPER = InputConstants.KEY_RSUPER;
+
 	private VersionedInput() {
 	}
 
 	/** Input type for keyboard key mappings. */
 	public static InputConstants.Type keyboardType() {
 		return InputConstants.Type.KEYSYM;
+	}
+
+	/** Whether a keyboard key, by this version's key code, is currently held. */
+	public static boolean isKeyCodeDown(long window, int keyCode) {
+		return GLFW.glfwGetKey(window, keyCode) == GLFW.GLFW_PRESS;
+	}
+
+	/** Resolves a key saved as its input type name and key code, or null if it is not a valid key. */
+	public static InputConstants.@Nullable Key storedKey(String keyType, int keyCode) {
+		try {
+			return InputConstants.Type.valueOf(keyType).getOrCreate(keyCode);
+		} catch (IllegalArgumentException | NullPointerException exception) {
+			return null;
+		}
 	}
 
 	/** Whether a bound keyboard key or mouse button is currently held. */

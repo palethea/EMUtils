@@ -2,7 +2,6 @@ package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -13,25 +12,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(ScreenEffectRenderer.class)
 public abstract class InGameOverlayRendererMixin {
-	@Redirect(
-		method = "submit",
-		at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/ScreenEffectRenderer;submitWater(Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;)V"
-		)
-	)
-	private static void emutils$skipUnderwaterOverlay(
-		Minecraft client,
-		PoseStack matrices,
-		SubmitNodeCollector submitNodeCollector
-	) {
-		if (EMUtilsClient.config().tweakClearUnderwater()) {
-			return;
-		}
-
-		InGameOverlayRendererAccessor.emutils$submitWater(client, matrices, submitNodeCollector);
-	}
-
 	@Redirect(
 		method = "submit",
 		at = @At(

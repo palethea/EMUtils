@@ -15,7 +15,7 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ### Version support
 
-- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.2**, with **26.3** support in progress.
+- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.2** and **26.3**.
 - New features and fixes target the supported versions.
 - **Minecraft 26.1.x** is preserved on the `legacy/26.1.x` branch and is only patched when a bug is reported.
 - **Minecraft 1.21.x** is preserved on the `legacy/1.21.x` branch and is no longer part of `master`.
@@ -36,7 +36,7 @@ Suggested and planned features are tracked in the [feature ideas backlog](https:
 
 ## Requirements
 
-- Minecraft 26.2
+- Minecraft 26.2 or 26.3
 - Java 25 or newer
 - Fabric Loader 0.19.3 or newer
 - Fabric API
@@ -51,17 +51,17 @@ Suggested and planned features are tracked in the [feature ideas backlog](https:
 ## Installation
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version.
-2. Download the jar for your Minecraft version from releases, for example `EMUtils-26.2.jar` for Minecraft 26.2.
+2. Download the jar for your Minecraft version from releases, for example `EMUtils-26.3.jar` for Minecraft 26.3.
 3. Place the jar in your `mods` folder.
 4. Launch the game.
 
 ## Building
 
 ```bash
-./gradlew -PmcFamily=26.x -PmcVersion=26.2 build
+./gradlew -PmcFamily=26.x -PmcVersion=26.3 build
 ```
 
-The built jar will be created in `build/libs/` as `EMUtils-<version>.jar`, for example `EMUtils-26.2.jar`. Without `-PmcVersion`, the latest supported version is built. Each Minecraft version gets its own jar, built from the shared code in `src/26_x` plus that version's folder, such as `src/26_2`.
+The built jar will be created in `build/libs/` as `EMUtils-<version>.jar`, for example `EMUtils-26.3.jar`. Without `-PmcVersion`, the latest supported version is built. Each Minecraft version gets its own jar, built from the shared code in `src/26_x` plus that version's folder, such as `src/26_3`.
 
 ## License
 

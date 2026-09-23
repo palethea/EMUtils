@@ -1,8 +1,9 @@
 package net.emutils.client.emutils.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.Objects;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.input.KeyEvent;
-import org.lwjgl.glfw.GLFW;
 
 public record StoredKeyCombo(String keyType, int keyCode, boolean ctrl, boolean alt, boolean shift) {
 	public static StoredKeyCombo from(KeyEvent input) {
@@ -27,15 +28,15 @@ public record StoredKeyCombo(String keyType, int keyCode, boolean ctrl, boolean 
 			|| key == InputConstants.KEY_RSHIFT
 			|| key == InputConstants.KEY_LALT
 			|| key == InputConstants.KEY_RALT
-			|| key == InputConstants.KEY_LSUPER
-			|| key == InputConstants.KEY_RSUPER;
+			|| key == VersionedInput.KEY_LEFT_SUPER
+			|| key == VersionedInput.KEY_RIGHT_SUPER;
 	}
 
 	public boolean isDown(long window) {
 		InputConstants.Key key = key();
 		return key != null
-			&& key.getType() == InputConstants.Type.KEYSYM
-			&& GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS
+			&& key.getType() == VersionedInput.keyboardType()
+			&& VersionedInput.isKeyCodeDown(window, key.getValue())
 			&& matchesModifiers(window);
 	}
 
@@ -66,36 +67,33 @@ public record StoredKeyCombo(String keyType, int keyCode, boolean ctrl, boolean 
 	}
 
 	public InputConstants.Key key() {
-		try {
-			return InputConstants.Type.valueOf(keyType).getOrCreate(keyCode);
-		} catch (IllegalArgumentException | NullPointerException exception) {
-			return null;
-		}
+		return VersionedInput.storedKey(keyType, keyCode);
 	}
 
 	public boolean sameKeys(StoredKeyCombo other) {
+		// Compare resolved keys so a combo saved on an older Minecraft version matches the same key captured now.
+		InputConstants.Key key = key();
 		return other != null
-			&& keyCode == other.keyCode
-			&& java.util.Objects.equals(keyType, other.keyType)
+			&& (key != null ? key == other.key() : keyCode == other.keyCode && Objects.equals(keyType, other.keyType))
 			&& ctrl == other.ctrl
 			&& alt == other.alt
 			&& shift == other.shift;
 	}
 
 	private static boolean isCtrlOrCmdDown(long window) {
-		return GLFW.glfwGetKey(window, InputConstants.KEY_LCONTROL) == GLFW.GLFW_PRESS
-			|| GLFW.glfwGetKey(window, InputConstants.KEY_RCONTROL) == GLFW.GLFW_PRESS
-			|| GLFW.glfwGetKey(window, InputConstants.KEY_LSUPER) == GLFW.GLFW_PRESS
-			|| GLFW.glfwGetKey(window, InputConstants.KEY_RSUPER) == GLFW.GLFW_PRESS;
+		return VersionedInput.isKeyCodeDown(window, InputConstants.KEY_LCONTROL)
+			|| VersionedInput.isKeyCodeDown(window, InputConstants.KEY_RCONTROL)
+			|| VersionedInput.isKeyCodeDown(window, VersionedInput.KEY_LEFT_SUPER)
+			|| VersionedInput.isKeyCodeDown(window, VersionedInput.KEY_RIGHT_SUPER);
 	}
 
 	private static boolean isAltDown(long window) {
-		return GLFW.glfwGetKey(window, InputConstants.KEY_LALT) == GLFW.GLFW_PRESS
-			|| GLFW.glfwGetKey(window, InputConstants.KEY_RALT) == GLFW.GLFW_PRESS;
+		return VersionedInput.isKeyCodeDown(window, InputConstants.KEY_LALT)
+			|| VersionedInput.isKeyCodeDown(window, InputConstants.KEY_RALT);
 	}
 
 	private static boolean isShiftDown(long window) {
-		return GLFW.glfwGetKey(window, InputConstants.KEY_LSHIFT) == GLFW.GLFW_PRESS
-			|| GLFW.glfwGetKey(window, InputConstants.KEY_RSHIFT) == GLFW.GLFW_PRESS;
+		return VersionedInput.isKeyCodeDown(window, InputConstants.KEY_LSHIFT)
+			|| VersionedInput.isKeyCodeDown(window, InputConstants.KEY_RSHIFT);
 	}
 }
