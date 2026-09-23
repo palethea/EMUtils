@@ -49,6 +49,10 @@ public final class VersionedInput {
 			|| InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
 	}
 
+	/** Starts or stops text input for a custom text field. GLFW always delivers typed characters, so this is a no-op. */
+	public static void setTextInputFocus(Object owner, boolean focused) {
+	}
+
 	/** Shows the normal cursor at the given window position. */
 	public static void showCursorAt(Window window, double x, double y) {
 		InputConstants.grabOrReleaseMouse(window, InputConstants.CURSOR_NORMAL, x, y);

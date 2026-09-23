@@ -60,6 +60,15 @@ public final class VersionedInput {
 		return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT) || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 	}
 
+	/**
+	 * Starts or stops text input for a custom text field. SDL3 only delivers typed characters while
+	 * text input is active, which vanilla EditBoxes request when they gain focus; widgets that are not
+	 * EditBoxes must do the same.
+	 */
+	public static void setTextInputFocus(Object owner, boolean focused) {
+		Minecraft.getInstance().textInputManager().onTextInputFocusChange(owner, focused);
+	}
+
 	/** Shows the normal cursor at the given window position. */
 	public static void showCursorAt(Window window, double x, double y) {
 		InputConstants.releaseMouse(window, x, y);

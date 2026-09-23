@@ -17,6 +17,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.CommonColors;
 import net.minecraft.ChatFormatting;
@@ -287,6 +288,13 @@ public final class PythonScriptEditorWidget extends AbstractWidget {
 		}
 		firstVisibleLine = Mth.clamp(firstVisibleLine - (int)Math.signum(verticalAmount), 0, maxScrollLine());
 		return true;
+	}
+
+	@Override
+	public void setFocused(boolean focused) {
+		super.setFocused(focused);
+		// This editor is not an EditBox, so it has to request text input itself.
+		VersionedInput.setTextInputFocus(this, focused);
 	}
 
 	@Override

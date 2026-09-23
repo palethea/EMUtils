@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.versioned.VersionedInput;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -117,6 +118,10 @@ public final class CustomHubScreen extends Screen {
 		HubRoundedGraphics.prewarm();
 		layout();
 		updateScrollBounds();
+		// Screen changes stop text input; request it again when returning with the search still focused.
+		if (searchFocused) {
+			VersionedInput.setTextInputFocus(this, true);
+		}
 	}
 
 	private void layout() {
@@ -634,7 +639,7 @@ public final class CustomHubScreen extends Screen {
 			return true;
 		}
 
-		searchFocused = contains(click.x(), click.y(), searchX, searchY, searchWidth, SEARCH_HEIGHT);
+		setSearchFocused(contains(click.x(), click.y(), searchX, searchY, searchWidth, SEARCH_HEIGHT));
 		if (searchFocused) {
 			return true;
 		}
@@ -850,13 +855,13 @@ public final class CustomHubScreen extends Screen {
 	public boolean keyPressed(KeyEvent input) {
 		if (!searchFocused) {
 			if ((input.hasControlDown() || hasSuperDown(input)) && input.key() == InputConstants.KEY_F) {
-				searchFocused = true;
+				setSearchFocused(true);
 				return true;
 			}
 			return super.keyPressed(input);
 		}
 		if (input.isEscape()) {
-			searchFocused = false;
+			setSearchFocused(false);
 			search = "";
 			scrollOffset = 0.0;
 			scrollOffsetTarget = 0.0;
@@ -909,6 +914,12 @@ public final class CustomHubScreen extends Screen {
 		suppressSettingsBottomFade = false;
 		updateScrollBounds();
 		return true;
+	}
+
+	private void setSearchFocused(boolean focused) {
+		searchFocused = focused;
+		// The search field is drawn by this screen rather than an EditBox, so it has to request text input itself.
+		VersionedInput.setTextInputFocus(this, focused);
 	}
 
 	private static boolean hasSuperDown(KeyEvent input) {
