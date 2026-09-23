@@ -344,6 +344,10 @@ public final class PythonScriptEditorWidget extends AbstractWidget {
 				deleteWordBackward();
 				return true;
 			}
+			if (input.key() == InputConstants.KEY_DELETE) {
+				deleteWordForward();
+				return true;
+			}
 			return false;
 		}
 		return switch (input.key()) {
@@ -500,6 +504,54 @@ public final class PythonScriptEditorWidget extends AbstractWidget {
 
 		while (index > 0 && !Character.isWhitespace(line.charAt(index - 1)) && !isWordCharacter(line.charAt(index - 1))) {
 			index--;
+		}
+		return index;
+	}
+
+	private void deleteWordForward() {
+		if (hasSelection()) {
+			pushUndo();
+			deleteSelection();
+			markDirty();
+			return;
+		}
+		String line = lines.get(caretLine);
+		if (caretColumn >= line.length()) {
+			if (caretLine < lines.size() - 1) {
+				pushUndo();
+				lines.set(caretLine, line + lines.remove(caretLine + 1));
+				markDirty();
+			}
+			return;
+		}
+
+		int wordEnd = wordEndAfter(line, caretColumn);
+		if (wordEnd == caretColumn) {
+			wordEnd = caretColumn + 1;
+		}
+		pushUndo();
+		lines.set(caretLine, line.substring(0, caretColumn) + line.substring(wordEnd));
+		markDirty();
+	}
+
+	private static int wordEndAfter(String line, int column) {
+		int index = Math.max(column, 0);
+		while (index < line.length() && Character.isWhitespace(line.charAt(index))) {
+			index++;
+		}
+		if (index >= line.length()) {
+			return line.length();
+		}
+
+		if (isWordCharacter(line.charAt(index))) {
+			while (index < line.length() && isWordCharacter(line.charAt(index))) {
+				index++;
+			}
+			return index;
+		}
+
+		while (index < line.length() && !Character.isWhitespace(line.charAt(index)) && !isWordCharacter(line.charAt(index))) {
+			index++;
 		}
 		return index;
 	}
