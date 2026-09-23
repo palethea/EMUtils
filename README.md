@@ -15,9 +15,10 @@ EMUtils is in active development. One settings hub, a pile of quality-of-life fe
 
 ### Version support
 
-- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.1.2** and **26.2**.
-- New features and fixes target the supported versions. Older 26.x releases (`26.1`, `26.1.1`) are unsupported and are only patched when a bug is reported.
-- **Minecraft 1.21.x** is preserved on the `legacy/1.21.x` branch and is no longer part of `main`.
+- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.2**, with **26.3** support in progress.
+- New features and fixes target the supported versions.
+- **Minecraft 26.1.x** is preserved on the `legacy/26.1.x` branch and is only patched when a bug is reported.
+- **Minecraft 1.21.x** is preserved on the `legacy/1.21.x` branch and is no longer part of `master`.
 
 ## Features
 
@@ -35,7 +36,7 @@ Suggested and planned features are tracked in the [feature ideas backlog](https:
 
 ## Requirements
 
-- Minecraft 26.1.2 or 26.2
+- Minecraft 26.2
 - Java 25 or newer
 - Fabric Loader 0.19.3 or newer
 - Fabric API

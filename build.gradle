@@ -5,24 +5,8 @@ plugins {
 
 def mcFamily = (findProperty("mcFamily") ?: "26.x").toString()
 def mcVersionOverride = findProperty("mcVersion")?.toString()
-// Supported: 26.1.2 and 26.2. 26.1 / 26.1.1 stay listed so they can still be
-// built and launched for emergency bug fixes, but they are not validated.
+// Supported: 26.2. Minecraft 26.1.x lives on the legacy/26.1.x branch.
 def mc26Versions = [
-	"26.1": [
-		minecraftVersion: "26.1",
-		fabricApiVersion: "0.153.0+26.1.2",
-		mappingFile: "gradle/mappings/26.1-official-identity.tiny"
-	],
-	"26.1.1": [
-		minecraftVersion: "26.1.1",
-		fabricApiVersion: "0.153.0+26.1.2",
-		mappingFile: "gradle/mappings/26.1.1-official-identity.tiny"
-	],
-	"26.1.2": [
-		minecraftVersion: "26.1.2",
-		fabricApiVersion: "0.153.0+26.1.2",
-		mappingFile: "gradle/mappings/26.1.2-official-identity.tiny"
-	],
 	"26.2": [
 		minecraftVersion: "26.2",
 		fabricApiVersion: "0.152.1+26.2",
@@ -46,7 +30,7 @@ def mcFamilies = [
 		javaVersion: 25,
 		mappingNamespace: "mojang",
 		mappingFile: mc26Versions[selected26Version].mappingFile,
-		minecraftDependency: ">=26- <27-",
+		minecraftDependency: ">=26.2- <27-",
 		minecraftDescription: "26.x",
 		archiveName: "EMUtils-26.x.jar"
 	]
