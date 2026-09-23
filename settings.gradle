@@ -10,7 +10,3 @@ pluginManagement {
 }
 
 rootProject.name = 'emutils'
-def emHelpersBuild = file('../EMHelpers')
-if (emHelpersBuild.isDirectory()) {
-	includeBuild(emHelpersBuild)
-}

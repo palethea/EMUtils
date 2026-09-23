@@ -15,7 +15,7 @@ import net.emutils.client.emutils.inventory.gui.MassDropScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
-import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;

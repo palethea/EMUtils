@@ -7,7 +7,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.emhelpers.client.hud.layout.HudLayoutEditorContext;
+import net.emutils.client.emutils.hud.layout.HudLayoutEditorContext;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;

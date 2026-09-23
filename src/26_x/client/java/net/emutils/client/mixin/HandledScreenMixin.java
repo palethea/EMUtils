@@ -3,7 +3,7 @@ package net.emutils.client.mixin;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
-import net.emhelpers.client.hud.editor.HudLayoutEditorOverlay;
+import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.food.FoodHudHelper;
 import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.tweaks.TooltipPreviewRenderer;

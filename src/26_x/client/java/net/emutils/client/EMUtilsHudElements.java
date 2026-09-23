@@ -1,6 +1,6 @@
 package net.emutils.client;
 
-import net.emhelpers.client.hud.layout.HudElementId;
+import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 
 public final class EMUtilsHudElements {

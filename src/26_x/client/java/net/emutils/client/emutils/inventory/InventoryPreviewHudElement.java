@@ -1,10 +1,10 @@
 package net.emutils.client.emutils.inventory;
 
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emhelpers.client.hud.HudOverlayPlacement;
-import net.emhelpers.client.hud.layout.AbstractHudLayoutElement;
-import net.emhelpers.client.hud.layout.HudLayoutConfig;
-import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.hud.HudOverlayPlacement;
+import net.emutils.client.emutils.hud.layout.AbstractHudLayoutElement;
+import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 

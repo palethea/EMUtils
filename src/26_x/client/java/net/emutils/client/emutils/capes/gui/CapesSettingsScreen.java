@@ -3,7 +3,7 @@ package net.emutils.client.emutils.capes.gui;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
-import net.emhelpers.client.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.gui.widget.ConfigToggleButton;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;

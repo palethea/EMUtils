@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import net.emhelpers.client.input.StoredKeyCombo;
+import net.emutils.client.emutils.input.StoredKeyCombo;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class CommandShortcutStore {

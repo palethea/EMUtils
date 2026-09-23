@@ -2,8 +2,8 @@ package net.emutils.client.emutils.hud.editor;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.EMUtilsScreen;
-import net.emhelpers.client.gui.widget.ConfigToggleButton;
-import net.emhelpers.client.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.gui.widget.ConfigToggleButton;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;

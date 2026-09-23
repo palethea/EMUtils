@@ -21,7 +21,6 @@ elseif (-not $Versions -or $Versions.Count -eq 0) {
 
 $logDir = Join-Path $repo 'build\launch-smoke-logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
-$emHelpers = Resolve-Path (Join-Path $repo '..\EMHelpers')
 
 function Show-LogTail {
     param(
@@ -38,15 +37,6 @@ function Show-LogTail {
 
 Push-Location $repo
 try {
-    Write-Host "Compiling EMHelpers for 26.x dev runtime..."
-    Push-Location $emHelpers
-    try {
-        java -classpath '.\gradle\wrapper\gradle-wrapper.jar' org.gradle.wrapper.GradleWrapperMain compileClientJava -PmcFamily='26.x' --stacktrace
-    }
-    finally {
-        Pop-Location
-    }
-
     foreach ($version in $Versions) {
         Write-Host "Launching Minecraft $version into a singleplayer test world with EMUtils smoke verifier..."
 
