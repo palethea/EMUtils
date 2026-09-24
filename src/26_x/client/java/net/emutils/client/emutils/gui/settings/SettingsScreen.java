@@ -73,6 +73,7 @@ public final class SettingsScreen extends Screen {
 	private int rightButtonsY;
 	private int titleY;
 	private boolean stackedHeader;
+	private boolean showTagline;
 
 	public SettingsScreen(Screen parent) {
 		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE));
@@ -114,6 +115,9 @@ public final class SettingsScreen extends Screen {
 		int centeredX = panelX + (panelWidth - controlWidth) / 2;
 		stackedHeader = centeredX < panelX + PADDING + titleBlockWidth + 12
 			|| centeredX + controlWidth > panelX + panelWidth - PADDING - rightButtonsWidth - 12;
+		// The tagline is the first thing to go when the title column gets narrow.
+		int taglineWidth = UiText.width(font, Component.translatable(EMUtilsTexts.UI_TAGLINE), UiText.Size.BODY);
+		showTagline = stackedHeader || centeredX >= panelX + PADDING + taglineWidth + 14;
 
 		titleY = panelY + PADDING + 6;
 		rightButtonsY = panelY + PADDING + 2;
@@ -165,7 +169,9 @@ public final class SettingsScreen extends Screen {
 		int nameWidth = UiText.width(font, name, UiText.Size.TITLE);
 		int versionHeight = UiText.lineHeight(font, UiText.Size.BODY);
 		UiText.draw(context, font, Component.literal(EMUtilsBuild.modVersion()), UiText.Size.BODY, x + nameWidth + 6, titleY + titleHeight - versionHeight, theme.muted());
-		UiText.draw(context, font, Component.translatable(EMUtilsTexts.UI_TAGLINE), UiText.Size.BODY, x, titleY + titleHeight + 5, theme.muted());
+		if (showTagline) {
+			UiText.draw(context, font, Component.translatable(EMUtilsTexts.UI_TAGLINE), UiText.Size.BODY, x, titleY + titleHeight + 5, theme.muted());
+		}
 
 		// Dev builds get a badge in the space above the name, so the title never moves.
 		String commit = EMUtilsBuild.devCommit();

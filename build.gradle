@@ -42,9 +42,12 @@ def versionPath = "src/${selected26Version.replace('.', '_')}"
 if (mcFamily == "26.x" && !file("${versionPath}/resources/emutils.versioned.mixins.json").isFile()) {
 	throw new GradleException("Missing ${versionPath}/resources/emutils.versioned.mixins.json for Minecraft ${selected26Version}")
 }
-def smokeRunDir = (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
-	? "run/26x-smoke/${selected26Version}"
-	: null
+def uiSnapshot = mcFamily == "26.x" && findProperty("emutilsUiSnapshot")?.toString()?.toBoolean()
+def smokeRunDir = uiSnapshot
+	? "run/26x-ui/${selected26Version}"
+	: (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
+		? "run/26x-smoke/${selected26Version}"
+		: null
 def mcFamilies = [
 	"26.x": [
 		sourcePath: "src/26_x/client/java",
@@ -214,6 +217,12 @@ tasks.matching { it.name == "runClient" }.configureEach {
 	}
 	if (mcFamily == "26.x" && findProperty("emutilsLaunchTestWorld")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.launchTestWorld=true"
+	}
+	if (uiSnapshot) {
+		// Opens the new settings UI in a test world, screenshots it, and quits (see UiSnapshotter).
+		jvmArgs "-Demutils.uiSnapshot=true"
+		jvmArgs "-Demutils.launchTestWorld=true"
+		args "--width", "1920", "--height", "1080"
 	}
 }
 

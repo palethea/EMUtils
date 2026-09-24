@@ -8,6 +8,7 @@ import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
 import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
+import net.emutils.client.emutils.debug.UiSnapshotter;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
@@ -141,6 +142,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 		SmokeLaunchVerifier.tick(client);
+		UiSnapshotter.tick(client);
 	}
 
 	private static void tickSpotify(Minecraft client) {
