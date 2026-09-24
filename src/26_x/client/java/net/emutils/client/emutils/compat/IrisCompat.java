@@ -1,10 +1,12 @@
 package net.emutils.client.emutils.compat;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import net.emutils.client.EMUtilsClient;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,6 +18,30 @@ public final class IrisCompat {
 
 	public static boolean isIrisLoaded() {
 		return FabricLoader.getInstance().isModLoaded("iris");
+	}
+
+	/**
+	 * Makes Iris draw a custom render pipeline with the same shader program as a vanilla one. Iris
+	 * skips pipelines it has no program for, so custom world geometry is invisible with shaders on.
+	 * Takes {@code Object} because the pipeline class moved packages between Minecraft versions.
+	 */
+	public static void shadeLikeVanilla(Object vanillaPipeline, Object customPipeline) {
+		if (!isIrisLoaded()) {
+			return;
+		}
+
+		try {
+			Class<?> irisPipelines = Class.forName("net.irisshaders.iris.pipeline.IrisPipelines");
+			for (Method method : irisPipelines.getMethods()) {
+				if (method.getName().equals("copyPipeline") && method.getParameterCount() == 2) {
+					method.invoke(null, vanillaPipeline, customPipeline);
+					return;
+				}
+			}
+			EMUtilsClient.LOGGER.warn("Iris has no IrisPipelines.copyPipeline; custom EMUtils geometry may not show with shaders on");
+		} catch (ReflectiveOperationException | LinkageError exception) {
+			EMUtilsClient.LOGGER.warn("Could not register an EMUtils render pipeline with Iris", exception);
+		}
 	}
 
 	public static Optional<String> currentShaderPack() {

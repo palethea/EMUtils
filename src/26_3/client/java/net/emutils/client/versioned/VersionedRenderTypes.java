@@ -3,6 +3,7 @@ package net.emutils.client.versioned;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import net.emutils.client.emutils.compat.IrisCompat;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.oit.OitPipelineSet;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -21,7 +22,8 @@ public final class VersionedRenderTypes {
 	 * order-independent transparency passes and fails for render types without OIT pipelines. Only
 	 * some core shaders support those passes, so this uses vanilla's world text shaders (the same
 	 * setup as {@code RenderTypes.text}) instead of {@code position_tex_color}. Vertices need
-	 * full-bright light so the lightmap leaves the digit colors unchanged.
+	 * full-bright light so the lightmap leaves the digit colors unchanged. Iris gets told to draw it
+	 * with its text program, since it skips pipelines it doesn't know when a shader pack is on.
 	 */
 	public static RenderType lightLevelNumbers(Identifier texture) {
 		RenderPipeline pipeline = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.WORLD_TEXT_SNIPPET)
@@ -33,6 +35,7 @@ public final class VersionedRenderTypes {
 			"emutils_light_level_numbers",
 			RenderPipeline.builder(RenderPipelines.WORLD_TEXT_SNIPPET).withCull(false)
 		).build());
+		IrisCompat.shadeLikeVanilla(RenderPipelines.TEXT, pipeline);
 		return RenderType.create(
 			"emutils_light_level_numbers",
 			RenderSetup.builder(pipeline)
