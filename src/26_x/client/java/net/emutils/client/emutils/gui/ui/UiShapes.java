@@ -64,11 +64,6 @@ public final class UiShapes {
 		drawNineSlice(context, patch(Kind.SHADOW, clamped, blur), x - blur, y - blur, width + blur * 2, height + blur * 2, color);
 	}
 
-	/** Draws a whole texture (such as a white icon) scaled to {@code size}, tinted with {@code color}. */
-	public static void icon(GuiGraphicsExtractor context, Identifier texture, int x, int y, int size, int textureSize, int color) {
-		context.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, size, size, textureSize, textureSize, textureSize, textureSize, color);
-	}
-
 	public static void clearCache() {
 		Minecraft client = Minecraft.getInstance();
 		for (Patch patch : CACHE.values()) {

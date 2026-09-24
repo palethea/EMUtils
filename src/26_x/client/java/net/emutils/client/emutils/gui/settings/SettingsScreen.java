@@ -9,6 +9,7 @@ import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
@@ -187,7 +188,7 @@ public final class SettingsScreen extends Screen {
 		UiShapes.borderedRect(context, controlX, controlY, controlWidth, height, CONTROL_RADIUS, theme.surface(), theme.border());
 
 		int searchCenter = controlY + SEARCH_ROW / 2 + 1;
-		UiShapes.icon(context, HubIcons.SEARCH, controlX + 9, searchCenter - 5, 10, UiWidgets.ICON_TEXTURE_SIZE, theme.muted());
+		UiIcons.draw(context, HubIcons.SEARCH, controlX + 9, searchCenter - 5, 10, theme.muted());
 		search.draw(context, font, theme, controlX + 25, searchCenter, controlWidth - 34, Component.translatable(EMUtilsTexts.UI_SEARCH));
 		context.fill(controlX + 1, controlY + SEARCH_ROW, controlX + controlWidth - 1, controlY + SEARCH_ROW + 1, theme.line());
 
@@ -206,7 +207,7 @@ public final class SettingsScreen extends Screen {
 			int color = UiTheme.mix(theme.textSecondary(), theme.selectedText(), select);
 			int textX = x + 6;
 			if (button.icon != null) {
-				UiShapes.icon(context, button.icon, textX, y + (CATEGORY_BUTTON_HEIGHT - 9) / 2, 9, UiWidgets.ICON_TEXTURE_SIZE, color);
+				UiIcons.draw(context, button.icon, textX, y + (CATEGORY_BUTTON_HEIGHT - 9) / 2, 9, color);
 				textX += 13;
 			}
 			UiText.drawCentered(context, font, button.label, UiText.Size.LABEL, textX, y + CATEGORY_BUTTON_HEIGHT / 2, color);
@@ -276,7 +277,7 @@ public final class SettingsScreen extends Screen {
 		UiShapes.borderedRect(context, x, y, width, CARD_HEIGHT, CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
 
 		int rowCenter = y + CARD_PADDING + 6;
-		UiShapes.icon(context, feature.icon().texture(), x + CARD_PADDING, rowCenter - CARD_ICON / 2, CARD_ICON, UiWidgets.ICON_TEXTURE_SIZE, theme.text());
+		UiIcons.draw(context, feature.icon().texture(), x + CARD_PADDING, rowCenter - CARD_ICON / 2, CARD_ICON, theme.text());
 
 		int controlRight = x + width - CARD_PADDING;
 		int nameRight = controlRight;

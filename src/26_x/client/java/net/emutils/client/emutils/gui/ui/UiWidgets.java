@@ -10,7 +10,6 @@ public final class UiWidgets {
 	public static final int SWITCH_WIDTH = 24;
 	public static final int SWITCH_HEIGHT = 14;
 	private static final int SWITCH_KNOB = 10;
-	public static final int ICON_TEXTURE_SIZE = 32;
 
 	private UiWidgets() {
 	}
@@ -26,7 +25,8 @@ public final class UiWidgets {
 	 * from 0 to 1 brightens the track.
 	 */
 	public static void toggle(GuiGraphicsExtractor context, UiTheme theme, int x, int y, float progress, float hover) {
-		float eased = UiAnim.easeOut(progress);
+		// progress is already smoothed by UiAnim; easing it again made switching off start slowly and then snap.
+		float eased = Math.clamp(progress, 0.0F, 1.0F);
 		int track = UiTheme.mix(theme.switchOff(), theme.accent(), eased);
 		track = UiTheme.mix(track, theme.text(), hover * 0.08F);
 		UiShapes.pill(context, x, y, SWITCH_WIDTH, SWITCH_HEIGHT, track);
@@ -67,7 +67,7 @@ public final class UiWidgets {
 		UiShapes.roundedRect(context, x, y, size, size, size / 2, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover));
 		int iconSize = Math.round(size * 0.5F);
 		int offset = (size - iconSize) / 2;
-		UiShapes.icon(context, icon, x + offset, y + offset, iconSize, ICON_TEXTURE_SIZE, theme.textSecondary());
+		UiIcons.draw(context, icon, x + offset, y + offset, iconSize, theme.textSecondary());
 	}
 
 	/** A small rounded label such as the DEV badge; returns its width. */
