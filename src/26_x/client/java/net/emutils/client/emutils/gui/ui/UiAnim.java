@@ -9,6 +9,7 @@ import java.util.Map;
  */
 public final class UiAnim {
 	private final Map<String, Float> values = new HashMap<>();
+	private final Map<String, Tween> tweens = new HashMap<>();
 	private long lastFrameNanos;
 	private float frameSeconds;
 
@@ -34,6 +35,36 @@ public final class UiAnim {
 
 	public float towards(String key, boolean on, float speed) {
 		return towards(key, on ? 1.0F : 0.0F, speed);
+	}
+
+	/**
+	 * A fixed-length transition like a CSS {@code transition: ... ease-in-out}: when {@code target}
+	 * changes, the value travels from where it is now to the target in {@code seconds}. Unlike
+	 * {@link #towards}, it has no long tail, so short movements look crisp. A new key starts at its target.
+	 */
+	public float transition(String key, float target, float seconds) {
+		long now = System.nanoTime();
+		Tween tween = tweens.get(key);
+		if (tween == null) {
+			tween = new Tween(target, target, now);
+			tweens.put(key, tween);
+		} else if (tween.to() != target) {
+			tween = new Tween(tween.value(now, seconds), target, now);
+			tweens.put(key, tween);
+		}
+		return tween.value(now, seconds);
+	}
+
+	public float transition(String key, boolean on, float seconds) {
+		return transition(key, on ? 1.0F : 0.0F, seconds);
+	}
+
+	private record Tween(float from, float to, long startNanos) {
+		private float value(long now, float seconds) {
+			float t = Math.clamp((now - startNanos) / (seconds * 1_000_000_000.0F), 0.0F, 1.0F);
+			float eased = t < 0.5F ? 4.0F * t * t * t : 1.0F - (float) Math.pow(-2.0F * t + 2.0F, 3.0) / 2.0F;
+			return from + (to - from) * eased;
+		}
 	}
 
 	/** Eases a 0..1 progress so movement starts fast and settles gently. */

@@ -25,14 +25,17 @@ public final class UiWidgets {
 	 * from 0 to 1 brightens the track.
 	 */
 	public static void toggle(GuiGraphicsExtractor context, UiTheme theme, int x, int y, float progress, float hover) {
-		// progress is already smoothed by UiAnim; easing it again made switching off start slowly and then snap.
 		float eased = Math.clamp(progress, 0.0F, 1.0F);
 		int track = UiTheme.mix(theme.switchOff(), theme.accent(), eased);
 		track = UiTheme.mix(track, theme.text(), hover * 0.08F);
 		UiShapes.pill(context, x, y, SWITCH_WIDTH, SWITCH_HEIGHT, track);
-		int travel = SWITCH_WIDTH - SWITCH_KNOB - 4;
-		int knobX = x + 2 + Math.round(travel * eased);
-		UiShapes.circle(context, knobX, y + (SWITCH_HEIGHT - SWITCH_KNOB) / 2, SWITCH_KNOB, 0xFFFFFFFF);
+		// The knob moves by fractions of a pixel, so it glides instead of stepping one GUI pixel at a time.
+		float knobX = x + 2 + (SWITCH_WIDTH - SWITCH_KNOB - 4) * eased;
+		int wholeX = (int) Math.floor(knobX);
+		context.pose().pushMatrix();
+		context.pose().translate(knobX - wholeX, 0.0F);
+		UiShapes.circle(context, wholeX, y + (SWITCH_HEIGHT - SWITCH_KNOB) / 2, SWITCH_KNOB, 0xFFFFFFFF);
+		context.pose().popMatrix();
 	}
 
 	public static void button(

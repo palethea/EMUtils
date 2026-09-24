@@ -55,6 +55,11 @@ public final class UiScrollArea {
 		return (int) Math.round(offset);
 	}
 
+	/** Current scroll offset with its fraction, for smooth drawing. */
+	public float exactOffset() {
+		return (float) offset;
+	}
+
 	public int maxScroll() {
 		return Math.max(0, contentHeight - height);
 	}

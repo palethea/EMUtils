@@ -241,6 +241,10 @@ public final class SettingsScreen extends Screen {
 		cards.clear();
 		boolean mouseInList = scroll.contains(mouseX, mouseY);
 		scroll.begin(context);
+		// Cards are laid out at whole pixels and the leftover fraction of the scroll offset is applied
+		// as a translation, so scrolling glides smoothly while clicks still use whole positions.
+		context.pose().pushMatrix();
+		context.pose().translate(0.0F, scroll.offset() - scroll.exactOffset());
 		int y = scroll.y() + FADE_HEIGHT / 2 - scroll.offset();
 		for (Group group : groups) {
 			if (headings) {
@@ -262,6 +266,7 @@ public final class SettingsScreen extends Screen {
 			int rows = (group.features().size() + COLUMNS - 1) / COLUMNS;
 			y += rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
+		context.pose().popMatrix();
 		if (groups.isEmpty()) {
 			Component empty = Component.translatable(EMUtilsTexts.UI_NO_RESULTS, search.text());
 			int emptyWidth = UiText.width(font, empty, UiText.Size.BODY);
@@ -289,7 +294,7 @@ public final class SettingsScreen extends Screen {
 			int switchX = controlRight - UiWidgets.SWITCH_WIDTH;
 			int switchY = rowCenter - UiWidgets.SWITCH_HEIGHT / 2;
 			boolean on = feature.toggle().getter().getAsBoolean();
-			float progress = anim.towards("switch:" + feature.id(), on, 14.0F);
+			float progress = anim.transition("switch:" + feature.id(), on, 0.18F);
 			float switchHover = hovered && contains(mouseX, mouseY, switchX, switchY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT) ? 1.0F : 0.0F;
 			UiWidgets.toggle(context, theme, switchX, switchY, progress, switchHover);
 			nameRight = switchX - 6;
