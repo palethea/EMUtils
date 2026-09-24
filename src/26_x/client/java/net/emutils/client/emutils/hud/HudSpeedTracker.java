@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 
 /**
- * Horizontal speed of whatever the player is moving with (the player, or the root vehicle when riding),
+ * Speed of whatever the player is moving with (the player, or the root vehicle when riding),
  * averaged over the last few ticks so the value stays readable.
  */
 final class HudSpeedTracker {
@@ -18,6 +18,7 @@ final class HudSpeedTracker {
 	private static int sampleCount;
 	private static Entity trackedEntity;
 	private static double lastX;
+	private static double lastY;
 	private static double lastZ;
 
 	private HudSpeedTracker() {
@@ -28,15 +29,18 @@ final class HudSpeedTracker {
 		if (entity != trackedEntity) {
 			trackedEntity = entity;
 			lastX = entity.getX();
+			lastY = entity.getY();
 			lastZ = entity.getZ();
 			sampleIndex = 0;
 			sampleCount = 0;
 		} else if (!client.isPaused()) {
 			double dx = entity.getX() - lastX;
+			double dy = entity.getY() - lastY;
 			double dz = entity.getZ() - lastZ;
 			lastX = entity.getX();
+			lastY = entity.getY();
 			lastZ = entity.getZ();
-			double distance = Math.sqrt(dx * dx + dz * dz);
+			double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 			if (distance > TELEPORT_DISTANCE) {
 				sampleIndex = 0;
 				sampleCount = 0;
