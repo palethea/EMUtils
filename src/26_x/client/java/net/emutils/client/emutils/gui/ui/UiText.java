@@ -4,15 +4,17 @@ import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
 import net.minecraft.resources.Identifier;
 
 /**
- * Text in the settings UI, set in the bundled Nunito font. Minecraft samples font atlases with nearest
- * filtering, so each style ships one font definition per GUI scale ({@code ui_body_s3} renders its
- * glyphs at 3x), and the one matching the current scale is used so text stays crisp. Without the font
- * definitions it falls back to Minecraft's font, scaled for larger styles.
+ * Text in the settings UI, set in the bundled Nunito font. It is normally drawn by
+ * {@link UiFontRenderer}, which renders each string with FreeType at the physical pixel size. If that
+ * is unavailable, it falls back to Minecraft's text rendering with one font definition per GUI scale
+ * ({@code ui_body_s3} renders glyphs at 3x, since font atlases use nearest sampling), and without the
+ * font definitions to Minecraft's own font, scaled for larger styles.
  */
 public final class UiText {
 	private static final int MAX_FONT_SCALE = 6;
@@ -22,30 +24,33 @@ public final class UiText {
 	private static final float CAP_HEIGHT = 0.705F;
 
 	private static Boolean customFonts;
+	private static int lastScale;
 
 	private UiText() {
 	}
 
 	public enum Size {
 		/** Descriptions and secondary text. */
-		BODY("ui_body", 9.0F, 1.0F),
+		BODY("ui_body", 9.0F, 1.0F, UiFontRenderer.Weight.SEMIBOLD),
 		/** Feature names and headings. */
-		BOLD("ui_bold", 9.5F, 1.0F),
+		BOLD("ui_bold", 9.5F, 1.0F, UiFontRenderer.Weight.EXTRABOLD),
 		/** Buttons and category labels. */
-		LABEL("ui_label", 8.5F, 1.0F),
+		LABEL("ui_label", 8.5F, 1.0F, UiFontRenderer.Weight.EXTRABOLD),
 		/** Small labels such as badges. */
-		SMALL("ui_small", 7.0F, 0.75F),
+		SMALL("ui_small", 7.0F, 0.75F, UiFontRenderer.Weight.EXTRABOLD),
 		/** The screen title. */
-		TITLE("ui_title", 17.0F, 1.6F);
+		TITLE("ui_title", 17.0F, 1.6F, UiFontRenderer.Weight.BLACK);
 
 		private final String font;
 		private final float em;
 		private final float fallbackScale;
+		private final UiFontRenderer.Weight weight;
 
-		Size(String font, float em, float fallbackScale) {
+		Size(String font, float em, float fallbackScale, UiFontRenderer.Weight weight) {
 			this.font = font;
 			this.em = em;
 			this.fallbackScale = fallbackScale;
+			this.weight = weight;
 		}
 	}
 
@@ -64,9 +69,22 @@ public final class UiText {
 		return customFonts;
 	}
 
+	private static int guiScale() {
+		int scale = Math.max(1, (int) Math.ceil(Minecraft.getInstance().getWindow().getGuiScale()));
+		if (scale != lastScale) {
+			lastScale = scale;
+			UiFontRenderer.clearCache();
+		}
+		return scale;
+	}
+
+	/** Our own FreeType rendering; the font definitions below are only the fallback. */
+	private static boolean freeType() {
+		return customFonts() && UiFontRenderer.available();
+	}
+
 	private static Identifier fontFor(Size size) {
-		int scale = (int) Math.ceil(Minecraft.getInstance().getWindow().getGuiScale());
-		scale = Math.clamp(scale, 1, MAX_FONT_SCALE);
+		int scale = Math.clamp(guiScale(), 1, MAX_FONT_SCALE);
 		return Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, size.font + "_s" + scale);
 	}
 
@@ -96,6 +114,10 @@ public final class UiText {
 	}
 
 	public static int width(Font font, Component text, Size size) {
+		if (freeType()) {
+			int scale = guiScale();
+			return (int) Math.ceil(UiFontRenderer.measure(size.weight, size.em * scale, text.getString()) / scale);
+		}
 		return Math.round(font.width(styled(text, size)) * fallbackScale(size));
 	}
 
@@ -106,12 +128,38 @@ public final class UiText {
 
 	/** Draws text with the top of its capital letters at {@code top}. */
 	public static void draw(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int top, int color) {
+		if (freeType()) {
+			drawFreeType(context, text, size, x, top, color);
+			return;
+		}
 		drawAt(context, font, text, size, x, top - capTop(size), color);
 	}
 
 	/** Draws text with its capital letters vertically centered on {@code centerY}. */
 	public static void drawCentered(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int centerY, int color) {
+		if (freeType()) {
+			drawFreeType(context, text, size, x, centerY - capHeight(size) / 2.0F, color);
+			return;
+		}
 		drawAt(context, font, text, size, x, centerY - capHeight(size) / 2.0F - capTop(size), color);
+	}
+
+	/** Draws with the top of the capitals at {@code capTop}, snapped to whole screen pixels. */
+	private static void drawFreeType(GuiGraphicsExtractor context, Component text, Size size, int x, float capTop, int color) {
+		String value = text.getString();
+		if (value.isEmpty()) {
+			return;
+		}
+		int scale = guiScale();
+		UiFontRenderer.Rendered rendered = UiFontRenderer.render(size.weight, size.em * scale, value);
+		int capPixels = Math.round(size.em * CAP_HEIGHT * scale);
+		int baseline = Math.round(capTop * scale) + capPixels;
+		int top = baseline - rendered.baseline();
+		int left = x * scale - rendered.left();
+		context.pose().pushMatrix();
+		context.pose().scale(1.0F / scale, 1.0F / scale);
+		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), color);
+		context.pose().popMatrix();
 	}
 
 	private static void drawAt(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, float y, int color) {
