@@ -1,6 +1,6 @@
 package net.emutils.client.emutils.gui;
 
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
@@ -23,7 +23,7 @@ public final class SettingsChooserScreen extends Screen {
 		int centerY = height / 2;
 
 		addRenderableWidget(Button.builder(Component.translatable(EMUtilsTexts.SETTINGS_CHOOSER_EMUTILS), button ->
-			minecraft.setScreenAndShow(new CustomHubScreen(this))
+			minecraft.setScreenAndShow(SettingsScreens.hub(this))
 		).bounds(centerX - buttonWidth / 2, centerY - 10, buttonWidth, buttonHeight).build());
 
 		addRenderableWidget(Button.builder(Component.translatable("gui.back"), button ->

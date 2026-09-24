@@ -1,6 +1,6 @@
 package net.emutils.client.mixin;
 
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -36,7 +36,7 @@ public abstract class OptionsScreenMixin extends Screen {
 		}
 
 		Button emutilsButton = Button.builder(Component.translatable(EMUtilsTexts.OPTIONS_BUTTON), button -> Minecraft.getInstance()
-			.setScreenAndShow(new CustomHubScreen(this))).build();
+			.setScreenAndShow(SettingsScreens.hub(this))).build();
 		grid.addChild(emutilsButton, EMUTILS_ROW, 0, 1, 1, grid.defaultCellSetting());
 		addRenderableWidget(emutilsButton);
 

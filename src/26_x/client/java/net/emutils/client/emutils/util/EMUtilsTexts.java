@@ -11,6 +11,14 @@ public final class EMUtilsTexts {
     public static final String OPTIONS_BUTTON = "emutils.options.button";
 
     public static final String HUB_MODERN_TITLE = "emutils.hub.modern_title";
+    public static final String UI_TAGLINE = "emutils.ui.tagline";
+    public static final String UI_SEARCH = "emutils.ui.search";
+    public static final String UI_ALL = "emutils.ui.all";
+    public static final String UI_NO_RESULTS = "emutils.ui.no_results";
+    public static final String UI_OPEN = "emutils.ui.open";
+    public static final String UI_CLASSIC = "emutils.ui.classic";
+    public static final String OPTION_SETTINGS_UI_PREVIEW = "emutils.option.settings_ui_preview";
+    public static final String HUB_FEATURE_SETTINGS_UI_PREVIEW_DESC = "emutils.hub.feature.settings_ui_preview.desc";
     public static final String HUB_MODERN_OPEN = "emutils.hub.modern_open";
     public static final String HUB_CLASSIC_OPEN = "emutils.hub.classic_open";
     public static final String HUB_ACTION_OPEN = "emutils.hub.action.open";

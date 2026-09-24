@@ -8,6 +8,7 @@ import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
 import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
+import net.emutils.client.emutils.debug.UiSnapshotter;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
@@ -16,6 +17,7 @@ import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.emutils.client.emutils.food.FoodTooltipComponent;
 import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
@@ -140,6 +142,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 		SmokeLaunchVerifier.tick(client);
+		UiSnapshotter.tick(client);
 	}
 
 	private static void tickSpotify(Minecraft client) {
@@ -306,7 +309,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		}
 		while (openSettingsHubKeyMapping != null && openSettingsHubKeyMapping.consumeClick()) {
 			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CustomHubScreen)) {
-				client.setScreenAndShow(new CustomHubScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+				client.setScreenAndShow(SettingsScreens.hub(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openWaypointsKeyMapping != null && openWaypointsKeyMapping.consumeClick()) {
