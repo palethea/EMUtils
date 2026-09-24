@@ -27,6 +27,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - Clear Lava: improve visibility while inside lava.
 - No Environment Fog: remove biome and dimension fog.
 - No Nether Particles: hide ambient Nether biome particles such as Basalt Deltas ash while preserving gameplay particles.
+- No Falling Leaf Particles: hide the leaf particles that drift down from leaves, such as oak, cherry, pale oak and the 26.3 poplar leaves; breaking leaves still shows particles.
 - No Fire Overlay: hide the first-person fire overlay while burning.
 - Low Fire: keep flames visible but lower on screen.
 - No Nausea: hide nausea and portal distortion effects.

@@ -204,6 +204,11 @@ public final class TweaksSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setTweakNoNetherParticles
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_TWEAK_NO_FALLING_LEAF_PARTICLES,
+			() -> EMUtilsClient.config().tweakNoFallingLeafParticles(),
+			EMUtilsClient.config()::setTweakNoFallingLeafParticles
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM,
 			() -> EMUtilsClient.config().tweakNoHurtCam(),
 			EMUtilsClient.config()::setTweakNoHurtCam

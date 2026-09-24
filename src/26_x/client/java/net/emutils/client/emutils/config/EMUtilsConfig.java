@@ -140,6 +140,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearLava = Boolean.TRUE;
 	private Boolean tweakNoEnvironmentFog = Boolean.TRUE;
 	private Boolean tweakNoNetherParticles = Boolean.FALSE;
+	private Boolean tweakNoFallingLeafParticles = Boolean.FALSE;
 	@Deprecated
 	private Boolean tweakNoCaveFog;
 	@Deprecated
@@ -911,6 +912,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakNoFallingLeafParticles() {
+		return tweakNoFallingLeafParticles != null && tweakNoFallingLeafParticles;
+	}
+
+	public void setTweakNoFallingLeafParticles(boolean enabled) {
+		tweakNoFallingLeafParticles = enabled;
+		save();
+	}
+
 	public boolean tweakNoHurtCam() {
 		return tweakNoHurtCam != null && tweakNoHurtCam;
 	}
@@ -1245,6 +1255,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakClearLava()
 			|| tweakNoEnvironmentFog()
 			|| tweakNoNetherParticles()
+			|| tweakNoFallingLeafParticles()
 			|| tweakNoHurtCam()
 			|| tweakFreelook()
 			|| beaconRadiusOutline()
@@ -1813,6 +1824,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakClearLava = Boolean.TRUE;
 		tweakNoEnvironmentFog = Boolean.TRUE;
 		tweakNoNetherParticles = Boolean.FALSE;
+		tweakNoFallingLeafParticles = Boolean.FALSE;
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
 		beaconRadiusOutline = Boolean.FALSE;
@@ -2164,6 +2176,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakNoNetherParticles == null) {
 			tweakNoNetherParticles = Boolean.FALSE;
+		}
+		if (tweakNoFallingLeafParticles == null) {
+			tweakNoFallingLeafParticles = Boolean.FALSE;
 		}
 		if (tweakNoHurtCam == null) {
 			tweakNoHurtCam = Boolean.FALSE;
