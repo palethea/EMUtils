@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
+import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
@@ -190,6 +191,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean autoToolReturnToPreviousItem = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
+	private Boolean settingsUiPreview = Boolean.FALSE;
+	private Boolean settingsUiDark = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
 	private Boolean customCapes = Boolean.TRUE;
 	private Boolean capeOptifine = Boolean.TRUE;
@@ -1289,6 +1292,25 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** The new settings UI is only offered in dev builds until it is finished. */
+	public boolean settingsUiPreview() {
+		return EMUtilsBuild.isDev() && settingsUiPreview != null && settingsUiPreview;
+	}
+
+	public void setSettingsUiPreview(boolean enabled) {
+		settingsUiPreview = enabled;
+		save();
+	}
+
+	public boolean settingsUiDark() {
+		return settingsUiDark == null || settingsUiDark;
+	}
+
+	public void setSettingsUiDark(boolean dark) {
+		settingsUiDark = dark;
+		save();
+	}
+
 	public boolean packManagerShowShadersWithoutIris() {
 		return packManagerShowShadersWithoutIris == null || packManagerShowShadersWithoutIris;
 	}
@@ -2278,6 +2300,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (packManagerEnabled == null) {
 			packManagerEnabled = Boolean.TRUE;
+		}
+		if (settingsUiPreview == null) {
+			settingsUiPreview = Boolean.FALSE;
+		}
+		if (settingsUiDark == null) {
+			settingsUiDark = Boolean.TRUE;
 		}
 		if (packManagerShowShadersWithoutIris == null) {
 			packManagerShowShadersWithoutIris = Boolean.TRUE;

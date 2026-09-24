@@ -6,7 +6,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinescriptCompat;
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.capes.gui.CapesSettingsScreen;
 import net.emutils.client.emutils.chat.gui.ChatFeaturesSettingsScreen;
 import net.emutils.client.emutils.food.gui.FoodHudSettingsScreen;
@@ -38,7 +38,7 @@ public final class EMUtilsHubScreen extends EMUtilsScreen {
 		GridLayout grid = new GridLayout();
 		grid.defaultCellSetting().paddingHorizontal(4).paddingBottom(4).alignHorizontallyCenter();
 		GridLayout.RowHelper adder = grid.createRowHelper(2);
-		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.HUB_MODERN_OPEN), button -> client.setScreenAndShow(new CustomHubScreen(this))), SETTINGS_COLUMNS);
+		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.HUB_MODERN_OPEN), button -> client.setScreenAndShow(SettingsScreens.hub(this))), SETTINGS_COLUMNS);
 		adder.addChild(navButton(EMUtilsTexts.HUB_WAYPOINTS, () -> EMUtilsClient.config().waypointEnabled(), WaypointSettingsScreen::new));
 		adder.addChild(navButton(EMUtilsTexts.HUB_AUTO_RECONNECT, () -> EMUtilsClient.config().autoReconnect(), AutoReconnectSettingsScreen::new));
 		adder.addChild(navButton(EMUtilsTexts.HUB_SCREENSHOT_HELPER, () -> EMUtilsClient.config().screenshotHelper(), ScreenshotSettingsScreen::new));

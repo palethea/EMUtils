@@ -2,11 +2,11 @@ package net.emutils.client.emutils.compat.modmenu;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
+import net.emutils.client.emutils.gui.settings.SettingsScreens;
 
 public final class EMUtilsModMenu implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
-		return parent -> new CustomHubScreen(parent);
+		return parent -> SettingsScreens.hub(parent);
 	}
 }

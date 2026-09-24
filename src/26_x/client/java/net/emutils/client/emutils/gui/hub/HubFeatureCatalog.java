@@ -14,6 +14,7 @@ import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
+import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
 import net.minecraft.client.Minecraft;
@@ -27,7 +28,7 @@ public final class HubFeatureCatalog {
 
 	public static List<HubFeature> all() {
 		EMUtilsConfig config = EMUtilsClient.config();
-		return List.of(
+		List<HubFeature> features = new ArrayList<>(List.of(
 			categoryFeature("fullbright", HubCategory.FULLBRIGHT, HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, EMUtilsTexts.HUB_FEATURE_FULLBRIGHT_DESC, HubFeature.Icon.SUN, toggle(config::tweakFullbright, config::setTweakFullbright)),
 			categoryFeature("clear_weather", HubCategory.CLEAR_WEATHER, HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, EMUtilsTexts.HUB_FEATURE_CLEAR_WEATHER_DESC, HubFeature.Icon.CLOUD_SUN, toggle(config::tweakClearWeather, config::setTweakClearWeather)),
 			leaf("no_fog", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, HubFeature.Icon.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog), () -> config.setTweakNoFog(false)),
@@ -159,7 +160,20 @@ public final class HubFeatureCatalog {
 			leaf("safe_walk", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk), () -> config.setTweakSafeWalk(false)),
 			leaf("place_below", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow), () -> config.setTweakPlaceBelow(false)),
 			leaf("locked_y_placement", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement), () -> config.setTweakLockedYPlacement(false))
-		);
+		));
+		if (EMUtilsBuild.isDev()) {
+			// Only dev builds can switch to the new settings UI while it is being built (#88).
+			features.add(leaf(
+				"settings_ui_preview",
+				HubFeature.Group.MANAGEMENT,
+				EMUtilsTexts.OPTION_SETTINGS_UI_PREVIEW,
+				EMUtilsTexts.HUB_FEATURE_SETTINGS_UI_PREVIEW_DESC,
+				HubFeature.Icon.SPARKLES,
+				toggle(config::settingsUiPreview, config::setSettingsUiPreview),
+				() -> config.setSettingsUiPreview(false)
+			));
+		}
+		return features;
 	}
 
 	@Nullable
