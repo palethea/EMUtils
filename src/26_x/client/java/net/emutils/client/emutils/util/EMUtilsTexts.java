@@ -17,6 +17,8 @@ public final class EMUtilsTexts {
     public static final String UI_NO_RESULTS = "emutils.ui.no_results";
     public static final String UI_OPEN = "emutils.ui.open";
     public static final String UI_CLASSIC = "emutils.ui.classic";
+    public static final String UI_RESET = "emutils.ui.reset";
+    public static final String UI_NOTHING_TO_SET_UP = "emutils.ui.nothing_to_set_up";
     public static final String OPTION_SETTINGS_UI_PREVIEW = "emutils.option.settings_ui_preview";
     public static final String HUB_FEATURE_SETTINGS_UI_PREVIEW_DESC = "emutils.hub.feature.settings_ui_preview.desc";
     public static final String HUB_MODERN_OPEN = "emutils.hub.modern_open";

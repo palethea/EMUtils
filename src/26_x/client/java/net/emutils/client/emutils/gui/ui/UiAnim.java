@@ -33,6 +33,11 @@ public final class UiAnim {
 		return next;
 	}
 
+	/** Jumps a {@link #towards} value to {@code value} without animating. */
+	public void set(String key, float value) {
+		values.put(key, value);
+	}
+
 	public float towards(String key, boolean on, float speed) {
 		return towards(key, on ? 1.0F : 0.0F, speed);
 	}

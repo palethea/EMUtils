@@ -9,7 +9,7 @@ import net.minecraft.client.Screenshot;
 /**
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
  * the client enters a test world, opens the new settings screen, saves screenshots of it at GUI
- * scales 3 (dark and light), 2, 1 and 4, and quits. Screenshots land in the run directory.
+ * scales 3 (dark and light), 2, 1 and 4, then a few settings sheets, and quits. Screenshots land in the run directory.
  */
 public final class UiSnapshotter {
 	private static final String ENABLED_PROPERTY = "emutils.uiSnapshot";
@@ -44,6 +44,12 @@ public final class UiSnapshotter {
 			case 7 -> capture(client, "gui scale 1, dark");
 			case 8 -> setup(client, 4, true);
 			case 9 -> capture(client, "gui scale 4, dark");
+			case 10 -> sheet(client, "zoom");
+			case 11 -> capture(client, "gui scale 2, zoom sheet");
+			case 12 -> sheet(client, "auto_tool");
+			case 13 -> capture(client, "gui scale 2, auto tool sheet");
+			case 14 -> sheet(client, "chat");
+			case 15 -> capture(client, "gui scale 2, chat sheet");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -60,6 +66,17 @@ public final class UiSnapshotter {
 		}
 		if (!(MinecraftClientCompat.screen(client) instanceof SettingsScreen)) {
 			client.setScreenAndShow(new SettingsScreen(null));
+		}
+		next();
+	}
+
+	private static void sheet(Minecraft client, String featureId) {
+		if (client.options.guiScale().get() != 2) {
+			client.options.guiScale().set(2);
+			client.resizeGui();
+		}
+		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+			screen.openSheet(featureId);
 		}
 		next();
 	}

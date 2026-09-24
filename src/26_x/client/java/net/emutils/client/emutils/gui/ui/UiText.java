@@ -1,5 +1,7 @@
 package net.emutils.client.emutils.gui.ui;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -38,6 +40,8 @@ public final class UiText {
 		LABEL("ui_label", 8.5F, 1.0F, UiFontRenderer.Weight.EXTRABOLD),
 		/** Small labels such as badges. */
 		SMALL("ui_small", 7.0F, 0.75F, UiFontRenderer.Weight.EXTRABOLD),
+		/** Sheet titles. */
+		HEADING("ui_heading", 13.0F, 1.3F, UiFontRenderer.Weight.BLACK),
 		/** The screen title. */
 		TITLE("ui_title", 17.0F, 1.6F, UiFontRenderer.Weight.BLACK);
 
@@ -174,6 +178,25 @@ public final class UiText {
 		context.pose().scale(scale, scale);
 		context.text(font, styled, 0, 0, color, false);
 		context.pose().popMatrix();
+	}
+
+	/** Splits {@code text} into lines that fit {@code maxWidth}, breaking at spaces. */
+	public static List<Component> wrap(Font font, Component text, Size size, int maxWidth) {
+		List<Component> lines = new ArrayList<>();
+		String line = "";
+		for (String word : text.getString().split(" ")) {
+			String candidate = line.isEmpty() ? word : line + " " + word;
+			if (!line.isEmpty() && width(font, Component.literal(candidate), size) > maxWidth) {
+				lines.add(Component.literal(line));
+				line = word;
+			} else {
+				line = candidate;
+			}
+		}
+		if (!line.isEmpty()) {
+			lines.add(Component.literal(line));
+		}
+		return lines;
 	}
 
 	/** Shortens {@code text} with an ellipsis so it fits in {@code maxWidth}. */

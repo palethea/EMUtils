@@ -31,7 +31,8 @@ public record UiTheme(
 	int hud,
 	int utility,
 	int management,
-	int qol
+	int qol,
+	int overlay
 ) {
 	public static final UiTheme DARK = new UiTheme(
 		0x8C060908,
@@ -60,7 +61,8 @@ public record UiTheme(
 		0xFF6BE0A4,
 		0xFFFFC56E,
 		0xFFC9AEFF,
-		0xFFFFA3BC
+		0xFFFFA3BC,
+		0x80000000
 	);
 
 	public static final UiTheme LIGHT = new UiTheme(
@@ -90,7 +92,8 @@ public record UiTheme(
 		0xFF17804A,
 		0xFF8A5200,
 		0xFF6B45B8,
-		0xFFA8345A
+		0xFFA8345A,
+		0x521B2320
 	);
 
 	public static UiTheme current() {
