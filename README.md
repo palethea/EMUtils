@@ -1,74 +1,72 @@
 <p align="center">
-  <img src="assets/branding/emutils-logo.svg" alt="EMUtils logo" width="160">
+  <img src="assets/branding/emutils-logo.svg" alt="EMUtils logo" width="140">
 </p>
 
 <h1 align="center">EMUtils</h1>
 
 <p align="center">
-  Tired of installing five different mods just to copy a chat message, zoom in, and reconnect after a kick?<br>
-  <strong>EMUtils</strong> bundles the small stuff into one lightweight client-side mod for the <strong>latest two Minecraft 26.x releases</strong> on Fabric — so you can stop juggling mods and get back to playing.
+  <strong>One mod. Every little job.</strong><br>
+  A lightweight, client-side utility mod for Minecraft on Fabric.
 </p>
 
-## Status
+<p align="center">
+  <a href="https://modrinth.com/mod/emutils">Modrinth</a> ·
+  <a href="FEATURES.md">All features</a> ·
+  <a href="https://modrinth.com/mod/emutils/gallery">Screenshots</a> ·
+  <a href="https://github.com/palethea/EMUtils/issues/55">Ideas backlog</a>
+</p>
 
-EMUtils is in active development. One settings hub, a pile of quality-of-life features, and zero interest in getting in your way while you play.
+---
 
-### Version support
+Most utility mods do one job. One zooms, one copies chat, one sorts your chests, one reconnects you after a kick. That works fine until your mods folder has thirty of them, each with its own config screen, its own keybinds and its own update schedule.
 
-- EMUtils tracks the **two latest Minecraft 26.x releases**. Currently supported: **26.2** and **26.3**.
-- New features and fixes target the supported versions.
-- **Minecraft 26.1.x** is preserved on the `legacy/26.1.x` branch and is only patched when a bug is reported.
-- **Minecraft 1.21.x** is preserved on the `legacy/1.21.x` branch and is no longer part of `master`.
+**EMUtils does all of those jobs.** One jar, one settings hub, and one update when Minecraft moves on.
 
-## Features
+## What's inside
 
-EMUtils features are documented in [FEATURES.md](FEATURES.md), grouped the same way as the in-game settings hub:
+| Category | Highlights |
+|---|---|
+| **Render** | Zoom, Freelook, Fullbright, Clear Weather, Light Level Overlay, Beacon Radius Outline, custom capes, and a stack of visual tweaks |
+| **HUD** | Info overlay with a drag-and-drop layout editor, Food HUD, Spotify now playing |
+| **Utility** | Auto Reconnect, Screenshot Helper, death and custom Waypoints |
+| **Management** | Settings hub, Screenshot Gallery, Pack Manager with Modrinth search, Script Manager |
+| **QoL** | Chat copy and filters, Sort Buttons, Quick Stack, Slot Locking, Auto Tool, Auto Flight Gear, Free Camera, Safe Walk, Fast Place |
 
-- **Render** — zoom, fullbright, clear weather, visibility tweaks, beacon radius outlines, light level overlay, custom capes, and visual overlays.
-- **HUD** — info overlay, free camera coordinates, food HUD, layout editor, and Spotify now-playing panels.
-- **Utility** — auto reconnect, screenshot helper, screenshot metadata, and waypoints.
-- **Management** — settings hub, screenshot gallery, waypoint management, Pack Manager, Script Manager, and command shortcuts.
-- **QoL** — chat tools, inventory tools, Sort Buttons, Hover Transfer, Mass Drop, Auto Tool, Auto Flight Gear, Safe Walk, Free Camera, placement helpers, Fast Place, and Fast Use.
+Every feature has its own on/off switch. The full list with every setting is in **[FEATURES.md](FEATURES.md)**.
 
-## Feature Ideas
+## Install
 
-Suggested and planned features are tracked in the [feature ideas backlog](https://github.com/palethea/EMUtils/issues/55).
+1. Install [Fabric Loader](https://fabricmc.net/use/) and [Fabric API](https://modrinth.com/mod/fabric-api).
+2. Download the jar for your Minecraft version from [Modrinth](https://modrinth.com/mod/emutils) or [Releases](https://github.com/palethea/EMUtils/releases), for example `EMUtils-26.3.jar`.
+3. Drop it in your `mods` folder and launch.
 
-## Requirements
+Open the settings with the pause menu button, the `/emutils` command, or Mod Menu.
 
-- Minecraft 26.2 or 26.3
-- Java 25 or newer
-- Fabric Loader 0.19.3 or newer
-- Fabric API
+**Supports:** Minecraft 26.2 and 26.3 · Java 25 · Fabric Loader 0.19.3+
 
-### Optional integrations
+EMUtils follows the two latest Minecraft releases. Older versions live on the [`legacy/26.1.x`](https://github.com/palethea/EMUtils/tree/legacy/26.1.x) and [`legacy/1.21.x`](https://github.com/palethea/EMUtils/tree/legacy/1.21.x) branches.
 
-- **Mod Menu** — adds an EMUtils config button that opens the settings hub
-- **Iris** — required for Pack Manager shader apply/disable actions
-- **Minescript** — required for Script Manager browsing, editing, running, and EMUtils script keybinds
-- **Xaero's Minimap / Xaero's World Map** — optional support for showing Beacon Radius Outline boundaries on Xaero maps
+<details>
+<summary><strong>Optional integrations</strong></summary>
 
-## Installation
+- **Mod Menu:** opens the EMUtils settings hub from its config button.
+- **Iris:** lets Pack Manager apply and turn off shader packs.
+- **Minescript:** powers Script Manager (browse, edit, run, and bind scripts).
+- **Xaero's Minimap / World Map:** shows Beacon Radius Outline boundaries on the map.
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for your Minecraft version.
-2. Download the jar for your Minecraft version from releases, for example `EMUtils-26.3.jar` for Minecraft 26.3.
-3. Place the jar in your `mods` folder.
-4. Launch the game.
+</details>
 
-## Building
+<details>
+<summary><strong>Building from source</strong></summary>
 
 ```bash
 ./gradlew -PmcFamily=26.x -PmcVersion=26.3 build
 ```
 
-The built jar will be created in `build/libs/` as `EMUtils-<version>.jar`, for example `EMUtils-26.3.jar`. Without `-PmcVersion`, the latest supported version is built. Each Minecraft version gets its own jar, built from the shared code in `src/26_x` plus that version's folder, such as `src/26_3`.
+The jar lands in `build/libs/EMUtils-26.3.jar`. Leave out `-PmcVersion` to build the latest supported version. Shared code lives in `src/26_x`, and anything version-specific lives in that version's folder, such as `src/26_3`.
+
+</details>
 
 ## License
 
-EMUtils is licensed under the [Apache License 2.0](LICENSE).
-
-Copyright 2026 Palethea. If you use, fork, modify, or redistribute EMUtils, keep the original license and attribution notices.
-
-## Screenshots
-
-See the [Modrinth gallery](https://modrinth.com/mod/emutils/gallery) for screenshots and feature previews.
+[Apache License 2.0](LICENSE). Copyright 2026 Palethea. If you use, fork, modify or redistribute EMUtils, keep the original license and attribution notices.
