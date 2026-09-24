@@ -133,7 +133,7 @@ public final class SettingsScreen extends Screen {
 
 	private int categoryButtonWidth(CategoryButton button) {
 		int iconSpace = button.icon == null ? 0 : 9 + 4;
-		return UiText.width(font, button.label, UiText.Size.BOLD) + iconSpace + 12;
+		return UiText.width(font, button.label, UiText.Size.LABEL) + iconSpace + 12;
 	}
 
 	private int titleBlockWidth() {
@@ -209,7 +209,7 @@ public final class SettingsScreen extends Screen {
 				UiShapes.icon(context, button.icon, textX, y + (CATEGORY_BUTTON_HEIGHT - 9) / 2, 9, UiWidgets.ICON_TEXTURE_SIZE, color);
 				textX += 13;
 			}
-			UiText.drawCentered(context, font, button.label, UiText.Size.BOLD, textX, y + CATEGORY_BUTTON_HEIGHT / 2 + 1, color);
+			UiText.drawCentered(context, font, button.label, UiText.Size.LABEL, textX, y + CATEGORY_BUTTON_HEIGHT / 2, color);
 			x += button.width + 2;
 		}
 	}
@@ -303,7 +303,7 @@ public final class SettingsScreen extends Screen {
 			int buttonY = rowCenter - OPEN_BUTTON_HEIGHT / 2;
 			float buttonHover = hovered && contains(mouseX, mouseY, buttonX, buttonY, buttonWidth, OPEN_BUTTON_HEIGHT) ? 1.0F : 0.0F;
 			UiShapes.roundedRect(context, buttonX, buttonY, buttonWidth, OPEN_BUTTON_HEIGHT, 7, UiTheme.mix(theme.surfaceAlt(), theme.segmentSelected(), buttonHover));
-			UiText.drawCentered(context, font, open, UiText.Size.BOLD, buttonX + 9, rowCenter + 1, feature.primaryActionEnabled() ? theme.text() : theme.muted());
+			UiText.drawCentered(context, font, open, UiText.Size.LABEL, buttonX + 9, rowCenter, feature.primaryActionEnabled() ? theme.text() : theme.muted());
 			nameRight = buttonX - 6;
 			controlX = buttonX;
 			controlY = buttonY;
@@ -313,7 +313,7 @@ public final class SettingsScreen extends Screen {
 
 		int nameX = x + CARD_PADDING + CARD_ICON + 6;
 		Component name = UiText.ellipsize(font, feature.title(), UiText.Size.BOLD, nameRight - nameX);
-		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter + 1, theme.text());
+		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter, theme.text());
 
 		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - CARD_PADDING * 2);
 		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 3, theme.muted());

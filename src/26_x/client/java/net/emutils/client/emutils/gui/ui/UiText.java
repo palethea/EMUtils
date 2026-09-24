@@ -6,15 +6,21 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 
 /**
- * Text in the settings UI. It uses the bundled UI fonts when their font definitions are present and
- * falls back to Minecraft's font otherwise, scaling it for larger styles.
+ * Text in the settings UI, set in the bundled Nunito font. Minecraft samples font atlases with nearest
+ * filtering, so each style ships one font definition per GUI scale ({@code ui_body_s3} renders its
+ * glyphs at 3x), and the one matching the current scale is used so text stays crisp. Without the font
+ * definitions it falls back to Minecraft's font, scaled for larger styles.
  */
 public final class UiText {
+	private static final int MAX_FONT_SCALE = 6;
+	/** Minecraft draws every glyph with its baseline this far below the text's y. */
+	private static final float BASELINE = 7.0F;
+	/** Nunito's cap height as a fraction of its em size. */
+	private static final float CAP_HEIGHT = 0.705F;
+
 	private static Boolean customFonts;
 
 	private UiText() {
@@ -22,19 +28,23 @@ public final class UiText {
 
 	public enum Size {
 		/** Descriptions and secondary text. */
-		BODY("ui_body", 1.0F),
-		/** Feature names, buttons and headings. */
-		BOLD("ui_bold", 1.0F),
+		BODY("ui_body", 9.0F, 1.0F),
+		/** Feature names and headings. */
+		BOLD("ui_bold", 9.5F, 1.0F),
+		/** Buttons and category labels. */
+		LABEL("ui_label", 8.5F, 1.0F),
 		/** Small labels such as badges. */
-		SMALL("ui_small", 0.75F),
+		SMALL("ui_small", 7.0F, 0.75F),
 		/** The screen title. */
-		TITLE("ui_title", 1.6F);
+		TITLE("ui_title", 17.0F, 1.6F);
 
-		private final Identifier font;
+		private final String font;
+		private final float em;
 		private final float fallbackScale;
 
-		Size(String font, float fallbackScale) {
-			this.font = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, font);
+		Size(String font, float em, float fallbackScale) {
+			this.font = font;
+			this.em = em;
 			this.fallbackScale = fallbackScale;
 		}
 	}
@@ -43,7 +53,7 @@ public final class UiText {
 	public static void refreshFonts() {
 		customFonts = Minecraft.getInstance()
 			.getResourceManager()
-			.getResource(Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "font/ui_body.json"))
+			.getResource(Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "font/ui_body_s1.json"))
 			.isPresent();
 	}
 
@@ -54,16 +64,31 @@ public final class UiText {
 		return customFonts;
 	}
 
-	private static float scale(Size size) {
+	private static Identifier fontFor(Size size) {
+		int scale = (int) Math.ceil(Minecraft.getInstance().getWindow().getGuiScale());
+		scale = Math.clamp(scale, 1, MAX_FONT_SCALE);
+		return Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, size.font + "_s" + scale);
+	}
+
+	private static float fallbackScale(Size size) {
 		return customFonts() ? 1.0F : size.fallbackScale;
+	}
+
+	/** Height of capital letters, used to center text and size things around it. */
+	private static float capHeight(Size size) {
+		return customFonts() ? size.em * CAP_HEIGHT : BASELINE * size.fallbackScale;
+	}
+
+	/** Distance from the text's y to the top of its capital letters. */
+	private static float capTop(Size size) {
+		return BASELINE * fallbackScale(size) - capHeight(size);
 	}
 
 	public static Component styled(Component text, Size size) {
 		if (!customFonts()) {
 			return text;
 		}
-		MutableComponent copy = text.copy();
-		return copy.withStyle(style -> style.withFont(new FontDescription.Resource(size.font)));
+		return text.copy().withStyle(style -> style.withFont(new FontDescription.Resource(fontFor(size))));
 	}
 
 	public static Component styled(String text, Size size) {
@@ -71,31 +96,36 @@ public final class UiText {
 	}
 
 	public static int width(Font font, Component text, Size size) {
-		return Math.round(font.width(styled(text, size)) * scale(size));
+		return Math.round(font.width(styled(text, size)) * fallbackScale(size));
 	}
 
-	/** Height of a line of this size, used to center text vertically. */
+	/** Cap height rounded to whole pixels. */
 	public static int lineHeight(Font font, Size size) {
-		return Math.round((font.lineHeight - 2) * scale(size));
+		return Math.round(capHeight(size));
 	}
 
-	public static void draw(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int y, int color) {
-		float scale = scale(size);
+	/** Draws text with the top of its capital letters at {@code top}. */
+	public static void draw(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int top, int color) {
+		drawAt(context, font, text, size, x, top - capTop(size), color);
+	}
+
+	/** Draws text with its capital letters vertically centered on {@code centerY}. */
+	public static void drawCentered(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int centerY, int color) {
+		drawAt(context, font, text, size, x, centerY - capHeight(size) / 2.0F - capTop(size), color);
+	}
+
+	private static void drawAt(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, float y, int color) {
+		float scale = fallbackScale(size);
 		Component styled = styled(text, size);
 		if (scale == 1.0F) {
-			context.text(font, styled, x, y, color, false);
+			context.text(font, styled, x, Math.round(y), color, false);
 			return;
 		}
 		context.pose().pushMatrix();
-		context.pose().translate(x, y);
+		context.pose().translate(x, Math.round(y));
 		context.pose().scale(scale, scale);
 		context.text(font, styled, 0, 0, color, false);
 		context.pose().popMatrix();
-	}
-
-	/** Draws text vertically centered on {@code centerY}. */
-	public static void drawCentered(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int centerY, int color) {
-		draw(context, font, text, size, x, centerY - lineHeight(font, size) / 2, color);
 	}
 
 	/** Shortens {@code text} with an ellipsis so it fits in {@code maxWidth}. */
@@ -109,6 +139,6 @@ public final class UiText {
 		while (end > 0 && width(font, Component.literal(value.substring(0, end).stripTrailing() + ellipsis), size) > maxWidth) {
 			end--;
 		}
-		return Component.literal(value.substring(0, end).stripTrailing() + ellipsis).withStyle(Style.EMPTY);
+		return Component.literal(value.substring(0, end).stripTrailing() + ellipsis);
 	}
 }

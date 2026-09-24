@@ -54,12 +54,12 @@ public final class UiWidgets {
 		};
 		int text = style == ButtonStyle.PRIMARY ? 0xFFFFFFFF : style == ButtonStyle.GHOST ? theme.textSecondary() : theme.text();
 		UiShapes.roundedRect(context, x, y, width, height, Math.min(8, height / 2), background);
-		int labelWidth = UiText.width(font, label, UiText.Size.BOLD);
-		UiText.drawCentered(context, font, label, UiText.Size.BOLD, x + (width - labelWidth) / 2, y + height / 2, text);
+		int labelWidth = UiText.width(font, label, UiText.Size.LABEL);
+		UiText.drawCentered(context, font, label, UiText.Size.LABEL, x + (width - labelWidth) / 2, y + height / 2, text);
 	}
 
 	public static int buttonWidth(Font font, Component label) {
-		return UiText.width(font, label, UiText.Size.BOLD) + 18;
+		return UiText.width(font, label, UiText.Size.LABEL) + 18;
 	}
 
 	/** A square button showing a white icon texture tinted to the theme. */
@@ -75,7 +75,7 @@ public final class UiWidgets {
 		int width = UiText.width(font, label, UiText.Size.SMALL) + 8;
 		int height = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
 		UiShapes.roundedRect(context, x, y, width, height, 3, background);
-		UiText.drawCentered(context, font, label, UiText.Size.SMALL, x + 4, y + height / 2 + 1, text);
+		UiText.drawCentered(context, font, label, UiText.Size.SMALL, x + 4, y + height / 2, text);
 		return width;
 	}
 }
