@@ -25,7 +25,7 @@ public final class HudOverlayRenderer {
 	private static final int ICON_SIZE = 8;
 	private static final int ICON_GAP = 6;
 	private static final int LABEL_VALUE_GAP = 6;
-	private static final int FIXED_CONTENT_WIDTH = 156;
+	private static final int MIN_CONTENT_WIDTH = 156;
 	private static final int BACKGROUND_COLOR = 0xB5222B3D;
 	private static final int SHADOW_COLOR = 0x66000000;
 	private static final int BORDER_COLOR = 0xCC101725;
@@ -52,8 +52,30 @@ public final class HudOverlayRenderer {
 		return data;
 	}
 
-	public static int unscaledPanelWidth() {
-		return FIXED_CONTENT_WIDTH + PADDING_X * 2;
+	// The panel keeps its usual width and only grows while a line (a long biome name, for example) needs more room.
+	public static int unscaledPanelWidth(EMUtilsConfig config) {
+		Font font = Minecraft.getInstance().font;
+		boolean showIcons = config.hudShowIcons();
+		int contentWidth = MIN_CONTENT_WIDTH;
+		for (HudOverlayLine line : mainLines(config)) {
+			contentWidth = Math.max(contentWidth, lineWidth(font, line, showIcons));
+		}
+		if (config.hudShowMemory()) {
+			contentWidth = Math.max(contentWidth, lineWidth(font, memoryLine(), showIcons));
+		}
+		return contentWidth + PADDING_X * 2;
+	}
+
+	private static int lineWidth(Font font, HudOverlayLine line, boolean showIcons) {
+		int iconWidth = showIcons ? ICON_SIZE + ICON_GAP : 0;
+		return iconWidth
+			+ font.width(Component.translatable(line.labelKey()))
+			+ LABEL_VALUE_GAP
+			+ font.width(Component.literal(line.value()));
+	}
+
+	private static HudOverlayLine memoryLine() {
+		return new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory"));
 	}
 
 	public static int unscaledPanelHeight(EMUtilsConfig config) {
@@ -105,15 +127,14 @@ public final class HudOverlayRenderer {
 
 		if (showMemory) {
 			int memoryRowY = y + PADDING_Y + mainLines.size() * ROW_HEIGHT;
-			drawLine(
+			drawLine(context, textRenderer, memoryLine(), showIcons, x + PADDING_X, memoryRowY);
+			drawMemoryBar(
 				context,
-				textRenderer,
-				new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory")),
-				showIcons,
 				x + PADDING_X,
-				memoryRowY
+				memoryRowY + ROW_HEIGHT + MEMORY_BAR_GAP,
+				panelWidth - PADDING_X * 2,
+				data.memoryPercent()
 			);
-			drawMemoryBar(context, x + PADDING_X, memoryRowY + ROW_HEIGHT + MEMORY_BAR_GAP, data.memoryPercent());
 		}
 	}
 
@@ -142,7 +163,7 @@ public final class HudOverlayRenderer {
 			return;
 		}
 
-		int panelWidth = unscaledPanelWidth();
+		int panelWidth = unscaledPanelWidth(config);
 		int panelHeight = unscaledPanelHeight(config);
 		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
 			net.emutils.client.EMUtilsHudElements.INFO_OVERLAY,
@@ -221,9 +242,9 @@ public final class HudOverlayRenderer {
 		return (scaledAlpha << 24) | (color & 0x00FFFFFF);
 	}
 
-	private static void drawMemoryBar(GuiGraphicsExtractor context, int x, int y, int memoryPercent) {
-		int fillWidth = Math.max(1, (int) Math.round(FIXED_CONTENT_WIDTH * Math.min(100, Math.max(0, memoryPercent)) / 100.0));
-		context.fill(x, y, x + FIXED_CONTENT_WIDTH, y + MEMORY_BAR_HEIGHT, MEMORY_TRACK_COLOR);
+	private static void drawMemoryBar(GuiGraphicsExtractor context, int x, int y, int width, int memoryPercent) {
+		int fillWidth = Math.max(1, (int) Math.round(width * Math.min(100, Math.max(0, memoryPercent)) / 100.0));
+		context.fill(x, y, x + width, y + MEMORY_BAR_HEIGHT, MEMORY_TRACK_COLOR);
 		context.fill(x, y, x + fillWidth, y + MEMORY_BAR_HEIGHT, ACCENT_COLOR);
 	}
 

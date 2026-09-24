@@ -21,7 +21,7 @@ public final class InfoOverlayHudElement extends AbstractHudLayoutElement {
 	public HudOverlayPlacement.PanelDimensions unscaledDimensions(HudLayoutConfig config, Minecraft client) {
 		EMUtilsConfig emUtilsConfig = (EMUtilsConfig) config;
 		return new HudOverlayPlacement.PanelDimensions(
-			HudOverlayRenderer.unscaledPanelWidth(),
+			HudOverlayRenderer.unscaledPanelWidth(emUtilsConfig),
 			HudOverlayRenderer.unscaledPanelHeight(emUtilsConfig)
 		);
 	}
@@ -57,7 +57,7 @@ public final class InfoOverlayHudElement extends AbstractHudLayoutElement {
 		int scalePercent
 	) {
 		EMUtilsConfig emUtilsConfig = (EMUtilsConfig) config;
-		int panelWidth = HudOverlayRenderer.unscaledPanelWidth();
+		int panelWidth = HudOverlayRenderer.unscaledPanelWidth(emUtilsConfig);
 		int panelHeight = HudOverlayRenderer.unscaledPanelHeight(emUtilsConfig);
 		renderScaled(context, x, y, scalePercent / 100.0F, () ->
 			HudOverlayRenderer.renderPanel(
