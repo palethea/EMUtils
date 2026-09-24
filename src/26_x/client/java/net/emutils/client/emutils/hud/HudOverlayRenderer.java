@@ -194,6 +194,9 @@ public final class HudOverlayRenderer {
 		if (config.hudShowFacing()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_FACING, data.facing(), HudOverlayLine.icon("direction")));
 		}
+		if (config.hudShowSpeed()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_SPEED, data.speed(), HudOverlayLine.icon("speed")));
+		}
 		if (config.hudShowServerTime()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_SERVER_TIME, data.serverTime(), HudOverlayLine.icon("server_time")));
 		}

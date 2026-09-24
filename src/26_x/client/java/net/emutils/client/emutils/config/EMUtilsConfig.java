@@ -106,6 +106,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean hudShowIcons = Boolean.TRUE;
 	private Boolean hudHideWithDebug = Boolean.TRUE;
 	private Boolean hudShowFacing = Boolean.TRUE;
+	private Boolean hudShowSpeed = Boolean.FALSE;
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -625,6 +626,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setHudShowFacing(boolean enabled) {
 		hudShowFacing = enabled;
+		save();
+	}
+
+	public boolean hudShowSpeed() {
+		return hudShowSpeed != null && hudShowSpeed;
+	}
+
+	public void setHudShowSpeed(boolean enabled) {
+		hudShowSpeed = enabled;
 		save();
 	}
 
@@ -1766,6 +1776,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hudShowIcons = Boolean.TRUE;
 		hudHideWithDebug = Boolean.TRUE;
 		hudShowFacing = Boolean.TRUE;
+		hudShowSpeed = Boolean.FALSE;
 		hudBackgroundOpacity = 100;
 		hudScale = 100;
 		save();
@@ -2062,6 +2073,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (hudShowFacing == null) {
 			hudShowFacing = Boolean.TRUE;
+		}
+		if (hudShowSpeed == null) {
+			hudShowSpeed = Boolean.FALSE;
 		}
 		if (foodHud == null) {
 			foodHud = Boolean.TRUE;

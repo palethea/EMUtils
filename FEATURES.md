@@ -79,6 +79,7 @@ Show a configurable info panel with icons and useful world or client stats.
 - Chunk / Region: show current chunk and region.
 - Biome: show the current biome.
 - Facing: show the direction you are facing.
+- Speed: show horizontal movement speed in blocks per second, averaged over half a second; follows your vehicle while riding and works while flying with an elytra. Off by default.
 - Ping: show server ping.
 - FPS: show current frame rate.
 - Memory: show client memory use.
