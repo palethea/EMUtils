@@ -98,10 +98,10 @@ public final class UiScrollArea {
 		context.disableScissor();
 		int fadeWidth = x + width - GUTTER;
 		if (offset > 0.5) {
-			context.fillGradient(x, y, fadeWidth, y + fadeHeight, background, background & 0x00FFFFFF);
+			context.fillGradient(x, y, fadeWidth, y + fadeHeight, UiOpacity.apply(background), background & 0x00FFFFFF);
 		}
 		if (offset < maxScroll() - 0.5) {
-			context.fillGradient(x, y + height - fadeHeight, fadeWidth, y + height, background & 0x00FFFFFF, background);
+			context.fillGradient(x, y + height - fadeHeight, fadeWidth, y + height, background & 0x00FFFFFF, UiOpacity.apply(background));
 		}
 		if (maxScroll() > 0) {
 			int trackHeight = height - 8;

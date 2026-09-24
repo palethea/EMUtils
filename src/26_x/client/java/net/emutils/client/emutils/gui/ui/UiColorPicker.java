@@ -11,6 +11,8 @@ import net.emutils.client.versioned.VersionedTextures;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -30,6 +32,7 @@ public final class UiColorPicker {
 	private static final int PREVIEW = 18;
 	private static final int HEIGHT = PADDING + FIELD_HEIGHT + GAP + HUE_HEIGHT + GAP + PREVIEW + PADDING;
 	private static final int HANDLE = 11;
+	private static final int HEX_WIDTH = 72;
 	private static final Map<String, Identifier> TEXTURES = new HashMap<>();
 	private static int textureScale;
 
@@ -44,6 +47,7 @@ public final class UiColorPicker {
 	private boolean draggingField;
 	private boolean draggingHue;
 	private boolean dirty;
+	private final UiTextField hex = new UiTextField(this, 6, codepoint -> Character.digit(codepoint, 16) >= 0);
 
 	/** Opens the picker beside the point {@code anchorX, anchorY} (usually the left edge of a swatch). */
 	public UiColorPicker(IntSupplier getter, IntConsumer setter, int anchorX, int anchorY, int screenWidth, int screenHeight) {
@@ -77,7 +81,8 @@ public final class UiColorPicker {
 		int fieldY = y + PADDING;
 		int fieldWidth = WIDTH - PADDING * 2;
 		// Hue color, then white fading out to the right, then black fading in towards the bottom.
-		UiShapes.roundedRect(context, fieldX, fieldY, fieldWidth, FIELD_HEIGHT, FIELD_RADIUS, 0xFF000000 | fromHsv(hue, 1.0F, 1.0F));
+		// All three layers share one baked edge, so their rounded corners line up exactly.
+		blitTexture(context, texture(Layer.BASE, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFF000000 | fromHsv(hue, 1.0F, 1.0F));
 		blitTexture(context, texture(Layer.WHITE, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFFFFFFFF);
 		blitTexture(context, texture(Layer.BLACK, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFF000000);
 		handle(context, theme, fieldX + saturation * fieldWidth, fieldY + (1.0F - brightness) * FIELD_HEIGHT, 0xFF000000 | fromHsv(hue, saturation, brightness));
@@ -89,8 +94,58 @@ public final class UiColorPicker {
 		int previewY = hueY + HUE_HEIGHT + GAP;
 		UiShapes.roundedRect(context, fieldX, previewY, PREVIEW, PREVIEW, 5, theme.line());
 		UiShapes.roundedRect(context, fieldX + 1, previewY + 1, PREVIEW - 2, PREVIEW - 2, 4, 0xFF000000 | color());
-		Component hex = Component.literal(String.format(Locale.ROOT, "#%06X", color() & 0xFFFFFF));
-		UiText.drawCentered(context, font, hex, UiText.Size.LABEL, fieldX + PREVIEW + 8, previewY + PREVIEW / 2, theme.text());
+		int hexX = fieldX + PREVIEW + 8;
+		UiShapes.borderedRect(context, hexX, previewY, HEX_WIDTH, PREVIEW, 5, theme.segmentBackground(), hex.focused() ? theme.accent() : theme.line());
+		UiText.drawCentered(context, font, Component.literal("#"), UiText.Size.LABEL, hexX + 6, previewY + PREVIEW / 2, theme.muted());
+		if (hex.focused()) {
+			hex.draw(context, font, theme, hexX + 14, previewY + PREVIEW / 2, HEX_WIDTH - 20, Component.empty());
+		} else {
+			UiText.drawCentered(context, font, Component.literal(hexOf(color())), UiText.Size.LABEL, hexX + 14, previewY + PREVIEW / 2, theme.text());
+		}
+	}
+
+	private static String hexOf(int color) {
+		return String.format(Locale.ROOT, "%06X", color & 0xFFFFFF);
+	}
+
+	/** Applies the typed hex value once it is a complete color. */
+	private void hexChanged() {
+		String value = hex.text();
+		if (value.length() == 6) {
+			float[] hsv = toHsv(Integer.parseInt(value, 16));
+			hue = hsv[0];
+			saturation = hsv[1];
+			brightness = hsv[2];
+			dirty = true;
+		}
+	}
+
+	/** Enter saves the typed color, Esc stops editing; other keys edit the hex value. */
+	public boolean keyPressed(KeyEvent input) {
+		if (!hex.focused()) {
+			return false;
+		}
+		if (input.isConfirmation()) {
+			hex.setFocused(false);
+			release();
+			return true;
+		}
+		if (input.isEscape()) {
+			hex.setFocused(false);
+			return true;
+		}
+		return hex.keyPressed(input, this::hexChanged);
+	}
+
+	public boolean charTyped(CharacterEvent input) {
+		return hex.charTyped(input, this::hexChanged);
+	}
+
+	/** Stops editing the hex value, for example when the picker closes. */
+	public void blur() {
+		if (hex.focused()) {
+			hex.setFocused(false);
+		}
 	}
 
 	/** A round handle centered on a point, which may be fractional so dragging glides. */
@@ -122,6 +177,16 @@ public final class UiColorPicker {
 			drag(mouseX, mouseY);
 			return true;
 		}
+		int hexX = fieldX + PREVIEW + 8;
+		int previewY = hueY + HUE_HEIGHT + GAP;
+		if (mouseX >= hexX && mouseX < hexX + HEX_WIDTH && mouseY >= previewY && mouseY < previewY + PREVIEW) {
+			if (!hex.focused()) {
+				hex.setText(hexOf(color()));
+				hex.setFocused(true);
+			}
+			return true;
+		}
+		hex.setFocused(false);
 		return contains(mouseX, mouseY);
 	}
 
@@ -156,6 +221,7 @@ public final class UiColorPicker {
 	// ---- textures -------------------------------------------------------------------------------
 
 	private enum Layer {
+		BASE,
 		WHITE,
 		BLACK,
 		HUE
@@ -168,7 +234,7 @@ public final class UiColorPicker {
 		context.pose().scale(1.0F / scale, 1.0F / scale);
 		int pixelWidth = width * scale;
 		int pixelHeight = height * scale;
-		context.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, pixelWidth, pixelHeight, pixelWidth, pixelHeight, pixelWidth, pixelHeight, color);
+		context.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, pixelWidth, pixelHeight, pixelWidth, pixelHeight, pixelWidth, pixelHeight, UiOpacity.apply(color));
 		context.pose().popMatrix();
 	}
 
@@ -199,6 +265,7 @@ public final class UiColorPicker {
 					continue;
 				}
 				int argb = switch (layer) {
+					case BASE -> ((int) (255 * coverage) << 24) | 0xFFFFFF;
 					case WHITE -> ((int) (255 * coverage * (1.0F - px / (float) (width - 1))) << 24) | 0xFFFFFF;
 					case BLACK -> ((int) (255 * coverage * (py / (float) (height - 1))) << 24) | 0xFFFFFF;
 					case HUE -> ((int) (255 * coverage) << 24) | (fromHsv(px / (float) width, 1.0F, 1.0F) & 0xFFFFFF);

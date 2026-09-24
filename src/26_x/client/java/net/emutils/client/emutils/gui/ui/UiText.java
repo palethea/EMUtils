@@ -162,7 +162,7 @@ public final class UiText {
 		int left = x * scale - rendered.left();
 		context.pose().pushMatrix();
 		context.pose().scale(1.0F / scale, 1.0F / scale);
-		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), color);
+		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), UiOpacity.apply(color));
 		context.pose().popMatrix();
 	}
 
@@ -170,13 +170,13 @@ public final class UiText {
 		float scale = fallbackScale(size);
 		Component styled = styled(text, size);
 		if (scale == 1.0F) {
-			context.text(font, styled, x, Math.round(y), color, false);
+			context.text(font, styled, x, Math.round(y), UiOpacity.apply(color), false);
 			return;
 		}
 		context.pose().pushMatrix();
 		context.pose().translate(x, Math.round(y));
 		context.pose().scale(scale, scale);
-		context.text(font, styled, 0, 0, color, false);
+		context.text(font, styled, 0, 0, UiOpacity.apply(color), false);
 		context.pose().popMatrix();
 	}
 

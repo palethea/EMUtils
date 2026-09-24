@@ -9,6 +9,7 @@ import net.emutils.client.emutils.gui.hub.HubSettingsRegistry;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiColorPicker;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
@@ -18,6 +19,7 @@ import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.CommonComponents;
@@ -128,6 +130,8 @@ final class SettingsSheet {
 		}
 
 		layout(panelX, panelY, panelWidth, panelHeight);
+		// The whole sheet fades with the animation instead of popping away on its last frame.
+		UiOpacity.set(progress);
 		float scale = 0.96F + 0.04F * progress;
 		context.pose().pushMatrix();
 		context.pose().translate(x + width / 2.0F, y + height / 2.0F);
@@ -147,6 +151,7 @@ final class SettingsSheet {
 		if (colorPicker != null) {
 			colorPicker.render(context, font, theme);
 		}
+		UiOpacity.reset();
 	}
 
 	private void layout(int panelX, int panelY, int panelWidth, int panelHeight) {
@@ -608,6 +613,9 @@ final class SettingsSheet {
 
 	/** Esc closes the innermost thing that is open: the dropdown, the color picker, then the sheet. */
 	boolean keyPressed(KeyEvent input) {
+		if (colorPicker != null && colorPicker.keyPressed(input)) {
+			return true;
+		}
 		if (input.isEscape()) {
 			if (dropdown != null) {
 				dropdown = null;
@@ -630,8 +638,16 @@ final class SettingsSheet {
 		}
 	}
 
+	boolean charTyped(CharacterEvent input) {
+		if (colorPicker != null) {
+			colorPicker.charTyped(input);
+		}
+		return true;
+	}
+
 	private void closeColorPicker() {
 		if (colorPicker != null) {
+			colorPicker.blur();
 			colorPicker.release();
 			colorPicker = null;
 		}

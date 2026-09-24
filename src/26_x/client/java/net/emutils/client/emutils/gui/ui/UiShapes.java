@@ -30,7 +30,7 @@ public final class UiShapes {
 
 		int clamped = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
 		if (clamped == 0) {
-			context.fill(x, y, x + width, y + height, color);
+			context.fill(x, y, x + width, y + height, UiOpacity.apply(color));
 			return;
 		}
 		drawNineSlice(context, patch(Kind.RECT, clamped, 0), x, y, width, height, color);
@@ -40,8 +40,16 @@ public final class UiShapes {
 		roundedRect(context, x, y, width, height, Math.min(width, height) / 2, color);
 	}
 
+	/**
+	 * A circle drawn as one textured quad. Nine-slice pieces leave hairline seams when a circle moves by
+	 * fractions of a pixel (switch knobs, slider and color handles), so circles get their own texture.
+	 */
 	public static void circle(GuiGraphicsExtractor context, int x, int y, int diameter, int color) {
-		roundedRect(context, x, y, diameter, diameter, diameter / 2, color);
+		if (diameter <= 0 || (color >>> 24) == 0) {
+			return;
+		}
+		Patch patch = patch(Kind.CIRCLE, diameter, 0);
+		context.blit(RenderPipelines.GUI_TEXTURED, patch.id(), x, y, 0.0F, 0.0F, diameter, diameter, patch.textureSize(), patch.textureSize(), patch.textureSize(), patch.textureSize(), UiOpacity.apply(color));
 	}
 
 	/** A rounded rect with a 1px border; the fill is drawn inside the border. */
@@ -89,6 +97,9 @@ public final class UiShapes {
 	}
 
 	private static Patch bake(Kind kind, int radius, int blur, int scale) {
+		if (kind == Kind.CIRCLE) {
+			return bakeCircle(radius, scale);
+		}
 		// The patch is the shape's corners plus a 2px stretchable middle, surrounded by the blur margin.
 		int border = radius + blur;
 		int logicalSize = border * 2 + 2;
@@ -111,6 +122,25 @@ public final class UiShapes {
 		Identifier id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_shape/" + kind.name().toLowerCase(Locale.ROOT) + "_" + radius + "_" + blur + "_" + scale);
 		Minecraft.getInstance().getTextureManager().register(id, VersionedTextures.smoothTexture(() -> "EMUtils UI shape " + id.getPath(), image));
 		return new Patch(id, size, border * scale, border);
+	}
+
+	/** A whole circle {@code diameter} pixels across, at the physical pixel density. */
+	private static Patch bakeCircle(int diameter, int scale) {
+		int size = diameter * scale;
+		float center = size / 2.0F;
+		NativeImage image = new NativeImage(size, size, false);
+		for (int py = 0; py < size; py++) {
+			for (int px = 0; px < size; px++) {
+				float dx = px + 0.5F - center;
+				float dy = py + 0.5F - center;
+				float distance = (float) Math.sqrt(dx * dx + dy * dy) - center;
+				int alpha = Math.round(Math.clamp(0.5F - distance, 0.0F, 1.0F) * 255.0F);
+				image.setPixel(px, py, alpha <= 0 ? 0 : (alpha << 24) | 0xFFFFFF);
+			}
+		}
+		Identifier id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_shape/circle_" + diameter + "_" + scale);
+		Minecraft.getInstance().getTextureManager().register(id, VersionedTextures.smoothTexture(() -> "EMUtils UI circle", image));
+		return new Patch(id, size, 0, 0);
 	}
 
 	/** Signed distance from a point to a rounded rect spanning {@code 0..width, 0..height}; negative inside. */
@@ -161,12 +191,13 @@ public final class UiShapes {
 		if (width <= 0 || height <= 0) {
 			return;
 		}
-		context.blit(RenderPipelines.GUI_TEXTURED, patch.id(), x, y, u, v, width, height, regionWidth, regionHeight, patch.textureSize(), patch.textureSize(), color);
+		context.blit(RenderPipelines.GUI_TEXTURED, patch.id(), x, y, u, v, width, height, regionWidth, regionHeight, patch.textureSize(), patch.textureSize(), UiOpacity.apply(color));
 	}
 
 	private enum Kind {
 		RECT,
-		SHADOW
+		SHADOW,
+		CIRCLE
 	}
 
 	private record Patch(Identifier id, int textureSize, int textureBorder, int border) {

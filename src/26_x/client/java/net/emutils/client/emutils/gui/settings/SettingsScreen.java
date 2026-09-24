@@ -532,7 +532,7 @@ public final class SettingsScreen extends Screen {
 	@Override
 	public boolean charTyped(CharacterEvent input) {
 		if (sheet != null) {
-			return true;
+			return sheet.charTyped(input);
 		}
 		if (search.charTyped(input, scroll::reset)) {
 			return true;
