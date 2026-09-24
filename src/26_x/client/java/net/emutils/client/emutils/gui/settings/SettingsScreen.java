@@ -43,7 +43,9 @@ public final class SettingsScreen extends Screen {
 	private static final int CATEGORY_ROW = 20;
 	private static final int CATEGORY_BUTTON_HEIGHT = 15;
 	private static final int ROUND_BUTTON = 20;
-	private static final int COLUMNS = 3;
+	private static final int MAX_COLUMNS = 3;
+	/** Cards narrower than this drop to fewer columns, so names are not cut off. */
+	private static final int MIN_CARD_WIDTH = 160;
 	private static final int CARD_HEIGHT = 44;
 	private static final int CARD_GAP = 8;
 	private static final int CARD_RADIUS = 9;
@@ -119,14 +121,15 @@ public final class SettingsScreen extends Screen {
 			|| centeredX + controlWidth > panelX + panelWidth - PADDING - rightButtonsWidth - 12;
 		// The tagline is the first thing to go when the title column gets narrow.
 		int taglineWidth = UiText.width(font, Component.translatable(EMUtilsTexts.UI_TAGLINE), UiText.Size.BODY);
-		showTagline = stackedHeader || centeredX >= panelX + PADDING + taglineWidth + 14;
+		// When the header stacks, the tagline goes too, to leave room for the cards.
+		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
 		titleY = panelY + PADDING + 6;
 		rightButtonsY = panelY + PADDING + 2;
 		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
 		classicButtonX = themeButtonX - 6 - classicButtonWidth;
 		controlX = centeredX;
-		controlY = stackedHeader ? panelY + PADDING + 40 : panelY + PADDING;
+		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
 		int bodyY = controlY + controlHeight + 10;
@@ -252,11 +255,15 @@ public final class SettingsScreen extends Screen {
 		List<Group> groups = visibleGroups();
 		boolean headings = selectedGroup == null;
 		int innerWidth = scroll.contentWidth();
-		int cardWidth = (innerWidth - CARD_GAP * (COLUMNS - 1)) / COLUMNS;
+		int columns = MAX_COLUMNS;
+		while (columns > 1 && (innerWidth - CARD_GAP * (columns - 1)) / columns < MIN_CARD_WIDTH) {
+			columns--;
+		}
+		int cardWidth = (innerWidth - CARD_GAP * (columns - 1)) / columns;
 
 		int contentHeight = 0;
 		for (Group group : groups) {
-			int rows = (group.features().size() + COLUMNS - 1) / COLUMNS;
+			int rows = (group.features().size() + columns - 1) / columns;
 			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		scroll.setContentHeight(Math.max(0, contentHeight - GROUP_GAP + FADE_HEIGHT));
@@ -281,13 +288,13 @@ public final class SettingsScreen extends Screen {
 				y += HEADING_HEIGHT;
 			}
 			for (int i = 0; i < group.features().size(); i++) {
-				int column = i % COLUMNS;
-				int row = i / COLUMNS;
+				int column = i % columns;
+				int row = i / columns;
 				int cardX = scroll.x() + column * (cardWidth + CARD_GAP);
 				int cardY = y + row * (CARD_HEIGHT + CARD_GAP);
 				cards.add(drawCard(context, theme, group.features().get(i), cardX, cardY, cardWidth, mouseInList, mouseX, mouseY));
 			}
-			int rows = (group.features().size() + COLUMNS - 1) / COLUMNS;
+			int rows = (group.features().size() + columns - 1) / columns;
 			y += rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		context.pose().popMatrix();
@@ -342,12 +349,24 @@ public final class SettingsScreen extends Screen {
 		}
 
 		int nameX = x + CARD_PADDING + CARD_ICON + 6;
-		Component name = UiText.ellipsize(font, feature.title(), UiText.Size.BOLD, nameRight - nameX);
+		Component name = UiText.ellipsize(font, title(feature), UiText.Size.BOLD, nameRight - nameX);
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter, theme.text());
 
 		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - CARD_PADDING * 2);
 		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 3, theme.muted());
 		return new CardBox(feature, x, y, width, CARD_HEIGHT, controlX, controlY, controlWidth, controlHeight);
+	}
+
+	/**
+	 * The feature's name without the trailing "..." the classic hub uses to mark features that open a
+	 * submenu; here every card opens its settings the same way.
+	 */
+	private static Component title(HubFeature feature) {
+		String name = feature.title().getString().strip();
+		while (name.endsWith(".") || name.endsWith("…")) {
+			name = name.substring(0, name.length() - 1).stripTrailing();
+		}
+		return Component.literal(name);
 	}
 
 	private List<Group> visibleGroups() {
