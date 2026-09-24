@@ -66,10 +66,4 @@ public final class UiAnim {
 			return from + (to - from) * eased;
 		}
 	}
-
-	/** Eases a 0..1 progress so movement starts fast and settles gently. */
-	public static float easeOut(float t) {
-		float inverse = 1.0F - Math.clamp(t, 0.0F, 1.0F);
-		return 1.0F - inverse * inverse * inverse;
-	}
 }
