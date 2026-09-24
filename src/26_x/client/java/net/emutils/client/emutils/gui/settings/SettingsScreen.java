@@ -124,14 +124,23 @@ public final class SettingsScreen extends Screen {
 		// When the header stacks, the tagline goes too, to leave room for the cards.
 		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
-		titleY = panelY + PADDING + 6;
-		rightButtonsY = panelY + PADDING + 2;
 		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
 		classicButtonX = themeButtonX - 6 - classicButtonWidth;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
+		// Like the mockup, the title block, the search control and the buttons share one center line.
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
+		int titleHeight = UiText.lineHeight(font, UiText.Size.TITLE);
+		int titleBlockHeight = titleHeight + (showTagline ? 5 + UiText.lineHeight(font, UiText.Size.BODY) : 0);
+		if (stackedHeader) {
+			titleY = panelY + PADDING + 6;
+			rightButtonsY = titleY + titleHeight / 2 - ROUND_BUTTON / 2;
+		} else {
+			int headerCenter = controlY + controlHeight / 2;
+			titleY = headerCenter - titleBlockHeight / 2;
+			rightButtonsY = headerCenter - ROUND_BUTTON / 2;
+		}
 		int bodyY = controlY + controlHeight + 10;
 		scroll.setBounds(panelX + PADDING, bodyY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - bodyY);
 	}
