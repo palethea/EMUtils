@@ -301,6 +301,7 @@ public final class EMUtilsTexts {
     public static final String OPTION_HUD_PING = "emutils.option.hud_ping";
     public static final String OPTION_HUD_FPS = "emutils.option.hud_fps";
     public static final String OPTION_HUD_FACING = "emutils.option.hud_facing";
+    public static final String OPTION_HUD_SPEED = "emutils.option.hud_speed";
     public static final String OPTION_HUD_MEMORY = "emutils.option.hud_memory";
     public static final String OPTION_HUD_SERVER_TIME =
         "emutils.option.hud_server_time";
@@ -536,6 +537,7 @@ public final class EMUtilsTexts {
     public static final String HUD_PING = "emutils.hud.ping";
     public static final String HUD_FPS = "emutils.hud.fps";
     public static final String HUD_FACING = "emutils.hud.facing";
+    public static final String HUD_SPEED = "emutils.hud.speed";
     public static final String HUD_MEMORY = "emutils.hud.memory";
     public static final String HUD_SERVER_TIME = "emutils.hud.server_time";
     public static final String HUD_REAL_TIME = "emutils.hud.real_time";

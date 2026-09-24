@@ -291,6 +291,7 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_CHUNK_REGION, config::hudShowChunkRegion, config::setHudShowChunkRegion));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_BIOME, config::hudShowBiome, config::setHudShowBiome));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_FACING, config::hudShowFacing, config::setHudShowFacing));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SPEED, config::hudShowSpeed, config::setHudShowSpeed));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_PING, config::hudShowPing, config::setHudShowPing));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_FPS, config::hudShowFps, config::setHudShowFps));

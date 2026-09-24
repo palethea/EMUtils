@@ -23,6 +23,7 @@ public record HudOverlayData(
 	String memory,
 	int memoryPercent,
 	String facing,
+	String speed,
 	String serverTime,
 	String realTime,
 	String lockedYPlacement
@@ -30,7 +31,7 @@ public record HudOverlayData(
 	private static final DateTimeFormatter TWENTY_FOUR_HOUR_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
 	private static final DateTimeFormatter TWELVE_HOUR_FORMAT = DateTimeFormatter.ofPattern("h:mm:ssa", Locale.ENGLISH);
 	private static final long MEMORY_UPDATE_INTERVAL_MS = 2_000L;
-	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--:--", "--:--", "--");
+	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--", "--:--", "--:--", "--");
 	private static MemoryUsage cachedMemoryUsage = new MemoryUsage("--/-- GB (--%)", 0);
 	private static long lastMemoryUpdateMillis;
 
@@ -60,6 +61,7 @@ public record HudOverlayData(
 			memoryUsage.display(),
 			memoryUsage.percent(),
 			prettify(client.player.getDirection().name().toLowerCase(Locale.ENGLISH)),
+			HudSpeedTracker.collect(client),
 			serverTime(client.level.getOverworldClockTime()),
 			currentRealTime(),
 			lockedYPlacementValue()

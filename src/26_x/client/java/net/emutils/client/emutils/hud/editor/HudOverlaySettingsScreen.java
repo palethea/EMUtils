@@ -74,6 +74,11 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setHudShowFacing
 		));
 		adder.addChild(ConfigToggleButton.create(
+			EMUtilsTexts.OPTION_HUD_SPEED,
+			() -> EMUtilsClient.config().hudShowSpeed(),
+			EMUtilsClient.config()::setHudShowSpeed
+		));
+		adder.addChild(ConfigToggleButton.create(
 			EMUtilsTexts.OPTION_HUD_MEMORY,
 			() -> EMUtilsClient.config().hudShowMemory(),
 			EMUtilsClient.config()::setHudShowMemory
