@@ -50,6 +50,9 @@ public final class UiSnapshotter {
 			case 13 -> capture(client, "gui scale 2, auto tool sheet");
 			case 14 -> sheet(client, "chat");
 			case 15 -> capture(client, "gui scale 2, chat sheet");
+			case 16 -> sheet(client, "inventory");
+			case 17 -> pickColor(client);
+			case 18 -> capture(client, "gui scale 2, color picker");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -77,6 +80,16 @@ public final class UiSnapshotter {
 		}
 		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
 			screen.openSheet(featureId);
+		}
+		next();
+	}
+
+	private static void pickColor(Minecraft client) {
+		if (stepTicks < SETTLE_TICKS) {
+			return;
+		}
+		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+			screen.openColorPickerInSheet();
 		}
 		next();
 	}

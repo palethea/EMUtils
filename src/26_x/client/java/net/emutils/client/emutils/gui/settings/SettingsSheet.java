@@ -2,12 +2,12 @@ package net.emutils.client.emutils.gui.settings;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.emutils.client.emutils.gui.hub.HubColorPickerSession;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.hub.HubSettingRow;
 import net.emutils.client.emutils.gui.hub.HubSettingsRegistry;
 import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiColorPicker;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
@@ -41,8 +41,9 @@ final class SettingsSheet {
 	private static final int SWATCH = 16;
 	private static final int DROPDOWN_ROW = 16;
 	private static final int FADE_HEIGHT = 10;
-	/** Choices with more options than this use a dropdown instead of a segmented control. */
-	private static final int MAX_SEGMENTS = 3;
+	/** Choices use a segmented control when they have at most this many options and fit on one line. */
+	private static final int MAX_SEGMENTS = 4;
+	private static final float OPEN_SECONDS = 0.2F;
 
 	private final Font font;
 	private final UiAnim anim;
@@ -53,12 +54,13 @@ final class SettingsSheet {
 	private boolean rowsDirty;
 	private boolean closing;
 	private float progress;
+	private boolean prepared;
 	private @Nullable Dropdown dropdown;
 	private HubSettingRow.@Nullable Slider draggingSlider;
 	private int draggingX;
 	private int draggingWidth;
 	private float draggingFraction;
-	private @Nullable HubColorPickerSession colorPicker;
+	private @Nullable UiColorPicker colorPicker;
 	private int x;
 	private int y;
 	private int width;
@@ -70,6 +72,8 @@ final class SettingsSheet {
 	private int footerY;
 	private int switchX;
 	private int switchY;
+	/** Width available inside a row, for deciding whether a segmented control fits. */
+	private int rowContentWidth = Integer.MAX_VALUE;
 
 	SettingsSheet(Font font, UiAnim anim, HubFeature feature) {
 		this.font = font;
@@ -77,7 +81,7 @@ final class SettingsSheet {
 		this.feature = feature;
 		this.rows = loadRows();
 		// Starts the open animation from nothing.
-		anim.transition(animKey(), 0.0F, 0.16F);
+		anim.transition(animKey(), 0.0F, OPEN_SECONDS, true);
 	}
 
 	private String animKey() {
@@ -110,7 +114,14 @@ final class SettingsSheet {
 			rowsDirty = false;
 			rows = loadRows();
 		}
-		progress = anim.transition(animKey(), closing ? 0.0F : 1.0F, 0.16F);
+		if (!prepared) {
+			// Rendering every label up front means the first frames of the animation have nothing new
+			// to create, so it runs without a hitch; the animation's clock starts after this.
+			prepared = true;
+			layout(panelX, panelY, panelWidth, panelHeight);
+			prepareText();
+		}
+		progress = anim.transition(animKey(), closing ? 0.0F : 1.0F, OPEN_SECONDS, true);
 		context.fill(0, 0, screenWidth, screenHeight, UiTheme.fade(theme.overlay(), progress));
 		if (progress <= 0.0F) {
 			return;
@@ -134,7 +145,7 @@ final class SettingsSheet {
 			drawDropdown(context, theme, dropdown, mouseX, mouseY);
 		}
 		if (colorPicker != null) {
-			colorPicker.render(context, mouseX, mouseY);
+			colorPicker.render(context, font, theme);
 		}
 	}
 
@@ -156,6 +167,25 @@ final class SettingsSheet {
 		int listTop = y + PADDING + headerHeight + 10 - FADE_HEIGHT / 2;
 		scroll.setBounds(x + PADDING, listTop, contentWidth + UiScrollArea.GUTTER, footerY - 8 - listTop);
 		scroll.setContentHeight(contentHeight + FADE_HEIGHT);
+	}
+
+	private void prepareText() {
+		UiText.prepare(SettingsScreen.title(feature), UiText.Size.HEADING);
+		UiText.prepare(Component.translatable(feature.group().labelKey()), UiText.Size.BODY);
+		for (Component line : UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - PADDING * 2)) {
+			UiText.prepare(line, UiText.Size.BODY);
+		}
+		for (RowBox box : boxes) {
+			String key = labelKey(box.row);
+			if (key != null) {
+				UiText.prepare(Component.translatable(key), UiText.Size.BOLD);
+			}
+			for (Component line : box.description) {
+				UiText.prepare(line, UiText.Size.BODY);
+			}
+		}
+		UiText.prepare(CommonComponents.GUI_DONE, UiText.Size.LABEL);
+		UiText.prepare(Component.translatable(EMUtilsTexts.UI_RESET), UiText.Size.LABEL);
 	}
 
 	private int headerHeight(int contentWidth) {
@@ -191,6 +221,7 @@ final class SettingsSheet {
 
 	private void measureRows(int contentWidth) {
 		boxes.clear();
+		rowContentWidth = contentWidth - ROW_PADDING * 2;
 		int top = FADE_HEIGHT / 2;
 		for (HubSettingRow row : rows) {
 			if (row instanceof HubSettingRow.Divider) {
@@ -248,8 +279,16 @@ final class SettingsSheet {
 		return 0;
 	}
 
-	private static boolean usesSegments(HubSettingRow.Cycle<?> cycle) {
-		return cycle.options() != null && cycle.options().size() <= MAX_SEGMENTS;
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private boolean usesSegments(HubSettingRow.Cycle cycle) {
+		if (cycle.options() == null || cycle.options().size() > MAX_SEGMENTS) {
+			return false;
+		}
+		List<Component> labels = new ArrayList<>();
+		for (Object option : cycle.options()) {
+			labels.add((Component) cycle.optionLabel().apply(option));
+		}
+		return UiWidgets.segmentedWidth(font, labels) <= rowContentWidth;
 	}
 
 	private static @Nullable Component description(HubSettingRow row) {
@@ -446,8 +485,8 @@ final class SettingsSheet {
 			return true;
 		}
 		if (colorPicker != null) {
-			if (colorPicker.contains(mouseX, mouseY, screenWidth(), screenHeight())) {
-				colorPicker.handleMouseButtonEvent(mouseX, mouseY, screenWidth(), screenHeight());
+			if (colorPicker.contains(mouseX, mouseY)) {
+				colorPicker.mouseClicked(mouseX, mouseY);
 			} else {
 				closeColorPicker();
 			}
@@ -511,7 +550,7 @@ final class SettingsSheet {
 				cycle.setter().accept(cycle.next().get());
 			}
 		} else if (row instanceof HubSettingRow.Rgb rgb) {
-			colorPicker = new HubColorPickerSession(rgb.getter(), rgb.setter(), box.anchorX, box.anchorY);
+			colorPicker = new UiColorPicker(rgb.getter(), rgb.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
 		} else if (row instanceof HubSettingRow.Action action) {
 			if (action.enabled() && contains(mouseX, mouseY, box.controlX, box.controlY, box.controlWidth, box.controlHeight)) {
 				action.action().run();
@@ -532,7 +571,7 @@ final class SettingsSheet {
 
 	boolean mouseDragged(double mouseX, double mouseY) {
 		if (colorPicker != null) {
-			colorPicker.handleDrag(mouseX, mouseY, screenWidth(), screenHeight());
+			colorPicker.drag(mouseX, mouseY);
 			return true;
 		}
 		if (draggingSlider != null) {
@@ -581,10 +620,19 @@ final class SettingsSheet {
 		return true;
 	}
 
+	/** Opens the color picker of the first color setting; used by UI snapshots. */
+	void openFirstColorPicker() {
+		for (RowBox box : boxes) {
+			if (box.row instanceof HubSettingRow.Rgb rgb) {
+				colorPicker = new UiColorPicker(rgb.getter(), rgb.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
+				return;
+			}
+		}
+	}
+
 	private void closeColorPicker() {
 		if (colorPicker != null) {
 			colorPicker.release();
-			colorPicker.close();
 			colorPicker = null;
 		}
 	}

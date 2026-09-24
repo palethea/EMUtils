@@ -180,6 +180,18 @@ public final class UiText {
 		context.pose().popMatrix();
 	}
 
+	/**
+	 * Renders {@code text} ahead of time so drawing it later does not stall a frame, for example before
+	 * an animation starts.
+	 */
+	public static void prepare(Component text, Size size) {
+		String value = text.getString();
+		if (freeType() && !value.isEmpty()) {
+			int scale = guiScale();
+			UiFontRenderer.render(size.weight, size.em * scale, value);
+		}
+	}
+
 	/** Splits {@code text} into lines that fit {@code maxWidth}, breaking at spaces. */
 	public static List<Component> wrap(Font font, Component text, Size size, int maxWidth) {
 		List<Component> lines = new ArrayList<>();

@@ -48,13 +48,21 @@ public final class UiAnim {
 	 * {@link #towards}, it has no long tail, so short movements look crisp. A new key starts at its target.
 	 */
 	public float transition(String key, float target, float seconds) {
+		return transition(key, target, seconds, false);
+	}
+
+	/**
+	 * Like {@link #transition(String, float, float)}, with an ease-out curve when {@code easeOut} is set:
+	 * it starts at full speed and settles gently, the usual curve for panels opening and closing.
+	 */
+	public float transition(String key, float target, float seconds, boolean easeOut) {
 		long now = System.nanoTime();
 		Tween tween = tweens.get(key);
 		if (tween == null) {
-			tween = new Tween(target, target, now);
+			tween = new Tween(target, target, now, easeOut);
 			tweens.put(key, tween);
 		} else if (tween.to() != target) {
-			tween = new Tween(tween.value(now, seconds), target, now);
+			tween = new Tween(tween.value(now, seconds), target, now, easeOut);
 			tweens.put(key, tween);
 		}
 		return tween.value(now, seconds);
@@ -64,10 +72,12 @@ public final class UiAnim {
 		return transition(key, on ? 1.0F : 0.0F, seconds);
 	}
 
-	private record Tween(float from, float to, long startNanos) {
+	private record Tween(float from, float to, long startNanos, boolean easeOut) {
 		private float value(long now, float seconds) {
 			float t = Math.clamp((now - startNanos) / (seconds * 1_000_000_000.0F), 0.0F, 1.0F);
-			float eased = t < 0.5F ? 4.0F * t * t * t : 1.0F - (float) Math.pow(-2.0F * t + 2.0F, 3.0) / 2.0F;
+			float eased = easeOut
+				? 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t)
+				: t < 0.5F ? 4.0F * t * t * t : 1.0F - (float) Math.pow(-2.0F * t + 2.0F, 3.0) / 2.0F;
 			return from + (to - from) * eased;
 		}
 	}

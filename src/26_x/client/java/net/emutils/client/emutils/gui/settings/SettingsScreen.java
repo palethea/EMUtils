@@ -480,6 +480,13 @@ public final class SettingsScreen extends Screen {
 		}
 	}
 
+	/** Opens the color picker in the open sheet; used by UI snapshots. */
+	public void openColorPickerInSheet() {
+		if (sheet != null) {
+			sheet.openFirstColorPicker();
+		}
+	}
+
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
 		if (sheet != null && sheet.mouseDragged(click.x(), click.y())) {
