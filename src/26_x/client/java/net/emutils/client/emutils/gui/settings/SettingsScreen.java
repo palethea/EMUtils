@@ -25,6 +25,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -38,7 +39,7 @@ public final class SettingsScreen extends Screen {
 	private static final int PADDING = 16;
 	private static final int PANEL_RADIUS = 14;
 	private static final int CONTROL_RADIUS = 10;
-	private static final int SEARCH_ROW = 20;
+	private static final int SEARCH_ROW = 22;
 	private static final int CATEGORY_ROW = 20;
 	private static final int CATEGORY_BUTTON_HEIGHT = 15;
 	private static final int ROUND_BUTTON = 20;
@@ -188,8 +189,12 @@ public final class SettingsScreen extends Screen {
 		UiShapes.borderedRect(context, controlX, controlY, controlWidth, height, CONTROL_RADIUS, theme.surface(), theme.border());
 
 		int searchCenter = controlY + SEARCH_ROW / 2 + 1;
-		UiIcons.draw(context, HubIcons.SEARCH, controlX + 9, searchCenter - 5, 10, theme.muted());
-		search.draw(context, font, theme, controlX + 25, searchCenter, controlWidth - 34, Component.translatable(EMUtilsTexts.UI_SEARCH));
+		UiIcons.draw(context, HubIcons.SEARCH, controlX + 10, searchCenter - 5, 10, theme.textSecondary());
+		int hintWidth = 0;
+		if (!search.focused()) {
+			hintWidth = drawShortcutHint(context, theme, controlX + controlWidth - 8, searchCenter) + 8;
+		}
+		search.draw(context, font, theme, controlX + 26, searchCenter, controlWidth - 34 - hintWidth, Component.translatable(EMUtilsTexts.UI_SEARCH));
 		context.fill(controlX + 1, controlY + SEARCH_ROW, controlX + controlWidth - 1, controlY + SEARCH_ROW + 1, theme.line());
 
 		int buttonsWidth = categoryButtons.stream().mapToInt(button -> button.width).sum() + (categoryButtons.size() - 1) * 2;
@@ -213,6 +218,25 @@ public final class SettingsScreen extends Screen {
 			UiText.drawCentered(context, font, button.label, UiText.Size.LABEL, textX, y + CATEGORY_BUTTON_HEIGHT / 2, color);
 			x += button.width + 2;
 		}
+	}
+
+	/** Draws the "Ctrl F" keycaps ending at {@code right}; returns their total width. */
+	private int drawShortcutHint(GuiGraphicsExtractor context, UiTheme theme, int right, int centerY) {
+		String[] keys = Util.getPlatform() == Util.OS.OSX ? new String[] {"Cmd", "F"} : new String[] {"Ctrl", "F"};
+		int height = UiText.lineHeight(font, UiText.Size.SMALL) + 6;
+		int x = right;
+		for (int i = keys.length - 1; i >= 0; i--) {
+			Component key = Component.literal(keys[i]);
+			int keyWidth = Math.max(height, UiText.width(font, key, UiText.Size.SMALL) + 7);
+			x -= keyWidth;
+			UiShapes.roundedRect(context, x, centerY - height / 2, keyWidth, height, 3, theme.segmentBackground());
+			int textWidth = UiText.width(font, key, UiText.Size.SMALL);
+			UiText.drawCentered(context, font, key, UiText.Size.SMALL, x + (keyWidth - textWidth) / 2, centerY, theme.muted());
+			if (i > 0) {
+				x -= 2;
+			}
+		}
+		return right - x;
 	}
 
 	private void drawRightButtons(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -351,8 +375,10 @@ public final class SettingsScreen extends Screen {
 		double mouseX = click.x();
 		double mouseY = click.y();
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
-		search.setFocused(contains(mouseX, mouseY, controlX, controlY, controlWidth, SEARCH_ROW));
-		if (search.focused()) {
+		boolean onSearch = contains(mouseX, mouseY, controlX, controlY, controlWidth, SEARCH_ROW);
+		search.setFocused(onSearch);
+		if (onSearch) {
+			search.click(font, mouseX, click.hasShiftDown());
 			return true;
 		}
 		if (contains(mouseX, mouseY, controlX, controlY, controlWidth, controlHeight)) {
