@@ -103,6 +103,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_environment_fog.desc";
     public static final String HUB_FEATURE_NO_NETHER_PARTICLES_DESC =
         "emutils.hub.feature.no_nether_particles.desc";
+    public static final String HUB_FEATURE_NO_FALLING_LEAF_PARTICLES_DESC =
+        "emutils.hub.feature.no_falling_leaf_particles.desc";
     public static final String HUB_FEATURE_NO_HURT_CAM_DESC =
         "emutils.hub.feature.no_hurt_cam.desc";
     public static final String HUB_FEATURE_FREELOOK_DESC =
@@ -351,6 +353,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_environment_fog";
     public static final String OPTION_TWEAK_NO_NETHER_PARTICLES =
         "emutils.option.tweak_no_nether_particles";
+    public static final String OPTION_TWEAK_NO_FALLING_LEAF_PARTICLES =
+        "emutils.option.tweak_no_falling_leaf_particles";
     public static final String OPTION_TWEAK_NO_HURT_CAM =
         "emutils.option.tweak_no_hurt_cam";
     public static final String OPTION_TWEAK_FREELOOK =

@@ -12,6 +12,7 @@
 		"ClientLevelWeatherEffectsMixin",
 		"ClientInputAccessor",
 		"ClientLevelAmbientParticleMixin",
+		"FallingLeavesParticleMixin",
 		"ClientCommonNetworkHandlerMixin",
 		"ClientPlayNetworkHandlerMixin",
 		"ClientPlayerEntityMixin",
