@@ -9,9 +9,9 @@ import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiAnim;
-import net.emutils.client.emutils.gui.ui.UiBlur;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
+import net.emutils.client.emutils.gui.ui.UiPanelScreen;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
@@ -26,7 +26,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
@@ -36,12 +35,8 @@ import org.jspecify.annotations.Nullable;
  * The new EMUtils settings screen (#88). It is still being built, so it is only reachable in dev builds
  * through the "New Settings UI (Preview)" option; everyone else gets {@link CustomHubScreen}.
  */
-public final class SettingsScreen extends Screen {
-	private static final int MARGIN = 14;
-	private static final int MAX_WIDTH = 720;
-	private static final int MAX_HEIGHT = 430;
+public final class SettingsScreen extends UiPanelScreen {
 	private static final int PADDING = 16;
-	private static final int PANEL_RADIUS = 14;
 	private static final int CONTROL_RADIUS = 10;
 	private static final int SEARCH_ROW = 22;
 	private static final int CATEGORY_ROW = 20;
@@ -59,16 +54,10 @@ public final class SettingsScreen extends Screen {
 	private static final int GROUP_GAP = 12;
 	private static final int FADE_HEIGHT = 12;
 	private static final int OPEN_BUTTON_HEIGHT = 14;
-	private static final float OPEN_SECONDS = 0.2F;
-	private static final float THEME_SECONDS = 0.3F;
 	private static final float CATEGORY_SECONDS = 0.2F;
 	private static final float LIST_SECONDS = 0.2F;
 
-	private static final Identifier INWORLD_MENU_BACKGROUND = Identifier.withDefaultNamespace("textures/gui/inworld_menu_background.png");
-
-	private final Screen parent;
 	private final List<HubFeature> features;
-	private final UiAnim anim = new UiAnim();
 	private final UiTextField search = new UiTextField(this, 64);
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final KeybindCapture capture = new KeybindCapture();
@@ -76,10 +65,6 @@ public final class SettingsScreen extends Screen {
 	private final List<CardBox> cards = new ArrayList<>();
 	private HubFeature.@Nullable Group selectedGroup;
 	private @Nullable SettingsSheet sheet;
-	private int panelX;
-	private int panelY;
-	private int panelWidth;
-	private int panelHeight;
 	private int controlX;
 	private int controlY;
 	private int controlWidth;
@@ -90,51 +75,14 @@ public final class SettingsScreen extends Screen {
 	private int titleY;
 	private boolean stackedHeader;
 	private boolean showTagline;
-	private boolean prepared;
-	private boolean closing;
-	private float openProgress;
-	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
-	private float lightness;
 
 	public SettingsScreen(Screen parent) {
-		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE));
-		this.parent = parent;
+		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE), parent);
 		this.features = HubFeatureCatalog.all();
-		// Starts the open animation from nothing.
-		anim.transition("open", 0.0F, OPEN_SECONDS, true);
-	}
-
-	/**
-	 * Opened from gameplay, the world behind has no blur yet, so the blur fades in and out with the panel
-	 * instead of appearing and vanishing in one frame. Opened from another menu, which already blurs,
-	 * the blur stays as it is.
-	 */
-	private boolean fadesBlur() {
-		return parent == null && minecraft.level != null;
-	}
-
-	/** The current theme, crossfading for a moment after switching between dark and light. */
-	private UiTheme theme() {
-		lightness = anim.transition("theme", UiTheme.current() == UiTheme.LIGHT, THEME_SECONDS);
-		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness);
 	}
 
 	@Override
-	protected void init() {
-		if (!prepared) {
-			UiBlur.set(fadesBlur() ? 0.0F : 1.0F);
-		}
-		UiText.refreshFonts();
-		layout();
-		search.restoreFocus();
-	}
-
-	private void layout() {
-		panelWidth = Math.min(MAX_WIDTH, width - MARGIN * 2);
-		panelHeight = Math.min(MAX_HEIGHT, height - MARGIN * 2);
-		panelX = (width - panelWidth) / 2;
-		panelY = (height - panelHeight) / 2;
-
+	protected void layout() {
 		// Category buttons decide how wide the search and category control is.
 		categoryButtons.clear();
 		int buttonsWidth = 0;
@@ -180,6 +128,7 @@ public final class SettingsScreen extends Screen {
 		}
 		int bodyY = controlY + controlHeight + 10;
 		scroll.setBounds(panelX + PADDING, bodyY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - bodyY);
+		search.restoreFocus();
 	}
 
 	private int categoryButtonWidth(CategoryButton button) {
@@ -194,44 +143,12 @@ public final class SettingsScreen extends Screen {
 	}
 
 	@Override
-	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-		super.extractBackground(context, mouseX, mouseY, delta);
-		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), openProgress));
-	}
-
-	/**
-	 * Vanilla darkens the world with this texture in the same frame the screen opens and stops the
-	 * frame it closes; opened from gameplay, it fades with the panel instead, like the blur.
-	 */
-	@Override
-	protected void extractMenuBackground(GuiGraphicsExtractor context) {
-		if (!fadesBlur()) {
-			super.extractMenuBackground(context);
-			return;
-		}
-		if (openProgress > 0.0F) {
-			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, openProgress));
-		}
-	}
-
-	@Override
-	public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-		anim.frame();
+	protected void beforeFrame() {
 		capture.frame();
-		UiTheme theme = theme();
-		// The first frame draws everything invisibly, so every text texture exists before the open
-		// animation's clock starts and the animation can't hitch.
-		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
-		UiOpacity.set(openProgress);
-		UiBlur.set(fadesBlur() ? openProgress : 1.0F);
-		float scale = 0.97F + 0.03F * openProgress;
-		context.pose().pushMatrix();
-		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
-		context.pose().scale(scale, scale);
-		context.pose().translate(-(panelX + panelWidth / 2.0F), -(panelY + panelHeight / 2.0F));
-		UiShapes.shadow(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, 18, theme.shadow());
-		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, theme.panel());
+	}
 
+	@Override
+	protected void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		// While a sheet is open, nothing underneath reacts to the mouse.
 		int backX = sheet == null ? mouseX : Integer.MIN_VALUE / 2;
 		int backY = sheet == null ? mouseY : Integer.MIN_VALUE / 2;
@@ -239,9 +156,10 @@ public final class SettingsScreen extends Screen {
 		drawControl(context, theme, backX, backY);
 		drawRightButtons(context, theme, backX, backY);
 		drawCards(context, theme, backX, backY);
-		context.pose().popMatrix();
-		UiOpacity.reset();
-		prepared = true;
+	}
+
+	@Override
+	protected void drawOverlay(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		if (sheet != null) {
 			sheet.render(context, theme, mouseX, mouseY, panelX, panelY, panelWidth, panelHeight, width, height);
 			if (sheet.isClosed()) {
@@ -355,7 +273,7 @@ public final class SettingsScreen extends Screen {
 	private void drawRightButtons(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
 		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
-		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness, themeHover);
+		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness(), themeHover);
 
 		float classicHover = anim.towards("classic", contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON), 16.0F);
 		UiWidgets.button(context, font, theme, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON, Component.translatable(EMUtilsTexts.UI_CLASSIC), UiWidgets.ButtonStyle.GHOST, classicHover);
@@ -384,7 +302,7 @@ public final class SettingsScreen extends Screen {
 		scroll.begin(context);
 		// After picking another category, the cards fade and rise in instead of popping.
 		float listIn = anim.transition("list", 1.0F, LIST_SECONDS, true);
-		UiOpacity.set(openProgress * listIn);
+		UiOpacity.set(openProgress() * listIn);
 		// Cards are laid out at whole pixels and the leftover fraction of the scroll offset is applied
 		// as a translation, so scrolling glides smoothly while clicks still use whole positions.
 		context.pose().pushMatrix();
@@ -416,7 +334,7 @@ public final class SettingsScreen extends Screen {
 			int emptyWidth = UiText.width(font, empty, UiText.Size.BODY);
 			UiText.draw(context, font, empty, UiText.Size.BODY, scroll.x() + (innerWidth - emptyWidth) / 2, scroll.y() + 40, theme.muted());
 		}
-		UiOpacity.set(openProgress);
+		UiOpacity.set(openProgress());
 		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
 	}
 
@@ -519,7 +437,7 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-		if (closing) {
+		if (closing()) {
 			return true;
 		}
 		if (capture.mouseClicked(click.button())) {
@@ -650,7 +568,7 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
-		if (closing) {
+		if (closing()) {
 			return true;
 		}
 		if (sheet != null) {
@@ -675,7 +593,7 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		if (closing) {
+		if (closing()) {
 			return true;
 		}
 		if (sheet != null) {
@@ -689,7 +607,7 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent input) {
-		if (closing) {
+		if (closing()) {
 			return true;
 		}
 		if (capture.keyPressed(input)) {
@@ -711,7 +629,7 @@ public final class SettingsScreen extends Screen {
 	@Override
 	public boolean charTyped(CharacterEvent input) {
 		// The character of a key that was just bound is not typed anywhere.
-		if (closing || capture.swallowChar()) {
+		if (closing() || capture.swallowChar()) {
 			return true;
 		}
 		if (sheet != null) {
@@ -723,21 +641,6 @@ public final class SettingsScreen extends Screen {
 		return super.charTyped(input);
 	}
 
-	/** Once the close animation has finished, returns to the previous screen; not while drawing, like vanilla. */
-	@Override
-	public void tick() {
-		super.tick();
-		if (closing && openProgress <= 0.0F) {
-			minecraft.gui.setScreen(parent);
-		}
-	}
-
-	@Override
-	public void removed() {
-		UiBlur.reset();
-		super.removed();
-	}
-
 	/** Fades and scales the panel out, then returns to the previous screen. */
 	@Override
 	public void onClose() {
@@ -745,16 +648,7 @@ public final class SettingsScreen extends Screen {
 		if (sheet != null) {
 			sheet.close();
 		}
-		closing = true;
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	private static boolean contains(double mouseX, double mouseY, int x, int y, int width, int height) {
-		return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+		super.onClose();
 	}
 
 	private static final class CategoryButton {

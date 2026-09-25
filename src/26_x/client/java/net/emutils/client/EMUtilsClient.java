@@ -13,11 +13,14 @@ import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
 import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
+import net.emutils.client.emutils.waypoint.gui.WaypointScreens;
+import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.emutils.client.emutils.food.FoodTooltipComponent;
 import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
@@ -49,6 +52,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.input.KeyEvent;
@@ -106,6 +110,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		BeaconRadiusRenderer.register();
 		LightLevelOverlayRenderer.register();
 		registerHudLayoutElements();
+		UiClosingScreens.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
 			CustomCapeManager.clear();
@@ -313,13 +318,15 @@ public class EMUtilsClient implements ClientModInitializer {
 			}
 		}
 		while (openWaypointsKeyMapping != null && openWaypointsKeyMapping.consumeClick()) {
-			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof WaypointListScreen)) {
-				client.gui.setScreen(new WaypointListScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			if (!(current instanceof WaypointListScreen) && !(current instanceof WaypointsScreen)) {
+				client.gui.setScreen(WaypointScreens.list(current));
 			}
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {
-			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof AddWaypointScreen)) {
-				client.gui.setScreen(new AddWaypointScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			if (!(current instanceof AddWaypointScreen) && !(current instanceof WaypointsScreen)) {
+				client.gui.setScreen(WaypointScreens.add(current));
 			}
 		}
 		while (openHudLayoutEditorKeyMapping != null && openHudLayoutEditorKeyMapping.consumeClick()) {

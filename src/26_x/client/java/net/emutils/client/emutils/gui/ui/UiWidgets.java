@@ -18,7 +18,9 @@ public final class UiWidgets {
 	public enum ButtonStyle {
 		PRIMARY,
 		SURFACE,
-		GHOST
+		GHOST,
+		/** For actions that delete something. */
+		DANGER
 	}
 
 	/**
@@ -55,8 +57,14 @@ public final class UiWidgets {
 			case PRIMARY -> UiTheme.mix(theme.accent(), theme.accentHover(), hover);
 			case SURFACE -> UiTheme.mix(theme.surface(), theme.surfaceHover(), hover);
 			case GHOST -> UiTheme.fade(theme.hover(), hover);
+			case DANGER -> UiTheme.fade(theme.warning(), 0.16F + 0.12F * hover);
 		};
-		int text = style == ButtonStyle.PRIMARY ? 0xFFFFFFFF : style == ButtonStyle.GHOST ? theme.textSecondary() : theme.text();
+		int text = switch (style) {
+			case PRIMARY -> 0xFFFFFFFF;
+			case GHOST -> theme.textSecondary();
+			case SURFACE -> theme.text();
+			case DANGER -> theme.warning();
+		};
 		UiShapes.roundedRect(context, x, y, width, height, Math.min(8, height / 2), background);
 		int labelWidth = UiText.width(font, label, UiText.Size.LABEL);
 		UiText.drawCentered(context, font, label, UiText.Size.LABEL, x + (width - labelWidth) / 2, y + height / 2, text);
@@ -82,6 +90,25 @@ public final class UiWidgets {
 		if (blend > 0.0F) {
 			UiIcons.draw(context, to, x + offset, y + offset, iconSize, UiTheme.fade(theme.textSecondary(), blend));
 		}
+	}
+
+	/** A borderless icon button that only shows its background while hovered, for row actions. */
+	public static void ghostIconButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int size, Identifier icon, int iconColor, float hover) {
+		UiShapes.roundedRect(context, x, y, size, size, 6, UiTheme.fade(theme.hover(), hover * 1.6F));
+		int iconSize = Math.round(size * 0.6F);
+		int offset = (size - iconSize) / 2;
+		UiIcons.draw(context, icon, x + offset, y + offset, iconSize, iconColor);
+	}
+
+	/** A small label that explains the control under the mouse, kept inside the screen. */
+	public static void tooltip(GuiGraphicsExtractor context, Font font, UiTheme theme, Component text, int mouseX, int mouseY, int screenWidth, int screenHeight) {
+		int width = UiText.width(font, text, UiText.Size.LABEL) + 12;
+		int height = UiText.lineHeight(font, UiText.Size.LABEL) + 10;
+		int x = Math.clamp(mouseX - width / 2, 4, Math.max(4, screenWidth - width - 4));
+		int y = mouseY - height - 8 < 4 ? mouseY + 14 : mouseY - height - 8;
+		UiShapes.shadow(context, x, y, width, height, 6, 6, theme.shadow());
+		UiShapes.borderedRect(context, x, y, width, height, 6, theme.surface(), theme.line());
+		UiText.drawCentered(context, font, text, UiText.Size.LABEL, x + 6, y + height / 2, theme.text());
 	}
 
 	public static final int SLIDER_HEIGHT = 12;

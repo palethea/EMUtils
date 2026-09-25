@@ -16,7 +16,7 @@ import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
+import net.emutils.client.emutils.waypoint.gui.WaypointScreens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -110,7 +110,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_CURRENT_WAYPOINTS_DESC,
 				HubFeature.Icon.PIN,
 				null,
-				openScreenAction(WaypointListScreen::new),
+				openScreenAction(WaypointScreens::list),
 				true,
 				null
 			).keys("key.emutils.open_waypoints"),

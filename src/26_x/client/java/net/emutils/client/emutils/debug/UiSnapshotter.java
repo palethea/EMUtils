@@ -1,9 +1,12 @@
 package net.emutils.client.emutils.debug;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -99,6 +102,39 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
+			case 41 -> {
+				seedWaypoints(client);
+				client.gui.setScreen(new WaypointsScreen(null));
+				next();
+			}
+			case 42 -> capture(client, "gui scale 2, waypoints");
+			case 43 -> {
+				if (MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					screen.openAddSheetForSnapshot();
+				}
+				next();
+			}
+			case 44 -> capture(client, "gui scale 2, add waypoint sheet");
+			case 45 -> {
+				WaypointsScreen screen = new WaypointsScreen(null);
+				client.gui.setScreen(screen);
+				screen.openClearDialogForSnapshot();
+				next();
+			}
+			case 46 -> capture(client, "gui scale 2, clear waypoints dialog");
+			case 47 -> {
+				EMUtilsClient.config().setSettingsUiDark(false);
+				client.gui.setScreen(new WaypointsScreen(null));
+				next();
+			}
+			case 48 -> capture(client, "gui scale 2, waypoints, light");
+			case 49 -> {
+				EMUtilsClient.config().setSettingsUiDark(true);
+				EMUtilsClient.waypoint().clearForCurrentWorld(client);
+				client.gui.setScreen(new WaypointsScreen(null));
+				next();
+			}
+			case 50 -> capture(client, "gui scale 2, waypoints, empty");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -164,6 +200,32 @@ public final class UiSnapshotter {
 			before, escKeepsBound, backspaceUnbinds, escKeepsUnbound, keyBinds
 		);
 		next();
+	}
+
+	/** Adds a few waypoints around the player, one hidden and one with its beacon on, to show the list. */
+	private static void seedWaypoints(Minecraft client) {
+		if (client.player == null) {
+			return;
+		}
+		int x = client.player.getBlockX();
+		int y = client.player.getBlockY();
+		int z = client.player.getBlockZ();
+		String[] names = {"Home base", "Iron farm", "Stronghold", "Ancient city entrance with a long name"};
+		int[] colors = {0xFF55FF55, 0xFFFFAA55, 0xFF55FFFF, 0xFFFF55FF};
+		int[][] offsets = {{12, 0, -30}, {-220, -8, 140}, {1480, -40, -2210}, {-640, -52, 90}};
+		for (int i = 0; i < names.length; i++) {
+			EMUtilsClient.waypoint().addCustom(client, names[i], x + offsets[i][0], y + offsets[i][1], z + offsets[i][2], colors[i], i == 1);
+			try {
+				// Waypoints are told apart by their creation time in milliseconds.
+				Thread.sleep(3);
+			} catch (InterruptedException exception) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		List<Waypoint> waypoints = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
+		if (waypoints.size() > 2) {
+			EMUtilsClient.waypoint().toggleHidden(waypoints.get(2).timestamp());
+		}
 	}
 
 	private static void search(Minecraft client, String text) {
