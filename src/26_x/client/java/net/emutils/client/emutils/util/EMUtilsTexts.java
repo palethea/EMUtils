@@ -497,6 +497,8 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_own_nametag";
     public static final String OPTION_PACK_MANAGER =
         "emutils.option.pack_manager";
+    public static final String OPTION_PACK_MANAGER_REPLACE_RESOURCE_PACKS_BUTTON =
+        "emutils.option.pack_manager_replace_resource_packs_button";
     public static final String OPTION_PACK_MANAGER_SHOW_SHADERS_WITHOUT_IRIS =
         "emutils.option.pack_manager_show_shaders_without_iris";
     public static final String OPTION_PACK_MANAGER_SEARCH_LIMIT =

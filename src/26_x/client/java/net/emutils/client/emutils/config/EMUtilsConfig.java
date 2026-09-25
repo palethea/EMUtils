@@ -194,6 +194,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean settingsUiPreview = Boolean.FALSE;
 	private Boolean settingsUiDark = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
+	private Boolean packManagerReplaceResourcePacksButton = Boolean.FALSE;
 	private Boolean customCapes = Boolean.TRUE;
 	private Boolean capeOptifine = Boolean.TRUE;
 	private Boolean capeLabyMod = Boolean.TRUE;
@@ -1320,6 +1321,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether Minecraft's Resource Packs button in Options opens the Pack Manager instead (#114). */
+	public boolean packManagerReplaceResourcePacksButton() {
+		return packManagerReplaceResourcePacksButton != null && packManagerReplaceResourcePacksButton;
+	}
+
+	public void setPackManagerReplaceResourcePacksButton(boolean enabled) {
+		packManagerReplaceResourcePacksButton = enabled;
+		save();
+	}
+
 	public int packManagerSearchLimit() {
 		return clampPackManagerSearchLimit(packManagerSearchLimit == null ? 20 : packManagerSearchLimit);
 	}
@@ -1789,6 +1800,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		commandShortcutsEnabled = Boolean.TRUE;
 		packManagerEnabled = Boolean.TRUE;
 		packManagerShowShadersWithoutIris = Boolean.TRUE;
+		packManagerReplaceResourcePacksButton = Boolean.FALSE;
 		packManagerSearchLimit = 20;
 		save();
 	}
@@ -1918,6 +1930,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void resetPackManagerDefaults() {
 		packManagerEnabled = Boolean.TRUE;
 		packManagerShowShadersWithoutIris = Boolean.TRUE;
+		packManagerReplaceResourcePacksButton = Boolean.FALSE;
 		packManagerSearchLimit = 20;
 		save();
 	}
@@ -2309,6 +2322,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (packManagerShowShadersWithoutIris == null) {
 			packManagerShowShadersWithoutIris = Boolean.TRUE;
+		}
+		if (packManagerReplaceResourcePacksButton == null) {
+			packManagerReplaceResourcePacksButton = Boolean.FALSE;
 		}
 		if (customCapes == null) {
 			customCapes = Boolean.TRUE;

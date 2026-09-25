@@ -401,6 +401,8 @@
   "emutils.option.pack_manager": "Pack Manager",
   "emutils.option.pack_manager_show_shaders_without_iris": "Show Shaders Without Iris",
   "emutils.option.pack_manager_search_limit": "Search Limit",
+  "emutils.option.pack_manager_replace_resource_packs_button": "Replace Resource Packs Button",
+  "emutils.option.pack_manager_replace_resource_packs_button.desc": "Minecraft's Resource Packs button in Options opens the Pack Manager. Shift-click it for Minecraft's own screen.",
   "emutils.option.custom_capes": "Custom Capes",
   "emutils.option.cape.optifine": "OptiFine",
   "emutils.option.cape.optifine.desc": "Show capes from OptiFine.",
