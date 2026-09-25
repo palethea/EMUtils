@@ -173,7 +173,7 @@ public final class AddWaypointScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreenAndShow(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void cycleColor() {
@@ -253,6 +253,6 @@ public final class AddWaypointScreen extends Screen {
         if (parent instanceof WaypointListScreen waypointList) {
             waypointList.refreshList();
         }
-        minecraft.setScreenAndShow(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

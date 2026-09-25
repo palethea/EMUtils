@@ -154,7 +154,7 @@ public final class HudLayoutManager {
 			return;
 		}
 
-		client.setScreenAndShow(new HudLayoutEditorScreen(MinecraftClientCompat.screen(client)));
+		client.gui.setScreen(new HudLayoutEditorScreen(MinecraftClientCompat.screen(client)));
 	}
 
 	public static boolean beginEditorSession(@Nullable Minecraft client) {

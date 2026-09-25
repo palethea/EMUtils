@@ -84,7 +84,7 @@ public final class UiSnapshotter {
 			client.resizeGui();
 		}
 		if (!(MinecraftClientCompat.screen(client) instanceof SettingsScreen)) {
-			client.setScreenAndShow(new SettingsScreen(null));
+			client.gui.setScreen(new SettingsScreen(null));
 		}
 		next();
 	}

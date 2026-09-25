@@ -54,11 +54,11 @@ public final class ScreenshotSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.OPTION_SCREENSHOT_GALLERY),
-			button -> client.setScreenAndShow(new ScreenshotGalleryScreen(this))
+			button -> client.gui.setScreen(new ScreenshotGalleryScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetScreenshotDefaults();
-			client.setScreenAndShow(new ScreenshotSettingsScreen(parent));
+			client.gui.setScreen(new ScreenshotSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 

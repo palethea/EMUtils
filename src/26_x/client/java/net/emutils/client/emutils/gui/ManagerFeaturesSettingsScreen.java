@@ -33,23 +33,23 @@ public final class ManagerFeaturesSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.HUB_OPEN_PACK_MANAGER),
-			button -> client.setScreenAndShow(new PackManagerScreen(this))
+			button -> client.gui.setScreen(new PackManagerScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS),
-			button -> client.setScreenAndShow(new CommandShortcutListScreen(this))
+			button -> client.gui.setScreen(new CommandShortcutListScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(scriptManagerButton(), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetManagerDefaults();
-			client.setScreenAndShow(new ManagerFeaturesSettingsScreen(parent));
+			client.gui.setScreen(new ManagerFeaturesSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 
 	private Button scriptManagerButton() {
 		Button button = fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER),
-			ignored -> client.setScreenAndShow(new ScriptManagerScreen(this))
+			ignored -> client.gui.setScreen(new ScriptManagerScreen(this))
 		);
 		button.active = MinescriptCompat.isLoaded();
 		if (!button.active) {

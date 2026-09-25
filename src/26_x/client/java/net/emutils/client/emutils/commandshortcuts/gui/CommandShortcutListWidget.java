@@ -137,7 +137,7 @@ public final class CommandShortcutListWidget extends ObjectSelectionList<Command
 		}
 
 		private void editShortcut() {
-			client.setScreenAndShow(new CommandShortcutEditScreen(screen, shortcut));
+			client.gui.setScreen(new CommandShortcutEditScreen(screen, shortcut));
 		}
 
 		private void removeShortcut() {

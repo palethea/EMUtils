@@ -122,7 +122,7 @@ final class ScriptKeybindScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		client.setScreenAndShow(parent);
+		client.gui.setScreen(parent);
 	}
 
 	private void save() {
@@ -130,9 +130,9 @@ final class ScriptKeybindScreen extends Screen {
 			return;
 		}
 		keybindStore.duplicateOf(draft).ifPresentOrElse(
-			duplicate -> client.setScreenAndShow(new ConfirmScreen(
+			duplicate -> client.gui.setScreen(new ConfirmScreen(
 				confirmed -> {
-					client.setScreenAndShow(parent);
+					client.gui.setScreen(parent);
 					if (confirmed) {
 						keybindStore.removeBinding(duplicate);
 						onSave.accept(draft);
@@ -144,7 +144,7 @@ final class ScriptKeybindScreen extends Screen {
 				CommonComponents.GUI_CANCEL
 			)),
 			() -> {
-				client.setScreenAndShow(parent);
+				client.gui.setScreen(parent);
 				onSave.accept(draft);
 			}
 		);

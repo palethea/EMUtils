@@ -264,7 +264,7 @@ public final class PackManagerScreen extends Screen {
         if (list != null) {
             list.close();
         }
-        client.setScreenAndShow(parent);
+        client.gui.setScreen(parent);
     }
 
     private void switchType(PackType type) {
@@ -554,10 +554,10 @@ public final class PackManagerScreen extends Screen {
             return;
         }
 
-        client.setScreenAndShow(
+        client.gui.setScreen(
             new ConfirmScreen(
                 confirmed -> {
-                    client.setScreenAndShow(this);
+                    client.gui.setScreen(this);
                     if (confirmed) {
                         deleteConfirmed(item.installed());
                     }

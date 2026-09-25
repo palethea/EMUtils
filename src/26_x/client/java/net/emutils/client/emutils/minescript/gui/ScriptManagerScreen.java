@@ -169,10 +169,10 @@ public final class ScriptManagerScreen extends Screen {
 	@Override
 	public void onClose() {
 		if (editor != null && editor.dirty()) {
-			confirmDiscard(() -> client.setScreenAndShow(parent));
+			confirmDiscard(() -> client.gui.setScreen(parent));
 			return;
 		}
-		client.setScreenAndShow(parent);
+		client.gui.setScreen(parent);
 	}
 
 	private GalleryIconButtonWidget iconButton(String labelKey, net.minecraft.resources.Identifier icon, Button.OnPress action) {
@@ -268,9 +268,9 @@ public final class ScriptManagerScreen extends Screen {
 		if (selectedScript == null || selectedScript.directory() || !selectedScript.editable()) {
 			return;
 		}
-		client.setScreenAndShow(new ConfirmScreen(
+		client.gui.setScreen(new ConfirmScreen(
 			confirmed -> {
-				client.setScreenAndShow(this);
+				client.gui.setScreen(this);
 				if (!confirmed) {
 					return;
 				}
@@ -294,8 +294,8 @@ public final class ScriptManagerScreen extends Screen {
 	}
 
 	private void openCreateScriptScreen() {
-		client.setScreenAndShow(new CreateScriptScreen(this, tree == null ? "" : tree.selectedDirectory(), name -> {
-			client.setScreenAndShow(this);
+		client.gui.setScreen(new CreateScriptScreen(this, tree == null ? "" : tree.selectedDirectory(), name -> {
+			client.gui.setScreen(this);
 			try {
 				MinescriptScript script = repository.createScript(name);
 				refreshScripts();
@@ -310,7 +310,7 @@ public final class ScriptManagerScreen extends Screen {
 		if (selectedScript == null || selectedScript.commandName() == null) {
 			return;
 		}
-		client.setScreenAndShow(new ScriptKeybindScreen(
+		client.gui.setScreen(new ScriptKeybindScreen(
 			this,
 			selectedScript.commandName(),
 			keybindStore.get(selectedScript.commandName()).orElse(null),
@@ -337,9 +337,9 @@ public final class ScriptManagerScreen extends Screen {
 	}
 
 	private void confirmDiscard(Runnable action) {
-		client.setScreenAndShow(new ConfirmScreen(
+		client.gui.setScreen(new ConfirmScreen(
 			confirmed -> {
-				client.setScreenAndShow(this);
+				client.gui.setScreen(this);
 				if (confirmed) {
 					action.run();
 				}

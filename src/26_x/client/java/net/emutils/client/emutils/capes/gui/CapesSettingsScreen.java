@@ -54,7 +54,7 @@ public final class CapesSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetCapesDefaults();
-			client.setScreenAndShow(new CapesSettingsScreen(parent));
+			client.gui.setScreen(new CapesSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 		layout.addToContents(grid);
 	}
