@@ -50,6 +50,7 @@ public final class SpotifyPlayerOverlay {
 	private static String shownSong = "";
 	private static long songShownAt;
 	private static @Nullable Identifier shownArt;
+	private static @Nullable Identifier previousArt;
 	private static long artShownAt;
 
 	private SpotifyControlButton previousButton;
@@ -205,22 +206,36 @@ public final class SpotifyPlayerOverlay {
 		int x = layout.artX();
 		int y = layout.artY();
 		SpotifyArtLoader.ArtResult art = EMUtilsClient.spotify().art(state);
-		Identifier cover = art.state() == SpotifyArtLoader.State.LOADED ? art.texture() : null;
-		if (cover != null && !cover.equals(shownArt)) {
-			shownArt = cover;
+		Identifier loaded = art.state() == SpotifyArtLoader.State.LOADED ? art.texture() : null;
+		if (loaded != null && !loaded.equals(shownArt)) {
+			previousArt = shownArt;
+			shownArt = loaded;
 			artShownAt = now;
 		}
-		float coverFade = cover == null ? 0.0F : fade(now - artShownAt);
+		// While the next song's cover loads, the last one stays, and the new one fades in over it.
+		Identifier cover = loaded != null ? loaded : art.state() == SpotifyArtLoader.State.LOADING ? shownArt : null;
+		Identifier under = loaded != null ? previousArt : null;
+		float coverFade = loaded == null ? 1.0F : fade(now - artShownAt);
 
-		if (coverFade < 1.0F) {
-			UiShapes.roundedRect(context, x, y, ART_SIZE, ART_SIZE, ART_RADIUS, theme.surfaceAlt());
-			int iconOffset = (ART_SIZE - PLACEHOLDER_ICON_SIZE) / 2;
-			UiIcons.draw(context, HubIcons.MUSIC, x + iconOffset, y + iconOffset, PLACEHOLDER_ICON_SIZE, theme.muted());
+		if (cover == null || coverFade < 1.0F) {
+			if (under != null) {
+				drawCover(context, under, x, y, 1.0F);
+			} else {
+				UiShapes.roundedRect(context, x, y, ART_SIZE, ART_SIZE, ART_RADIUS, theme.surfaceAlt());
+				int iconOffset = (ART_SIZE - PLACEHOLDER_ICON_SIZE) / 2;
+				UiIcons.draw(context, HubIcons.MUSIC, x + iconOffset, y + iconOffset, PLACEHOLDER_ICON_SIZE, theme.muted());
+			}
 		}
 		if (cover != null) {
-			int color = UiOpacity.apply(UiTheme.fade(0xFFFFFFFF, coverFade));
-			context.blit(RenderPipelines.GUI_TEXTURED, cover, x, y, 0.0F, 0.0F, ART_SIZE, ART_SIZE, art.width(), art.height(), art.width(), art.height(), color);
+			drawCover(context, cover, x, y, coverFade);
 		}
+	}
+
+	/** Covers are {@link SpotifyArtLoader#TEXTURE_SIZE} square, with their rounded corners baked in. */
+	private static void drawCover(GuiGraphicsExtractor context, Identifier cover, int x, int y, float opacity) {
+		int size = SpotifyArtLoader.TEXTURE_SIZE;
+		int color = UiOpacity.apply(UiTheme.fade(0xFFFFFFFF, opacity));
+		context.blit(RenderPipelines.GUI_TEXTURED, cover, x, y, 0.0F, 0.0F, ART_SIZE, ART_SIZE, size, size, size, size, color);
 	}
 
 	private static void drawText(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state) {

@@ -60,6 +60,7 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotFrom=N} (Gradle property {@code emutilsUiSnapshotFrom}) starts at step N. */
 	private static int step = Integer.getInteger("emutils.uiSnapshotFrom", 0);
 	private static int stepTicks;
+	private static boolean spotifyWasPlaying;
 
 	private UiSnapshotter() {
 	}
@@ -838,6 +839,33 @@ public final class UiSnapshotter {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 				}
 				next();
+			}
+			// Play/pause shows right away and holds while Spotify catches up, then toggles back.
+			case 174 -> {
+				SpotifyTrackState before = EMUtilsClient.spotify().state();
+				if (!before.hasTrack()) {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: no Spotify track, skipping the play/pause check");
+					step = 177;
+					stepTicks = 0;
+					return;
+				}
+				spotifyWasPlaying = before.playing();
+				EMUtilsClient.spotify().playPause();
+				check(EMUtilsClient.spotify().state().playing() != spotifyWasPlaying, "play/pause shows the new state right away");
+				next();
+			}
+			case 175 -> {
+				if (stepTicks >= 20) {
+					check(EMUtilsClient.spotify().state().playing() != spotifyWasPlaying, "play/pause still shows the new state after Spotify's polls: " + EMUtilsClient.spotify().state().playing());
+					EMUtilsClient.spotify().playPause();
+					next();
+				}
+			}
+			case 176 -> {
+				if (stepTicks >= 20) {
+					check(EMUtilsClient.spotify().state().playing() == spotifyWasPlaying, "play/pause again returns to the old state");
+					next();
+				}
 			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
