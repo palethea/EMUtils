@@ -71,7 +71,7 @@ Show third-party player capes from supported providers.
 
 Show a configurable info panel with icons and useful world or client stats.
 
-- HUD Layout Editor: drag HUD elements into a custom layout.
+- HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
 - Coordinates: show current XYZ coordinates.

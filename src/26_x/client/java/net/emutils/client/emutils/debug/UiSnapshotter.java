@@ -15,6 +15,9 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.hud.editor.HudEditorScreen;
+import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
@@ -722,6 +725,59 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
+			// The HUD Layout Editor (#136): select an element, nudge it, and cancel without saving.
+			case 153 -> {
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 154 -> captureAfter(client, 20, "hud editor");
+			case 155 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					screen.selectFirstForSnapshot();
+					HudLayoutDraft before = screen.selectedDraftForSnapshot();
+					for (int i = 0; i < 3; i++) {
+						press(screen, InputConstants.KEY_RIGHT, 0);
+					}
+					HudLayoutDraft after = screen.selectedDraftForSnapshot();
+					check(before != null && after != null && after.x() == before.x() + 3, "arrow keys nudge the selected element: " + (before == null ? "none" : before.x()) + " -> " + (after == null ? "none" : after.x()));
+				}
+				next();
+			}
+			case 156 -> captureAfter(client, 15, "hud editor, selected");
+			// Dragging the Size slider over several frames: the card must stay put and the size only grow.
+			case 157 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					if (stepTicks == 1) {
+						sliderCardX = screen.cardXForSnapshot();
+						sliderScales.clear();
+					}
+					screen.dragSizeSliderForSnapshot(0.1F + stepTicks * 0.04F);
+					HudLayoutDraft draft = screen.selectedDraftForSnapshot();
+					sliderScales.add(draft == null ? -1 : draft.scale());
+					boolean steady = screen.cardXForSnapshot() == sliderCardX;
+					if (stepTicks >= 12 || !steady) {
+						boolean rising = true;
+						for (int i = 1; i < sliderScales.size(); i++) {
+							rising &= sliderScales.get(i) >= sliderScales.get(i - 1);
+						}
+						check(steady && rising, "dragging the Size slider keeps the card still and the size steady: " + sliderScales);
+						screen.dragSizeSliderForSnapshot(null);
+						next();
+					}
+				}
+			}
+			case 158 -> captureAfter(client, 10, "hud editor, resized");
+			case 159 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					check(MinecraftClientCompat.screen(client) instanceof HudEditorScreen, "Esc first deselects, keeping the editor open");
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc again cancels and closes the editor");
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -835,6 +891,8 @@ public final class UiSnapshotter {
 	private static final int SCRIPTS_CLEANUP_STEP = 130;
 	private static List<String> shortcutsBefore = List.of();
 	private static java.util.Set<String> massDropBefore = java.util.Set.of();
+	private static int sliderCardX;
+	private static final List<Integer> sliderScales = new java.util.ArrayList<>();
 	private static final String EDIT_EXPECTED = "def greet(name):\n    print(\"hi\")\ngreet(1)";
 	private static @Nullable String savedMinescriptConfig;
 

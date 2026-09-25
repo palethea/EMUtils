@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import net.emutils.client.emutils.EMHelpers;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
-import net.emutils.client.emutils.hud.editor.HudLayoutEditorScreen;
+import net.emutils.client.emutils.hud.editor.HudEditorScreens;
 import net.emutils.client.emutils.hud.HudOverlayPlacement;
 import net.minecraft.client.Minecraft;
 import org.jspecify.annotations.Nullable;
@@ -154,7 +154,7 @@ public final class HudLayoutManager {
 			return;
 		}
 
-		client.gui.setScreen(new HudLayoutEditorScreen(MinecraftClientCompat.screen(client)));
+		client.gui.setScreen(HudEditorScreens.editor(MinecraftClientCompat.screen(client)));
 	}
 
 	public static boolean beginEditorSession(@Nullable Minecraft client) {
