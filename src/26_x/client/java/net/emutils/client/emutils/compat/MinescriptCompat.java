@@ -99,6 +99,27 @@ public final class MinescriptCompat {
         return dot > command.lastIndexOf('/') ? command.substring(0, dot) : command;
     }
 
+    /**
+     * Has Minescript reread config.txt now. It also rereads a changed file before running a script,
+     * so this only makes a change take effect right away.
+     */
+    public static void reloadConfig() {
+        if (!isLoaded()) {
+            return;
+        }
+        try {
+            Object config = minescriptClass().getField("config").get(null);
+            if (config != null) {
+                config.getClass().getMethod("load").invoke(config);
+            }
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            EMUtilsClient.LOGGER.warn(
+                "EMUtils could not reload Minescript's config: {}",
+                exception.toString()
+            );
+        }
+    }
+
     public static boolean runCommand(String command) {
         return sendChatCommand(command) == ToggleResult.STARTED;
     }
