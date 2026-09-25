@@ -2,6 +2,7 @@ package net.emutils.client.emutils.minescript.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
+import net.emutils.client.emutils.minescript.MinescriptPython;
 import net.emutils.client.emutils.minescript.MinescriptScript;
 import net.emutils.client.emutils.minescript.MinescriptScriptRepository;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -56,6 +58,8 @@ public final class ScriptsScreen extends UiPanelScreen {
 	private static final int CARD_HEADER = 38;
 	private static final int FOOTER = 22;
 	private static final int FADE_HEIGHT = 10;
+	private static final int BANNER = 42;
+	private static final URI PYTHON_DOWNLOADS = URI.create("https://www.python.org/downloads/");
 	private static final int RUNNING_POLL_TICKS = 10;
 	/** How long a status message stays before it fades. */
 	private static final long STATUS_MILLIS = 5000L;
@@ -106,6 +110,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 	private int keybindX;
 	private int deleteX;
 	private int actionsY;
+	/** The Python warning's height while it shows, so the editor sits below it. */
+	private int bannerHeight;
+	private int bannerButtonX;
+	private int bannerButtonY;
+	private int bannerButtonWidth;
 
 	public ScriptsScreen(@Nullable Screen parent) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_SCRIPT_MANAGER), parent);
@@ -135,12 +144,17 @@ public final class ScriptsScreen extends UiPanelScreen {
 		cardX = listX + LIST_WIDTH + UiScrollArea.GUTTER + 10;
 		cardWidth = panelX + panelWidth - PADDING - cardX;
 		cardHeight = bodyBottom - bodyY;
-		editor.setBounds(cardX + 1, bodyY + CARD_HEADER, cardWidth - 2, cardHeight - CARD_HEADER - FOOTER);
+		placeEditor();
 		filter.restoreFocus();
 		editor.restoreFocus();
 		if (!scanned) {
 			refreshScripts();
+			MinescriptPython.checkIfStale();
 		}
+	}
+
+	private void placeEditor() {
+		editor.setBounds(cardX + 1, bodyY + CARD_HEADER + bannerHeight, cardWidth - 2, cardHeight - CARD_HEADER - FOOTER - bannerHeight);
 	}
 
 	// ---- scripts --------------------------------------------------------------------------------
@@ -517,10 +531,20 @@ public final class ScriptsScreen extends UiPanelScreen {
 
 	private void drawCard(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		UiShapes.borderedRect(context, cardX, bodyY, cardWidth, cardHeight, 10, theme.surface(), theme.border());
+		MinescriptPython.Result python = minescript() ? MinescriptPython.result() : null;
+		int banner = python != null && python.broken() ? BANNER : 0;
+		if (banner != bannerHeight) {
+			bannerHeight = banner;
+			placeEditor();
+		}
+		bannerButtonWidth = 0;
+		if (python != null && banner > 0) {
+			drawPythonBanner(context, theme, python, selected == null ? bodyY : bodyY + CARD_HEADER, selected == null, mouseX, mouseY);
+		}
 		if (selected == null) {
 			int iconSize = 24;
 			int centerX = cardX + cardWidth / 2;
-			int top = bodyY + cardHeight / 2 - 30;
+			int top = bodyY + banner / 2 + cardHeight / 2 - 30;
 			UiIcons.draw(context, HubIcons.FILE_CODE, centerX - iconSize / 2, top, iconSize, theme.muted());
 			Component text = Component.translatable(EMUtilsTexts.UI_SCRIPT_PICK);
 			UiText.draw(context, font, text, UiText.Size.BODY, centerX - UiText.width(font, text, UiText.Size.BODY) / 2, top + iconSize + 12, theme.muted());
@@ -530,6 +554,90 @@ public final class ScriptsScreen extends UiPanelScreen {
 		context.fill(cardX + 1, bodyY + CARD_HEADER - 1, cardX + cardWidth - 1, bodyY + CARD_HEADER, UiOpacity.apply(theme.line()));
 		editor.draw(context, theme, lightness(), theme.surface(), mouseX, mouseY);
 		drawFooter(context, theme);
+	}
+
+	/**
+	 * The warning when Minescript's Python doesn't work (#122): what's wrong, and a button that fixes it,
+	 * switching to a working Python, or opening python.org when none is installed.
+	 */
+	private void drawPythonBanner(GuiGraphicsExtractor context, UiTheme theme, MinescriptPython.Result python, int top, boolean cardTop, int mouseX, int mouseY) {
+		int tint = UiTheme.mix(theme.surface(), theme.warning(), 0.1F);
+		if (cardTop) {
+			// The card's top corners are rounded; round the tint the same way inside the border.
+			UiShapes.roundedRect(context, cardX + 1, top + 1, cardWidth - 2, BANNER - 1, 9, tint);
+			context.fill(cardX + 1, top + 10, cardX + cardWidth - 1, top + BANNER, UiOpacity.apply(tint));
+		} else {
+			context.fill(cardX + 1, top, cardX + cardWidth - 1, top + BANNER, UiOpacity.apply(tint));
+		}
+		context.fill(cardX + 1, top + BANNER - 1, cardX + cardWidth - 1, top + BANNER, UiOpacity.apply(theme.line()));
+
+		MinescriptPython.Python suggestion = python.suggestion();
+		Component label = suggestion != null
+			? Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_USE, suggestion.version())
+			: python.searching()
+				? Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_SEARCHING)
+				: Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_GET);
+		boolean enabled = !python.searching() || suggestion != null;
+		bannerButtonWidth = UiWidgets.buttonWidth(font, label) + 10;
+		bannerButtonX = cardX + cardWidth - 12 - bannerButtonWidth;
+		bannerButtonY = top + (BANNER - BUTTON_HEIGHT) / 2;
+		boolean hovered = enabled && contains(mouseX, mouseY, bannerButtonX, bannerButtonY, bannerButtonWidth, BUTTON_HEIGHT);
+		UiWidgets.button(context, font, theme, bannerButtonX, bannerButtonY, bannerButtonWidth, BUTTON_HEIGHT, label, enabled ? UiWidgets.ButtonStyle.PRIMARY : UiWidgets.ButtonStyle.GHOST, hovered ? 1.0F : 0.0F);
+		if (hovered) {
+			showTooltip(Component.literal(suggestion != null ? suggestion.path() : PYTHON_DOWNLOADS.toString()), mouseX, mouseY);
+		}
+
+		int left = cardX + 12;
+		UiIcons.draw(context, HubIcons.WRENCH, left, top + BANNER / 2 - 6, 12, theme.warning());
+		int textX = left + 20;
+		int room = bannerButtonX - 12 - textX;
+		Component message = switch (python.problem()) {
+			case NOT_SET -> Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_NOT_SET);
+			case TOO_OLD -> Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_TOO_OLD, python.configuredPython() == null ? "?" : python.configuredPython().version());
+			default -> Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_NOT_WORKING);
+		};
+		Component detail;
+		if (suggestion == null && !python.searching()) {
+			detail = Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_NONE_FOUND);
+		} else if (python.configured() == null) {
+			detail = Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_NO_LINE);
+		} else {
+			int labelWidth = UiText.width(font, Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_CONFIGURED, ""), UiText.Size.BODY);
+			detail = Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_CONFIGURED, ellipsizeStart(python.configured(), room - labelWidth));
+		}
+		int lineHeight = UiText.lineHeight(font, UiText.Size.BODY);
+		int textTop = top + (BANNER - lineHeight * 2 - 3) / 2;
+		UiText.draw(context, font, UiText.ellipsize(font, message, UiText.Size.LABEL, room), UiText.Size.LABEL, textX, textTop, theme.text());
+		UiText.draw(context, font, UiText.ellipsize(font, detail, UiText.Size.BODY, room), UiText.Size.BODY, textX, textTop + lineHeight + 3, theme.textSecondary());
+	}
+
+	/** Shortens a path from the start, since its end (the file) says the most. */
+	private String ellipsizeStart(String text, int maxWidth) {
+		if (UiText.width(font, Component.literal(text), UiText.Size.BODY) <= maxWidth) {
+			return text;
+		}
+		for (int start = 1; start < text.length(); start++) {
+			String shortened = "\u2026" + text.substring(start);
+			if (UiText.width(font, Component.literal(shortened), UiText.Size.BODY) <= maxWidth) {
+				return shortened;
+			}
+		}
+		return "\u2026";
+	}
+
+	private void fixPython() {
+		MinescriptPython.Result python = MinescriptPython.result();
+		MinescriptPython.Python suggestion = python.suggestion();
+		if (suggestion != null) {
+			try {
+				MinescriptPython.use(suggestion);
+				setStatus(Component.translatable(EMUtilsTexts.UI_SCRIPT_PYTHON_FIXED, suggestion.version()), Tone.GOOD);
+			} catch (IOException exception) {
+				setStatus(Component.literal(String.valueOf(exception.getMessage())), Tone.WARNING);
+			}
+		} else if (!python.searching()) {
+			VersionedPlatform.openUri(PYTHON_DOWNLOADS);
+		}
 	}
 
 	private void drawCardHeader(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -697,6 +805,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 		}
 		if (contains(mouseX, mouseY, refreshX, headerButtonsY, HEADER_BUTTON, HEADER_BUTTON)) {
 			refreshScripts();
+			MinescriptPython.check();
+			return true;
+		}
+		if (bannerButtonWidth > 0 && contains(mouseX, mouseY, bannerButtonX, bannerButtonY, bannerButtonWidth, BUTTON_HEIGHT)) {
+			fixPython();
 			return true;
 		}
 		if (contains(mouseX, mouseY, folderX, headerButtonsY, HEADER_BUTTON, HEADER_BUTTON)) {
@@ -902,6 +1015,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 	/** The open script's path inside the minescript folder, or null; used by UI snapshots. */
 	public @Nullable String selectedForSnapshot() {
 		return selected == null ? null : selected.relativePath();
+	}
+
+	/** Presses the Python warning's button; used by UI snapshots. */
+	public void fixPythonForSnapshot() {
+		fixPython();
 	}
 
 	/** Throws away edits so the screen can close without asking; used by UI snapshots. */

@@ -13,6 +13,7 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.minescript.MinescriptPython;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
@@ -31,6 +32,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
@@ -377,6 +379,47 @@ public final class UiSnapshotter {
 			}
 			case 100 -> waitForCheck(Files.isRegularFile(testScript("made/new_script.marker")), 200, "a new script in a new folder runs");
 			case 101 -> captureAfter(client, 5, "scripts, ran a new script in a new folder");
+			// Minescript's Python warning (#122): break config.txt the way Minescript's Windows default does,
+			// then let the banner find a working Python and fix it in one click.
+			case 102 -> {
+				client.gui.setScreen(null);
+				savedMinescriptConfig = readMinescriptConfig();
+				writeMinescriptConfig("python=\"%userprofile%\\AppData\\Local\\Microsoft\\WindowsApps\\python3.exe\"\n");
+				client.gui.setScreen(new ScriptsScreen(null));
+				next();
+			}
+			case 103 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/hello.py");
+					next();
+				}
+			}
+			case 104 -> {
+				MinescriptPython.Result python = MinescriptPython.result();
+				waitForCheck(python.problem() == MinescriptPython.Problem.NOT_WORKING && !python.searching() && python.suggestion() != null, 400, "a broken Python is noticed and a working one is found: " + (python.suggestion() == null ? "none" : python.suggestion().path()));
+			}
+			case 105 -> captureAfter(client, 20, "scripts, python warning");
+			case 106 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					MinescriptPython.Python suggestion = MinescriptPython.result().suggestion();
+					screen.fixPythonForSnapshot();
+					check(suggestion != null && readMinescriptConfig().contains("python=\"" + suggestion.path() + "\""), "the fix writes the Python to config.txt");
+					check(!MinescriptPython.result().broken(), "the warning goes away after the fix");
+					deleteQuietly(testScript("tools/marker.marker"));
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/tools/marker.py");
+					screen.runForSnapshot();
+				}
+				next();
+			}
+			case 107 -> waitForCheck(Files.isRegularFile(testScript("tools/marker.marker")), 200, "scripts run with the fixed Python");
+			case 108 -> captureAfter(client, 10, "scripts, python fixed");
+			case 109 -> {
+				if (savedMinescriptConfig != null) {
+					writeMinescriptConfig(savedMinescriptConfig);
+					MinescriptCompat.reloadConfig();
+				}
+				next();
+			}
 			case SCRIPTS_CLEANUP_STEP -> {
 				client.gui.setScreen(null);
 				deleteTestScripts();
@@ -492,7 +535,32 @@ public final class UiSnapshotter {
 
 	/** A folder of its own inside the minescript folder, so the test never touches real scripts. */
 	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
-	private static final int SCRIPTS_CLEANUP_STEP = 102;
+	private static final int SCRIPTS_CLEANUP_STEP = 110;
+	private static @Nullable String savedMinescriptConfig;
+
+	private static String readMinescriptConfig() {
+		try {
+			return Files.readString(MinescriptCompat.scriptsDir().resolve("config.txt"));
+		} catch (IOException exception) {
+			return "";
+		}
+	}
+
+	private static void writeMinescriptConfig(String text) {
+		try {
+			Files.writeString(MinescriptCompat.scriptsDir().resolve("config.txt"), text);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not write the snapshot Minescript config.", exception);
+		}
+	}
+
+	private static void deleteQuietly(Path file) {
+		try {
+			Files.deleteIfExists(file);
+		} catch (IOException ignored) {
+			// Checked by the step that follows.
+		}
+	}
 
 	private static void writeTestScripts() {
 		Path folder = MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER);

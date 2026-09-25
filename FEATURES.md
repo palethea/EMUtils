@@ -174,6 +174,7 @@ When Minescript is installed, browse and manage scripts from `minecraft/minescri
 
 - Script Editor: create and edit Python scripts.
 - Run Scripts: launch scripts locally through Minescript.
+- Python Check: warns when Minescript's Python doesn't work (such as the Microsoft Store shortcut it uses by default on Windows) and switches it to a working Python in one click, or links to python.org when none is installed.
 - Script Keybinds: assign EMUtils-managed keybinds per script.
 
 ### Command Shortcuts

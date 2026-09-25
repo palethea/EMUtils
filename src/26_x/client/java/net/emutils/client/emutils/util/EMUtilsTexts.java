@@ -54,6 +54,16 @@ public final class EMUtilsTexts {
     public static final String UI_SCRIPT_NAME_PLACEHOLDER = "emutils.ui.script.name_placeholder";
     public static final String UI_SCRIPT_KEYBIND_MOVES = "emutils.ui.script.keybind_moves";
     public static final String UI_SCRIPT_KEYBIND_REMOVE = "emutils.ui.script.keybind_remove";
+    public static final String UI_SCRIPT_PYTHON_NOT_WORKING = "emutils.ui.script.python.not_working";
+    public static final String UI_SCRIPT_PYTHON_NOT_SET = "emutils.ui.script.python.not_set";
+    public static final String UI_SCRIPT_PYTHON_TOO_OLD = "emutils.ui.script.python.too_old";
+    public static final String UI_SCRIPT_PYTHON_CONFIGURED = "emutils.ui.script.python.configured";
+    public static final String UI_SCRIPT_PYTHON_NO_LINE = "emutils.ui.script.python.no_line";
+    public static final String UI_SCRIPT_PYTHON_NONE_FOUND = "emutils.ui.script.python.none_found";
+    public static final String UI_SCRIPT_PYTHON_USE = "emutils.ui.script.python.use";
+    public static final String UI_SCRIPT_PYTHON_SEARCHING = "emutils.ui.script.python.searching";
+    public static final String UI_SCRIPT_PYTHON_GET = "emutils.ui.script.python.get";
+    public static final String UI_SCRIPT_PYTHON_FIXED = "emutils.ui.script.python.fixed";
     public static final String UI_COPY_IMAGE = "emutils.ui.gallery.copy_image";
     public static final String UI_OPEN_IN_VIEWER = "emutils.ui.gallery.open_in_viewer";
     public static final String UI_SHOW_IN_FOLDER = "emutils.ui.gallery.show_in_folder";
