@@ -23,11 +23,11 @@ public final class SettingsChooserScreen extends Screen {
 		int centerY = height / 2;
 
 		addRenderableWidget(Button.builder(Component.translatable(EMUtilsTexts.SETTINGS_CHOOSER_EMUTILS), button ->
-			minecraft.setScreenAndShow(SettingsScreens.hub(this))
+			minecraft.gui.setScreen(SettingsScreens.hub(this))
 		).bounds(centerX - buttonWidth / 2, centerY - 10, buttonWidth, buttonHeight).build());
 
 		addRenderableWidget(Button.builder(Component.translatable("gui.back"), button ->
-			minecraft.setScreenAndShow(parent)
+			minecraft.gui.setScreen(parent)
 		).bounds(centerX - 100, height - 52, 200, buttonHeight).build());
 	}
 }

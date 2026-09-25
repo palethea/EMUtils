@@ -291,7 +291,7 @@ public final class HubFeatureCatalog {
 		return () -> {
 			Minecraft client = Minecraft.getInstance();
 			if (client != null) {
-				client.setScreenAndShow(screenFactory.apply(MinecraftClientCompat.screen(client)));
+				client.gui.setScreen(screenFactory.apply(MinecraftClientCompat.screen(client)));
 			}
 		};
 	}

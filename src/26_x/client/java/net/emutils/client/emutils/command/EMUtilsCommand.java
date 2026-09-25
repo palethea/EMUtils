@@ -60,7 +60,7 @@ public final class EMUtilsCommand {
 			return 0;
 		}
 
-		client.setScreenAndShow(SettingsScreens.hub(MinecraftClientCompat.screen(client)));
+		client.gui.setScreen(SettingsScreens.hub(MinecraftClientCompat.screen(client)));
 		return 1;
 	}
 

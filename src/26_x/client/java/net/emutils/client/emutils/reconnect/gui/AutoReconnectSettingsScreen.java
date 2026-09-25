@@ -59,7 +59,7 @@ public final class AutoReconnectSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetAutoReconnectDefaults();
-			client.setScreenAndShow(new AutoReconnectSettingsScreen(parent));
+			client.gui.setScreen(new AutoReconnectSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 }

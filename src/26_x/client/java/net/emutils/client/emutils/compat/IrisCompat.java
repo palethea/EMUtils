@@ -180,7 +180,7 @@ public final class IrisCompat {
 			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, null);
 			client.execute(() -> {
 				callback.accept(optional.isEmpty());
-				client.setScreenAndShow(returnScreen);
+				client.gui.setScreen(returnScreen);
 			});
 		}));
 	}
@@ -214,7 +214,7 @@ public final class IrisCompat {
 			Object api = apiClass.getMethod("getInstance").invoke(null);
 			Object screen = api.getClass().getMethod("openMainIrisScreenObj", Object.class).invoke(api, parent);
 			if (screen instanceof Screen irisScreen) {
-				client.setScreenAndShow(irisScreen);
+				client.gui.setScreen(irisScreen);
 				return true;
 			}
 		} catch (ReflectiveOperationException ignored) {

@@ -541,7 +541,7 @@ public final class SettingsScreen extends Screen {
 		}
 		if (contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON)) {
 			EMUtilsClient.config().setSettingsUiPreview(false);
-			minecraft.setScreenAndShow(new CustomHubScreen(parent));
+			minecraft.gui.setScreen(new CustomHubScreen(parent));
 			return true;
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
@@ -669,7 +669,7 @@ public final class SettingsScreen extends Screen {
 	public void tick() {
 		super.tick();
 		if (closing && openProgress <= 0.0F) {
-			minecraft.setScreenAndShow(parent);
+			minecraft.gui.setScreen(parent);
 		}
 	}
 

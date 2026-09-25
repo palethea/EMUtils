@@ -326,9 +326,9 @@ public final class ScreenshotGalleryWidget extends ObjectSelectionList<Screensho
 			}
 
 			Screen galleryScreen = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-			client.setScreenAndShow(new ConfirmScreen(
+			client.gui.setScreen(new ConfirmScreen(
 				confirmed -> {
-					client.setScreenAndShow(galleryScreen);
+					client.gui.setScreen(galleryScreen);
 					if (confirmed) {
 						widget.deleteScreenshot(screenshot);
 					}

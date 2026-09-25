@@ -134,7 +134,7 @@ public final class CommandShortcutEditScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		minecraft.setScreenAndShow(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	private void beginKeyCapture() {
@@ -167,7 +167,7 @@ public final class CommandShortcutEditScreen extends Screen {
 		EMUtilsClient.commandShortcuts().store().put(shortcut);
 		EMUtilsClient.commandShortcuts().reload();
 		parent.refreshList();
-		minecraft.setScreenAndShow(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	private void updateSaveButton() {

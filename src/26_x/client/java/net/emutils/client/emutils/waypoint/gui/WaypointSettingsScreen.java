@@ -56,11 +56,11 @@ public final class WaypointSettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(
 			Component.translatable(EMUtilsTexts.OPTION_CURRENT_WAYPOINTS),
-			button -> minecraft.setScreenAndShow(new WaypointListScreen(this))
+			button -> minecraft.gui.setScreen(new WaypointListScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetDeathWaypointDefaults();
-			minecraft.setScreenAndShow(new WaypointSettingsScreen(parent));
+			minecraft.gui.setScreen(new WaypointSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 

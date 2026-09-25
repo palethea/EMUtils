@@ -72,7 +72,7 @@ public final class UiSnapshotter {
 			case 28 -> closeScreen(client);
 			case 29 -> waitForClose(client);
 			case 30 -> {
-				client.setScreenAndShow(new SettingsScreen(null));
+				client.gui.setScreen(new SettingsScreen(null));
 				next();
 			}
 			case 31 -> captureAfter(client, 2, "opening, mid-animation");
@@ -92,7 +92,7 @@ public final class UiSnapshotter {
 			client.resizeGui();
 		}
 		if (!(MinecraftClientCompat.screen(client) instanceof SettingsScreen)) {
-			client.setScreenAndShow(new SettingsScreen(null));
+			client.gui.setScreen(new SettingsScreen(null));
 		}
 		next();
 	}

@@ -95,7 +95,7 @@ public final class HudOverlaySettingsScreen extends EMUtilsScreen {
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetHudDefaults();
-			client.setScreenAndShow(new HudOverlaySettingsScreen(parent));
+			client.gui.setScreen(new HudOverlaySettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 }

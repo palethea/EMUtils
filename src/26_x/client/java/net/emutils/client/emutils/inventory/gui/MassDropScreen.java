@@ -89,7 +89,7 @@ public final class MassDropScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		minecraft.setScreenAndShow(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	private static final class ItemList extends ObjectSelectionList<ItemEntry> {
