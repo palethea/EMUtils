@@ -13,6 +13,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiConfirmDialog;
+import net.emutils.client.emutils.gui.ui.UiContextMenu;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiPanelScreen;
@@ -44,8 +45,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The Script Manager in the new UI (#118): the Minescript folder as a tree on the left, and the selected
- * script in an editor card on the right, with run, save, keybind and delete. Everything the classic
- * screen does stays; the editing is shared with it through {@link ScriptTextBuffer}.
+ * script in an editor card on the right, with run, save, keybind, rename and delete. The tree has
+ * right-click menus for scripts and folders, the editor finds text with Ctrl+F, and when a run fails the
+ * footer says why and the editor marks the line (#125).
  */
 public final class ScriptsScreen extends UiPanelScreen {
 	private static final int PADDING = 16;
@@ -59,6 +61,9 @@ public final class ScriptsScreen extends UiPanelScreen {
 	private static final int FOOTER = 22;
 	private static final int FADE_HEIGHT = 10;
 	private static final int BANNER = 42;
+	private static final int FIND_WIDTH = 260;
+	private static final int FIND_HEIGHT = 26;
+	private static final int FIND_BUTTON = 18;
 	private static final URI PYTHON_DOWNLOADS = URI.create("https://www.python.org/downloads/");
 	private static final int RUNNING_POLL_TICKS = 10;
 	/** How long a status message stays before it fades. */
@@ -115,6 +120,21 @@ public final class ScriptsScreen extends UiPanelScreen {
 	private int bannerButtonX;
 	private int bannerButtonY;
 	private int bannerButtonWidth;
+	private @Nullable UiContextMenu menu;
+	private final UiTextField findField = new UiTextField(this, 128);
+	private boolean findOpen;
+	private int findX;
+	private int findY;
+	private int findPrevX;
+	private int findNextX;
+	private int findCloseX;
+	private int newFolderX;
+	private int renameX;
+	/** Why the open script's last run failed, and the editor version it was shown at. */
+	private MinescriptCompat.@Nullable ScriptError error;
+	private int errorVersion;
+	private int errorX;
+	private int errorWidth;
 
 	public ScriptsScreen(@Nullable Screen parent) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_SCRIPT_MANAGER), parent);
@@ -235,6 +255,8 @@ public final class ScriptsScreen extends UiPanelScreen {
 		selected = script;
 		folder = folderOf(script);
 		running = isRunning();
+		error = null;
+		editor.setErrorLine(-1);
 		try {
 			if (script.editable()) {
 				editor.setText(repository.read(script), false);
@@ -297,6 +319,8 @@ public final class ScriptsScreen extends UiPanelScreen {
 			setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_UNSAFE_COMMAND), Tone.WARNING);
 			return;
 		}
+		error = null;
+		editor.setErrorLine(-1);
 		switch (MinescriptCompat.toggleCommand(command)) {
 			case STARTED -> setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_RUNNING, command), Tone.GOOD);
 			case STOPPED -> setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_STOPPED, command), Tone.NEUTRAL);
@@ -310,11 +334,10 @@ public final class ScriptsScreen extends UiPanelScreen {
 		return canRun() && !MinescriptCompat.findActiveJobIdsForCommand(selected.commandName()).isEmpty();
 	}
 
-	private void askToDelete() {
-		if (selected == null || !selected.editable() || selected.directory()) {
+	private void askToDelete(@Nullable MinescriptScript target) {
+		if (target == null || !target.editable() || target.directory()) {
 			return;
 		}
-		MinescriptScript target = selected;
 		confirm = new UiConfirmDialog(
 			font,
 			anim,
@@ -324,9 +347,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 			() -> {
 				try {
 					repository.delete(target);
-					selected = null;
-					editor.setText("", false);
-					editor.setFocused(false);
+					if (isSelected(target)) {
+						selected = null;
+						editor.setText("", false);
+						editor.setFocused(false);
+					}
 					refreshScripts();
 					setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_DELETED), Tone.NEUTRAL);
 				} catch (IOException exception) {
@@ -363,6 +388,231 @@ public final class ScriptsScreen extends UiPanelScreen {
 		});
 	}
 
+	/** Asks for a new name or path for a script or folder, and moves it there with its keybinds. */
+	private void askToRename(MinescriptScript item) {
+		editor.setFocused(false);
+		filter.setFocused(false);
+		findField.setFocused(false);
+		String path = item.relativePath();
+		int nameStart = path.lastIndexOf('/') + 1;
+		int dot = path.lastIndexOf('.');
+		int nameEnd = item.directory() || dot <= nameStart ? path.length() : dot;
+		prompt = new UiPromptDialog(
+			font,
+			anim,
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAME_TITLE),
+			Component.translatable(item.directory() ? EMUtilsTexts.UI_SCRIPT_RENAME_FOLDER_MESSAGE : EMUtilsTexts.UI_SCRIPT_RENAME_MESSAGE),
+			path,
+			Component.translatable(item.directory() ? EMUtilsTexts.UI_SCRIPT_NEW_FOLDER_PLACEHOLDER : EMUtilsTexts.UI_SCRIPT_NAME_PLACEHOLDER),
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAME_CONFIRM),
+			name -> rename(item, name)
+		).select(nameStart, nameEnd);
+	}
+
+	/** Renames or moves {@code item}; returns an error to show in the dialog, or null when it worked. */
+	private @Nullable Component rename(MinescriptScript item, String name) {
+		String from = item.relativePath();
+		String to;
+		try {
+			to = repository.move(item, name);
+		} catch (IOException exception) {
+			return Component.literal(String.valueOf(exception.getMessage()));
+		}
+		if (to.equals(from)) {
+			return null;
+		}
+		if (item.directory()) {
+			keybindStore.rename(from, to, true);
+			Set<String> moved = new HashSet<>();
+			collapsed.removeIf(path -> {
+				if (path.equals(from) || path.startsWith(from + "/")) {
+					moved.add(to + path.substring(from.length()));
+					return true;
+				}
+				return false;
+			});
+			collapsed.addAll(moved);
+		} else if (item.commandName() != null) {
+			String command = to.substring(0, to.lastIndexOf('.'));
+			keybindStore.rename(item.commandName(), command, false);
+			MinescriptCompat.renameCommand(item.commandName(), command);
+		}
+		EMUtilsClient.minescriptKeybinds().reload();
+		if (folder.equals(from) || folder.startsWith(from + "/")) {
+			folder = to + folder.substring(from.length());
+		}
+		refreshScripts();
+		// The open script moves along without reloading, so unsaved changes stay in the editor.
+		if (selected != null) {
+			String open = selected.relativePath();
+			String renamed = open.equals(from) ? to : open.startsWith(from + "/") ? to + open.substring(from.length()) : null;
+			if (renamed != null) {
+				for (MinescriptScript script : scripts) {
+					if (script.relativePath().equals(renamed)) {
+						selected = script;
+						break;
+					}
+				}
+			}
+		}
+		setStatus(Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAMED, to), Tone.GOOD);
+		return null;
+	}
+
+	private void askForNewFolder(String parent) {
+		editor.setFocused(false);
+		filter.setFocused(false);
+		findField.setFocused(false);
+		String suggestion = "new_folder";
+		String initial = parent.isBlank() ? suggestion : parent + "/" + suggestion;
+		prompt = new UiPromptDialog(
+			font,
+			anim,
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_FOLDER),
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_FOLDER_MESSAGE),
+			initial,
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_FOLDER_PLACEHOLDER),
+			Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_CREATE),
+			name -> {
+				try {
+					String created = repository.createFolder(name);
+					folder = created;
+					for (String path = created; path.contains("/"); path = path.substring(0, path.lastIndexOf('/'))) {
+						collapsed.remove(path.substring(0, path.lastIndexOf('/')));
+					}
+					refreshScripts();
+					setStatus(Component.translatable(EMUtilsTexts.UI_SCRIPT_FOLDER_CREATED, created), Tone.GOOD);
+					return null;
+				} catch (IOException exception) {
+					return Component.literal(String.valueOf(exception.getMessage()));
+				}
+			}
+		).select(initial.length() - suggestion.length(), initial.length());
+	}
+
+	private void askToDeleteFolder(MinescriptScript target) {
+		String path = target.relativePath();
+		int count = repository.countScripts(target);
+		confirm = new UiConfirmDialog(
+			font,
+			anim,
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER_TITLE),
+			count == 0
+				? Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER_EMPTY, path)
+				: count == 1
+					? Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER_MESSAGE_ONE, path)
+					: Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER_MESSAGE, path, count),
+			Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER),
+			() -> {
+				try {
+					repository.deleteFolder(target);
+				} catch (IOException exception) {
+					refreshScripts();
+					setStatus(Component.literal(String.valueOf(exception.getMessage())), Tone.WARNING);
+					return;
+				}
+				keybindStore.removeFolder(path);
+				EMUtilsClient.minescriptKeybinds().reload();
+				if (selected != null && selected.relativePath().startsWith(path + "/")) {
+					selected = null;
+					editor.setText("", false);
+					editor.setFocused(false);
+				}
+				collapsed.removeIf(folderPath -> folderPath.equals(path) || folderPath.startsWith(path + "/"));
+				if (folder.equals(path) || folder.startsWith(path + "/")) {
+					int slash = path.lastIndexOf('/');
+					folder = slash < 0 ? "" : path.substring(0, slash);
+				}
+				refreshScripts();
+				setStatus(Component.translatable(EMUtilsTexts.UI_SCRIPT_FOLDER_DELETED, path), Tone.NEUTRAL);
+			}
+		);
+	}
+
+	/** The right-click menu for a script, a folder, or (with null) the empty space in the list. */
+	private void openMenu(@Nullable MinescriptScript script, int mouseX, int mouseY) {
+		List<UiContextMenu.Item> items = new ArrayList<>();
+		if (script == null) {
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_NEW_SCRIPT), () -> {
+				folder = "";
+				askForNewScript();
+			}));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_FOLDER), () -> askForNewFolder("")));
+		} else if (script.directory()) {
+			String path = script.relativePath();
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_SCRIPT_HERE), () -> {
+				folder = path;
+				collapsed.remove(path);
+				askForNewScript();
+			}));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SCRIPT_NEW_FOLDER_HERE), () -> askForNewFolder(path)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAME), () -> askToRename(script)));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_SCRIPT_DELETE_FOLDER), true, true, () -> askToDeleteFolder(script)));
+		} else {
+			boolean runnable = script.runnable() && minescript();
+			boolean scriptRunning = runnable && !MinescriptCompat.findActiveJobIdsForCommand(script.commandName()).isEmpty();
+			items.add(new UiContextMenu.Item(Component.translatable(scriptRunning ? EMUtilsTexts.UI_SCRIPT_STOP : EMUtilsTexts.UI_SCRIPT_RUN), runnable, false, () -> runFromMenu(script)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAME), () -> askToRename(script)));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_DELETE), script.editable(), true, () -> askToDelete(script)));
+		}
+		editor.setFocused(false);
+		filter.setFocused(false);
+		menu = new UiContextMenu(font, anim, mouseX, mouseY, items);
+	}
+
+	/** Runs or stops a script from its menu; the open one goes through Run, which saves it first. */
+	private void runFromMenu(MinescriptScript script) {
+		if (isSelected(script)) {
+			runSelected();
+			return;
+		}
+		String command = script.commandName();
+		if (!repository.isSafeCommand(command)) {
+			setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_UNSAFE_COMMAND), Tone.WARNING);
+			return;
+		}
+		switch (MinescriptCompat.toggleCommand(command)) {
+			case STARTED -> setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_RUNNING, command), Tone.GOOD);
+			case STOPPED -> setStatus(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_STOPPED, command), Tone.NEUTRAL);
+			case FAILED -> {
+			}
+		}
+	}
+
+	// ---- find -----------------------------------------------------------------------------------
+
+	/** Opens the find bar, starting from the selected text when it's on one line. */
+	private void openFind() {
+		if (selected == null) {
+			return;
+		}
+		String selection = editor.singleLineSelection();
+		if (selection != null && !selection.isBlank()) {
+			findField.setText(selection);
+		} else {
+			findField.select(0, findField.text().length());
+		}
+		findOpen = true;
+		editor.setFocused(false);
+		filter.setFocused(false);
+		findField.setFocused(true);
+		editor.setFindQuery(findField.text());
+	}
+
+	private void closeFind() {
+		findOpen = false;
+		findField.setFocused(false);
+		editor.setFindQuery("");
+		if (selected != null) {
+			editor.setFocused(true);
+		}
+	}
+
+	private void findChanged() {
+		editor.setFindQuery(findField.text());
+		editor.findNext(true, true);
+	}
+
 	private void openKeybind() {
 		if (canRun()) {
 			showKeybindDialog();
@@ -395,6 +645,27 @@ public final class ScriptsScreen extends UiPanelScreen {
 		if (++pollTicks >= RUNNING_POLL_TICKS) {
 			pollTicks = 0;
 			running = isRunning();
+			pollError();
+		}
+		if (error != null && editor.version() != errorVersion) {
+			// Edited since it failed: the error may no longer apply.
+			MinescriptCompat.dismissError(selected.commandName());
+			error = null;
+			editor.setErrorLine(-1);
+		}
+	}
+
+	/** Picks up why the open script's last run failed, once it has finished. */
+	private void pollError() {
+		MinescriptCompat.ScriptError latest = canRun() ? MinescriptCompat.lastError(selected.commandName()) : null;
+		if (latest != null && !latest.equals(error)) {
+			error = latest;
+			errorVersion = editor.version();
+			status = null;
+			editor.setErrorLine(latest.line() - 1);
+		} else if (latest == null && error != null) {
+			error = null;
+			editor.setErrorLine(-1);
 		}
 	}
 
@@ -407,7 +678,7 @@ public final class ScriptsScreen extends UiPanelScreen {
 	@Override
 	protected void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		tooltip = null;
-		boolean interactive = !dialogOpen() && !closing();
+		boolean interactive = !dialogOpen() && menu == null && !closing();
 		int hoverX = interactive ? mouseX : Integer.MIN_VALUE / 2;
 		int hoverY = interactive ? mouseY : Integer.MIN_VALUE / 2;
 		drawHeader(context, theme, hoverX, hoverY);
@@ -434,6 +705,8 @@ public final class ScriptsScreen extends UiPanelScreen {
 		headerIcon(context, theme, refreshX, HubIcons.REFRESH_CW, EMUtilsTexts.SCRIPT_MANAGER_REFRESH, mouseX, mouseY);
 		folderX = refreshX - 6 - HEADER_BUTTON;
 		headerIcon(context, theme, folderX, HubIcons.FOLDER, EMUtilsTexts.SCRIPT_MANAGER_OPEN_FOLDER, mouseX, mouseY);
+		newFolderX = folderX - 6 - HEADER_BUTTON;
+		headerIcon(context, theme, newFolderX, HubIcons.FOLDER_PLUS, EMUtilsTexts.UI_SCRIPT_NEW_FOLDER, mouseX, mouseY);
 	}
 
 	private void headerIcon(GuiGraphicsExtractor context, UiTheme theme, int x, Identifier icon, String tooltipKey, int mouseX, int mouseY) {
@@ -553,7 +826,10 @@ public final class ScriptsScreen extends UiPanelScreen {
 		drawCardHeader(context, theme, mouseX, mouseY);
 		context.fill(cardX + 1, bodyY + CARD_HEADER - 1, cardX + cardWidth - 1, bodyY + CARD_HEADER, UiOpacity.apply(theme.line()));
 		editor.draw(context, theme, lightness(), theme.surface(), mouseX, mouseY);
-		drawFooter(context, theme);
+		if (findOpen) {
+			drawFindBar(context, theme, mouseX, mouseY);
+		}
+		drawFooter(context, theme, mouseX, mouseY);
 	}
 
 	/**
@@ -685,12 +961,18 @@ public final class ScriptsScreen extends UiPanelScreen {
 		if (deleteHovered) {
 			showTooltip(Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_DELETE), mouseX, mouseY);
 		}
+		renameX = deleteX - 2 - BUTTON_HEIGHT;
+		boolean renameHovered = contains(mouseX, mouseY, renameX, actionsY, BUTTON_HEIGHT, BUTTON_HEIGHT);
+		UiWidgets.ghostIconButton(context, theme, renameX, actionsY, BUTTON_HEIGHT, HubIcons.PENCIL, renameHovered ? theme.text() : theme.textSecondary(), renameHovered ? 1.0F : 0.0F);
+		if (renameHovered) {
+			showTooltip(Component.translatable(EMUtilsTexts.UI_SCRIPT_RENAME_TOOLTIP), mouseX, mouseY);
+		}
 
 		// Left: the script's name, an unsaved dot, and its keybind.
 		int left = cardX + 12;
 		UiIcons.draw(context, HubIcons.FILE_CODE, left, center - 6, 12, theme.textSecondary());
 		int textX = left + 18;
-		int room = deleteX - 10 - textX;
+		int room = renameX - 10 - textX;
 		MinescriptKeyBinding binding = selected.commandName() == null ? null : keybindStore.get(selected.commandName()).orElse(null);
 		Component key = binding == null ? null : Component.literal(binding.displayName());
 		int keyWidth = key == null ? 0 : UiWidgets.keycapWidth(font, key) + 8;
@@ -710,7 +992,46 @@ public final class ScriptsScreen extends UiPanelScreen {
 		}
 	}
 
-	private void drawFooter(GuiGraphicsExtractor context, UiTheme theme) {
+	/** The find bar, floating at the editor's top right like in code editors. */
+	private void drawFindBar(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		findX = cardX + cardWidth - 1 - UiScrollArea.GUTTER - 8 - FIND_WIDTH;
+		findY = bodyY + CARD_HEADER + bannerHeight + 6;
+		UiShapes.shadow(context, findX, findY, FIND_WIDTH, FIND_HEIGHT, 7, 8, theme.shadow());
+		UiShapes.borderedRect(context, findX, findY, FIND_WIDTH, FIND_HEIGHT, 7, theme.surface(), findField.focused() ? theme.accent() : theme.line());
+		int center = findY + FIND_HEIGHT / 2;
+		int buttonY = center - FIND_BUTTON / 2;
+		findCloseX = findX + FIND_WIDTH - 4 - FIND_BUTTON;
+		findNextX = findCloseX - 2 - FIND_BUTTON;
+		findPrevX = findNextX - 2 - FIND_BUTTON;
+		findButton(context, theme, findPrevX, buttonY, HubIcons.CHEVRON_UP, EMUtilsTexts.UI_SCRIPT_FIND_PREVIOUS, mouseX, mouseY);
+		findButton(context, theme, findNextX, buttonY, HubIcons.CHEVRON_DOWN, EMUtilsTexts.UI_SCRIPT_FIND_NEXT, mouseX, mouseY);
+		findButton(context, theme, findCloseX, buttonY, HubIcons.X, EMUtilsTexts.UI_SCRIPT_FIND_CLOSE, mouseX, mouseY);
+
+		List<ScriptTextBuffer.Match> matches = editor.matches();
+		int current = editor.currentMatch();
+		Component count = findField.text().isEmpty()
+			? Component.empty()
+			: matches.isEmpty()
+				? Component.translatable(EMUtilsTexts.UI_SCRIPT_FIND_NONE)
+				: current >= 0
+					? Component.translatable(EMUtilsTexts.UI_SCRIPT_FIND_COUNT, current + 1, matches.size())
+					: Component.translatable(EMUtilsTexts.UI_SCRIPT_FIND_FOUND, matches.size());
+		int countWidth = UiText.width(font, count, UiText.Size.BODY);
+		int countX = findPrevX - 6 - countWidth;
+		UiText.drawCentered(context, font, count, UiText.Size.BODY, countX, center, matches.isEmpty() && !findField.text().isEmpty() ? theme.warning() : theme.muted());
+		UiIcons.draw(context, HubIcons.SEARCH, findX + 8, center - 5, 10, theme.textSecondary());
+		findField.draw(context, font, theme, findX + 24, center, countX - 8 - (findX + 24), Component.translatable(EMUtilsTexts.UI_SCRIPT_FIND_PLACEHOLDER));
+	}
+
+	private void findButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, Identifier icon, String tooltipKey, int mouseX, int mouseY) {
+		boolean hovered = contains(mouseX, mouseY, x, y, FIND_BUTTON, FIND_BUTTON);
+		UiWidgets.ghostIconButton(context, theme, x, y, FIND_BUTTON, icon, hovered ? theme.text() : theme.textSecondary(), hovered ? 1.0F : 0.0F);
+		if (hovered) {
+			showTooltip(Component.translatable(tooltipKey), mouseX, mouseY);
+		}
+	}
+
+	private void drawFooter(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		int top = bodyY + cardHeight - FOOTER;
 		context.fill(cardX + 1, top, cardX + cardWidth - 1, top + 1, UiOpacity.apply(theme.line()));
 		int center = top + FOOTER / 2;
@@ -733,6 +1054,23 @@ public final class ScriptsScreen extends UiPanelScreen {
 			};
 			Component line = UiText.ellipsize(font, status, UiText.Size.BODY, cardWidth - 36 - positionWidth);
 			UiText.drawCentered(context, font, line, UiText.Size.BODY, cardX + 12, center, UiTheme.fade(color, alpha));
+			errorWidth = 0;
+			return;
+		}
+		errorWidth = 0;
+		if (error != null) {
+			// Why the last run failed; clicking it jumps to the line.
+			Component message = error.line() > 0
+				? Component.translatable(EMUtilsTexts.UI_SCRIPT_ERROR_LINE, error.line(), error.message())
+				: Component.literal(error.message());
+			Component line = UiText.ellipsize(font, message, UiText.Size.BODY, cardWidth - 50 - positionWidth);
+			errorX = cardX + 12;
+			UiIcons.draw(context, HubIcons.X, errorX, center - 5, 10, theme.warning());
+			UiText.drawCentered(context, font, line, UiText.Size.BODY, errorX + 16, center, theme.warning());
+			errorWidth = 16 + UiText.width(font, line, UiText.Size.BODY);
+			if (error.line() > 0 && contains(mouseX, mouseY, errorX, top, errorWidth, FOOTER)) {
+				showTooltip(Component.translatable(EMUtilsTexts.UI_SCRIPT_ERROR_GO_TO), mouseX, mouseY);
+			}
 		}
 	}
 
@@ -744,8 +1082,14 @@ public final class ScriptsScreen extends UiPanelScreen {
 
 	@Override
 	protected void drawOverlay(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
-		if (tooltip != null && !dialogOpen()) {
+		if (tooltip != null && !dialogOpen() && menu == null) {
 			UiWidgets.tooltip(context, font, theme, tooltip, tooltipX, tooltipY, width, height);
+		}
+		if (menu != null) {
+			menu.render(context, theme, mouseX, mouseY, width, height);
+			if (menu.isClosed()) {
+				menu = null;
+			}
 		}
 		if (confirm != null) {
 			confirm.render(context, theme, mouseX, mouseY, width, height);
@@ -777,6 +1121,12 @@ public final class ScriptsScreen extends UiPanelScreen {
 		double mouseX = click.x();
 		double mouseY = click.y();
 		boolean left = click.button() == InputConstants.MOUSE_BUTTON_LEFT;
+		if (menu != null) {
+			// Any click closes the menu; one on an item also runs it.
+			menu.mouseClicked(mouseX, mouseY);
+			menu = null;
+			return true;
+		}
 		if (dialogOpen()) {
 			if (left) {
 				if (confirm != null) {
@@ -789,9 +1139,24 @@ public final class ScriptsScreen extends UiPanelScreen {
 			}
 			return true;
 		}
+		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && listScroll.contains(mouseX, mouseY)) {
+			MinescriptScript target = null;
+			for (RowBox box : rowBoxes) {
+				if (mouseY >= box.y() && mouseY < box.y() + ROW_HEIGHT) {
+					target = box.script();
+					break;
+				}
+			}
+			openMenu(target, (int) mouseX, (int) mouseY);
+			return true;
+		}
 		if (!left) {
 			return super.mouseClicked(click, doubled);
 		}
+		if (findOpen && clickFindBar(mouseX, mouseY, click.hasShiftDown())) {
+			return true;
+		}
+		findField.setFocused(false);
 		boolean onFilter = contains(mouseX, mouseY, listX, bodyY, LIST_WIDTH, FIELD_HEIGHT);
 		filter.setFocused(onFilter);
 		if (onFilter) {
@@ -801,6 +1166,15 @@ public final class ScriptsScreen extends UiPanelScreen {
 		}
 		if (contains(mouseX, mouseY, newX, headerButtonsY, newWidth, HEADER_BUTTON)) {
 			askForNewScript();
+			return true;
+		}
+		if (contains(mouseX, mouseY, newFolderX, headerButtonsY, HEADER_BUTTON, HEADER_BUTTON)) {
+			askForNewFolder(folder);
+			return true;
+		}
+		if (selected != null && errorWidth > 0 && error != null && error.line() > 0 && contains(mouseX, mouseY, errorX, bodyY + cardHeight - FOOTER, errorWidth, FOOTER)) {
+			editor.goToLine(error.line() - 1);
+			editor.setFocused(true);
 			return true;
 		}
 		if (contains(mouseX, mouseY, refreshX, headerButtonsY, HEADER_BUTTON, HEADER_BUTTON)) {
@@ -843,6 +1217,27 @@ public final class ScriptsScreen extends UiPanelScreen {
 		return super.mouseClicked(click, doubled);
 	}
 
+	/** Handles a click on the find bar: its buttons, or placing the caret in its field. */
+	private boolean clickFindBar(double mouseX, double mouseY, boolean shift) {
+		if (!contains(mouseX, mouseY, findX, findY, FIND_WIDTH, FIND_HEIGHT)) {
+			return false;
+		}
+		int buttonY = findY + FIND_HEIGHT / 2 - FIND_BUTTON / 2;
+		if (contains(mouseX, mouseY, findCloseX, buttonY, FIND_BUTTON, FIND_BUTTON)) {
+			closeFind();
+		} else if (contains(mouseX, mouseY, findNextX, buttonY, FIND_BUTTON, FIND_BUTTON)) {
+			editor.findNext(true, false);
+		} else if (contains(mouseX, mouseY, findPrevX, buttonY, FIND_BUTTON, FIND_BUTTON)) {
+			editor.findNext(false, false);
+		} else {
+			editor.setFocused(false);
+			filter.setFocused(false);
+			findField.setFocused(true);
+			findField.click(font, mouseX, shift);
+		}
+		return true;
+	}
+
 	private void clickRow(MinescriptScript script) {
 		if (script.directory()) {
 			folder = script.relativePath();
@@ -868,7 +1263,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 			return true;
 		}
 		if (contains(mouseX, mouseY, deleteX, actionsY, BUTTON_HEIGHT, BUTTON_HEIGHT)) {
-			askToDelete();
+			askToDelete(selected);
+			return true;
+		}
+		if (contains(mouseX, mouseY, renameX, actionsY, BUTTON_HEIGHT, BUTTON_HEIGHT)) {
+			askToRename(selected);
 			return true;
 		}
 		return contains(mouseX, mouseY, cardX, bodyY, cardWidth, CARD_HEADER);
@@ -897,6 +1296,7 @@ public final class ScriptsScreen extends UiPanelScreen {
 		if (closing() || dialogOpen()) {
 			return true;
 		}
+		menu = null;
 		if (listScroll.scroll(mouseX, mouseY, verticalAmount)) {
 			return true;
 		}
@@ -924,14 +1324,48 @@ public final class ScriptsScreen extends UiPanelScreen {
 			keybind.keyPressed(input);
 			return true;
 		}
+		if (menu != null) {
+			if (input.isEscape()) {
+				menu = null;
+			}
+			return true;
+		}
 		boolean command = input.hasControlDown() || (input.modifiers() & InputConstants.MOD_SUPER) != 0;
 		if (command && input.key() == InputConstants.KEY_S) {
 			saveSelected();
 			return true;
 		}
-		if (command && input.key() == InputConstants.KEY_F && !filter.focused()) {
-			editor.setFocused(false);
-			filter.setFocused(true);
+		if (command && input.key() == InputConstants.KEY_F) {
+			// In the editor (or its find bar) Ctrl+F finds in the script; anywhere else it filters the list.
+			if (selected != null && (editor.focused() || findField.focused())) {
+				openFind();
+			} else {
+				editor.setFocused(false);
+				findField.setFocused(false);
+				filter.setFocused(true);
+			}
+			return true;
+		}
+		if (findOpen && input.key() == InputConstants.KEY_F3) {
+			editor.findNext(!input.hasShiftDown(), false);
+			return true;
+		}
+		if (input.key() == InputConstants.KEY_F2 && selected != null && !filter.focused() && !findField.focused()) {
+			askToRename(selected);
+			return true;
+		}
+		if (findField.focused()) {
+			if (input.isEscape()) {
+				closeFind();
+			} else if (input.isConfirmation()) {
+				editor.findNext(!input.hasShiftDown(), false);
+			} else {
+				findField.keyPressed(input, this::findChanged);
+			}
+			return true;
+		}
+		if (findOpen && input.isEscape() && editor.focused()) {
+			closeFind();
 			return true;
 		}
 		if (filter.keyPressed(input, listScroll::reset)) {
@@ -952,7 +1386,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 			prompt.charTyped(input);
 			return true;
 		}
-		if ((confirm != null && !confirm.closing()) || (keybind != null && !keybind.closing())) {
+		if ((confirm != null && !confirm.closing()) || (keybind != null && !keybind.closing()) || menu != null) {
+			return true;
+		}
+		if (findField.focused()) {
+			findField.charTyped(input, this::findChanged);
 			return true;
 		}
 		if (filter.charTyped(input, listScroll::reset)) {
@@ -1020,6 +1458,60 @@ public final class ScriptsScreen extends UiPanelScreen {
 	/** Presses the Python warning's button; used by UI snapshots. */
 	public void fixPythonForSnapshot() {
 		fixPython();
+	}
+
+	/** The open script's text in the editor, saved or not; used by UI snapshots. */
+	public String editorTextForSnapshot() {
+		return editor.text();
+	}
+
+	/** Why the open script's last run failed, as the footer shows it; used by UI snapshots. */
+	public MinescriptCompat.@Nullable ScriptError errorForSnapshot() {
+		return error;
+	}
+
+	/** The find bar's count: the selected match (1-based, 0 for none) and how many there are; used by UI snapshots. */
+	public int[] findForSnapshot() {
+		return new int[] {editor.currentMatch() + 1, editor.matches().size()};
+	}
+
+	/** Opens the right-click menu for {@code relativePath} (null for the list's empty space); used by UI snapshots. */
+	public void menuForSnapshot(@Nullable String relativePath, int mouseX, int mouseY) {
+		MinescriptScript target = null;
+		for (MinescriptScript script : scripts) {
+			if (script.relativePath().equals(relativePath)) {
+				target = script;
+			}
+		}
+		openMenu(target, mouseX, mouseY);
+	}
+
+	/** Opens the rename dialog for {@code relativePath}; used by UI snapshots. */
+	public void renameForSnapshot(String relativePath) {
+		for (MinescriptScript script : scripts) {
+			if (script.relativePath().equals(relativePath)) {
+				askToRename(script);
+			}
+		}
+	}
+
+	/** Opens the delete dialog for the folder {@code relativePath}; used by UI snapshots. */
+	public void deleteFolderForSnapshot(String relativePath) {
+		for (MinescriptScript script : scripts) {
+			if (script.directory() && script.relativePath().equals(relativePath)) {
+				askToDeleteFolder(script);
+			}
+		}
+	}
+
+	/** Opens the new folder dialog in {@code parent}; used by UI snapshots. */
+	public void newFolderForSnapshot(String parent) {
+		askForNewFolder(parent);
+	}
+
+	/** Every script and folder in the list, by path; used by UI snapshots. */
+	public List<String> pathsForSnapshot() {
+		return scripts.stream().map(MinescriptScript::relativePath).toList();
 	}
 
 	/** Throws away edits so the screen can close without asking; used by UI snapshots. */

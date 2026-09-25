@@ -43,6 +43,7 @@
 		"MinecraftAntiDurabilityBreakMixin",
 		"MinecraftFastPlaceMixin",
 		"MinecraftFreeCameraInputMixin",
+		"MinescriptJobMixin",
 		"MultiPlayerGameModeAntiDurabilityBreakMixin",
 		"MultiPlayerGameModeFastPlaceMixin",
 		"MultiPlayerGameModePlaceBelowMixin",

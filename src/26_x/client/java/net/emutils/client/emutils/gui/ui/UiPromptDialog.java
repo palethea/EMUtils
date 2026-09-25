@@ -63,6 +63,12 @@ public final class UiPromptDialog {
 		field.setFocused(true);
 	}
 
+	/** Selects part of the starting text, such as a file's name without its folder and extension. */
+	public UiPromptDialog select(int start, int end) {
+		field.select(start, end);
+		return this;
+	}
+
 	public boolean isClosed() {
 		return frame.isClosed();
 	}

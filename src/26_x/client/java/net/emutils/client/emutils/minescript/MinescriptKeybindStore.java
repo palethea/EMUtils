@@ -53,6 +53,35 @@ public final class MinescriptKeybindStore {
 		}
 	}
 
+	/**
+	 * Moves keybinds along with a renamed script ({@code from} and {@code to} are commands), or with a
+	 * renamed folder (paths), whose scripts' commands all start with it.
+	 */
+	public synchronized void rename(String from, String to, boolean folder) {
+		boolean changed = false;
+		for (int i = 0; i < bindings.size(); i++) {
+			MinescriptKeyBinding binding = bindings.get(i);
+			String command = binding.command();
+			String renamed = folder
+				? command.startsWith(from + "/") ? to + command.substring(from.length()) : null
+				: command.equals(from) ? to : null;
+			if (renamed != null) {
+				bindings.set(i, new MinescriptKeyBinding(renamed, binding.keyType(), binding.keyCode(), binding.ctrl(), binding.alt(), binding.shift()));
+				changed = true;
+			}
+		}
+		if (changed) {
+			save();
+		}
+	}
+
+	/** Removes the keybinds of every script inside {@code folder}. */
+	public synchronized void removeFolder(String folder) {
+		if (bindings.removeIf(binding -> binding.command().startsWith(folder + "/"))) {
+			save();
+		}
+	}
+
 	public synchronized void removeBinding(MinescriptKeyBinding binding) {
 		if (bindings.removeIf(existing -> existing.command().equals(binding.command()))) {
 			save();

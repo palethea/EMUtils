@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -13,11 +15,17 @@ import net.minecraft.util.Mth;
 
 /**
  * The text of a script being edited: its lines, the caret and selection, undo and redo, and every
- * editing key. It knows nothing about pixels, so the classic editor and the new UI's editor (#118)
- * share it and behave the same; they only lay the text out and turn mouse positions into positions.
+ * editing key. It knows nothing about pixels; the editors only lay the text out and turn mouse
+ * positions into positions. Editing follows Python conventions (#125): Enter keeps the indentation
+ * and indents after a colon, Tab inserts four spaces, and brackets and quotes close themselves.
  */
 public final class ScriptTextBuffer {
 	private static final int MAX_UNDO = 100;
+	/** One indentation level: four spaces, as PEP 8 and Minescript's own scripts use. */
+	static final int INDENT_WIDTH = 4;
+	private static final String INDENT = " ".repeat(INDENT_WIDTH);
+	/** Prefixes that may come right before a string's opening quote, such as f"..." or rb'...'. */
+	private static final Set<String> STRING_PREFIXES = Set.of("f", "r", "b", "u", "rb", "br", "fr", "rf");
 
 	private final Runnable dirtyListener;
 	private final Runnable caretListener;
@@ -30,6 +38,8 @@ public final class ScriptTextBuffer {
 	private int anchorColumn;
 	private boolean dirty;
 	private boolean applyingHistory;
+	/** Counts edits, so views can tell when the text changed since they last looked. */
+	private int version;
 
 	/**
 	 * {@code dirtyListener} runs when the text first differs from the saved text, and
@@ -57,6 +67,44 @@ public final class ScriptTextBuffer {
 		dirty = false;
 		undoStack.clear();
 		redoStack.clear();
+		version++;
+	}
+
+	public int version() {
+		return version;
+	}
+
+	/** Selects columns {@code start} to {@code end} of {@code line}, with the caret at the end. */
+	public void select(int line, int start, int end) {
+		int row = Mth.clamp(line, 0, lines.size() - 1);
+		int length = lines.get(row).length();
+		anchorLine = row;
+		anchorColumn = Mth.clamp(start, 0, length);
+		caretLine = row;
+		caretColumn = Mth.clamp(end, 0, length);
+		caretListener.run();
+	}
+
+	public record Match(int line, int start, int end) {
+	}
+
+	/** Every place {@code query} appears, ignoring case; matches on a line don't overlap. */
+	public List<Match> find(String query) {
+		List<Match> matches = new ArrayList<>();
+		if (query == null || query.isEmpty()) {
+			return matches;
+		}
+		String needle = query.toLowerCase(java.util.Locale.ROOT);
+		for (int line = 0; line < lines.size(); line++) {
+			String haystack = lines.get(line).toLowerCase(java.util.Locale.ROOT);
+			int from = 0;
+			int at;
+			while ((at = haystack.indexOf(needle, from)) >= 0) {
+				matches.add(new Match(line, at, at + needle.length()));
+				from = at + needle.length();
+			}
+		}
+		return matches;
 	}
 
 	public String text() {
@@ -218,11 +266,19 @@ public final class ScriptTextBuffer {
 				deleteWordForward();
 				return true;
 			}
+			if (isToggleComment(input)) {
+				toggleComment();
+				return true;
+			}
+			if (input.key() == InputConstants.KEY_D && !input.hasShiftDown()) {
+				duplicateLines();
+				return true;
+			}
 			return false;
 		}
 		return switch (input.key()) {
 			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
-				insertText("\n");
+				newline();
 				yield true;
 			}
 			case InputConstants.KEY_BACKSPACE -> {
@@ -266,7 +322,15 @@ public final class ScriptTextBuffer {
 				yield true;
 			}
 			case InputConstants.KEY_TAB -> {
-				insertText(input.hasShiftDown() ? "" : "\t");
+				if (input.hasShiftDown()) {
+					outdentLines();
+				} else if (hasSelection() && selectionStart().line() != selectionEnd().line()) {
+					indentLines();
+				} else {
+					// Spaces up to the next indentation stop, so columns stay aligned.
+					int column = hasSelection() ? selectionStart().column() : caretColumn;
+					insertText(" ".repeat(INDENT_WIDTH - column % INDENT_WIDTH));
+				}
 				yield true;
 			}
 			default -> false;
@@ -277,8 +341,237 @@ public final class ScriptTextBuffer {
 		if (!input.isAllowedChatCharacter() || input.codepoint() == '\t') {
 			return false;
 		}
-		insertText(input.codepointAsString());
+		String typed = input.codepointAsString();
+		if (typed.length() == 1 && typePaired(typed.charAt(0))) {
+			return true;
+		}
+		insertText(typed);
 		return true;
+	}
+
+	/** Ctrl+/: the / key where the layout has it, or Shift+7, which types / on Nordic and German layouts. */
+	private static boolean isToggleComment(KeyEvent input) {
+		return input.key() == InputConstants.KEY_SLASH
+			|| VersionedInput.shortcutKey(input) == '/'
+			|| (input.key() == InputConstants.KEY_7 && input.hasShiftDown());
+	}
+
+	private static char closerFor(char opener) {
+		return switch (opener) {
+			case '(' -> ')';
+			case '[' -> ']';
+			case '{' -> '}';
+			case '"' -> '"';
+			case '\'' -> '\'';
+			default -> 0;
+		};
+	}
+
+	private static boolean isPair(char opener, char closer) {
+		return closerFor(opener) != 0 && closerFor(opener) == closer;
+	}
+
+	/**
+	 * Brackets and quotes: typing one adds its closer, typing a closer that is already next steps over
+	 * it, and a selection gets wrapped. Returns false to type the character normally.
+	 */
+	private boolean typePaired(char typed) {
+		String line = lines.get(caretLine);
+		char next = caretColumn < line.length() ? line.charAt(caretColumn) : 0;
+		boolean quote = typed == '"' || typed == '\'';
+		if (!hasSelection() && next == typed && (quote || typed == ')' || typed == ']' || typed == '}')) {
+			setCaret(caretLine, caretColumn + 1, false);
+			return true;
+		}
+		char closer = closerFor(typed);
+		if (closer == 0) {
+			return false;
+		}
+		if (hasSelection()) {
+			if (selectionStart().line() != selectionEnd().line()) {
+				return false;
+			}
+			Position start = selectionStart();
+			Position end = selectionEnd();
+			pushUndo();
+			String text = lines.get(start.line());
+			lines.set(start.line(), text.substring(0, start.column()) + typed + text.substring(start.column(), end.column()) + closer + text.substring(end.column()));
+			select(start.line(), start.column() + 1, end.column() + 1);
+			markDirty();
+			return true;
+		}
+		String before = line.substring(0, caretColumn);
+		if (quote) {
+			// A third quote in a row opens a triple-quoted string: close it with three as well.
+			if (before.endsWith(String.valueOf(typed).repeat(2)) && next != typed) {
+				insertPair(String.valueOf(typed), String.valueOf(typed).repeat(3));
+				return true;
+			}
+			// Don't pair an apostrophe in a word (don't) unless the word is a string prefix (f", rb').
+			String word = before.substring(wordStartBefore(before, before.length()));
+			if (!word.isEmpty() && isWordCharacter(word.charAt(word.length() - 1))
+				&& !STRING_PREFIXES.contains(word.toLowerCase(java.util.Locale.ROOT))) {
+				return false;
+			}
+		}
+		// Only close when nothing would end up stuck inside the pair.
+		if (next != 0 && !Character.isWhitespace(next) && ")]},:;".indexOf(next) < 0) {
+			return false;
+		}
+		insertPair(String.valueOf(typed), String.valueOf(closer));
+		return true;
+	}
+
+	private void insertPair(String opening, String closing) {
+		pushUndo();
+		String line = lines.get(caretLine);
+		lines.set(caretLine, line.substring(0, caretColumn) + opening + closing + line.substring(caretColumn));
+		setCaret(caretLine, caretColumn + opening.length(), false);
+		markDirty();
+	}
+
+	/** Enter: keeps the line's indentation, adds a level after a colon, and opens up an empty bracket pair. */
+	private void newline() {
+		pushUndo();
+		deleteSelection();
+		String line = lines.get(caretLine);
+		String before = line.substring(0, caretColumn);
+		String after = line.substring(caretColumn);
+		String leading = leadingWhitespace(line);
+		String indentation = leading.substring(0, Math.min(caretColumn, leading.length()));
+		String trimmed = before.stripTrailing();
+		char last = trimmed.isEmpty() ? 0 : trimmed.charAt(trimmed.length() - 1);
+		String stripped = after.stripLeading();
+		if (closerFor(last) != 0 && last != '"' && last != '\'' && !stripped.isEmpty() && stripped.charAt(0) == closerFor(last)) {
+			// foo(|) becomes three lines, with the caret indented on the middle one.
+			insertRaw("\n" + indentation + INDENT + "\n" + indentation);
+			setCaret(caretLine - 1, indentation.length() + INDENT_WIDTH, false);
+		} else if (last == ':' || (closerFor(last) != 0 && last != '"' && last != '\'')) {
+			insertRaw("\n" + indentation + INDENT);
+		} else {
+			insertRaw("\n" + indentation);
+		}
+		markDirty();
+	}
+
+	private static String leadingWhitespace(String line) {
+		int end = 0;
+		while (end < line.length() && (line.charAt(end) == ' ' || line.charAt(end) == '\t')) {
+			end++;
+		}
+		return line.substring(0, end);
+	}
+
+	/** The lines the selection touches, or the caret's line; a selection ending at column 0 leaves that line out. */
+	private int[] selectedLines() {
+		if (!hasSelection()) {
+			return new int[] {caretLine, caretLine};
+		}
+		Position start = selectionStart();
+		Position end = selectionEnd();
+		int last = end.line() > start.line() && end.column() == 0 ? end.line() - 1 : end.line();
+		return new int[] {start.line(), last};
+	}
+
+	/** Moves the caret and the selection's anchor along when {@code delta} characters were added or removed at {@code column}. */
+	private void shiftColumns(int line, int column, int delta) {
+		if (caretLine == line && caretColumn >= column) {
+			caretColumn = Math.max(column, caretColumn + delta);
+		}
+		if (anchorLine == line && anchorColumn >= column) {
+			anchorColumn = Math.max(column, anchorColumn + delta);
+		}
+	}
+
+	private void indentLines() {
+		int[] range = selectedLines();
+		pushUndo();
+		for (int line = range[0]; line <= range[1]; line++) {
+			if (lines.get(line).isBlank()) {
+				continue;
+			}
+			lines.set(line, INDENT + lines.get(line));
+			shiftColumns(line, 0, INDENT_WIDTH);
+		}
+		caretListener.run();
+		markDirty();
+	}
+
+	/** Shift+Tab: removes one indentation level (up to four spaces, or a tab) from each line. */
+	private void outdentLines() {
+		int[] range = selectedLines();
+		boolean changed = false;
+		for (int line = range[0]; line <= range[1]; line++) {
+			String text = lines.get(line);
+			int remove = text.startsWith("\t") ? 1 : 0;
+			if (remove == 0) {
+				while (remove < INDENT_WIDTH && remove < text.length() && text.charAt(remove) == ' ') {
+					remove++;
+				}
+			}
+			if (remove == 0) {
+				continue;
+			}
+			if (!changed) {
+				pushUndo();
+				changed = true;
+			}
+			lines.set(line, text.substring(remove));
+			shiftColumns(line, 0, -remove);
+		}
+		if (changed) {
+			caretListener.run();
+			markDirty();
+		}
+	}
+
+	/** Ctrl+/: comments the lines out with "# " at their shared indentation, or back in if they all are. */
+	private void toggleComment() {
+		int[] range = selectedLines();
+		int indent = Integer.MAX_VALUE;
+		boolean allCommented = true;
+		for (int line = range[0]; line <= range[1]; line++) {
+			String text = lines.get(line);
+			if (text.isBlank()) {
+				continue;
+			}
+			String leading = leadingWhitespace(text);
+			indent = Math.min(indent, leading.length());
+			allCommented &= text.startsWith("#", leading.length());
+		}
+		if (indent == Integer.MAX_VALUE) {
+			return;
+		}
+		pushUndo();
+		for (int line = range[0]; line <= range[1]; line++) {
+			String text = lines.get(line);
+			if (text.isBlank()) {
+				continue;
+			}
+			if (allCommented) {
+				int at = leadingWhitespace(text).length();
+				int length = text.startsWith("# ", at) ? 2 : 1;
+				lines.set(line, text.substring(0, at) + text.substring(at + length));
+				shiftColumns(line, at, -length);
+			} else {
+				lines.set(line, text.substring(0, indent) + "# " + text.substring(indent));
+				shiftColumns(line, indent, 2);
+			}
+		}
+		caretListener.run();
+		markDirty();
+	}
+
+	/** Ctrl+D: copies the current or selected lines below themselves and moves the caret onto the copy. */
+	private void duplicateLines() {
+		int[] range = selectedLines();
+		int count = range[1] - range[0] + 1;
+		pushUndo();
+		lines.addAll(range[1] + 1, new ArrayList<>(lines.subList(range[0], range[1] + 1)));
+		caretLine += count;
+		anchorLine += count;
+		caretListener.run();
+		markDirty();
 	}
 
 	private static boolean hasControlOrSuper(KeyEvent input) {
@@ -288,6 +581,12 @@ public final class ScriptTextBuffer {
 	private void insertText(String text) {
 		pushUndo();
 		deleteSelection();
+		insertRaw(text);
+		markDirty();
+	}
+
+	/** Inserts {@code text} at the caret without recording undo or marking the text changed. */
+	private void insertRaw(String text) {
 		String[] split = (text == null ? "" : text).replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
 		String line = lines.get(caretLine);
 		String before = line.substring(0, caretColumn);
@@ -304,7 +603,6 @@ public final class ScriptTextBuffer {
 			lines.set(newLine, lines.get(newLine) + after);
 			setCaret(newLine, split[split.length - 1].length(), false);
 		}
-		markDirty();
 	}
 
 	private void backspace() {
@@ -317,8 +615,18 @@ public final class ScriptTextBuffer {
 		if (caretColumn > 0) {
 			pushUndo();
 			String line = lines.get(caretLine);
-			lines.set(caretLine, line.substring(0, caretColumn - 1) + line.substring(caretColumn));
-			setCaret(caretLine, caretColumn - 1, false);
+			String before = line.substring(0, caretColumn);
+			int remove = 1;
+			int end = caretColumn;
+			if (before.isBlank() && !before.contains("\t")) {
+				// In the indentation, remove back to the previous indentation stop.
+				remove = (caretColumn - 1) % INDENT_WIDTH + 1;
+			} else if (caretColumn < line.length() && isPair(line.charAt(caretColumn - 1), line.charAt(caretColumn))) {
+				// Between an empty pair, such as (|), remove both.
+				end = caretColumn + 1;
+			}
+			lines.set(caretLine, line.substring(0, caretColumn - remove) + line.substring(end));
+			setCaret(caretLine, caretColumn - remove, false);
 			markDirty();
 		} else if (caretLine > 0) {
 			pushUndo();
@@ -518,6 +826,7 @@ public final class ScriptTextBuffer {
 	}
 
 	private void pushUndo() {
+		version++;
 		if (applyingHistory) {
 			return;
 		}
@@ -537,6 +846,7 @@ public final class ScriptTextBuffer {
 	}
 
 	private void applyState(EditorState state) {
+		version++;
 		lines.clear();
 		lines.addAll(state.lines());
 		caretLine = state.caretLine();
