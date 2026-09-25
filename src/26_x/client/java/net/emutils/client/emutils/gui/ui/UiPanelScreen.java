@@ -28,6 +28,8 @@ public abstract class UiPanelScreen extends Screen {
 	protected int panelHeight;
 	private boolean prepared;
 	private boolean closing;
+	/** Shown again after a screen opened from this one closed; the background is already in place then. */
+	private boolean returning;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
 	private float lightness;
@@ -77,6 +79,17 @@ public abstract class UiPanelScreen extends Screen {
 		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness);
 	}
 
+	/**
+	 * How strongly the dimmed, blurred background shows. Moving between two screens of the new UI, it
+	 * stays in place and only the panels animate, so the background doesn't dip in between.
+	 */
+	private float backgroundProgress() {
+		if (parent instanceof UiPanelScreen || (returning && !closing)) {
+			return 1.0F;
+		}
+		return openProgress;
+	}
+
 	/** 0 in dark mode, 1 in light mode, in between while the theme crossfades. */
 	protected float lightness() {
 		return lightness;
@@ -92,10 +105,22 @@ public abstract class UiPanelScreen extends Screen {
 		return closing;
 	}
 
+	/** Coming back from a screen opened from this one, the panel plays its open animation again. */
+	@Override
+	public void added() {
+		super.added();
+		if (prepared) {
+			returning = true;
+			prepared = false;
+			closing = false;
+			anim.snap("open", 0.0F);
+		}
+	}
+
 	@Override
 	protected final void init() {
 		if (!prepared) {
-			UiBlur.set(fadesBlur() ? 0.0F : 1.0F);
+			UiBlur.set(fadesBlur() ? backgroundProgress() : 1.0F);
 		}
 		UiText.refreshFonts();
 		panelWidth = Math.min(maxPanelWidth(), width - MARGIN * 2);
@@ -108,7 +133,7 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		super.extractBackground(context, mouseX, mouseY, delta);
-		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), openProgress));
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), backgroundProgress()));
 	}
 
 	/**
@@ -121,8 +146,9 @@ public abstract class UiPanelScreen extends Screen {
 			super.extractMenuBackground(context);
 			return;
 		}
-		if (openProgress > 0.0F) {
-			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, openProgress));
+		float background = backgroundProgress();
+		if (background > 0.0F) {
+			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, background));
 		}
 	}
 
@@ -135,7 +161,7 @@ public abstract class UiPanelScreen extends Screen {
 		// animation's clock starts and the animation can't hitch.
 		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
 		UiOpacity.set(openProgress);
-		UiBlur.set(fadesBlur() ? openProgress : 1.0F);
+		UiBlur.set(fadesBlur() ? backgroundProgress() : 1.0F);
 		float scale = 0.97F + 0.03F * openProgress;
 		context.pose().pushMatrix();
 		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
@@ -165,9 +191,17 @@ public abstract class UiPanelScreen extends Screen {
 		super.removed();
 	}
 
-	/** Fades and scales the panel out, then returns to the previous screen. */
+	/**
+	 * Fades and scales the panel out, then returns to the previous screen. Going back to another screen
+	 * of the new UI, it switches right away instead, and that screen's panel fades and scales in, the
+	 * same way opening this one looked.
+	 */
 	@Override
 	public void onClose() {
+		if (parent instanceof UiPanelScreen) {
+			minecraft.gui.setScreen(parent);
+			return;
+		}
 		closing = true;
 	}
 
