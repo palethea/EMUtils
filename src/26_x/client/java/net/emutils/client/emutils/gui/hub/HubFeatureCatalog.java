@@ -12,7 +12,7 @@ import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
-import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -98,7 +98,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_SCREENSHOT_GALLERY_DESC,
 				HubFeature.Icon.IMAGE,
 				null,
-				openScreenAction(ScreenshotGalleryScreen::new),
+				openScreenAction(GalleryScreens::gallery),
 				true,
 				categoryReset(HubCategory.SCREENSHOT_GALLERY)
 			).keys("key.emutils.open_gallery"),

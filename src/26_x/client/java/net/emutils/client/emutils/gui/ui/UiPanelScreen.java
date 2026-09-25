@@ -30,6 +30,8 @@ public abstract class UiPanelScreen extends Screen {
 	private boolean closing;
 	/** Shown again after a screen opened from this one closed; the background is already in place then. */
 	private boolean returning;
+	/** Closed into the game while the HUD still draws the fade-out, so it keeps its textures until then. */
+	private boolean fadingOnHud;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
 	private float lightness;
@@ -189,7 +191,23 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	public void removed() {
 		UiBlur.reset();
+		if (!fadingOnHud) {
+			dispose();
+		}
 		super.removed();
+	}
+
+	/**
+	 * Frees what the screen holds, such as textures. Called when it's removed, or when its fade on the
+	 * HUD has finished; the screen may be shown again afterwards, so recreate things lazily.
+	 */
+	protected void dispose() {
+	}
+
+	/** Called once the fade-out on the HUD has finished. */
+	void finishFadingOnHud() {
+		fadingOnHud = false;
+		dispose();
 	}
 
 	/**
@@ -207,6 +225,7 @@ public abstract class UiPanelScreen extends Screen {
 		if (parent == null && minecraft.level != null) {
 			// Back to the game: hand control back right away, so the player can look around and move
 			// while the panel is still fading; the HUD draws its last frames.
+			fadingOnHud = true;
 			minecraft.gui.setScreen(null);
 			UiClosingScreens.add(this);
 		}

@@ -22,6 +22,8 @@ import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
@@ -303,8 +305,9 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void handleKeyMappings(Minecraft client) {
 		while (openGalleryKeyMapping != null && openGalleryKeyMapping.consumeClick()) {
-			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ScreenshotGalleryScreen)) {
-				client.gui.setScreen(new ScreenshotGalleryScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			if (!(current instanceof ScreenshotGalleryScreen) && !(current instanceof GalleryScreen)) {
+				client.gui.setScreen(GalleryScreens.gallery(current));
 			}
 		}
 		while (openScriptManagerKeyMapping != null && openScriptManagerKeyMapping.consumeClick()) {

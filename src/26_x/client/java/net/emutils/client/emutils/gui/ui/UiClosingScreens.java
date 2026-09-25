@@ -32,6 +32,9 @@ public final class UiClosingScreens {
 	/** Drops any fading screens, for example when a new one opens. */
 	static void clear() {
 		if (!SCREENS.isEmpty()) {
+			for (Entry entry : SCREENS) {
+				entry.screen().finishFadingOnHud();
+			}
 			SCREENS.clear();
 			UiBlur.reset();
 		}
@@ -42,7 +45,13 @@ public final class UiClosingScreens {
 			return;
 		}
 		long now = System.nanoTime();
-		SCREENS.removeIf(entry -> now - entry.startNanos() > MAX_NANOS || !entry.screen().extractClosingFrame(context));
+		SCREENS.removeIf(entry -> {
+			if (now - entry.startNanos() > MAX_NANOS || !entry.screen().extractClosingFrame(context)) {
+				entry.screen().finishFadingOnHud();
+				return true;
+			}
+			return false;
+		});
 		if (SCREENS.isEmpty()) {
 			UiBlur.reset();
 		}

@@ -9,15 +9,19 @@ public final class HubIcons {
 	public static final Identifier BEAM = icon("beam");
 	public static final Identifier BOX = icon("box");
 	public static final Identifier CHEVRON_DOWN = icon("chevron-down");
+	public static final Identifier CHEVRON_LEFT = icon("chevron-left");
+	public static final Identifier CHEVRON_RIGHT = icon("chevron-right");
 	public static final Identifier CHEVRON_UP = icon("chevron-up");
 	public static final Identifier CLOUD_OFF = icon("cloud-off");
 	public static final Identifier CLOUD_SUN = icon("cloud-sun");
 	public static final Identifier COPY = icon("copy");
 	public static final Identifier CROSSHAIR = icon("crosshair");
 	public static final Identifier DROPLETS = icon("droplets");
+	public static final Identifier EXTERNAL_LINK = icon("external-link");
 	public static final Identifier EYE = icon("eye");
 	public static final Identifier EYE_OFF = icon("eye-off");
 	public static final Identifier FLAME = icon("flame");
+	public static final Identifier FOLDER = icon("folder");
 	public static final Identifier FOLDER_COG = icon("folder-cog");
 	public static final Identifier IMAGE = icon("image");
 	public static final Identifier MAP_PIN = icon("map-pin");
@@ -38,6 +42,7 @@ public final class HubIcons {
 	public static final Identifier TAG = icon("tag");
 	public static final Identifier TRASH = icon("trash");
 	public static final Identifier WRENCH = icon("wrench");
+	public static final Identifier X = icon("x");
 	public static final Identifier ZOOM_IN = icon("zoom-in");
 
 	private HubIcons() {

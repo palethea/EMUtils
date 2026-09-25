@@ -5,6 +5,7 @@ import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.minecraft.client.KeyMapping;
@@ -135,6 +136,29 @@ public final class UiSnapshotter {
 				next();
 			}
 			case 50 -> capture(client, "gui scale 2, waypoints, empty");
+			// The gallery shows the screenshots this run took so far.
+			case 51 -> {
+				client.gui.setScreen(new GalleryScreen(null));
+				next();
+			}
+			case 52 -> capture(client, "gui scale 2, gallery");
+			case 53 -> {
+				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					screen.openPreviewForSnapshot(1);
+				}
+				next();
+			}
+			case 54 -> capture(client, "gui scale 2, gallery preview");
+			case 55 -> {
+				EMUtilsClient.config().setSettingsUiDark(false);
+				client.gui.setScreen(new GalleryScreen(null));
+				next();
+			}
+			case 56 -> capture(client, "gui scale 2, gallery, light");
+			case 57 -> {
+				EMUtilsClient.config().setSettingsUiDark(true);
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
