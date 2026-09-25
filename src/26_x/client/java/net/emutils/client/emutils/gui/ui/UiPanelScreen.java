@@ -179,6 +179,16 @@ public abstract class UiPanelScreen extends Screen {
 		drawOverlay(context, theme, mouseX, mouseY);
 	}
 
+	/**
+	 * Draws the panel's contents once, invisibly, into {@code context}, so the text, shapes and icons it
+	 * uses are created and cached before the screen is first opened.
+	 */
+	public void prerender(GuiGraphicsExtractor context) {
+		UiOpacity.set(0.0F);
+		drawPanel(context, theme(), Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2);
+		UiOpacity.reset();
+	}
+
 	/** Once the close animation has finished, returns to the previous screen; not while drawing, like vanilla. */
 	@Override
 	public void tick() {
