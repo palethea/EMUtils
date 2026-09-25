@@ -14,7 +14,7 @@ import net.emutils.client.emutils.chat.ChatMentionAlerts;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutScreens;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.inventory.gui.MassDropScreen;
+import net.emutils.client.emutils.inventory.gui.MassDropScreens;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.packs.gui.PackManagerScreen;
@@ -574,7 +574,7 @@ public final class HubSettingsRegistry {
 			Component.translatable("emutils.mass_drop.manage"),
 			() -> {
 				Minecraft client = Minecraft.getInstance();
-				client.gui.setScreen(new MassDropScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+				client.gui.setScreen(MassDropScreens.list(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			},
 			true
 		));

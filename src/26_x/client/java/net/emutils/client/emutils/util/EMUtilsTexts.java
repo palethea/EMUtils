@@ -54,6 +54,17 @@ public final class EMUtilsTexts {
     public static final String UI_SCRIPT_NAME_PLACEHOLDER = "emutils.ui.script.name_placeholder";
     public static final String UI_SCRIPT_KEYBIND_MOVES = "emutils.ui.script.keybind_moves";
     public static final String UI_SCRIPT_KEYBIND_REMOVE = "emutils.ui.script.keybind_remove";
+    public static final String UI_MASS_DROP_COUNT = "emutils.ui.mass_drop.count";
+    public static final String UI_MASS_DROP_COUNT_ONE = "emutils.ui.mass_drop.count_one";
+    public static final String UI_MASS_DROP_SEARCH = "emutils.ui.mass_drop.search";
+    public static final String UI_MASS_DROP_KEY = "emutils.ui.mass_drop.key";
+    public static final String UI_MASS_DROP_LEGIT_DESC = "emutils.ui.mass_drop.legit_desc";
+    public static final String UI_MASS_DROP_UNFAIR_DESC = "emutils.ui.mass_drop.unfair_desc";
+    public static final String UI_MASS_DROP_EMPTY = "emutils.ui.mass_drop.empty";
+    public static final String UI_MASS_DROP_NO_MATCH = "emutils.ui.mass_drop.no_match";
+    public static final String UI_MASS_DROP_ADDED = "emutils.ui.mass_drop.added";
+    public static final String UI_MASS_DROP_REMOVE = "emutils.ui.mass_drop.remove";
+    public static final String UI_MASS_DROP_CARRIED = "emutils.ui.mass_drop.carried";
     public static final String UI_SHORTCUT_NEW = "emutils.ui.shortcut.new";
     public static final String UI_SHORTCUT_EDIT = "emutils.ui.shortcut.edit";
     public static final String UI_SHORTCUT_EDIT_ACTION = "emutils.ui.shortcut.edit_action";

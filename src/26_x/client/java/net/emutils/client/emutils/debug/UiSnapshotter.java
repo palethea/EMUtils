@@ -15,6 +15,7 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
 import net.emutils.client.emutils.minescript.MinescriptPython;
@@ -680,6 +681,47 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
+			// The Mass Drop list (#134): search, add an item, and see it in the list with how many you carry.
+			case 146 -> {
+				massDropBefore = EMUtilsClient.massDrop().store().itemIds();
+				if (client.getConnection() != null) {
+					client.getConnection().sendCommand("give @s minecraft:cobblestone 40");
+				}
+				client.gui.setScreen(new MassDropItemsScreen(null));
+				next();
+			}
+			case 147 -> captureAfter(client, 25, "mass drop, list");
+			case 148 -> {
+				if (MinecraftClientCompat.screen(client) instanceof MassDropItemsScreen screen) {
+					screen.searchForSnapshot("cobblestone");
+					List<String> shown = screen.shownForSnapshot();
+					check(!shown.isEmpty() && shown.contains("minecraft:cobblestone"), "searching finds items by name: " + shown.size() + " results");
+					String first = shown.isEmpty() ? "" : shown.getFirst();
+					if (!massDropBefore.contains(first)) {
+						screen.toggleFirstForSnapshot();
+					}
+					check(EMUtilsClient.massDrop().store().contains(first), "clicking a result adds it to the list: " + first);
+				}
+				next();
+			}
+			case 149 -> captureAfter(client, 15, "mass drop, search");
+			case 150 -> {
+				if (MinecraftClientCompat.screen(client) instanceof MassDropItemsScreen screen) {
+					screen.searchForSnapshot("");
+					check(screen.shownForSnapshot().stream().allMatch(EMUtilsClient.massDrop().store()::contains), "with no search, the list shows the dropped items");
+				}
+				next();
+			}
+			case 151 -> captureAfter(client, 15, "mass drop, list with items");
+			case 152 -> {
+				for (String id : EMUtilsClient.massDrop().store().itemIds()) {
+					if (!massDropBefore.contains(id)) {
+						EMUtilsClient.massDrop().store().toggle(id);
+					}
+				}
+				client.gui.setScreen(null);
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -792,6 +834,7 @@ public final class UiSnapshotter {
 	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
 	private static final int SCRIPTS_CLEANUP_STEP = 130;
 	private static List<String> shortcutsBefore = List.of();
+	private static java.util.Set<String> massDropBefore = java.util.Set.of();
 	private static final String EDIT_EXPECTED = "def greet(name):\n    print(\"hi\")\ngreet(1)";
 	private static @Nullable String savedMinescriptConfig;
 
