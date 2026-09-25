@@ -53,6 +53,12 @@ public final class UiTextField {
 		return text;
 	}
 
+	/** Selects characters {@code start} to {@code end}, with the caret at the end. */
+	public void select(int start, int end) {
+		anchor = Math.clamp(start, 0, text.length());
+		cursor = Math.clamp(end, 0, text.length());
+	}
+
 	public boolean focused() {
 		return focused;
 	}

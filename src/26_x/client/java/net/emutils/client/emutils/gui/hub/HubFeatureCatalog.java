@@ -10,7 +10,7 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
+import net.emutils.client.emutils.minescript.gui.ScriptScreens;
 import net.emutils.client.emutils.packs.gui.PackScreens;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
@@ -134,7 +134,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_SCRIPT_MANAGER_DESC,
 				HubFeature.Icon.SCRIPT,
 				null,
-				openScreenAction(ScriptManagerScreen::new),
+				openScreenAction(ScriptScreens::manager),
 				MinescriptCompat.isLoaded(),
 				null
 			).requiresMod("Minescript", MinescriptCompat.isLoaded()).keys("key.emutils.open_script_manager"),

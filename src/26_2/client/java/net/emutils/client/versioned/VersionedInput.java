@@ -3,6 +3,7 @@ package net.emutils.client.versioned;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -56,5 +57,13 @@ public final class VersionedInput {
 	/** Shows the normal cursor at the given window position. */
 	public static void showCursorAt(Window window, double x, double y) {
 		InputConstants.grabOrReleaseMouse(window, InputConstants.CURSOR_NORMAL, x, y);
+	}
+
+	/**
+	 * The key as the keyboard layout names it, for shortcuts that follow the printed character, such as
+	 * Ctrl+/. 26.3 reports it separately from the key; 26.2 only has the key.
+	 */
+	public static int shortcutKey(KeyEvent input) {
+		return input.key();
 	}
 }

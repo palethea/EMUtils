@@ -172,8 +172,12 @@ Browse installed and online resource packs or shader packs in-game.
 
 When Minescript is installed, browse and manage scripts from `minecraft/minescript`.
 
-- Script Editor: create and edit Python scripts.
+- Script Editor: create and edit Python scripts, with line numbers and syntax colors. Enter keeps the indentation (and indents after a colon), Tab inserts four spaces or indents the selected lines, brackets and quotes close themselves, Ctrl+/ toggles comments and Ctrl+D duplicates lines.
+- Find: Ctrl+F in the editor highlights every match; Enter and Shift+Enter move between them.
 - Run Scripts: launch scripts locally through Minescript.
+- Run Errors: when a script fails, the footer shows the error and its line, and the editor marks that line.
+- Files and Folders: rename or move scripts and folders (keybinds come along), create folders, and delete folders, from the buttons or by right-clicking the list.
+- Python Check: warns when Minescript's Python doesn't work (such as the Microsoft Store shortcut it uses by default on Windows) and switches it to a working Python in one click, or links to python.org when none is installed.
 - Script Keybinds: assign EMUtils-managed keybinds per script.
 
 ### Command Shortcuts

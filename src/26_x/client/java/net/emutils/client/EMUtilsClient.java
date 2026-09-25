@@ -23,6 +23,8 @@ import net.emutils.client.emutils.gui.settings.SettingsScreens;
 import net.emutils.client.emutils.gui.settings.SettingsWarmup;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
+import net.emutils.client.emutils.minescript.gui.ScriptScreens;
+import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
@@ -316,8 +318,9 @@ public class EMUtilsClient implements ClientModInitializer {
 			}
 		}
 		while (openScriptManagerKeyMapping != null && openScriptManagerKeyMapping.consumeClick()) {
-			if (MinescriptCompat.isLoaded() && !(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof ScriptManagerScreen)) {
-				client.gui.setScreen(new ScriptManagerScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			if (MinescriptCompat.isLoaded() && !(current instanceof ScriptManagerScreen) && !(current instanceof ScriptsScreen)) {
+				client.gui.setScreen(ScriptScreens.manager(current));
 			}
 		}
 		while (openSettingsHubKeyMapping != null && openSettingsHubKeyMapping.consumeClick()) {
