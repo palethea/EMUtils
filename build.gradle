@@ -225,6 +225,11 @@ tasks.matching { it.name == "runClient" }.configureEach {
 		jvmArgs "-Demutils.uiSnapshot=true"
 		jvmArgs "-Demutils.launchTestWorld=true"
 		args "--width", "1920", "--height", "1080"
+		def snapshotFrom = findProperty("emutilsUiSnapshotFrom")
+		if (snapshotFrom != null) {
+			// Skips to that step, for checking only the newest snapshots.
+			jvmArgs "-Demutils.uiSnapshotFrom=${snapshotFrom}"
+		}
 	}
 }
 

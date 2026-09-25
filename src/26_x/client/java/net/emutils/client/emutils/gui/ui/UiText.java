@@ -119,7 +119,7 @@ public final class UiText {
 
 	public static int width(Font font, Component text, Size size) {
 		if (freeType()) {
-			int scale = guiScale();
+			float scale = guiScale() * UiRasterScale.get();
 			return (int) Math.ceil(UiFontRenderer.measure(size.weight, size.em * scale, text.getString()) / scale);
 		}
 		return Math.round(font.width(styled(text, size)) * fallbackScale(size));
@@ -178,7 +178,7 @@ public final class UiText {
 		if (value.isEmpty()) {
 			return;
 		}
-		int scale = guiScale();
+		float scale = guiScale() * UiRasterScale.get();
 		UiFontRenderer.Rendered rendered = UiFontRenderer.render(size.weight, size.em * scale, value);
 		int capPixels = Math.round(size.em * size.weight.capHeight() * scale);
 		int baseline = Math.round(capTop * scale) + capPixels;

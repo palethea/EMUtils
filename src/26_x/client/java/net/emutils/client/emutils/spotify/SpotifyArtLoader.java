@@ -47,7 +47,9 @@ public final class SpotifyArtLoader implements AutoCloseable {
 	}
 
 	public static final int TEXTURE_SIZE = 128;
-	public static final int DISPLAY_SIZE = 32;
+	public static final int DISPLAY_SIZE = 34;
+	/** Corner radius at {@link #DISPLAY_SIZE}. */
+	public static final float CORNER_RADIUS = 6.0F;
 
 	private static final AtomicInteger ART_COUNTER = new AtomicInteger();
 
@@ -107,6 +109,7 @@ public final class SpotifyArtLoader implements AutoCloseable {
 		try {
 			byte[] bytes = fetchBytes(artUrl);
 			NativeImage image = scaleToTextureSize(decodeToPngNativeImage(bytes));
+			roundCorners(image);
 			client.execute(() -> register(artUrl, image));
 		} catch (IOException | InterruptedException exception) {
 			if (exception instanceof InterruptedException) {
@@ -271,6 +274,28 @@ public final class SpotifyArtLoader implements AutoCloseable {
 		}
 
 		return encodePngNativeImage(scaled);
+	}
+
+	/**
+	 * Makes the corners transparent, anti-aliased, so the cover shows with the same rounded corners
+	 * as the rest of the player at {@link #DISPLAY_SIZE}.
+	 */
+	private static void roundCorners(NativeImage image) {
+		int size = image.getWidth();
+		float radius = size * CORNER_RADIUS / DISPLAY_SIZE;
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				float dx = Math.max(0.0F, Math.max(radius - (x + 0.5F), (x + 0.5F) - (size - radius)));
+				float dy = Math.max(0.0F, Math.max(radius - (y + 0.5F), (y + 0.5F) - (image.getHeight() - radius)));
+				if (dx == 0.0F || dy == 0.0F) {
+					continue;
+				}
+				float coverage = Math.clamp(radius - (float) Math.sqrt(dx * dx + dy * dy) + 0.5F, 0.0F, 1.0F);
+				int pixel = image.getPixel(x, y);
+				int alpha = Math.round((pixel >>> 24) * coverage);
+				image.setPixel(x, y, (alpha << 24) | (pixel & 0x00FFFFFF));
+			}
+		}
 	}
 
 	private void register(String artUrl, NativeImage image) {

@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.EMUtilsHudElements;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
@@ -27,6 +28,7 @@ import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
+import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.versioned.VersionedScreens;
@@ -35,6 +37,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -54,7 +57,8 @@ public final class UiSnapshotter {
 
 	private static boolean enabled = Boolean.getBoolean(ENABLED_PROPERTY);
 	private static int worldTicks;
-	private static int step;
+	/** {@code -Demutils.uiSnapshotFrom=N} (Gradle property {@code emutilsUiSnapshotFrom}) starts at step N. */
+	private static int step = Integer.getInteger("emutils.uiSnapshotFrom", 0);
 	private static int stepTicks;
 
 	private UiSnapshotter() {
@@ -778,11 +782,75 @@ public final class UiSnapshotter {
 				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc again cancels and closes the editor");
 				next();
 			}
+			// The Spotify players (#129), with whatever the real Spotify app is playing on this machine.
+			case 160 -> {
+				EMUtilsClient.config().setSpotifyEnabled(true);
+				EMUtilsClient.config().setSpotifyHudOverlay(true);
+				EMUtilsClient.config().setSpotifyPlayerEnabled(true);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				setGuiScale(client, 2);
+				EMUtilsClient.spotify().refreshSoon();
+				next();
+			}
+			case 161 -> {
+				SpotifyTrackState state = EMUtilsClient.spotify().state();
+				// Waits for the song, then a moment longer for its cover.
+				if (stepTicks >= 100 || (state.hasTrack() && stepTicks >= 60)) {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: Spotify state {} '{}' by '{}', {}/{} ms, cover {}", state.kind(), state.title(), state.artist(), state.positionMs(), state.durationMs(), state.artUrl().isEmpty() ? "none" : "found");
+					next();
+				}
+			}
+			case 162 -> captureAfter(client, 0, "spotify hud, gui scale 2, dark");
+			case 163 -> {
+				client.gui.setScreen(new PauseScreen(true));
+				next();
+			}
+			case 164 -> captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
+			case 165 -> {
+				EMUtilsClient.config().setSettingsUiDark(false);
+				setGuiScale(client, 3);
+				next();
+			}
+			case 166 -> captureAfter(client, 20, "spotify pause menu, gui scale 3, light");
+			case 167 -> {
+				client.gui.setScreen(null);
+				next();
+			}
+			case 168 -> captureAfter(client, 15, "spotify hud, gui scale 3, light");
+			case 169 -> {
+				EMUtilsClient.config().setSettingsUiDark(true);
+				setGuiScale(client, 4);
+				next();
+			}
+			case 170 -> captureAfter(client, 15, "spotify hud, gui scale 4, dark");
+			case 171 -> {
+				setGuiScale(client, 2);
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					HudLayoutManager.setDraftLayout(EMUtilsHudElements.SPOTIFY, 20, 20, 200, 60);
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 172 -> captureAfter(client, 20, "spotify hud at 200% with a 60% background, hud editor");
+			case 173 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
 				client.stop();
 			}
+		}
+	}
+
+	private static void setGuiScale(Minecraft client, int guiScale) {
+		if (client.options.guiScale().get() != guiScale) {
+			client.options.guiScale().set(guiScale);
+			client.resizeGui();
 		}
 	}
 
