@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
 import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
@@ -18,6 +20,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.resources.Identifier;
 
 /**
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
@@ -196,7 +199,7 @@ public final class UiSnapshotter {
 					Screenshot.grab(client, false);
 				}
 				if (stepTicks >= 60) {
-					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: enable test pack: {}", ResourcePackController.setResourcePackEnabled(client, TEST_PACK, true).message());
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: enable test pack: {}", ResourcePackController.setResourcePackEnabled(client, TEST_PACK, true, TEST_PACK_ICON).message());
 					next();
 				}
 			}
@@ -306,6 +309,8 @@ public final class UiSnapshotter {
 	}
 
 	private static final String TEST_PACK = "EMUtils Snapshot Pack";
+	/** The mod's own icon stands in for a pack's Modrinth icon, so the card's icon is captured too (#115). */
+	private static final UiLoadingOverlay.Icon TEST_PACK_ICON = new UiLoadingOverlay.Icon(HubIcons.PACKAGE, Identifier.fromNamespaceAndPath("emutils", "icon.png"), 128, 128);
 
 	/** A resource pack folder with just a pack.mcmeta, enough for Minecraft to list and load it. */
 	private static void writeTestPack(Minecraft client) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
@@ -15,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LoadingOverlay;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.Nullable;
 
 public final class IrisCompat {
 	private IrisCompat() {
@@ -155,11 +157,21 @@ public final class IrisCompat {
 	}
 
 	public static void applyShaderPackWithLoading(Minecraft client, Screen returnScreen, String filename, Consumer<Boolean> callback) {
-		runShaderReloadWithLoading(client, returnScreen, () -> prepareShaderPack(filename), callback, Component.translatable(EMUtilsTexts.UI_LOADING_APPLY_SHADER), Component.literal(packName(filename)));
+		applyShaderPackWithLoading(client, returnScreen, filename, null, callback);
+	}
+
+	/** Applies a shader pack; {@code icon} is the pack's icon for the new UI's loading card. */
+	public static void applyShaderPackWithLoading(Minecraft client, Screen returnScreen, String filename, UiLoadingOverlay.@Nullable Icon icon, Consumer<Boolean> callback) {
+		runShaderReloadWithLoading(client, returnScreen, () -> prepareShaderPack(filename), callback, Component.translatable(EMUtilsTexts.UI_LOADING_APPLY_SHADER), Component.literal(packName(filename)), icon);
 	}
 
 	public static void disableShaderPackWithLoading(Minecraft client, Screen returnScreen, Consumer<Boolean> callback) {
-		runShaderReloadWithLoading(client, returnScreen, IrisCompat::prepareDisableShaders, callback, Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF), Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF_DESC));
+		disableShaderPackWithLoading(client, returnScreen, null, callback);
+	}
+
+	/** Turns shaders off; {@code icon} is the icon of the pack being turned off, for the new UI's loading card. */
+	public static void disableShaderPackWithLoading(Minecraft client, Screen returnScreen, UiLoadingOverlay.@Nullable Icon icon, Consumer<Boolean> callback) {
+		runShaderReloadWithLoading(client, returnScreen, IrisCompat::prepareDisableShaders, callback, Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF), Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF_DESC), icon);
 	}
 
 	/** A shader pack's file name without its .zip ending, for showing to the player. */
@@ -173,7 +185,8 @@ public final class IrisCompat {
 		BooleanSupplier prepare,
 		Consumer<Boolean> callback,
 		Component title,
-		Component subtitle
+		Component subtitle,
+		UiLoadingOverlay.@Nullable Icon icon
 	) {
 		if (!isIrisLoaded()) {
 			callback.accept(false);
@@ -193,7 +206,7 @@ public final class IrisCompat {
 				if (client.gui.screen() != returnScreen) {
 					client.gui.setScreen(returnScreen);
 				}
-			}), title, subtitle));
+			}), title, subtitle, icon != null ? icon : UiLoadingOverlay.Icon.symbol(HubIcons.SPARKLES)));
 			return;
 		}
 		LoadingOverlay.registerTextures(client.getTextureManager());
