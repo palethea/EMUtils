@@ -7,6 +7,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.spotify.gui.SpotifyIcons;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
 public final class SpotifyPlaybackService {
 	private static final long POLL_INTERVAL_MS = 1_000L;
@@ -29,7 +30,7 @@ public final class SpotifyPlaybackService {
 
 	private volatile SpotifyTrackState state = SpotifyTrackState.unavailable();
 	/** Shown instead of Spotify's state while set, for UI snapshots of songs that aren't playing. */
-	private volatile SpotifyTrackState snapshotState;
+	private volatile @Nullable SpotifyTrackState snapshotState;
 	private volatile boolean polling;
 	private volatile boolean pendingPlaying;
 	private volatile long pendingPlayingUntil;
@@ -43,7 +44,7 @@ public final class SpotifyPlaybackService {
 		return shown != null ? shown : state;
 	}
 
-	public void setStateForSnapshot(SpotifyTrackState shown) {
+	public void setStateForSnapshot(@Nullable SpotifyTrackState shown) {
 		snapshotState = shown;
 	}
 
