@@ -31,6 +31,8 @@ public abstract class UiPanelScreen extends Screen {
 	/** Shown again after a screen opened from this one closed; the background is already in place then. */
 	private boolean returning;
 	/** Closed into the game while the HUD still draws the fade-out, so it keeps its textures until then. */
+	/** Closing straight into the game, past the screen it was opened from ({@link #closeToGame}). */
+	private boolean closingToGame;
 	private boolean fadingOnHud;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
@@ -72,7 +74,7 @@ public abstract class UiPanelScreen extends Screen {
 	 * the blur stays as it is.
 	 */
 	protected boolean fadesBlur() {
-		return parent == null && minecraft.level != null;
+		return (parent == null || closingToGame) && minecraft.level != null;
 	}
 
 	/** The current theme, crossfading for a moment after switching between dark and light. */
@@ -86,7 +88,7 @@ public abstract class UiPanelScreen extends Screen {
 	 * stays in place and only the panels animate, so the background doesn't dip in between.
 	 */
 	private float backgroundProgress() {
-		if (parent instanceof UiPanelScreen || (returning && !closing)) {
+		if (!closingToGame && (parent instanceof UiPanelScreen || (returning && !closing))) {
 			return 1.0F;
 		}
 		return openProgress;
@@ -239,6 +241,22 @@ public abstract class UiPanelScreen extends Screen {
 			minecraft.gui.setScreen(null);
 			UiClosingScreens.add(this);
 		}
+	}
+
+	/**
+	 * Closes every screen and goes straight back to the game, fading out like a screen opened from
+	 * gameplay, even when this one was opened from a menu. Outside a world it just closes.
+	 */
+	protected void closeToGame() {
+		if (minecraft.level == null) {
+			onClose();
+			return;
+		}
+		closingToGame = true;
+		closing = true;
+		fadingOnHud = true;
+		minecraft.gui.setScreen(null);
+		UiClosingScreens.add(this);
 	}
 
 	/**

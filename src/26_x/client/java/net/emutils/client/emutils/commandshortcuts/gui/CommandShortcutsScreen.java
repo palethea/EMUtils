@@ -89,10 +89,10 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 		});
 	}
 
-	/** Runs the shortcut as its keys would, back in the game so its command or message has somewhere to go. */
+	/** Runs the shortcut as its keys would, closing every menu first so you're back in the game to see it. */
 	private void run(CommandShortcut shortcut) {
 		Minecraft client = minecraft;
-		onClose();
+		closeToGame();
 		EMUtilsClient.commandShortcuts().runShortcut(client, shortcut);
 	}
 
@@ -426,6 +426,13 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 	/** Opens the add sheet, or the edit sheet for the shortcut named {@code name}; used by UI snapshots. */
 	public void openSheetForSnapshot(@Nullable String name) {
 		openSheet(name == null ? null : shortcuts().stream().filter(shortcut -> shortcut.displayName().equals(name)).findFirst().orElse(null));
+	}
+
+	/** Presses Run now on the first shortcut; used by UI snapshots. */
+	public void runFirstForSnapshot() {
+		if (!shortcuts().isEmpty()) {
+			run(shortcuts().getFirst());
+		}
 	}
 
 	/** Opens the right-click menu for the first shortcut; used by UI snapshots. */

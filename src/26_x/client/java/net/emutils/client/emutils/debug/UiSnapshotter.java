@@ -656,7 +656,21 @@ public final class UiSnapshotter {
 			}
 			case 141 -> captureAfter(client, 30, "shortcuts, gui scale 3, light");
 			case 142 -> {
+				// Opened from the settings screen, like from the hub: Run now closes both into the game.
 				EMUtilsClient.config().setSettingsUiDark(true);
+				client.options.guiScale().set(2);
+				client.resizeGui();
+				client.gui.setScreen(new CommandShortcutsScreen(new SettingsScreen(null)));
+				next();
+			}
+			case 143 -> {
+				if (stepTicks >= 10 && MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					screen.runFirstForSnapshot();
+					next();
+				}
+			}
+			case 144 -> waitForCheck(MinecraftClientCompat.screen(client) == null, 40, "Run now closes every menu, back to the game");
+			case 145 -> {
 				for (CommandShortcut shortcut : EMUtilsClient.commandShortcuts().store().shortcuts()) {
 					if (!shortcutsBefore.contains(shortcut.id())) {
 						EMUtilsClient.commandShortcuts().store().remove(shortcut.id());
