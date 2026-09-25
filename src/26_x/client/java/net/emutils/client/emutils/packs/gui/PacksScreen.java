@@ -19,6 +19,7 @@ import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiConfirmDialog;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiPanelScreen;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
@@ -47,6 +48,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -661,10 +663,21 @@ public final class PacksScreen extends UiPanelScreen {
 		drawSymbol(context, theme, row, x, y, pending ? 0.55F + 0.45F * (float) Math.sin(now / 250_000_000.0) : 1.0F);
 	}
 
+	/** The row's icon for the loading card (#115), or its symbol while the icon isn't loaded. */
+	private UiLoadingOverlay.Icon loadingIcon(Row row) {
+		PackIconLoader.IconResult icon = icons().resolve(row.iconUrl(), PackIcons.RESOURCE_PACK);
+		return icon.state() == PackIconLoader.State.LOADED ? new UiLoadingOverlay.Icon(symbol(row), icon.texture(), icon.width(), icon.height()) : UiLoadingOverlay.Icon.symbol(symbol(row));
+	}
+
 	private void drawSymbol(GuiGraphicsExtractor context, UiTheme theme, Row row, int x, int y, float alpha) {
 		int symbol = 18;
+		UiIcons.draw(context, symbol(row), x + (ICON - symbol) / 2, y + (ICON - symbol) / 2, symbol, UiTheme.fade(theme.muted(), alpha));
+	}
+
+	/** The plain symbol for a row's pack type, shown when it has no icon. */
+	private Identifier symbol(Row row) {
 		boolean shader = row.installed() != null ? row.installed().type() == PackType.SHADER : type == PackType.SHADER;
-		UiIcons.draw(context, shader ? HubIcons.SPARKLES : HubIcons.PACKAGE, x + (ICON - symbol) / 2, y + (ICON - symbol) / 2, symbol, UiTheme.fade(theme.muted(), alpha));
+		return shader ? HubIcons.SPARKLES : HubIcons.PACKAGE;
 	}
 
 	private boolean isActive(InstalledPack pack) {
@@ -699,8 +712,8 @@ public final class PacksScreen extends UiPanelScreen {
 		}
 		if (pack.type() == PackType.RESOURCE) {
 			return pack.enabled()
-				? new Action(Component.translatable(EMUtilsTexts.PACK_DISABLE), UiWidgets.ButtonStyle.OUTLINE, true, () -> setEnabled(pack, false))
-				: new Action(Component.translatable(EMUtilsTexts.PACK_ENABLE), UiWidgets.ButtonStyle.TONAL, true, () -> setEnabled(pack, true));
+				? new Action(Component.translatable(EMUtilsTexts.PACK_DISABLE), UiWidgets.ButtonStyle.OUTLINE, true, () -> setEnabled(row, pack, false))
+				: new Action(Component.translatable(EMUtilsTexts.PACK_ENABLE), UiWidgets.ButtonStyle.TONAL, true, () -> setEnabled(row, pack, true));
 		}
 		if (!IrisCompat.isIrisLoaded()) {
 			return new Action(Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, "Iris"), UiWidgets.ButtonStyle.GHOST, false, () -> {
@@ -753,20 +766,20 @@ public final class PacksScreen extends UiPanelScreen {
 		}));
 	}
 
-	private void setEnabled(InstalledPack pack, boolean enabled) {
-		report(ResourcePackController.setResourcePackEnabled(minecraft, pack.filename(), enabled));
+	private void setEnabled(Row row, InstalledPack pack, boolean enabled) {
+		report(ResourcePackController.setResourcePackEnabled(minecraft, pack.filename(), enabled, loadingIcon(row)));
 		refreshInstalled(false);
 	}
 
 	private void applyShader(Row row, InstalledPack pack) {
-		IrisCompat.applyShaderPackWithLoading(minecraft, this, pack.filename(), success -> {
+		IrisCompat.applyShaderPackWithLoading(minecraft, this, pack.filename(), loadingIcon(row), success -> {
 			chat(Component.translatable(success ? EMUtilsTexts.PACK_SHADER_APPLIED : EMUtilsTexts.PACK_SHADER_APPLY_FAILED, row.title()).withStyle(success ? ChatFormatting.GREEN : ChatFormatting.RED));
 			refreshInstalled(false);
 		});
 	}
 
 	private void turnOffShader(Row row) {
-		IrisCompat.disableShaderPackWithLoading(minecraft, this, success -> {
+		IrisCompat.disableShaderPackWithLoading(minecraft, this, loadingIcon(row), success -> {
 			chat(Component.translatable(success ? EMUtilsTexts.PACK_SHADER_DISABLED : EMUtilsTexts.PACK_SHADER_DISABLE_FAILED, row.title()).withStyle(success ? ChatFormatting.GREEN : ChatFormatting.RED));
 			refreshInstalled(false);
 		});
