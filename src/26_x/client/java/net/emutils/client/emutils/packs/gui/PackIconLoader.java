@@ -19,9 +19,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.versioned.VersionedTextures;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import org.glavo.webp.WebPException;
 import org.glavo.webp.WebPFrame;
@@ -35,7 +35,8 @@ public final class PackIconLoader implements AutoCloseable {
 		FAILED
 	}
 
-	public record IconResult(Identifier texture, State state) {
+	/** The icon texture and its pixel size; the size is 0 for the fallback icon. */
+	public record IconResult(Identifier texture, State state, int width, int height) {
 	}
 
 	private static final int MAX_ICON_SIZE = 96;
@@ -53,6 +54,7 @@ public final class PackIconLoader implements AutoCloseable {
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
 	private final Map<String, Identifier> loaded = new ConcurrentHashMap<>();
+	private final Map<String, int[]> sizes = new ConcurrentHashMap<>();
 	private final Map<String, CompletableFuture<Void>> inFlight = new ConcurrentHashMap<>();
 	private final Set<String> failed = ConcurrentHashMap.newKeySet();
 	private final AtomicBoolean closed = new AtomicBoolean();
@@ -64,20 +66,21 @@ public final class PackIconLoader implements AutoCloseable {
 
 	public IconResult resolve(String iconUrl, Identifier fallback) {
 		if (iconUrl == null || iconUrl.isBlank()) {
-			return new IconResult(fallback, State.NONE);
+			return new IconResult(fallback, State.NONE, 0, 0);
 		}
 
 		Identifier cached = loaded.get(iconUrl);
 		if (cached != null) {
-			return new IconResult(cached, State.LOADED);
+			int[] size = sizes.getOrDefault(iconUrl, new int[] {0, 0});
+			return new IconResult(cached, State.LOADED, size[0], size[1]);
 		}
 		if (failed.contains(iconUrl)) {
-			return new IconResult(fallback, State.FAILED);
+			return new IconResult(fallback, State.FAILED, 0, 0);
 		}
 
 		inFlight.computeIfAbsent(iconUrl, url -> CompletableFuture.runAsync(() -> download(url), worker)
 			.whenComplete((ignored, error) -> client.execute(() -> complete(url, error))));
-		return new IconResult(fallback, State.LOADING);
+		return new IconResult(fallback, State.LOADING, 0, 0);
 	}
 
 	@Override
@@ -213,8 +216,9 @@ public final class PackIconLoader implements AutoCloseable {
 
 		try {
 			Identifier identifier = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "pack_icon/" + ICON_COUNTER.incrementAndGet());
-			DynamicTexture texture = new DynamicTexture(() -> "EMUtils pack icon", image);
-			client.getTextureManager().register(identifier, texture);
+			// Smooth filtering keeps icons clean when they are drawn smaller or larger than their pixels.
+			client.getTextureManager().register(identifier, VersionedTextures.smoothTexture(() -> "EMUtils pack icon", image));
+			sizes.put(iconUrl, new int[] {image.getWidth(), image.getHeight()});
 			loaded.put(iconUrl, identifier);
 			inFlight.remove(iconUrl);
 			onLoaded.run();

@@ -5,6 +5,7 @@ import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
@@ -159,6 +160,25 @@ public final class UiSnapshotter {
 				EMUtilsClient.config().setSettingsUiDark(true);
 				next();
 			}
+			case 58 -> {
+				client.gui.setScreen(new PacksScreen(null));
+				next();
+			}
+			case 59 -> capture(client, "gui scale 2, packs installed");
+			case 60 -> {
+				if (MinecraftClientCompat.screen(client) instanceof PacksScreen screen) {
+					screen.searchModrinthForSnapshot("");
+				}
+				next();
+			}
+			case 61 -> captureAfter(client, 60, "gui scale 2, packs modrinth");
+			case 62 -> {
+				if (MinecraftClientCompat.screen(client) instanceof PacksScreen screen) {
+					screen.searchModrinthForSnapshot("faithful");
+				}
+				next();
+			}
+			case 63 -> captureAfter(client, 60, "gui scale 2, packs search");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
