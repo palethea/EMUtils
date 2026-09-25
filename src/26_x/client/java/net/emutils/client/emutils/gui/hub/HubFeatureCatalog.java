@@ -53,7 +53,7 @@ public final class HubFeatureCatalog {
 			categoryFeature("capes", HubCategory.CAPES, HubFeature.Group.RENDER, EMUtilsTexts.HUB_CAPES, EMUtilsTexts.HUB_FEATURE_CAPES_DESC, HubFeature.Icon.CAPE, toggle(config::customCapes, config::setCustomCapes)),
 			categoryFeature("hud_overlay", HubCategory.HUD_OVERLAY, HubFeature.Group.HUD, EMUtilsTexts.HUB_HUD_OVERLAY, EMUtilsTexts.HUB_FEATURE_HUD_DESC, HubFeature.Icon.HUD, toggle(config::hudOverlay, config::setHudOverlay)).keys("key.emutils.open_hud_layout_editor"),
 			categoryFeature("food_hud", HubCategory.FOOD_HUD, HubFeature.Group.HUD, EMUtilsTexts.HUB_FOOD_HUD, EMUtilsTexts.HUB_FEATURE_FOOD_HUD_DESC, HubFeature.Icon.APPLE, toggle(config::foodHud, config::setFoodHud)),
-			categoryFeature("spotify", HubCategory.SPOTIFY, HubFeature.Group.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, HubFeature.Icon.MUSIC, toggle(config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled)),
+			categoryFeature("spotify", HubCategory.SPOTIFY, HubFeature.Group.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, HubFeature.Icon.MUSIC, toggle(config::spotifyEnabled, config::setSpotifyEnabled)),
 			categoryFeature("auto_reconnect", HubCategory.AUTO_RECONNECT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, HubFeature.Icon.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			categoryFeature("screenshot_helper", HubCategory.SCREENSHOT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, HubFeature.Icon.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
 			categoryFeature("waypoints", HubCategory.DEATH_WAYPOINTS, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, HubFeature.Icon.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)).keys("key.emutils.add_waypoint"),
@@ -150,7 +150,7 @@ public final class HubFeatureCatalog {
 				true,
 				config::resetCommandShortcutsDefaults
 			),
-			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::copyChat, config::setCopyChat)),
+			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::chatFeaturesEnabled, config::setChatFeaturesEnabled)),
 			categoryFeature("inventory", HubCategory.INVENTORY, HubFeature.Group.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, HubFeature.Icon.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)).keys("key.emutils.slot_lock", "key.emutils.slot_bind", "key.emutils.quick_stack", "key.emutils.mass_drop"),
 			categoryFeature("auto_tool", HubCategory.AUTO_TOOL, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, HubFeature.Icon.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),
 			categoryFeature("auto_flight_gear", HubCategory.AUTO_FLIGHT, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, HubFeature.Icon.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),

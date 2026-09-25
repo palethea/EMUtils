@@ -160,6 +160,9 @@ public class EMUtilsClient implements ClientModInitializer {
 			return;
 		}
 
+		if (!config.spotifyEnabled()) {
+			return;
+		}
 		boolean pauseMenu = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof PauseScreen && config.spotifyPlayerEnabled();
 		boolean hud = config.spotifyHudOverlay() && client.player != null && client.level != null;
 		if (pauseMenu || hud) {

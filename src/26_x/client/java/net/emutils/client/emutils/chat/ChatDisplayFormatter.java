@@ -13,7 +13,8 @@ public final class ChatDisplayFormatter {
 			? SmartChatFilter.withDuplicateCount(metadata.baseMessage(), metadata.duplicateCount())
 			: metadata.baseMessage().copy();
 
-		if (config.chatTimestamps()) {
+		boolean chat = config.chatFeaturesEnabled();
+		if (chat && config.chatTimestamps()) {
 			message = ChatTimestampFormatter.prependTimestamp(
 				message,
 				config.chatTimestamp24Hour(),
@@ -21,7 +22,7 @@ public final class ChatDisplayFormatter {
 			);
 		}
 
-		if (config.chatMentionHighlight() && metadata.mentionsCurrentPlayer() && username != null) {
+		if (chat && config.chatMentionHighlight() && metadata.mentionsCurrentPlayer() && username != null) {
 			message = ChatMentionHighlighter.highlight(message, username);
 		}
 

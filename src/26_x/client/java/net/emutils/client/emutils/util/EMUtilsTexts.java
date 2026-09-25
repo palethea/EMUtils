@@ -520,6 +520,8 @@ public final class EMUtilsTexts {
     public static final String OPTION_CAPE_PREFERRED_AUTO =
         "emutils.option.cape.preferred.auto";
     public static final String CAPES_HINT = "emutils.capes.hint";
+    public static final String OPTION_SPOTIFY = "emutils.option.spotify";
+    public static final String OPTION_CHAT_FEATURES = "emutils.option.chat_features";
     public static final String OPTION_SPOTIFY_PLAYER =
         "emutils.option.spotify_player";
     public static final String OPTION_SPOTIFY_HUD_OVERLAY =

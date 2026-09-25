@@ -26,6 +26,7 @@ public final class ChatMentionAlerts {
 	public static void handle(Minecraft client, Component message) {
 		if (
 			EMUtilsClient.config() == null
+				|| !EMUtilsClient.config().chatFeaturesEnabled()
 				|| !EMUtilsClient.config().chatMentionAlerts()
 				|| client == null
 				|| EMUtilsChatMessages.isInternal(message)

@@ -107,6 +107,8 @@ public final class HubSettingsRegistry {
 	private static List<HubSettingRow> chatRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CHAT_FEATURES, config::chatFeaturesEnabled, config::setChatFeaturesEnabled));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_CHAT, config::copyChat, config::setCopyChat));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_CHAT_FORMATTING, config::copyChatFormatting, config::setCopyChatFormatting));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_CHAT_FEEDBACK, config::copyChatFeedback, config::setCopyChatFeedback));
@@ -582,8 +584,9 @@ public final class HubSettingsRegistry {
 	private static List<HubSettingRow> spotifyRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_PLAYER, config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY, config::spotifyEnabled, config::setSpotifyEnabled));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_PLAYER, config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_OVERLAY, config::spotifyHudOverlay, config::setSpotifyHudOverlay));
 		return rows;
 	}

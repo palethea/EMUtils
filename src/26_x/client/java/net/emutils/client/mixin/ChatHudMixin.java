@@ -130,8 +130,8 @@ public abstract class ChatHudMixin implements WaypointChatAccess, ChatHudAccess 
 			return;
 		}
  
-		boolean timestamps = config.chatTimestamps();
-		boolean smartFilters = config.smartChatFilters();
+		boolean timestamps = config.chatFeaturesEnabled() && config.chatTimestamps();
+		boolean smartFilters = config.chatFeaturesEnabled() && config.smartChatFilters();
 		if (!smartFilters) {
 			emutils$smartChatFilter.clear();
 		}
@@ -202,7 +202,7 @@ public abstract class ChatHudMixin implements WaypointChatAccess, ChatHudAccess 
 		emutils$messageTracker.register(line, message.copy(), 1, nowMillis, mentionsCurrentPlayer);
 		emutils$applyChatFormattingToLine(line, config);
  
-		if (!config.smartChatFilters() || config.chatTimestamps()) {
+		if (!config.chatFeaturesEnabled() || !config.smartChatFilters() || config.chatTimestamps()) {
 			return;
 		}
  

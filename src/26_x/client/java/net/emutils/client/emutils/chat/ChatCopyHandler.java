@@ -18,7 +18,7 @@ public final class ChatCopyHandler {
         Minecraft client,
         MouseButtonEvent click
     ) {
-        if (!EMUtilsClient.config().copyChat() || client.gui == null) {
+        if (!EMUtilsClient.config().chatFeaturesEnabled() || !EMUtilsClient.config().copyChat() || client.gui == null) {
             return false;
         }
 
