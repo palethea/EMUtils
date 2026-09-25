@@ -698,16 +698,16 @@ public final class PacksScreen extends UiPanelScreen {
 		}
 		if (pack.type() == PackType.RESOURCE) {
 			return pack.enabled()
-				? new Action(Component.translatable(EMUtilsTexts.PACK_DISABLE), UiWidgets.ButtonStyle.SURFACE, true, () -> setEnabled(pack, false))
-				: new Action(Component.translatable(EMUtilsTexts.PACK_ENABLE), UiWidgets.ButtonStyle.PRIMARY, true, () -> setEnabled(pack, true));
+				? new Action(Component.translatable(EMUtilsTexts.PACK_DISABLE), UiWidgets.ButtonStyle.OUTLINE, true, () -> setEnabled(pack, false))
+				: new Action(Component.translatable(EMUtilsTexts.PACK_ENABLE), UiWidgets.ButtonStyle.TONAL, true, () -> setEnabled(pack, true));
 		}
 		if (!IrisCompat.isIrisLoaded()) {
 			return new Action(Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, "Iris"), UiWidgets.ButtonStyle.GHOST, false, () -> {
 			});
 		}
 		return IrisCompat.isActiveShaderPack(pack.filename())
-			? new Action(Component.translatable(EMUtilsTexts.PACK_TURN_OFF), UiWidgets.ButtonStyle.SURFACE, true, () -> turnOffShader(row))
-			: new Action(Component.translatable(EMUtilsTexts.PACK_APPLY), UiWidgets.ButtonStyle.PRIMARY, true, () -> applyShader(row, pack));
+			? new Action(Component.translatable(EMUtilsTexts.PACK_TURN_OFF), UiWidgets.ButtonStyle.OUTLINE, true, () -> turnOffShader(row))
+			: new Action(Component.translatable(EMUtilsTexts.PACK_APPLY), UiWidgets.ButtonStyle.TONAL, true, () -> applyShader(row, pack));
 	}
 
 	private void showTooltip(Component text, int mouseX, int mouseY) {
