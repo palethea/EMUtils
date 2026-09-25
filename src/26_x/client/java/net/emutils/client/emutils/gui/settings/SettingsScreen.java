@@ -9,6 +9,7 @@ import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiBlur;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
@@ -98,6 +99,15 @@ public final class SettingsScreen extends Screen {
 		anim.transition("open", 0.0F, OPEN_SECONDS, true);
 	}
 
+	/**
+	 * Opened from gameplay, the world behind has no blur yet, so the blur fades in and out with the panel
+	 * instead of appearing and vanishing in one frame. Opened from another menu, which already blurs,
+	 * the blur stays as it is.
+	 */
+	private boolean fadesBlur() {
+		return parent == null && minecraft.level != null;
+	}
+
 	/** The current theme, crossfading for a moment after switching between dark and light. */
 	private UiTheme theme() {
 		lightness = anim.transition("theme", UiTheme.current() == UiTheme.LIGHT, THEME_SECONDS);
@@ -106,6 +116,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	protected void init() {
+		if (!prepared) {
+			UiBlur.set(fadesBlur() ? 0.0F : 1.0F);
+		}
 		UiText.refreshFonts();
 		layout();
 		search.restoreFocus();
@@ -189,6 +202,7 @@ public final class SettingsScreen extends Screen {
 		// animation's clock starts and the animation can't hitch.
 		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
 		UiOpacity.set(openProgress);
+		UiBlur.set(fadesBlur() ? openProgress : 1.0F);
 		float scale = 0.97F + 0.03F * openProgress;
 		context.pose().pushMatrix();
 		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
@@ -639,6 +653,12 @@ public final class SettingsScreen extends Screen {
 		if (closing && openProgress <= 0.0F) {
 			minecraft.setScreenAndShow(parent);
 		}
+	}
+
+	@Override
+	public void removed() {
+		UiBlur.reset();
+		super.removed();
 	}
 
 	/** Fades and scales the panel out, then returns to the previous screen. */

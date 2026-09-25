@@ -47,6 +47,7 @@
 		"MultiPlayerGameModePlaceBelowMixin",
 		"MouseAccess",
 		"MouseMixin",
+		"OptionsMenuBlurMixin",
 		"OptionsScreenMixin",
 		"PlayerEntityRendererMixin",
 		"PlayerSafeWalkMixin",

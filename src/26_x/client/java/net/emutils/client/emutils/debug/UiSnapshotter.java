@@ -71,6 +71,12 @@ public final class UiSnapshotter {
 			case 27 -> capture(client, "gui scale 4, color picker");
 			case 28 -> closeScreen(client);
 			case 29 -> waitForClose(client);
+			case 30 -> {
+				client.setScreenAndShow(new SettingsScreen(null));
+				next();
+			}
+			case 31 -> captureAfter(client, 2, "opening, mid-animation");
+			case 32 -> capture(client, "opened");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -133,7 +139,11 @@ public final class UiSnapshotter {
 	}
 
 	private static void capture(Minecraft client, String label) {
-		if (stepTicks < SETTLE_TICKS) {
+		captureAfter(client, SETTLE_TICKS, label);
+	}
+
+	private static void captureAfter(Minecraft client, int ticks, String label) {
+		if (stepTicks < ticks) {
 			return;
 		}
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {}", label);
