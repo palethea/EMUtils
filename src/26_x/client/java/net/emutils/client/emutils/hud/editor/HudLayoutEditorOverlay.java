@@ -193,19 +193,19 @@ public final class HudLayoutEditorOverlay {
 		if (resetButton.mouseClicked(click, false) || saveButton.mouseClicked(click, false) || cancelButton.mouseClicked(click, false)) {
 			return true;
 		}
-		if (click.button() == 0) {
+		if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			if (handleOpacityPopupClick(mouseX, mouseY, width, height)) {
 				return true;
 			}
 		}
 
 		HudElementId hit = hitElement(mouseX, mouseY);
-		if (click.button() == 1 && hit != null) {
+		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && hit != null) {
 			HudLayoutManager.setDraftScale(hit, 100);
 			refreshDimensions(client);
 			return true;
 		}
-		if (click.button() != 0 || hit == null) {
+		if (click.button() != InputConstants.MOUSE_BUTTON_LEFT || hit == null) {
 			return true;
 		}
 

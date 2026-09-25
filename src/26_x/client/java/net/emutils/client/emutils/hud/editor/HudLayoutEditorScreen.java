@@ -132,19 +132,19 @@ public final class HudLayoutEditorScreen extends Screen {
 
 		int mouseX = (int) click.x();
 		int mouseY = (int) click.y();
-		if (click.button() == 0 && handleOpacityPopupClick(mouseX, mouseY)) {
+		if (click.button() == InputConstants.MOUSE_BUTTON_LEFT && handleOpacityPopupClick(mouseX, mouseY)) {
 			return true;
 		}
 
 		HudElementId hit = hitElement(mouseX, mouseY);
 
-		if (click.button() == 1 && hit != null) {
+		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && hit != null) {
 			HudLayoutManager.setDraftScale(hit, 100);
 			refreshDimensions();
 			return true;
 		}
 
-		if (click.button() != 0 || hit == null) {
+		if (click.button() != InputConstants.MOUSE_BUTTON_LEFT || hit == null) {
 			return false;
 		}
 
