@@ -20,6 +20,7 @@ import net.emutils.client.emutils.food.FoodTooltipComponent;
 import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.settings.SettingsWarmup;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
@@ -134,6 +135,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	}
 
 	private static void tickClient(Minecraft client) {
+		SettingsWarmup.tick(client);
 		MinescriptCompat.tickJobs();
 		minescriptKeybindManager.tick(client);
 		commandShortcutsManager.tick(client);
