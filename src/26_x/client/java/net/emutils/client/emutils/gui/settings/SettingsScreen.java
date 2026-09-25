@@ -85,6 +85,7 @@ public final class SettingsScreen extends Screen {
 	private boolean stackedHeader;
 	private boolean showTagline;
 	private boolean prepared;
+	private boolean closing;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
 	private float lightness;
@@ -186,7 +187,7 @@ public final class SettingsScreen extends Screen {
 		UiTheme theme = theme();
 		// The first frame draws everything invisibly, so every text texture exists before the open
 		// animation's clock starts and the animation can't hitch.
-		openProgress = prepared ? anim.transition("open", 1.0F, OPEN_SECONDS, true) : 0.0F;
+		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
 		UiOpacity.set(openProgress);
 		float scale = 0.97F + 0.03F * openProgress;
 		context.pose().pushMatrix();
@@ -474,6 +475,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+		if (closing) {
+			return true;
+		}
 		double mouseX = click.x();
 		double mouseY = click.y();
 		if (sheet != null) {
@@ -559,6 +563,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
+		if (closing) {
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseDragged(click.x(), click.y());
 		}
@@ -581,6 +588,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		if (closing) {
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseScrolled(mouseX, mouseY, verticalAmount);
 		}
@@ -592,6 +602,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent input) {
+		if (closing) {
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.keyPressed(input);
 		}
@@ -607,6 +620,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent input) {
+		if (closing) {
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.charTyped(input);
 		}
@@ -616,10 +632,23 @@ public final class SettingsScreen extends Screen {
 		return super.charTyped(input);
 	}
 
+	/** Once the close animation has finished, returns to the previous screen; not while drawing, like vanilla. */
+	@Override
+	public void tick() {
+		super.tick();
+		if (closing && openProgress <= 0.0F) {
+			minecraft.setScreenAndShow(parent);
+		}
+	}
+
+	/** Fades and scales the panel out, then returns to the previous screen. */
 	@Override
 	public void onClose() {
 		search.setFocused(false);
-		minecraft.setScreenAndShow(parent);
+		if (sheet != null) {
+			sheet.close();
+		}
+		closing = true;
 	}
 
 	@Override
