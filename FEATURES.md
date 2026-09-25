@@ -101,10 +101,12 @@ Show food and saturation information on the vanilla hunger bar.
 
 ### Spotify Player
 
-Show the current Spotify track in the pause menu and optional in-game HUD overlay when Spotify is running on Linux, macOS, or Windows.
+Show the current Spotify track, with its cover, artist and progress, in the pause menu and an optional in-game HUD card when Spotify is running on Linux, macOS, or Windows. Both follow the settings UI's dark or light theme, and the song fades in when it changes. On Windows it reads Spotify straight from the Windows media controls.
 
-- Pause Menu Player: show now-playing controls in the pause menu.
-- In-Game HUD Overlay: show the same now-playing panel while playing.
+- Pause Menu Player: show the card with previous, play/pause and next buttons at the bottom of the pause menu.
+  - Scroll Long Titles: scroll through titles and artists too long for the card, like Spotify does; off, they end in "...".
+- In-Game HUD Overlay: show the same card while playing; its position, size and background opacity are set in the HUD Layout Editor.
+  - Scroll Long Titles: the same, for the HUD card.
 
 ## Utility
 

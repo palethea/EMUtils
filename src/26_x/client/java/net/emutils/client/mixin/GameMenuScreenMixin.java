@@ -9,7 +9,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -59,7 +61,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 			return;
 		}
 
-		SpotifyPlayerOverlay.renderBackground(context, width, height);
+		emutils$spotifyOverlay.renderBackground(context);
 	}
 
 	@Inject(method = "extractRenderState", at = @At("RETURN"))
@@ -68,7 +70,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 			return;
 		}
 
-		SpotifyPlayerOverlay.renderContent(context, width, height, EMUtilsClient.spotify().state());
+		emutils$spotifyOverlay.renderContent(context, EMUtilsClient.spotify().state());
 	}
 
 	@Unique
@@ -95,7 +97,14 @@ public abstract class GameMenuScreenMixin extends Screen {
 			return;
 		}
 
-		emutils$spotifyOverlay = SpotifyPlayerOverlay.create(width, height, this::addRenderableWidget);
+		// The card stays below the menu's lowest button; our EMUtils button sits in the top corner.
+		int menuBottom = 0;
+		for (GuiEventListener child : children()) {
+			if (child instanceof AbstractWidget widget && widget != emutils$hubButton) {
+				menuBottom = Math.max(menuBottom, widget.getBottom());
+			}
+		}
+		emutils$spotifyOverlay = SpotifyPlayerOverlay.create(width, height, menuBottom, this::addRenderableWidget);
 		emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(EMUtilsClient.spotify().state()));
 		EMUtilsClient.spotify().refreshSoon();
 	}

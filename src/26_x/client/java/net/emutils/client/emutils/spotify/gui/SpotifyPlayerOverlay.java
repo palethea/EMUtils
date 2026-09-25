@@ -1,86 +1,116 @@
 package net.emutils.client.emutils.spotify.gui;
 
+import java.util.function.Consumer;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.screenshot.gui.GalleryLoadingSpinner;
+import net.emutils.client.emutils.gui.hub.HubIcons;
+import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
+import net.emutils.client.emutils.gui.ui.UiRasterScale;
+import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.gui.ui.UiText;
+import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.spotify.SpotifyArtLoader;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.CommonColors;
+import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * The Spotify now-playing card, in the look of the new UI: on the HUD, and with playback controls at
+ * the bottom of the pause menu. The song fades in when it changes, and the cover fades in once loaded.
+ */
 public final class SpotifyPlayerOverlay {
-	public enum DisplayMode {
-		PAUSE_MENU,
-		HUD
-	}
-
-	private static final int BOTTOM_MARGIN = 8;
-	private static final int PANEL_PADDING_X = 8;
-	private static final int PANEL_PADDING_Y = 7;
+	private static final int MARGIN = 6;
+	/** Space kept between the pause menu's lowest button and the card. */
+	private static final int MENU_GAP = 4;
+	/** The pause menu card shrinks to fit below the menu, but not below this. */
+	private static final float MIN_PAUSE_SCALE = 0.5F;
+	private static final int PADDING = 6;
+	private static final int RADIUS = 9;
+	private static final int SHADOW_BLUR = 8;
 	private static final int ART_SIZE = SpotifyArtLoader.DISPLAY_SIZE;
+	private static final int ART_RADIUS = Math.round(SpotifyArtLoader.CORNER_RADIUS);
+	private static final int PLACEHOLDER_ICON_SIZE = 12;
 	private static final int TEXT_GAP = 8;
+	private static final int CONTENT_WIDTH = 124;
+	private static final int LINE_GAP = 4;
+	private static final int PROGRESS_GAP = 5;
+	private static final int BAR_HEIGHT = 3;
+	private static final int TIME_GAP = 4;
 	private static final int SECTION_GAP = 10;
-	private static final int CONTENT_WIDTH = 150;
-	private static final int BUTTON_SIZE = 20;
-	private static final int BUTTON_GAP = 4;
-	private static final int FONT_HEIGHT = 9;
-	private static final int LINE_SPACING = 10;
-	private static final int PROGRESS_ROW_HEIGHT = FONT_HEIGHT;
-	private static final int PROGRESS_BAR_HEIGHT = 3;
-	private static final int PROGRESS_TIME_GAP = 4;
-	private static final int BACKGROUND_COLOR = 0xB5222B3D;
-	private static final int SHADOW_COLOR = 0x66000000;
-	private static final int BORDER_COLOR = 0xCC101725;
-	private static final int PROGRESS_TRACK_COLOR = 0xFF101725;
-	private static final int PROGRESS_FILL_COLOR = 0xFF20F050;
+	private static final int PLAY_SIZE = 20;
+	private static final int SKIP_SIZE = 16;
+	private static final int BUTTON_GAP = 3;
+	private static final int BUTTON_ROW_WIDTH = SKIP_SIZE * 2 + PLAY_SIZE + BUTTON_GAP * 2;
+	private static final long FADE_MS = 250L;
+	/** Long titles scroll like Spotify's: hold, scroll to the end, hold, scroll back, repeat. */
+	private static final long MARQUEE_HOLD_START_MS = 2_500L;
+	private static final long MARQUEE_HOLD_END_MS = 1_500L;
+	private static final float MARQUEE_PIXELS_PER_MS = 0.03F;
+	private static final Layout HUD_LAYOUT = layout(false);
 
-	private SpotifyIconButtonWidget previousButton;
-	private SpotifyIconButtonWidget playPauseButton;
-	private SpotifyIconButtonWidget nextButton;
+	/** The song on show and when it appeared, for fading it in; shared by the HUD and the pause menu. */
+	private static String shownSong = "";
+	private static long songShownAt;
+	private static @Nullable Identifier shownArt;
+	private static @Nullable Identifier previousArt;
+	private static long artShownAt;
 
-	private SpotifyPlayerOverlay() {
+	/** The pause menu card: drawn at {@link #originX}, {@link #originY}, scaled by {@link #scale}. */
+	private final Layout layout = layout(true);
+	private final float scale;
+	private final float originX;
+	private final float originY;
+	private SpotifyControlButton previousButton;
+	private SpotifyControlButton playPauseButton;
+	private SpotifyControlButton nextButton;
+
+	private SpotifyPlayerOverlay(int screenWidth, int screenHeight, int menuBottom) {
+		// Shrinks to fit between the menu's buttons and the bottom of the screen, and within its width.
+		float fitHeight = (screenHeight - MARGIN - menuBottom - MENU_GAP) / (float) layout.height();
+		float fitWidth = (screenWidth - MARGIN * 2) / (float) layout.width();
+		scale = Math.clamp(Math.min(fitHeight, fitWidth), MIN_PAUSE_SCALE, 1.0F);
+		originX = (screenWidth - layout.width() * scale) / 2.0F;
+		originY = screenHeight - MARGIN - layout.height() * scale;
 	}
 
-	public static SpotifyPlayerOverlay create(int screenWidth, int screenHeight, java.util.function.Consumer<AbstractWidget> addWidget) {
-		SpotifyPlayerOverlay overlay = new SpotifyPlayerOverlay();
-		overlay.init(screenWidth, screenHeight, addWidget);
+	/**
+	 * The pause menu player, with its buttons added through {@code addWidget}; {@code menuBottom} is
+	 * the bottom of the menu's lowest button, which the card stays below.
+	 */
+	public static SpotifyPlayerOverlay create(int screenWidth, int screenHeight, int menuBottom, Consumer<AbstractWidget> addWidget) {
+		SpotifyPlayerOverlay overlay = new SpotifyPlayerOverlay(screenWidth, screenHeight, menuBottom);
+		overlay.init(addWidget);
 		return overlay;
 	}
 
-	private void init(int screenWidth, int screenHeight, java.util.function.Consumer<AbstractWidget> addWidget) {
-		Layout layout = layout(screenWidth, screenHeight, DisplayMode.PAUSE_MENU);
+	private void init(Consumer<AbstractWidget> addWidget) {
+		int x = layout.buttonsX();
+		addWidget.accept(previousButton = button(x, SKIP_SIZE, EMUtilsTexts.SPOTIFY_PREVIOUS, SpotifyIcons.PREVIOUS, false, () -> EMUtilsClient.spotify().previous()));
+		x += SKIP_SIZE + BUTTON_GAP;
+		addWidget.accept(playPauseButton = button(x, PLAY_SIZE, EMUtilsTexts.SPOTIFY_PLAY_PAUSE, playPauseIcon(EMUtilsClient.spotify().state()), true, () -> EMUtilsClient.spotify().playPause()));
+		x += PLAY_SIZE + BUTTON_GAP;
+		addWidget.accept(nextButton = button(x, SKIP_SIZE, EMUtilsTexts.SPOTIFY_NEXT, SpotifyIcons.NEXT, false, () -> EMUtilsClient.spotify().next()));
+	}
 
-		addWidget.accept(previousButton = SpotifyIconButtonWidget.create(
-			layout.buttonX(),
-			layout.buttonY(),
-			Component.translatable(EMUtilsTexts.SPOTIFY_PREVIOUS),
-			SpotifyIcons.PREVIOUS,
-			ignored -> EMUtilsClient.spotify().previous()
-		));
-		addWidget.accept(playPauseButton = createPlayPauseButton(layout.buttonX() + BUTTON_SIZE + BUTTON_GAP, layout.buttonY()));
-		addWidget.accept(nextButton = SpotifyIconButtonWidget.create(
-			layout.buttonX() + (BUTTON_SIZE + BUTTON_GAP) * 2,
-			layout.buttonY(),
-			Component.translatable(EMUtilsTexts.SPOTIFY_NEXT),
-			SpotifyIcons.NEXT,
-			ignored -> EMUtilsClient.spotify().next()
-		));
+	/** A button at {@code localX} in the card, vertically centered, placed on screen with the card's scale. */
+	private SpotifyControlButton button(int localX, int size, String label, Identifier icon, boolean primary, Runnable action) {
+		int scaledSize = Math.max(8, Math.round(size * scale));
+		int centerX = Math.round(originX + (localX + size / 2.0F) * scale);
+		int centerY = Math.round(originY + layout.centerY() * scale);
+		return new SpotifyControlButton(centerX - scaledSize / 2, centerY - scaledSize / 2, scaledSize, Component.translatable(label), icon, primary, action);
 	}
 
 	public void setVisible(boolean visible) {
-		if (previousButton != null) {
-			previousButton.visible = visible;
-		}
-		if (playPauseButton != null) {
-			playPauseButton.visible = visible;
-		}
-		if (nextButton != null) {
-			nextButton.visible = visible;
-		}
+		previousButton.visible = visible;
+		playPauseButton.visible = visible;
+		nextButton.visible = visible;
 	}
 
 	public static boolean shouldDisplay(SpotifyTrackState state) {
@@ -88,28 +118,36 @@ public final class SpotifyPlayerOverlay {
 	}
 
 	public void syncPlaybackState(SpotifyTrackState state) {
-		if (playPauseButton != null) {
-			playPauseButton.setIcon(state.playing() ? SpotifyIcons.PAUSE : SpotifyIcons.PLAY);
-		}
+		playPauseButton.setIcon(playPauseIcon(state));
 	}
 
-	public static void renderBackground(GuiGraphicsExtractor context, int screenWidth, int screenHeight) {
-		Layout layout = layout(screenWidth, screenHeight, DisplayMode.PAUSE_MENU);
-		drawPanelBackground(context, layout.panelX(), layout.panelY(), layout.panelWidth(), layout.panelHeight());
+	private static Identifier playPauseIcon(SpotifyTrackState state) {
+		return state.playing() ? SpotifyIcons.PAUSE : SpotifyIcons.PLAY;
 	}
 
-	public static void renderContent(GuiGraphicsExtractor context, int screenWidth, int screenHeight, SpotifyTrackState state) {
-		renderPanelContent(context, layout(screenWidth, screenHeight, DisplayMode.PAUSE_MENU), state);
+	/** The card behind the pause menu controls, drawn before the buttons. */
+	public void renderBackground(GuiGraphicsExtractor context) {
+		drawScaled(context, originX, originY, scale, () -> drawCard(context, layout, UiTheme.current(), 100));
+	}
+
+	/** The cover and song of the pause menu card, drawn after the buttons. */
+	public void renderContent(GuiGraphicsExtractor context, SpotifyTrackState state) {
+		boolean scroll = EMUtilsClient.config().spotifyPlayerScrollTitles();
+		drawScaled(context, originX, originY, scale, () -> drawContent(context, layout, UiTheme.current(), state, scroll));
 	}
 
 	public static int hudPanelWidth() {
-		return layoutAtOrigin(DisplayMode.HUD).panelWidth();
+		return HUD_LAYOUT.width();
 	}
 
 	public static int hudPanelHeight() {
-		return layoutAtOrigin(DisplayMode.HUD).panelHeight();
+		return HUD_LAYOUT.height();
 	}
 
+	/**
+	 * Draws the HUD card at {@code x, y}, scaled by {@code scale}; {@code opacityPercent} is the
+	 * background's opacity, the song stays fully visible.
+	 */
 	public static void renderHud(
 		GuiGraphicsExtractor context,
 		int x,
@@ -118,132 +156,190 @@ public final class SpotifyPlayerOverlay {
 		int opacityPercent,
 		float scale
 	) {
-		Layout layout = layoutAtOrigin(DisplayMode.HUD);
+		UiTheme theme = UiTheme.current();
+		boolean scroll = EMUtilsClient.config().spotifyHudScrollTitles();
+		drawScaled(context, x, y, scale, () -> {
+			drawCard(context, HUD_LAYOUT, theme, opacityPercent);
+			drawContent(context, HUD_LAYOUT, theme, state, scroll);
+		});
+	}
 
+	/** Draws with the card's origin at {@code x, y}, scaled, with text and icons rasterized for that scale. */
+	private static void drawScaled(GuiGraphicsExtractor context, float x, float y, float scale, Runnable draw) {
 		context.pose().pushMatrix();
+		UiRasterScale.set(scale);
 		try {
 			context.pose().translate(x, y);
 			context.pose().scale(scale, scale);
-			drawPanelBackground(context, 0, 0, layout.panelWidth(), layout.panelHeight(), opacityPercent);
-			renderPanelContent(context, layout, state);
+			draw.run();
 		} finally {
+			UiRasterScale.reset();
 			context.pose().popMatrix();
 		}
 	}
 
-	private static void renderPanelContent(GuiGraphicsExtractor context, Layout layout, SpotifyTrackState state) {
-		Minecraft client = Minecraft.getInstance();
-		int contentHeight = contentBlockHeight(state);
-		int textY = layout.innerTop() + (layout.innerHeight() - contentHeight) / 2;
-
-		drawArt(context, layout.artX(), layout.artY(), state);
-		drawTrackText(context, client, layout.textX(), textY, state);
-		if (state.hasTrack() && state.durationMs() > 0L) {
-			drawProgress(context, client, layout, textY + LINE_SPACING * 2, state);
+	private static void drawCard(GuiGraphicsExtractor context, Layout layout, UiTheme theme, int opacityPercent) {
+		float opacity = Math.clamp(opacityPercent / 100.0F, 0.0F, 1.0F);
+		if (opacity <= 0.0F) {
+			return;
 		}
-	}
-
-	private static void drawArt(GuiGraphicsExtractor context, int x, int y, SpotifyTrackState state) {
-		SpotifyArtLoader.ArtResult art = EMUtilsClient.spotify().art(state);
-		int textureWidth = art.width();
-		int textureHeight = art.height();
-		context.blit(
-			RenderPipelines.GUI_TEXTURED,
-			art.texture(),
-			x,
-			y,
-			0.0F,
-			0.0F,
-			ART_SIZE,
-			ART_SIZE,
-			textureWidth,
-			textureHeight,
-			textureWidth,
-			textureHeight
+		UiShapes.shadow(context, layout.x(), layout.y(), layout.width(), layout.height(), RADIUS, SHADOW_BLUR, UiTheme.fade(theme.shadow(), opacity));
+		UiShapes.borderedRect(
+			context,
+			layout.x(),
+			layout.y(),
+			layout.width(),
+			layout.height(),
+			RADIUS,
+			UiTheme.fade(theme.panel(), opacity),
+			UiTheme.fade(theme.border(), opacity)
 		);
-		if (art.state() == SpotifyArtLoader.State.LOADING) {
-			GalleryLoadingSpinner.render(context, x + ART_SIZE / 2, y + ART_SIZE / 2, 5);
+	}
+
+	private static void drawContent(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state, boolean scroll) {
+		long now = System.currentTimeMillis();
+		String song = state.kind() + "\n" + state.title() + "\n" + state.artist();
+		if (!song.equals(shownSong)) {
+			shownSong = song;
+			songShownAt = now;
+		}
+		float songFade = fade(now - songShownAt);
+
+		drawArt(context, layout, theme, state, now);
+
+		float outer = UiOpacity.get();
+		UiOpacity.set(outer * songFade);
+		try {
+			drawText(context, layout, theme, state, scroll ? now - songShownAt : -1L);
+		} finally {
+			UiOpacity.set(outer);
 		}
 	}
 
-	private static void drawTrackText(GuiGraphicsExtractor context, Minecraft client, int textX, int textY, SpotifyTrackState state) {
-		Component primaryText;
-		Component secondaryText;
-		if (state.kind() == SpotifyTrackState.Kind.UNAVAILABLE) {
-			primaryText = Component.translatable(EMUtilsTexts.SPOTIFY_PLAYER_UNAVAILABLE);
-			secondaryText = Component.empty();
-		} else if (!state.hasTrack()) {
-			primaryText = Component.translatable(EMUtilsTexts.SPOTIFY_PLAYER_NO_TRACK);
-			secondaryText = Component.empty();
+	private static void drawArt(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state, long now) {
+		int x = layout.artX();
+		int y = layout.artY();
+		SpotifyArtLoader.ArtResult art = EMUtilsClient.spotify().art(state);
+		Identifier loaded = art.state() == SpotifyArtLoader.State.LOADED ? art.texture() : null;
+		if (loaded != null && !loaded.equals(shownArt)) {
+			previousArt = shownArt;
+			shownArt = loaded;
+			artShownAt = now;
+		}
+		// While the next song's cover loads, the last one stays, and the new one fades in over it.
+		Identifier cover = loaded != null ? loaded : art.state() == SpotifyArtLoader.State.LOADING ? shownArt : null;
+		Identifier under = loaded != null ? previousArt : null;
+		float coverFade = loaded == null ? 1.0F : fade(now - artShownAt);
+
+		if (cover == null || coverFade < 1.0F) {
+			if (under != null) {
+				drawCover(context, under, x, y, 1.0F);
+			} else {
+				UiShapes.roundedRect(context, x, y, ART_SIZE, ART_SIZE, ART_RADIUS, theme.surfaceAlt());
+				int iconOffset = (ART_SIZE - PLACEHOLDER_ICON_SIZE) / 2;
+				UiIcons.draw(context, HubIcons.MUSIC, x + iconOffset, y + iconOffset, PLACEHOLDER_ICON_SIZE, theme.muted());
+			}
+		}
+		if (cover != null) {
+			drawCover(context, cover, x, y, coverFade);
+		}
+	}
+
+	/** Covers are {@link SpotifyArtLoader#TEXTURE_SIZE} square, with their rounded corners baked in. */
+	private static void drawCover(GuiGraphicsExtractor context, Identifier cover, int x, int y, float opacity) {
+		int size = SpotifyArtLoader.TEXTURE_SIZE;
+		int color = UiOpacity.apply(UiTheme.fade(0xFFFFFFFF, opacity));
+		context.blit(RenderPipelines.GUI_TEXTURED, cover, x, y, 0.0F, 0.0F, ART_SIZE, ART_SIZE, size, size, size, size, color);
+	}
+
+	private static void drawText(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state, long shownMs) {
+		Font font = Minecraft.getInstance().font;
+		int x = layout.textX();
+		if (!state.hasTrack()) {
+			Component status = Component.translatable(state.kind() == SpotifyTrackState.Kind.UNAVAILABLE
+				? EMUtilsTexts.SPOTIFY_PLAYER_UNAVAILABLE
+				: EMUtilsTexts.SPOTIFY_PLAYER_NO_TRACK);
+			UiText.drawCentered(context, font, UiText.ellipsize(font, status, UiText.Size.BODY, CONTENT_WIDTH), UiText.Size.BODY, x, layout.centerY(), theme.textSecondary());
+			return;
+		}
+
+		boolean hasArtist = !state.artist().isBlank();
+		boolean hasProgress = state.durationMs() > 0L;
+		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
+		int artistHeight = UiText.lineHeight(font, UiText.Size.BODY);
+		int rowHeight = Math.max(BAR_HEIGHT, UiText.lineHeight(font, UiText.Size.SMALL));
+		int height = titleHeight
+			+ (hasArtist ? LINE_GAP + artistHeight : 0)
+			+ (hasProgress ? PROGRESS_GAP + rowHeight : 0);
+		int top = layout.centerY() - height / 2;
+
+		drawMarquee(context, font, Component.literal(state.title()), UiText.Size.BOLD, x, top, titleHeight, theme.text(), shownMs);
+		top += titleHeight;
+		if (hasArtist) {
+			top += LINE_GAP;
+			drawMarquee(context, font, Component.literal(state.artist()), UiText.Size.BODY, x, top, artistHeight, theme.textSecondary(), shownMs);
+			top += artistHeight;
+		}
+		if (hasProgress) {
+			drawProgress(context, font, theme, x, top + PROGRESS_GAP + rowHeight / 2, state);
+		}
+	}
+
+	/**
+	 * Draws one line of the song; if it's too long for the card, it scrolls back and forth through it,
+	 * or with {@code shownMs} -1, when scrolling is turned off, ends in "...".
+	 */
+	private static void drawMarquee(GuiGraphicsExtractor context, Font font, Component text, UiText.Size size, int x, int top, int height, int color, long shownMs) {
+		int overflow = UiText.width(font, text, size) - CONTENT_WIDTH;
+		if (overflow <= 0 || shownMs < 0L) {
+			UiText.draw(context, font, UiText.ellipsize(font, text, size, CONTENT_WIDTH), size, x, top, color);
+			return;
+		}
+		long scrollMs = (long) Math.ceil(overflow / MARQUEE_PIXELS_PER_MS);
+		long t = shownMs % (MARQUEE_HOLD_START_MS + scrollMs + MARQUEE_HOLD_END_MS + scrollMs);
+		float progress;
+		if (t < MARQUEE_HOLD_START_MS) {
+			progress = 0.0F;
+		} else if (t < MARQUEE_HOLD_START_MS + scrollMs) {
+			progress = easeInOut((t - MARQUEE_HOLD_START_MS) / (float) scrollMs);
+		} else if (t < MARQUEE_HOLD_START_MS + scrollMs + MARQUEE_HOLD_END_MS) {
+			progress = 1.0F;
 		} else {
-			primaryText = Component.literal(client.font.plainSubstrByWidth(state.title(), CONTENT_WIDTH));
-			secondaryText = state.artist().isBlank()
-				? Component.empty()
-				: Component.literal(client.font.plainSubstrByWidth(state.artist(), CONTENT_WIDTH));
+			progress = 1.0F - easeInOut((t - MARQUEE_HOLD_START_MS - scrollMs - MARQUEE_HOLD_END_MS) / (float) scrollMs);
 		}
+		// Room above and below the capitals for accents and descenders.
+		context.enableScissor(x, top - height, x + CONTENT_WIDTH, top + height * 2);
+		UiText.drawExact(context, font, text, size, x - overflow * progress, top, color);
+		context.disableScissor();
+	}
 
-		context.text(client.font, primaryText, textX, textY, CommonColors.WHITE);
-		if (!secondaryText.getString().isEmpty()) {
-			context.text(
-				client.font,
-				secondaryText,
-				textX,
-				textY + LINE_SPACING,
-				CommonColors.LIGHT_GRAY
-			);
+	private static float easeInOut(float t) {
+		return t * t * (3.0F - 2.0F * t);
+	}
+
+	private static void drawProgress(GuiGraphicsExtractor context, Font font, UiTheme theme, int x, int centerY, SpotifyTrackState state) {
+		Component elapsed = Component.literal(formatDuration(state.effectivePositionMs()));
+		Component total = Component.literal(formatDuration(state.durationMs()));
+		// Sized for the longest time, so the bar doesn't change length as the seconds tick.
+		int timeWidth = UiText.width(font, Component.literal(formatDuration(state.durationMs()).replaceAll("\\d", "0")), UiText.Size.SMALL);
+		int totalWidth = UiText.width(font, total, UiText.Size.SMALL);
+		UiText.drawCentered(context, font, elapsed, UiText.Size.SMALL, x, centerY, theme.muted());
+		UiText.drawCentered(context, font, total, UiText.Size.SMALL, x + CONTENT_WIDTH - totalWidth, centerY, theme.muted());
+
+		int barX = x + timeWidth + TIME_GAP;
+		int barWidth = CONTENT_WIDTH - (timeWidth + TIME_GAP) * 2;
+		int barY = centerY - BAR_HEIGHT / 2;
+		UiShapes.pill(context, barX, barY, barWidth, BAR_HEIGHT, theme.line());
+		float progress = Math.clamp((float) state.effectivePositionMs() / state.durationMs(), 0.0F, 1.0F);
+		int fill = Math.round(barWidth * progress);
+		if (fill > 0) {
+			UiShapes.pill(context, barX, barY, Math.max(BAR_HEIGHT, fill), BAR_HEIGHT, theme.accent());
 		}
 	}
 
-	private static int contentBlockHeight(SpotifyTrackState state) {
-		if (state.hasTrack() && state.durationMs() > 0L) {
-			return LINE_SPACING * 2 + PROGRESS_ROW_HEIGHT;
-		}
-		if (state.hasTrack() && !state.artist().isBlank()) {
-			return LINE_SPACING * 2;
-		}
-
-		return FONT_HEIGHT;
-	}
-
-	private static void drawProgress(GuiGraphicsExtractor context, Minecraft client, Layout layout, int rowY, SpotifyTrackState state) {
-		long positionMs = state.effectivePositionMs();
-		String elapsed = formatDuration(positionMs);
-		String total = formatDuration(state.durationMs());
-		int elapsedWidth = client.font.width(elapsed);
-		int totalWidth = client.font.width(total);
-		int contentRight = layout.textX() + CONTENT_WIDTH;
-		int totalX = contentRight - totalWidth;
-		int barX = layout.textX() + elapsedWidth + PROGRESS_TIME_GAP;
-		int barWidth = Math.max(24, totalX - PROGRESS_TIME_GAP - barX);
-		int barY = rowY + (PROGRESS_ROW_HEIGHT - PROGRESS_BAR_HEIGHT) / 2;
-
-		context.text(client.font, Component.literal(elapsed), layout.textX(), rowY, CommonColors.LIGHT_GRAY);
-		drawProgressBar(context, barX, barY, barWidth, state.progressPercent());
-		context.text(client.font, Component.literal(total), totalX, rowY, CommonColors.LIGHT_GRAY);
-	}
-
-	private static void drawPanelBackground(GuiGraphicsExtractor context, int x, int y, int width, int height) {
-		drawPanelBackground(context, x, y, width, height, 100);
-	}
-
-	private static void drawPanelBackground(GuiGraphicsExtractor context, int x, int y, int width, int height, int opacityPercent) {
-		context.fill(x + 2, y + 2, x + width + 2, y + height + 2, withOpacity(SHADOW_COLOR, opacityPercent));
-		context.fill(x, y, x + width, y + height, withOpacity(BORDER_COLOR, opacityPercent));
-		context.fill(x + 1, y + 1, x + width - 1, y + height - 1, withOpacity(BACKGROUND_COLOR, opacityPercent));
-	}
-
-	private static int withOpacity(int color, int opacityPercent) {
-		int alpha = color >>> 24;
-		int scaledAlpha = Math.round(alpha * Math.min(100, Math.max(0, opacityPercent)) / 100.0F);
-		return (scaledAlpha << 24) | (color & 0x00FFFFFF);
-	}
-
-	private static void drawProgressBar(GuiGraphicsExtractor context, int x, int y, int width, int percent) {
-		int fillWidth = Math.max(0, (int) Math.round(width * Math.min(100, Math.max(0, percent)) / 100.0));
-		context.fill(x, y, x + width, y + PROGRESS_BAR_HEIGHT, PROGRESS_TRACK_COLOR);
-		if (fillWidth > 0) {
-			context.fill(x, y, x + fillWidth, y + PROGRESS_BAR_HEIGHT, PROGRESS_FILL_COLOR);
-		}
+	private static float fade(long elapsedMs) {
+		float t = Math.clamp(elapsedMs / (float) FADE_MS, 0.0F, 1.0F);
+		return 1.0F - (1.0F - t) * (1.0F - t);
 	}
 
 	private static String formatDuration(long durationMs) {
@@ -253,154 +349,23 @@ public final class SpotifyPlayerOverlay {
 		return minutes + ":" + (seconds < 10L ? "0" : "") + seconds;
 	}
 
-	static Layout layout(int screenWidth, int screenHeight, DisplayMode mode) {
-		Layout layout = layoutAtOrigin(mode);
-		int panelX = mode == DisplayMode.PAUSE_MENU
-			? screenWidth / 2 - layout.panelWidth() / 2
-			: screenWidth - BOTTOM_MARGIN - layout.panelWidth();
-		int panelY = screenHeight - BOTTOM_MARGIN - layout.panelHeight();
-		return layout.offset(panelX, panelY);
-	}
-
-	static Layout layoutAtOrigin(DisplayMode mode) {
-		boolean withButtons = mode == DisplayMode.PAUSE_MENU;
-		int buttonRowWidth = withButtons ? BUTTON_SIZE * 3 + BUTTON_GAP * 2 : 0;
-		int sectionGap = withButtons ? SECTION_GAP : 0;
-		int textBlockHeight = LINE_SPACING * 2 + PROGRESS_ROW_HEIGHT;
-		int innerHeight = Math.max(ART_SIZE, textBlockHeight);
-		int innerWidth = ART_SIZE + TEXT_GAP + CONTENT_WIDTH + sectionGap + buttonRowWidth;
-		int panelWidth = innerWidth + PANEL_PADDING_X * 2;
-		int panelHeight = innerHeight + PANEL_PADDING_Y * 2;
-		int innerTop = PANEL_PADDING_Y;
-		int artX = PANEL_PADDING_X;
-		int artY = innerTop + (innerHeight - ART_SIZE) / 2;
-		int textX = artX + ART_SIZE + TEXT_GAP;
-		int buttonX = panelWidth - PANEL_PADDING_X - buttonRowWidth;
-		int buttonY = innerTop + (innerHeight - BUTTON_SIZE) / 2;
-
+	/** The card at the origin; the pause menu's also has room for the buttons. */
+	private static Layout layout(boolean withButtons) {
+		int width = PADDING * 2 + ART_SIZE + TEXT_GAP + CONTENT_WIDTH + (withButtons ? SECTION_GAP + BUTTON_ROW_WIDTH : 0);
+		int height = PADDING * 2 + ART_SIZE;
 		return new Layout(
 			0,
 			0,
-			panelWidth,
-			panelHeight,
-			innerTop,
-			innerHeight,
-			artX,
-			artY,
-			textX,
-			buttonX,
-			buttonY
+			width,
+			height,
+			PADDING,
+			PADDING,
+			PADDING + ART_SIZE + TEXT_GAP,
+			width - PADDING - BUTTON_ROW_WIDTH,
+			height / 2
 		);
 	}
 
-	private SpotifyIconButtonWidget createPlayPauseButton(int x, int y) {
-		SpotifyTrackState state = EMUtilsClient.spotify().state();
-		return SpotifyIconButtonWidget.create(
-			x,
-			y,
-			Component.translatable(EMUtilsTexts.SPOTIFY_PLAY_PAUSE),
-			state.playing() ? SpotifyIcons.PAUSE : SpotifyIcons.PLAY,
-			ignored -> EMUtilsClient.spotify().playPause()
-		);
-	}
-
-	static final class Layout {
-		private final int panelX;
-		private final int panelY;
-		private final int panelWidth;
-		private final int panelHeight;
-		private final int innerTop;
-		private final int innerHeight;
-		private final int artX;
-		private final int artY;
-		private final int textX;
-		private final int buttonX;
-		private final int buttonY;
-
-		private Layout(
-			int panelX,
-			int panelY,
-			int panelWidth,
-			int panelHeight,
-			int innerTop,
-			int innerHeight,
-			int artX,
-			int artY,
-			int textX,
-			int buttonX,
-			int buttonY
-		) {
-			this.panelX = panelX;
-			this.panelY = panelY;
-			this.panelWidth = panelWidth;
-			this.panelHeight = panelHeight;
-			this.innerTop = innerTop;
-			this.innerHeight = innerHeight;
-			this.artX = artX;
-			this.artY = artY;
-			this.textX = textX;
-			this.buttonX = buttonX;
-			this.buttonY = buttonY;
-		}
-
-		int panelX() {
-			return panelX;
-		}
-
-		int panelY() {
-			return panelY;
-		}
-
-		int panelWidth() {
-			return panelWidth;
-		}
-
-		int panelHeight() {
-			return panelHeight;
-		}
-
-		int innerTop() {
-			return innerTop;
-		}
-
-		int innerHeight() {
-			return innerHeight;
-		}
-
-		int artX() {
-			return artX;
-		}
-
-		int artY() {
-			return artY;
-		}
-
-		int textX() {
-			return textX;
-		}
-
-		int buttonX() {
-			return buttonX;
-		}
-
-		int buttonY() {
-			return buttonY;
-		}
-
-		Layout offset(int offsetX, int offsetY) {
-			return new Layout(
-				panelX + offsetX,
-				panelY + offsetY,
-				panelWidth,
-				panelHeight,
-				innerTop + offsetY,
-				innerHeight,
-				artX + offsetX,
-				artY + offsetY,
-				textX + offsetX,
-				buttonX + offsetX,
-				buttonY + offsetY
-			);
-		}
+	private record Layout(int x, int y, int width, int height, int artX, int artY, int textX, int buttonsX, int centerY) {
 	}
 }

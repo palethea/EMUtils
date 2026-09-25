@@ -617,6 +617,10 @@ public final class EMUtilsTexts {
         "emutils.option.spotify_player";
     public static final String OPTION_SPOTIFY_HUD_OVERLAY =
         "emutils.option.spotify_hud_overlay";
+    public static final String OPTION_SPOTIFY_PLAYER_SCROLL_TITLES =
+        "emutils.option.spotify_player_scroll_titles";
+    public static final String OPTION_SPOTIFY_HUD_SCROLL_TITLES =
+        "emutils.option.spotify_hud_scroll_titles";
     public static final String OPTION_SPOTIFY_HUD_BACKGROUND_OPACITY =
         "emutils.option.spotify_hud_background_opacity";
     public static final String OPTION_SPOTIFY_HUD_SCALE =

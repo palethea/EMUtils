@@ -7,9 +7,18 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.spotify.gui.SpotifyIcons;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
 public final class SpotifyPlaybackService {
 	private static final long POLL_INTERVAL_MS = 1_000L;
+	/** Right after a button press, Spotify is polled this often, so the change shows up quickly. */
+	private static final long FAST_POLL_INTERVAL_MS = 150L;
+	private static final long FAST_POLL_MS = 2_000L;
+	/**
+	 * How long a play/pause press wins over polls that still report the old state: Spotify updates
+	 * what it reports a moment after it acts.
+	 */
+	private static final long PENDING_PLAYING_MS = 1_500L;
 	private static final Identifier FALLBACK_ART = SpotifyIcons.FALLBACK_ART;
 
 	private final SpotifyClient client = SpotifyClientFactory.get();
@@ -20,25 +29,29 @@ public final class SpotifyPlaybackService {
 	});
 
 	private volatile SpotifyTrackState state = SpotifyTrackState.unavailable();
+	/** Shown instead of Spotify's state while set, for UI snapshots of songs that aren't playing. */
+	private volatile @Nullable SpotifyTrackState snapshotState;
 	private volatile boolean polling;
-	private volatile boolean awaitingArtUpdate;
+	private volatile boolean pendingPlaying;
+	private volatile long pendingPlayingUntil;
+	private volatile long fastPollUntil;
 	private final AtomicLong pollGeneration = new AtomicLong();
 	private long lastPollAt;
 	private SpotifyArtLoader artLoader;
 
 	public SpotifyTrackState state() {
-		return state;
+		SpotifyTrackState shown = snapshotState;
+		return shown != null ? shown : state;
+	}
+
+	public void setStateForSnapshot(@Nullable SpotifyTrackState shown) {
+		snapshotState = shown;
 	}
 
 	public SpotifyArtLoader.ArtResult art(SpotifyTrackState trackState) {
 		SpotifyArtLoader loader = artLoader();
 		if (loader == null || !trackState.hasTrack()) {
 			return SpotifyArtLoader.ArtResult.fallback(FALLBACK_ART, SpotifyArtLoader.State.NONE, SpotifyArtLoader.DISPLAY_SIZE);
-		}
-
-		if (awaitingArtUpdate) {
-			loader.resolve(trackState.artUrl(), FALLBACK_ART);
-			return SpotifyArtLoader.ArtResult.fallback(FALLBACK_ART, SpotifyArtLoader.State.LOADING, SpotifyArtLoader.DISPLAY_SIZE);
 		}
 
 		return loader.resolve(trackState.artUrl(), FALLBACK_ART);
@@ -55,7 +68,8 @@ public final class SpotifyPlaybackService {
 		}
 
 		long now = System.currentTimeMillis();
-		if (now - lastPollAt < POLL_INTERVAL_MS) {
+		long interval = now < fastPollUntil ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS;
+		if (now - lastPollAt < interval) {
 			return;
 		}
 
@@ -69,8 +83,7 @@ public final class SpotifyPlaybackService {
 					return;
 				}
 
-				state = nextState;
-				awaitingArtUpdate = false;
+				state = withPendingPress(nextState);
 				if (nextState.hasTrack() && !nextState.artUrl().isBlank()) {
 					SpotifyArtLoader loader = artLoader();
 					if (loader != null) {
@@ -81,12 +94,23 @@ public final class SpotifyPlaybackService {
 				if (generation == pollGeneration.get()) {
 					EMUtilsClient.LOGGER.debug("Failed to poll Spotify playback", exception);
 					state = SpotifyTrackState.unavailable();
-					awaitingArtUpdate = false;
 				}
 			} finally {
 				polling = false;
 			}
 		});
+	}
+
+	/** Keeps a play/pause press on show until Spotify reports it too, or it has had time to. */
+	private SpotifyTrackState withPendingPress(SpotifyTrackState polled) {
+		if (pendingPlayingUntil == 0L) {
+			return polled;
+		}
+		if (!polled.hasTrack() || polled.playing() == pendingPlaying || System.currentTimeMillis() > pendingPlayingUntil) {
+			pendingPlayingUntil = 0L;
+			return polled;
+		}
+		return polled.withPlaying(pendingPlaying);
 	}
 
 	public void refreshSoon() {
@@ -98,10 +122,8 @@ public final class SpotifyPlaybackService {
 			return;
 		}
 
-		pollGeneration.incrementAndGet();
-		awaitingArtUpdate = true;
+		afterPress();
 		client.previous();
-		refreshSoon();
 	}
 
 	public void playPause() {
@@ -109,9 +131,15 @@ public final class SpotifyPlaybackService {
 			return;
 		}
 
-		pollGeneration.incrementAndGet();
+		SpotifyTrackState current = state;
+		if (current.hasTrack()) {
+			// Shows the press right away instead of after Spotify reports it.
+			pendingPlaying = !current.playing();
+			pendingPlayingUntil = System.currentTimeMillis() + PENDING_PLAYING_MS;
+			state = current.withPlaying(pendingPlaying);
+		}
+		afterPress();
 		client.playPause();
-		refreshSoon();
 	}
 
 	public void next() {
@@ -119,9 +147,14 @@ public final class SpotifyPlaybackService {
 			return;
 		}
 
-		pollGeneration.incrementAndGet();
-		awaitingArtUpdate = true;
+		afterPress();
 		client.next();
+	}
+
+	/** Drops polls already under way, which may predate the press, and polls quickly for a moment. */
+	private void afterPress() {
+		pollGeneration.incrementAndGet();
+		fastPollUntil = System.currentTimeMillis() + FAST_POLL_MS;
 		refreshSoon();
 	}
 

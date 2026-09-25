@@ -32,7 +32,7 @@ public final class UiIcons {
 			clearCache();
 			cacheScale = scale;
 		}
-		int pixels = size * scale;
+		int pixels = Math.round(size * scale * UiRasterScale.get());
 		Identifier texture = CACHE.computeIfAbsent(icon + "@" + pixels, ignored -> resample(icon, pixels));
 		if (texture == null) {
 			return;

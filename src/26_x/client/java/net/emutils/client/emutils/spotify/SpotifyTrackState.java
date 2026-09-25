@@ -48,6 +48,11 @@ public record SpotifyTrackState(
 		);
 	}
 
+	/** The same track, playing or paused from where it is now; for showing a button press right away. */
+	public SpotifyTrackState withPlaying(boolean nowPlaying) {
+		return new SpotifyTrackState(title, artist, nowPlaying, kind, artUrl, effectivePositionMs(), durationMs, System.currentTimeMillis());
+	}
+
 	public boolean hasTrack() {
 		return kind == Kind.TRACK;
 	}
