@@ -46,6 +46,11 @@ public final class MassDropStore {
 		return mode == null ? MassDropMode.LEGIT : mode;
 	}
 
+	public synchronized void setMode(MassDropMode mode) {
+		this.mode = mode;
+		save();
+	}
+
 	public synchronized void cycleMode() {
 		mode = mode().next();
 		save();

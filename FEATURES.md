@@ -221,7 +221,7 @@ Protect important slots and move items faster.
 - Auto Refill: refill the active hotbar slot with a matching block stack when block placement empties it.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
-- Mass Drop: maintain a searchable list of items by icon, display name, and real item ID, then drop matching inventory stacks with a configurable keybind.
+- Mass Drop: maintain a list of items to drop, found by searching every item by name or ID, then drop matching inventory stacks with a configurable keybind. The list shows how many of each item you carry, and the drop key and mode sit at the top.
   - Legit: drop one matching inventory slot per key press.
   - Unfair: drop every matching inventory slot per key press.
 

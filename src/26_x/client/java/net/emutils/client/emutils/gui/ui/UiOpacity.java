@@ -14,6 +14,10 @@ public final class UiOpacity {
 		value = Math.clamp(opacity, 0.0F, 1.0F);
 	}
 
+	public static float get() {
+		return value;
+	}
+
 	public static void reset() {
 		value = 1.0F;
 	}
