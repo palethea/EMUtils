@@ -30,9 +30,9 @@ public abstract class UiPanelScreen extends Screen {
 	private boolean closing;
 	/** Shown again after a screen opened from this one closed; the background is already in place then. */
 	private boolean returning;
-	/** Closed into the game while the HUD still draws the fade-out, so it keeps its textures until then. */
 	/** Closing straight into the game, past the screen it was opened from ({@link #closeToGame}). */
 	private boolean closingToGame;
+	/** Closed into the game while the HUD still draws the fade-out, so it keeps its textures until then. */
 	private boolean fadingOnHud;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
