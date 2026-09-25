@@ -438,7 +438,7 @@ public final class SettingsScreen extends Screen {
 		}
 		if (contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON)) {
 			EMUtilsClient.config().setSettingsUiPreview(false);
-			minecraft.setScreenAndShow(new CustomHubScreen(parent));
+			minecraft.gui.setScreen(new CustomHubScreen(parent));
 			return true;
 		}
 		if (scroll.contains(mouseX, mouseY)) {
@@ -543,7 +543,7 @@ public final class SettingsScreen extends Screen {
 	@Override
 	public void onClose() {
 		search.setFocused(false);
-		minecraft.setScreenAndShow(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	@Override

@@ -107,7 +107,7 @@ public final class ChatFeaturesSettingsScreen extends EMUtilsScreen {
 		adder.addChild(highlightStyleButton());
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetChatDefaults();
-			client.setScreenAndShow(new ChatFeaturesSettingsScreen(parent));
+			client.gui.setScreen(new ChatFeaturesSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 

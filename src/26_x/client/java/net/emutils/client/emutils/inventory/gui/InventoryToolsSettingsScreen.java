@@ -78,11 +78,11 @@ public final class InventoryToolsSettingsScreen extends EMUtilsScreen {
 			EMUtilsClient.config()::setPreserveContainerCursor
 		));
 		adder.addChild(fullWidthSettingsButton(Component.translatable("emutils.mass_drop.manage"), button ->
-			client.setScreenAndShow(new MassDropScreen(this))
+			client.gui.setScreen(new MassDropScreen(this))
 		), SETTINGS_COLUMNS);
 		adder.addChild(fullWidthSettingsButton(Component.translatable(EMUtilsTexts.OPTION_RESET_DEFAULTS), button -> {
 			EMUtilsClient.config().resetInventoryToolsDefaults();
-			client.setScreenAndShow(new InventoryToolsSettingsScreen(parent));
+			client.gui.setScreen(new InventoryToolsSettingsScreen(parent));
 		}), SETTINGS_COLUMNS);
 	}
 
