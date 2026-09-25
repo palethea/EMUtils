@@ -10,6 +10,7 @@ import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
@@ -55,6 +56,10 @@ public final class SettingsScreen extends Screen {
 	private static final int GROUP_GAP = 12;
 	private static final int FADE_HEIGHT = 12;
 	private static final int OPEN_BUTTON_HEIGHT = 14;
+	private static final float OPEN_SECONDS = 0.2F;
+	private static final float THEME_SECONDS = 0.3F;
+	private static final float CATEGORY_SECONDS = 0.2F;
+	private static final float LIST_SECONDS = 0.2F;
 
 	private final Screen parent;
 	private final List<HubFeature> features;
@@ -79,11 +84,23 @@ public final class SettingsScreen extends Screen {
 	private int titleY;
 	private boolean stackedHeader;
 	private boolean showTagline;
+	private boolean prepared;
+	private float openProgress;
+	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
+	private float lightness;
 
 	public SettingsScreen(Screen parent) {
 		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE));
 		this.parent = parent;
 		this.features = HubFeatureCatalog.all();
+		// Starts the open animation from nothing.
+		anim.transition("open", 0.0F, OPEN_SECONDS, true);
+	}
+
+	/** The current theme, crossfading for a moment after switching between dark and light. */
+	private UiTheme theme() {
+		lightness = anim.transition("theme", UiTheme.current() == UiTheme.LIGHT, THEME_SECONDS);
+		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness);
 	}
 
 	@Override
@@ -160,13 +177,22 @@ public final class SettingsScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		super.extractBackground(context, mouseX, mouseY, delta);
-		context.fill(0, 0, width, height, UiTheme.current().dim());
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), openProgress));
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		anim.frame();
-		UiTheme theme = UiTheme.current();
+		UiTheme theme = theme();
+		// The first frame draws everything invisibly, so every text texture exists before the open
+		// animation's clock starts and the animation can't hitch.
+		openProgress = prepared ? anim.transition("open", 1.0F, OPEN_SECONDS, true) : 0.0F;
+		UiOpacity.set(openProgress);
+		float scale = 0.97F + 0.03F * openProgress;
+		context.pose().pushMatrix();
+		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
+		context.pose().scale(scale, scale);
+		context.pose().translate(-(panelX + panelWidth / 2.0F), -(panelY + panelHeight / 2.0F));
 		UiShapes.shadow(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, 18, theme.shadow());
 		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, theme.panel());
 
@@ -177,6 +203,9 @@ public final class SettingsScreen extends Screen {
 		drawControl(context, theme, backX, backY);
 		drawRightButtons(context, theme, backX, backY);
 		drawCards(context, theme, backX, backY);
+		context.pose().popMatrix();
+		UiOpacity.reset();
+		prepared = true;
 		if (sheet != null) {
 			sheet.render(context, theme, mouseX, mouseY, panelX, panelY, panelWidth, panelHeight, width, height);
 			if (sheet.isClosed()) {
@@ -217,28 +246,54 @@ public final class SettingsScreen extends Screen {
 			hintWidth = drawShortcutHint(context, theme, controlX + controlWidth - 8, searchCenter) + 8;
 		}
 		search.draw(context, font, theme, controlX + 26, searchCenter, controlWidth - 34 - hintWidth, Component.translatable(EMUtilsTexts.UI_SEARCH));
-		context.fill(controlX + 1, controlY + SEARCH_ROW, controlX + controlWidth - 1, controlY + SEARCH_ROW + 1, theme.line());
+		context.fill(controlX + 1, controlY + SEARCH_ROW, controlX + controlWidth - 1, controlY + SEARCH_ROW + 1, UiOpacity.apply(theme.line()));
 
 		int buttonsWidth = categoryButtons.stream().mapToInt(button -> button.width).sum() + (categoryButtons.size() - 1) * 2;
 		int x = controlX + (controlWidth - buttonsWidth) / 2;
 		int y = controlY + SEARCH_ROW + 1 + (CATEGORY_ROW - CATEGORY_BUTTON_HEIGHT) / 2;
+		int selectedIndex = 0;
 		for (int i = 0; i < categoryButtons.size(); i++) {
 			CategoryButton button = categoryButtons.get(i);
 			button.x = x;
 			button.y = y;
-			boolean selected = button.group == selectedGroup;
-			float hover = anim.towards("category:" + i, contains(mouseX, mouseY, x, y, button.width, CATEGORY_BUTTON_HEIGHT), 16.0F);
-			float select = anim.towards("category-selected:" + i, selected, 16.0F);
-			int background = UiTheme.mix(UiTheme.fade(theme.hover(), hover), theme.selectedBackground(), select);
-			UiShapes.roundedRect(context, x, y, button.width, CATEGORY_BUTTON_HEIGHT, 7, background);
-			int color = UiTheme.mix(theme.textSecondary(), theme.selectedText(), select);
-			int textX = x + 6;
+			if (button.group == selectedGroup) {
+				selectedIndex = i;
+			}
+			x += button.width + 2;
+		}
+
+		// The highlight slides between buttons; its position may fall between two of them.
+		float slide = anim.transition("category-slide", selectedIndex, CATEGORY_SECONDS);
+		for (int i = 0; i < categoryButtons.size(); i++) {
+			CategoryButton button = categoryButtons.get(i);
+			float hover = anim.towards("category:" + i, contains(mouseX, mouseY, button.x, button.y, button.width, CATEGORY_BUTTON_HEIGHT), 16.0F);
+			float covered = Math.clamp(1.0F - Math.abs(slide - i), 0.0F, 1.0F);
+			UiShapes.roundedRect(context, button.x, button.y, button.width, CATEGORY_BUTTON_HEIGHT, 7, UiTheme.fade(theme.hover(), hover * (1.0F - covered)));
+		}
+		int from = (int) Math.floor(slide);
+		int to = Math.min(categoryButtons.size() - 1, from + 1);
+		float blend = slide - from;
+		CategoryButton fromButton = categoryButtons.get(from);
+		CategoryButton toButton = categoryButtons.get(to);
+		float left = fromButton.x + (toButton.x - fromButton.x) * blend;
+		float right = fromButton.x + fromButton.width + (toButton.x + toButton.width - fromButton.x - fromButton.width) * blend;
+		int wholeLeft = (int) Math.floor(left);
+		context.pose().pushMatrix();
+		context.pose().translate(left - wholeLeft, 0.0F);
+		UiShapes.roundedRect(context, wholeLeft, y, Math.round(right - left), CATEGORY_BUTTON_HEIGHT, 7, theme.selectedBackground());
+		context.pose().popMatrix();
+
+		for (int i = 0; i < categoryButtons.size(); i++) {
+			CategoryButton button = categoryButtons.get(i);
+			// Labels switch color as the highlight passes under them.
+			float covered = Math.clamp(1.0F - Math.abs(slide - i), 0.0F, 1.0F);
+			int color = UiTheme.mix(theme.textSecondary(), theme.selectedText(), covered);
+			int textX = button.x + 6;
 			if (button.icon != null) {
 				UiIcons.draw(context, button.icon, textX, y + (CATEGORY_BUTTON_HEIGHT - 9) / 2, 9, color);
 				textX += 13;
 			}
 			UiText.drawCentered(context, font, button.label, UiText.Size.LABEL, textX, y + CATEGORY_BUTTON_HEIGHT / 2, color);
-			x += button.width + 2;
 		}
 	}
 
@@ -262,9 +317,9 @@ public final class SettingsScreen extends Screen {
 	}
 
 	private void drawRightButtons(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
-		boolean dark = theme == UiTheme.DARK;
-		float themeHover = anim.towards("theme", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
-		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, dark ? HubIcons.SUN : HubIcons.MOON, themeHover);
+		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
+		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
+		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness, themeHover);
 
 		float classicHover = anim.towards("classic", contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON), 16.0F);
 		UiWidgets.button(context, font, theme, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON, Component.translatable(EMUtilsTexts.UI_CLASSIC), UiWidgets.ButtonStyle.GHOST, classicHover);
@@ -286,15 +341,18 @@ public final class SettingsScreen extends Screen {
 			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		scroll.setContentHeight(Math.max(0, contentHeight - GROUP_GAP + FADE_HEIGHT));
-		scroll.animate(anim, "scroll");
+		scroll.animate(anim, "scroll", mouseX, mouseY);
 
 		cards.clear();
-		boolean mouseInList = scroll.contains(mouseX, mouseY);
+		boolean mouseInList = scroll.contains(mouseX, mouseY) && !scroll.dragging();
 		scroll.begin(context);
+		// After picking another category, the cards fade and rise in instead of popping.
+		float listIn = anim.transition("list", 1.0F, LIST_SECONDS, true);
+		UiOpacity.set(openProgress * listIn);
 		// Cards are laid out at whole pixels and the leftover fraction of the scroll offset is applied
 		// as a translation, so scrolling glides smoothly while clicks still use whole positions.
 		context.pose().pushMatrix();
-		context.pose().translate(0.0F, scroll.offset() - scroll.exactOffset());
+		context.pose().translate(0.0F, scroll.offset() - scroll.exactOffset() + (1.0F - listIn) * 6.0F);
 		int y = scroll.y() + FADE_HEIGHT / 2 - scroll.offset();
 		for (Group group : groups) {
 			if (headings) {
@@ -322,13 +380,18 @@ public final class SettingsScreen extends Screen {
 			int emptyWidth = UiText.width(font, empty, UiText.Size.BODY);
 			UiText.draw(context, font, empty, UiText.Size.BODY, scroll.x() + (innerWidth - emptyWidth) / 2, scroll.y() + 40, theme.muted());
 		}
-		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F));
+		UiOpacity.set(openProgress);
+		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
 	}
 
 	/** Draws one feature card and returns where it and its control are, for clicks. */
 	private CardBox drawCard(GuiGraphicsExtractor context, UiTheme theme, HubFeature feature, int x, int y, int width, boolean mouseInList, int mouseX, int mouseY) {
 		boolean hovered = mouseInList && contains(mouseX, mouseY, x, y, width, CARD_HEIGHT);
 		float hover = anim.towards("card:" + feature.id(), hovered, 16.0F);
+		// Hovered cards rise a little onto a soft shadow, like the mockup. Clicks keep using the resting position.
+		context.pose().pushMatrix();
+		context.pose().translate(0.0F, -hover);
+		UiShapes.shadow(context, x, y + 2, width, CARD_HEIGHT, CARD_RADIUS, 8, UiTheme.fade(theme.shadow(), hover * 0.9F));
 		UiShapes.borderedRect(context, x, y, width, CARD_HEIGHT, CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
 
 		int rowCenter = y + CARD_PADDING + 6;
@@ -373,6 +436,7 @@ public final class SettingsScreen extends Screen {
 
 		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - CARD_PADDING * 2);
 		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, y + CARD_HEIGHT - CARD_PADDING - 3, theme.muted());
+		context.pose().popMatrix();
 		return new CardBox(feature, x, y, width, CARD_HEIGHT, controlX, controlY, controlWidth, controlHeight);
 	}
 
@@ -425,6 +489,9 @@ public final class SettingsScreen extends Screen {
 		if (contains(mouseX, mouseY, controlX, controlY, controlWidth, controlHeight)) {
 			for (CategoryButton button : categoryButtons) {
 				if (contains(mouseX, mouseY, button.x, button.y, button.width, CATEGORY_BUTTON_HEIGHT)) {
+					if (selectedGroup != button.group) {
+						anim.snap("list", 0.0F);
+					}
 					selectedGroup = button.group;
 					scroll.reset();
 					return true;
@@ -439,6 +506,9 @@ public final class SettingsScreen extends Screen {
 		if (contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON)) {
 			EMUtilsClient.config().setSettingsUiPreview(false);
 			minecraft.setScreenAndShow(new CustomHubScreen(parent));
+			return true;
+		}
+		if (scroll.mouseClicked(mouseX, mouseY)) {
 			return true;
 		}
 		if (scroll.contains(mouseX, mouseY)) {
@@ -489,7 +559,10 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
-		if (sheet != null && sheet.mouseDragged(click.x(), click.y())) {
+		if (sheet != null) {
+			return sheet.mouseDragged(click.x(), click.y());
+		}
+		if (scroll.mouseDragged(click.y())) {
 			return true;
 		}
 		return super.mouseDragged(click, deltaX, deltaY);
@@ -499,6 +572,9 @@ public final class SettingsScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent click) {
 		if (sheet != null) {
 			return sheet.mouseReleased();
+		}
+		if (scroll.mouseReleased()) {
+			return true;
 		}
 		return super.mouseReleased(click);
 	}

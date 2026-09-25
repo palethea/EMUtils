@@ -322,8 +322,8 @@ final class SettingsSheet {
 	}
 
 	private void drawRows(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
-		scroll.animate(anim, "sheet-scroll:" + feature.id());
 		boolean interactive = dropdown == null && colorPicker == null;
+		scroll.animate(anim, "sheet-scroll:" + feature.id(), interactive ? mouseX : Integer.MIN_VALUE / 2, mouseY);
 		boolean mouseInList = interactive && scroll.contains(mouseX, mouseY);
 		scroll.begin(context);
 		context.pose().pushMatrix();
@@ -343,7 +343,7 @@ final class SettingsSheet {
 			UiText.drawCentered(context, font, Component.translatable(EMUtilsTexts.UI_NOTHING_TO_SET_UP), UiText.Size.BODY, scroll.x() + ROW_PADDING, scroll.y() + FADE_HEIGHT / 2 + 15, theme.muted());
 		}
 		context.pose().popMatrix();
-		scroll.end(context, theme.surface(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F));
+		scroll.end(context, theme.surface(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
 	}
 
 	private void drawRow(GuiGraphicsExtractor context, UiTheme theme, RowBox box, int mouseX, int mouseY) {
@@ -515,6 +515,9 @@ final class SettingsSheet {
 			rowsDirty = true;
 			return true;
 		}
+		if (scroll.mouseClicked(mouseX, mouseY)) {
+			return true;
+		}
 		if (feature.toggle() != null && contains(mouseX, mouseY, switchX - 2, switchY - 2, UiWidgets.SWITCH_WIDTH + 4, UiWidgets.SWITCH_HEIGHT + 4)) {
 			feature.toggle().setter().accept(!feature.toggle().getter().getAsBoolean());
 			return true;
@@ -583,7 +586,7 @@ final class SettingsSheet {
 			drag(mouseX);
 			return true;
 		}
-		return false;
+		return scroll.mouseDragged(mouseY);
 	}
 
 	private void drag(double mouseX) {
@@ -601,6 +604,7 @@ final class SettingsSheet {
 			anim.set("slider:" + draggingSlider.labelKey(), draggingFraction);
 			draggingSlider = null;
 		}
+		scroll.mouseReleased();
 		return true;
 	}
 
