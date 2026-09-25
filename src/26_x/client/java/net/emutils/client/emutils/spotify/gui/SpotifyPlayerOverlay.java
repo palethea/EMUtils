@@ -132,7 +132,8 @@ public final class SpotifyPlayerOverlay {
 
 	/** The cover and song of the pause menu card, drawn after the buttons. */
 	public void renderContent(GuiGraphicsExtractor context, SpotifyTrackState state) {
-		drawScaled(context, originX, originY, scale, () -> drawContent(context, layout, UiTheme.current(), state));
+		boolean scroll = EMUtilsClient.config().spotifyPlayerScrollTitles();
+		drawScaled(context, originX, originY, scale, () -> drawContent(context, layout, UiTheme.current(), state, scroll));
 	}
 
 	public static int hudPanelWidth() {
@@ -156,9 +157,10 @@ public final class SpotifyPlayerOverlay {
 		float scale
 	) {
 		UiTheme theme = UiTheme.current();
+		boolean scroll = EMUtilsClient.config().spotifyHudScrollTitles();
 		drawScaled(context, x, y, scale, () -> {
 			drawCard(context, HUD_LAYOUT, theme, opacityPercent);
-			drawContent(context, HUD_LAYOUT, theme, state);
+			drawContent(context, HUD_LAYOUT, theme, state, scroll);
 		});
 	}
 
@@ -194,7 +196,7 @@ public final class SpotifyPlayerOverlay {
 		);
 	}
 
-	private static void drawContent(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state) {
+	private static void drawContent(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state, boolean scroll) {
 		long now = System.currentTimeMillis();
 		String song = state.kind() + "\n" + state.title() + "\n" + state.artist();
 		if (!song.equals(shownSong)) {
@@ -208,7 +210,7 @@ public final class SpotifyPlayerOverlay {
 		float outer = UiOpacity.get();
 		UiOpacity.set(outer * songFade);
 		try {
-			drawText(context, layout, theme, state, now - songShownAt);
+			drawText(context, layout, theme, state, scroll ? now - songShownAt : -1L);
 		} finally {
 			UiOpacity.set(outer);
 		}
@@ -283,11 +285,14 @@ public final class SpotifyPlayerOverlay {
 		}
 	}
 
-	/** Draws one line of the song; if it's too long for the card, it scrolls back and forth through it. */
+	/**
+	 * Draws one line of the song; if it's too long for the card, it scrolls back and forth through it,
+	 * or with {@code shownMs} -1, when scrolling is turned off, ends in "...".
+	 */
 	private static void drawMarquee(GuiGraphicsExtractor context, Font font, Component text, UiText.Size size, int x, int top, int height, int color, long shownMs) {
 		int overflow = UiText.width(font, text, size) - CONTENT_WIDTH;
-		if (overflow <= 0) {
-			UiText.draw(context, font, text, size, x, top, color);
+		if (overflow <= 0 || shownMs < 0L) {
+			UiText.draw(context, font, UiText.ellipsize(font, text, size, CONTENT_WIDTH), size, x, top, color);
 			return;
 		}
 		long scrollMs = (long) Math.ceil(overflow / MARQUEE_PIXELS_PER_MS);

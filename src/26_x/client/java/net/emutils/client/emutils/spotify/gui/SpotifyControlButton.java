@@ -34,6 +34,10 @@ final class SpotifyControlButton extends Button {
 			: (hot ? theme.surfaceHover() : theme.surfaceAlt());
 		UiShapes.circle(context, getX(), getY(), width, fill);
 		int iconSize = Math.round(width * 0.45F);
+		// Same odd or even size as the circle, so the icon sits exactly in its middle.
+		if ((width - iconSize) % 2 != 0) {
+			iconSize++;
+		}
 		int offset = (width - iconSize) / 2;
 		UiIcons.draw(context, icon, getX() + offset, getY() + offset, iconSize, primary ? 0xFFFFFFFF : theme.text());
 	}

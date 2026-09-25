@@ -884,6 +884,12 @@ public final class UiSnapshotter {
 			case 180 -> captureAfter(client, 10, "spotify hud, long title before scrolling");
 			case 181 -> captureAfter(client, 60, "spotify hud, long title scrolling");
 			case 182 -> {
+				EMUtilsClient.config().setSpotifyHudScrollTitles(false);
+				next();
+			}
+			case 183 -> captureAfter(client, 5, "spotify hud, long title with scrolling off");
+			case 184 -> {
+				EMUtilsClient.config().setSpotifyHudScrollTitles(true);
 				EMUtilsClient.spotify().setStateForSnapshot(null);
 				next();
 			}

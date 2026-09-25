@@ -208,6 +208,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean spotifyEnabled;
 	private Boolean spotifyPlayerEnabled = Boolean.FALSE;
 	private Boolean spotifyHudOverlay = Boolean.FALSE;
+	private Boolean spotifyPlayerScrollTitles = Boolean.TRUE;
+	private Boolean spotifyHudScrollTitles = Boolean.TRUE;
 	private String spotifyHudAnchor = HudOverlayAnchor.BOTTOM_RIGHT.name();
 	private Integer spotifyHudBackgroundOpacity = 100;
 	private Integer spotifyHudScale = 100;
@@ -1470,6 +1472,26 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether titles too long for the pause menu player scroll through, instead of ending in "...". */
+	public boolean spotifyPlayerScrollTitles() {
+		return spotifyPlayerScrollTitles == null || spotifyPlayerScrollTitles;
+	}
+
+	public void setSpotifyPlayerScrollTitles(boolean enabled) {
+		spotifyPlayerScrollTitles = enabled;
+		save();
+	}
+
+	/** Whether titles too long for the HUD card scroll through, instead of ending in "...". */
+	public boolean spotifyHudScrollTitles() {
+		return spotifyHudScrollTitles == null || spotifyHudScrollTitles;
+	}
+
+	public void setSpotifyHudScrollTitles(boolean enabled) {
+		spotifyHudScrollTitles = enabled;
+		save();
+	}
+
 	public HudOverlayAnchor spotifyHudAnchor() {
 		return HudOverlayAnchor.fromName(spotifyHudAnchor);
 	}
@@ -1985,6 +2007,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		spotifyEnabled = Boolean.FALSE;
 		spotifyPlayerEnabled = Boolean.FALSE;
 		spotifyHudOverlay = Boolean.FALSE;
+		spotifyPlayerScrollTitles = Boolean.TRUE;
+		spotifyHudScrollTitles = Boolean.TRUE;
 		spotifyHudBackgroundOpacity = 100;
 		spotifyHudScale = 100;
 		save();

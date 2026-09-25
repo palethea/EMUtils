@@ -587,7 +587,10 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY, config::spotifyEnabled, config::setSpotifyEnabled));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_PLAYER, config::spotifyPlayerEnabled, config::setSpotifyPlayerEnabled));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_PLAYER_SCROLL_TITLES, config::spotifyPlayerScrollTitles, config::setSpotifyPlayerScrollTitles));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_OVERLAY, config::spotifyHudOverlay, config::setSpotifyHudOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_SCROLL_TITLES, config::spotifyHudScrollTitles, config::setSpotifyHudScrollTitles));
 		return rows;
 	}
 
