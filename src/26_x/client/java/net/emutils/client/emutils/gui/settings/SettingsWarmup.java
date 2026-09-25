@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.gui.settings;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.gui.ui.UiBlur;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
@@ -37,6 +38,8 @@ public final class SettingsWarmup {
 		long start = System.nanoTime();
 		SettingsScreen screen = new SettingsScreen(null);
 		screen.init(width, height);
+		// Initializing prepares the blur for opening from gameplay; this screen never opens, so undo that.
+		UiBlur.reset();
 		screen.prerender(new GuiGraphicsExtractor(client, new GuiRenderState(), Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2));
 		EMUtilsClient.LOGGER.debug("Prepared the EMUtils settings screen in {} ms.", (System.nanoTime() - start) / 1_000_000);
 	}
