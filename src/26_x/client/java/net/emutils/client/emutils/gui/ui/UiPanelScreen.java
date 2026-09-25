@@ -109,6 +109,7 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	public void added() {
 		super.added();
+		UiClosingScreens.clear();
 		if (prepared) {
 			returning = true;
 			prepared = false;
@@ -203,6 +204,29 @@ public abstract class UiPanelScreen extends Screen {
 			return;
 		}
 		closing = true;
+		if (parent == null && minecraft.level != null) {
+			// Back to the game: hand control back right away, so the player can look around and move
+			// while the panel is still fading; the HUD draws its last frames.
+			minecraft.gui.setScreen(null);
+			UiClosingScreens.add(this);
+		}
+	}
+
+	/**
+	 * Draws one frame of the close animation after the screen was closed into the game, with the
+	 * background it would draw itself. Returns false once the animation has finished.
+	 */
+	boolean extractClosingFrame(GuiGraphicsExtractor context) {
+		float background = backgroundProgress();
+		UiBlur.set(fadesBlur() ? background : 1.0F);
+		if (minecraft.options.getMenuBackgroundBlurriness() >= 1) {
+			context.blurBeforeThisStratum();
+		}
+		extractMenuBackground(context);
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), background));
+		// The mouse is back in the game, so nothing in the panel is hovered.
+		extractRenderState(context, Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2, 0.0F);
+		return openProgress > 0.0F;
 	}
 
 	@Override

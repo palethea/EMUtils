@@ -20,6 +20,7 @@ import net.emutils.client.emutils.food.FoodTooltipComponent;
 import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
 import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
@@ -109,6 +110,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		BeaconRadiusRenderer.register();
 		LightLevelOverlayRenderer.register();
 		registerHudLayoutElements();
+		UiClosingScreens.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			autoReconnectManager.captureCurrentServer(client);
 			CustomCapeManager.clear();
