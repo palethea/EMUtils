@@ -27,6 +27,7 @@
 		"GuiRenderStateMixin",
 		"GuiRendererMixin",
 		"HandledScreenAccessor",
+		"LoadingOverlayAccessor",
 		"HandledScreenMixin",
 		"HungerManagerAccessor",
 		"HudFreeCameraMixin",

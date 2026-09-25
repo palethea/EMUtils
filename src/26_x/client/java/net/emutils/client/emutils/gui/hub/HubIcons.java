@@ -8,6 +8,7 @@ public final class HubIcons {
 	public static final Identifier BACKPACK = icon("backpack");
 	public static final Identifier BEAM = icon("beam");
 	public static final Identifier BOX = icon("box");
+	public static final Identifier CHECK = icon("check");
 	public static final Identifier CHEVRON_DOWN = icon("chevron-down");
 	public static final Identifier CHEVRON_LEFT = icon("chevron-left");
 	public static final Identifier CHEVRON_RIGHT = icon("chevron-right");

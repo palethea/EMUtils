@@ -23,6 +23,14 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String UI_LOADING_DONE = "emutils.ui.loading.done";
+    public static final String UI_LOADING_SHADER_NOTE = "emutils.ui.loading.shader_note";
+    public static final String UI_LOADING_APPLY_SHADER = "emutils.ui.loading.apply_shader";
+    public static final String UI_LOADING_SHADERS_OFF = "emutils.ui.loading.shaders_off";
+    public static final String UI_LOADING_SHADERS_OFF_DESC = "emutils.ui.loading.shaders_off_desc";
+    public static final String UI_LOADING_RESOURCE_PACKS = "emutils.ui.loading.resource_packs";
+    public static final String UI_LOADING_TURNING_ON = "emutils.ui.loading.turning_on";
+    public static final String UI_LOADING_TURNING_OFF = "emutils.ui.loading.turning_off";
     public static final String UI_COPY_IMAGE = "emutils.ui.gallery.copy_image";
     public static final String UI_OPEN_IN_VIEWER = "emutils.ui.gallery.open_in_viewer";
     public static final String UI_SHOW_IN_FOLDER = "emutils.ui.gallery.show_in_folder";
