@@ -16,6 +16,7 @@ import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -29,7 +30,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * A feature's settings in a centered sheet over the settings screen (#92). It lists the same rows as
  * the classic hub, so every setting works here, and shows an optional description under each one from
- * the language key {@code <label key>.desc}.
+ * the language key {@code <label key>.desc}. The feature's keybinds follow under their own heading.
  */
 final class SettingsSheet {
 	private static final int MAX_WIDTH = 380;
@@ -46,10 +47,12 @@ final class SettingsSheet {
 	/** Choices use a segmented control when they have at most this many options and fit on one line. */
 	private static final int MAX_SEGMENTS = 4;
 	private static final float OPEN_SECONDS = 0.2F;
+	private static final int KEYS_HEADING = 16;
 
 	private final Font font;
 	private final UiAnim anim;
 	private final HubFeature feature;
+	private final KeybindCapture capture;
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final List<RowBox> boxes = new ArrayList<>();
 	private List<HubSettingRow> rows;
@@ -76,11 +79,14 @@ final class SettingsSheet {
 	private int switchY;
 	/** Width available inside a row, for deciding whether a segmented control fits. */
 	private int rowContentWidth = Integer.MAX_VALUE;
+	/** Where the "Keybinds" heading sits in the list, or -1 without keybinds. */
+	private int keysHeadingTop = -1;
 
-	SettingsSheet(Font font, UiAnim anim, HubFeature feature) {
+	SettingsSheet(Font font, UiAnim anim, HubFeature feature, KeybindCapture capture) {
 		this.font = font;
 		this.anim = anim;
 		this.feature = feature;
+		this.capture = capture;
 		this.rows = loadRows();
 		// Starts the open animation from nothing.
 		anim.transition(animKey(), 0.0F, OPEN_SECONDS, true);
@@ -180,7 +186,13 @@ final class SettingsSheet {
 		for (Component line : UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - PADDING * 2)) {
 			UiText.prepare(line, UiText.Size.BODY);
 		}
+		UiText.prepare(Component.translatable(EMUtilsTexts.UI_KEYBINDS), UiText.Size.LABEL);
 		for (RowBox box : boxes) {
+			if (box.key != null) {
+				UiText.prepare(Component.translatable(box.key.getName()), UiText.Size.BOLD);
+				UiText.prepare(capture.label(box.key), UiText.Size.SMALL);
+				continue;
+			}
 			String key = labelKey(box.row);
 			if (key != null) {
 				UiText.prepare(Component.translatable(key), UiText.Size.BOLD);
@@ -258,6 +270,34 @@ final class SettingsSheet {
 			boxes.add(box);
 			top += box.height + ROW_GAP;
 		}
+
+		keysHeadingTop = -1;
+		List<KeyMapping> keys = keys();
+		if (!keys.isEmpty()) {
+			if (!boxes.isEmpty()) {
+				top += 8;
+			}
+			keysHeadingTop = top;
+			top += KEYS_HEADING;
+			for (KeyMapping key : keys) {
+				RowBox box = new RowBox(null, top);
+				box.key = key;
+				box.height = 12 + ROW_PADDING * 2;
+				boxes.add(box);
+				top += box.height + ROW_GAP;
+			}
+		}
+	}
+
+	private List<KeyMapping> keys() {
+		List<KeyMapping> keys = new ArrayList<>();
+		for (String name : feature.keyNames()) {
+			KeyMapping key = KeybindCapture.mapping(name);
+			if (key != null) {
+				keys.add(key);
+			}
+		}
+		return keys;
 	}
 
 	/** The classic hub lists a feature's own on/off switch as its first row; the sheet header has it already. */
@@ -338,6 +378,9 @@ final class SettingsSheet {
 			}
 			drawRow(context, theme, box, mouseInList ? mouseX : -1, mouseInList ? mouseY : -1);
 		}
+		if (keysHeadingTop >= 0) {
+			UiText.drawCentered(context, font, Component.translatable(EMUtilsTexts.UI_KEYBINDS), UiText.Size.LABEL, scroll.x() + 2, scroll.y() + keysHeadingTop - scroll.offset() + KEYS_HEADING / 2 - 2, theme.muted());
+		}
 		if (boxes.isEmpty()) {
 			UiShapes.roundedRect(context, scroll.x(), scroll.y() + FADE_HEIGHT / 2, rowWidth, 30, ROW_RADIUS, theme.surfaceAlt());
 			UiText.drawCentered(context, font, Component.translatable(EMUtilsTexts.UI_NOTHING_TO_SET_UP), UiText.Size.BODY, scroll.x() + ROW_PADDING, scroll.y() + FADE_HEIGHT / 2 + 15, theme.muted());
@@ -354,6 +397,17 @@ final class SettingsSheet {
 		int left = box.x + ROW_PADDING;
 		int right = box.x + box.width - ROW_PADDING;
 		int labelCenter = box.y + ROW_PADDING + 6;
+
+		if (box.key != null) {
+			Component cap = capture.label(box.key);
+			int capWidth = UiWidgets.keycapWidth(font, cap);
+			int capX = right - capWidth;
+			Component name = UiText.ellipsize(font, Component.translatable(box.key.getName()), UiText.Size.BOLD, right - left - capWidth - 10);
+			UiText.drawCentered(context, font, name, UiText.Size.BOLD, left, labelCenter, theme.text());
+			UiWidgets.keycap(context, font, theme, capX, labelCenter - UiWidgets.KEYCAP_HEIGHT / 2, cap, capture.isListening(box.key), KeybindCapture.clashes(box.key), hovered ? 1.0F : 0.0F);
+			box.setControl(box.x, box.y, box.width, box.height);
+			return;
+		}
 
 		if (row instanceof HubSettingRow.Action action) {
 			float buttonHover = contains(mouseX, mouseY, left, box.y + ROW_PADDING, right - left, BUTTON_HEIGHT) ? 1.0F : 0.0F;
@@ -485,8 +539,19 @@ final class SettingsSheet {
 
 	// ---- input ----------------------------------------------------------------------------------
 
-	boolean mouseClicked(double mouseX, double mouseY) {
+	boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (closing) {
+			return true;
+		}
+		if (button != 0) {
+			// Other buttons only matter on keybind rows, where a right-click resets the key.
+			if (button == 1 && dropdown == null && colorPicker == null && scroll.contains(mouseX, mouseY)) {
+				for (RowBox box : boxes) {
+					if (box.key != null && contains(mouseX, mouseY, box.x, box.y, box.width, box.height)) {
+						KeybindCapture.resetToDefault(box.key);
+					}
+				}
+			}
 			return true;
 		}
 		if (colorPicker != null) {
@@ -535,6 +600,10 @@ final class SettingsSheet {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void clickRow(RowBox box, double mouseX, double mouseY) {
+		if (box.key != null) {
+			capture.start(box.key);
+			return;
+		}
 		HubSettingRow row = box.row;
 		if (row instanceof HubSettingRow.Toggle toggle) {
 			toggle.setter().accept(!toggle.getter().getAsBoolean());
@@ -670,7 +739,9 @@ final class SettingsSheet {
 	}
 
 	private static final class RowBox {
-		private final HubSettingRow row;
+		/** The setting, or null for a keybind row. */
+		private final @Nullable HubSettingRow row;
+		private @Nullable KeyMapping key;
 		private final int top;
 		private int height;
 		private List<Component> description = List.of();
@@ -685,7 +756,7 @@ final class SettingsSheet {
 		private int anchorY;
 		private int @Nullable [] segmentEdges;
 
-		private RowBox(HubSettingRow row, int top) {
+		private RowBox(@Nullable HubSettingRow row, int top) {
 			this.row = row;
 			this.top = top;
 		}

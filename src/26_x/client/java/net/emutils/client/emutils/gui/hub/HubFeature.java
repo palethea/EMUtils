@@ -86,6 +86,8 @@ public final class HubFeature {
 	private final @Nullable Runnable primaryAction;
 	private final boolean primaryActionEnabled;
 	private final @Nullable Runnable resetAction;
+	private List<String> keyNames = List.of();
+	private @Nullable String missingMod;
 
 	public HubFeature(
 		String id,
@@ -155,6 +157,26 @@ public final class HubFeature {
 
 	public @Nullable Runnable resetAction() {
 		return resetAction;
+	}
+
+	/** Names of the feature's key mappings, such as {@code key.emutils.zoom}; the first is shown on its card. */
+	public List<String> keyNames() {
+		return keyNames;
+	}
+
+	public HubFeature keys(String... names) {
+		keyNames = List.of(names);
+		return this;
+	}
+
+	/** The display name of a mod the feature needs that isn't installed, or null. */
+	public @Nullable String missingMod() {
+		return missingMod;
+	}
+
+	public HubFeature requiresMod(String modName, boolean loaded) {
+		missingMod = loaded ? null : modName;
+		return this;
 	}
 
 	public Component title() {

@@ -36,7 +36,8 @@ public record UiTheme(
 	int utility,
 	int management,
 	int qol,
-	int overlay
+	int overlay,
+	int warning
 ) {
 	public static final UiTheme DARK = new UiTheme(
 		0x8C060908,
@@ -66,7 +67,8 @@ public record UiTheme(
 		0xFFFFC56E,
 		0xFFC9AEFF,
 		0xFFFFA3BC,
-		0x80000000
+		0x80000000,
+		0xFFFF9B85
 	);
 
 	public static final UiTheme LIGHT = new UiTheme(
@@ -97,7 +99,8 @@ public record UiTheme(
 		0xFF8A5200,
 		0xFF6B45B8,
 		0xFFA8345A,
-		0x521B2320
+		0x521B2320,
+		0xFFC2412D
 	);
 
 	private static final RecordComponent[] COMPONENTS = UiTheme.class.getRecordComponents();

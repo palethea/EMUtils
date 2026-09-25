@@ -77,6 +77,17 @@ public final class UiSnapshotter {
 			}
 			case 31 -> captureAfter(client, 2, "opening, mid-animation");
 			case 32 -> capture(client, "opened");
+			case 33 -> search(client, "manager");
+			case 34 -> capture(client, "gui scale 2, search manager");
+			case 35 -> {
+				search(client, "zoom");
+				if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.listenForKey("zoom");
+				}
+			}
+			case 36 -> capture(client, "gui scale 2, zoom keycap listening");
+			case 37 -> sheet(client, "freelook", 2);
+			case 38 -> capture(client, "gui scale 2, freelook sheet with keybind");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -104,6 +115,17 @@ public final class UiSnapshotter {
 		}
 		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
 			screen.openSheet(featureId);
+		}
+		next();
+	}
+
+	private static void search(Minecraft client, String text) {
+		if (client.options.guiScale().get() != 2) {
+			client.options.guiScale().set(2);
+			client.resizeGui();
+		}
+		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+			screen.searchFor(text);
 		}
 		next();
 	}
