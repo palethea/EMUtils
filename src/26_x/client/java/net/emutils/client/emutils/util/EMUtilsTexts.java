@@ -31,6 +31,17 @@ public final class EMUtilsTexts {
     public static final String UI_LOADING_RESOURCE_PACKS = "emutils.ui.loading.resource_packs";
     public static final String UI_LOADING_TURNING_ON = "emutils.ui.loading.turning_on";
     public static final String UI_LOADING_TURNING_OFF = "emutils.ui.loading.turning_off";
+    public static final String UI_RETRY = "emutils.ui.retry";
+    public static final String UI_PACK_MANAGER_OFF = "emutils.ui.pack.off";
+    public static final String UI_PACK_META = "emutils.ui.pack.meta";
+    public static final String UI_PACK_INSTALLED_COUNT = "emutils.ui.pack.installed_count";
+    public static final String UI_PACK_MOST_DOWNLOADED = "emutils.ui.pack.most_downloaded";
+    public static final String UI_PACK_RESULTS_FOR = "emutils.ui.pack.results_for";
+    public static final String UI_PACK_OPEN_FOLDER = "emutils.ui.pack.open_folder";
+    public static final String UI_PACK_SEARCH_MODRINTH = "emutils.ui.pack.search_modrinth";
+    public static final String UI_PACK_FILTER_INSTALLED = "emutils.ui.pack.filter_installed";
+    public static final String UI_PACK_NO_MATCH = "emutils.ui.pack.no_match";
+    public static final String UI_PACK_DOWNLOADING = "emutils.ui.pack.downloading";
     public static final String UI_COPY_IMAGE = "emutils.ui.gallery.copy_image";
     public static final String UI_OPEN_IN_VIEWER = "emutils.ui.gallery.open_in_viewer";
     public static final String UI_SHOW_IN_FOLDER = "emutils.ui.gallery.show_in_folder";

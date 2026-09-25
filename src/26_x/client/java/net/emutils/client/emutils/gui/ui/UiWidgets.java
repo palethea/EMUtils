@@ -20,7 +20,11 @@ public final class UiWidgets {
 		SURFACE,
 		GHOST,
 		/** For actions that delete something. */
-		DANGER
+		DANGER,
+		/** A softer accent: tinted background and accent text, for positive actions next to a primary one. */
+		TONAL,
+		/** Just an outline, for undoing actions such as disable. */
+		OUTLINE
 	}
 
 	/**
@@ -58,14 +62,23 @@ public final class UiWidgets {
 			case SURFACE -> UiTheme.mix(theme.surface(), theme.surfaceHover(), hover);
 			case GHOST -> UiTheme.fade(theme.hover(), hover);
 			case DANGER -> UiTheme.fade(theme.warning(), 0.16F + 0.12F * hover);
+			case TONAL -> UiTheme.fade(theme.accent(), 0.16F + 0.12F * hover);
+			case OUTLINE -> UiTheme.fade(theme.hover(), hover);
 		};
 		int text = switch (style) {
 			case PRIMARY -> 0xFFFFFFFF;
 			case GHOST -> theme.textSecondary();
 			case SURFACE -> theme.text();
 			case DANGER -> theme.warning();
+			case TONAL -> theme.accent();
+			case OUTLINE -> theme.text();
 		};
-		UiShapes.roundedRect(context, x, y, width, height, Math.min(8, height / 2), background);
+		int radius = Math.min(8, height / 2);
+		if (style == ButtonStyle.OUTLINE) {
+			UiShapes.borderedRect(context, x, y, width, height, radius, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), UiTheme.mix(theme.line(), theme.muted(), 0.5F + 0.5F * hover));
+		} else {
+			UiShapes.roundedRect(context, x, y, width, height, radius, background);
+		}
 		int labelWidth = UiText.width(font, label, UiText.Size.LABEL);
 		UiText.drawCentered(context, font, label, UiText.Size.LABEL, x + (width - labelWidth) / 2, y + height / 2, text);
 	}

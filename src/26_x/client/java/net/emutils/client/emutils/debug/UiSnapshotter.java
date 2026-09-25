@@ -10,6 +10,7 @@ import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
+import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
@@ -164,25 +165,48 @@ public final class UiSnapshotter {
 				EMUtilsClient.config().setSettingsUiDark(true);
 				next();
 			}
-			// The loading card: a tiny resource pack is turned on and off like the Pack Manager does.
 			case 58 -> {
-				client.gui.setScreen(new SettingsScreen(null));
+				client.gui.setScreen(new PacksScreen(null));
+				next();
+			}
+			case 59 -> capture(client, "gui scale 2, packs installed");
+			case 60 -> {
+				if (MinecraftClientCompat.screen(client) instanceof PacksScreen screen) {
+					screen.searchModrinthForSnapshot("");
+				}
+				next();
+			}
+			case 61 -> captureAfter(client, 60, "gui scale 2, packs modrinth");
+			case 62 -> {
+				if (MinecraftClientCompat.screen(client) instanceof PacksScreen screen) {
+					screen.searchModrinthForSnapshot("faithful");
+				}
+				next();
+			}
+			case 63 -> captureAfter(client, 60, "gui scale 2, packs search");
+			// The loading card: a tiny resource pack is turned on and off like the Pack Manager does.
+			case 64 -> {
+				client.gui.setScreen(new PacksScreen(null));
 				writeTestPack(client);
 				next();
 			}
-			case 59 -> {
-				if (stepTicks >= 10) {
+			case 65 -> {
+				if (stepTicks == 50) {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: packs with the test pack installed");
+					Screenshot.grab(client, false);
+				}
+				if (stepTicks >= 60) {
 					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: enable test pack: {}", ResourcePackController.setResourcePackEnabled(client, TEST_PACK, true).message());
 					next();
 				}
 			}
-			case 60 -> captureAfter(client, 3, "loading card, resource pack");
-			case 61 -> captureAfter(client, 60, "after the resource pack loaded");
-			case 62 -> {
+			case 66 -> captureAfter(client, 3, "loading card, resource pack");
+			case 67 -> captureAfter(client, 60, "after the resource pack loaded");
+			case 68 -> {
 				ResourcePackController.setResourcePackEnabled(client, TEST_PACK, false);
 				next();
 			}
-			case 63 -> {
+			case 69 -> {
 				if (stepTicks >= 60) {
 					deleteTestPack(client);
 					next();
