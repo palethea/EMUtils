@@ -41,6 +41,7 @@ public final class HudEditorScreen extends Screen {
 	private static final int HANDLE = 8;
 	private static final int CARD_WIDTH = 196;
 	private static final int CARD_PADDING = 12;
+	private static final int RESET_HEIGHT = 18;
 	private static final int SCALE_SLIDER_MIN = 25;
 	private static final int SCALE_SLIDER_MAX = 300;
 
@@ -278,31 +279,37 @@ public final class HudEditorScreen extends Screen {
 			return;
 		}
 		int lineHeight = UiText.lineHeight(font, UiText.Size.BODY);
-		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
-		cardHeight = CARD_PADDING + titleHeight + 12 + (lineHeight + 6 + UiWidgets.SLIDER_HEIGHT + 10) * 2 + TOOLBAR_BUTTON + CARD_PADDING - 4;
-		// Next to the element: right of it if there's room, otherwise left; kept on screen and clear of the toolbar.
-		int right = draft.x() + panel.width() + 12;
-		cardX = right + CARD_WIDTH <= width - 6 ? right : Math.max(6, draft.x() - 12 - CARD_WIDTH);
-		cardY = Math.clamp(draft.y(), toolbarY + TOOLBAR_HEIGHT + 8, Math.max(toolbarY + TOOLBAR_HEIGHT + 8, height - cardHeight - 6));
+		int headerHeight = RESET_HEIGHT;
+		cardHeight = CARD_PADDING + headerHeight + 10 + (lineHeight + 6 + UiWidgets.SLIDER_HEIGHT) * 2 + 10 + CARD_PADDING;
+		// Next to the element: right of it if there's room, otherwise left; kept on screen and clear of the
+		// toolbar. It stays put while a slider is dragged: resizing the element would otherwise move the
+		// card, and with it the slider under the mouse, so the value would jump back and forth.
+		if (drag != Drag.SCALE_SLIDER && drag != Drag.OPACITY_SLIDER) {
+			int right = draft.x() + panel.width() + 12;
+			cardX = right + CARD_WIDTH <= width - 6 ? right : Math.max(6, draft.x() - 12 - CARD_WIDTH);
+			cardY = Math.clamp(draft.y(), toolbarY + TOOLBAR_HEIGHT + 8, Math.max(toolbarY + TOOLBAR_HEIGHT + 8, height - cardHeight - 6));
+		}
 		UiShapes.shadow(context, cardX, cardY, CARD_WIDTH, cardHeight, 10, 10, theme.shadow());
 		UiShapes.borderedRect(context, cardX, cardY, CARD_WIDTH, cardHeight, 10, theme.surface(), theme.line());
 		int left = cardX + CARD_PADDING;
 		sliderX = left;
 		sliderWidth = CARD_WIDTH - CARD_PADDING * 2;
-		UiText.draw(context, font, UiText.ellipsize(font, Component.literal(label(selected)), UiText.Size.BOLD, sliderWidth), UiText.Size.BOLD, left, cardY + CARD_PADDING, theme.text());
 
-		int rowY = cardY + CARD_PADDING + titleHeight + 12;
+		// Header: the element's name, and Reset at the top right.
+		Component reset = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_RESET);
+		cardResetWidth = UiWidgets.buttonWidth(font, reset);
+		cardResetX = cardX + CARD_WIDTH - CARD_PADDING - cardResetWidth;
+		cardResetY = cardY + CARD_PADDING;
+		UiWidgets.button(context, font, theme, cardResetX, cardResetY, cardResetWidth, RESET_HEIGHT, reset, UiWidgets.ButtonStyle.OUTLINE, contains(mouseX, mouseY, cardResetX, cardResetY, cardResetWidth, RESET_HEIGHT) ? 1.0F : 0.0F);
+		Component name = UiText.ellipsize(font, Component.literal(label(selected)), UiText.Size.BOLD, cardResetX - 8 - left);
+		UiText.drawCentered(context, font, name, UiText.Size.BOLD, left, cardResetY + RESET_HEIGHT / 2, theme.text());
+
+		int rowY = cardY + CARD_PADDING + headerHeight + 10;
 		scaleSliderY = rowY + lineHeight + 6;
 		sliderRow(context, theme, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SIZE), draft.scale() + "%", rowY, scaleSliderY, scaleFraction(draft.scale()), drag == Drag.SCALE_SLIDER, mouseX, mouseY);
 		rowY = scaleSliderY + UiWidgets.SLIDER_HEIGHT + 10;
 		opacitySliderY = rowY + lineHeight + 6;
 		sliderRow(context, theme, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_OPACITY), draft.opacity() + "%", rowY, opacitySliderY, draft.opacity() / 100.0F, drag == Drag.OPACITY_SLIDER, mouseX, mouseY);
-
-		Component reset = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_RESET);
-		cardResetWidth = UiWidgets.buttonWidth(font, reset) + 4;
-		cardResetX = cardX + CARD_WIDTH - CARD_PADDING - cardResetWidth + 4;
-		cardResetY = opacitySliderY + UiWidgets.SLIDER_HEIGHT + 8;
-		UiWidgets.button(context, font, theme, cardResetX, cardResetY, cardResetWidth, TOOLBAR_BUTTON, reset, UiWidgets.ButtonStyle.GHOST, contains(mouseX, mouseY, cardResetX, cardResetY, cardResetWidth, TOOLBAR_BUTTON) ? 1.0F : 0.0F);
 	}
 
 	private void sliderRow(GuiGraphicsExtractor context, UiTheme theme, Component label, String value, int labelY, int sliderY, float fraction, boolean dragged, int mouseX, int mouseY) {
@@ -346,7 +353,7 @@ public final class HudEditorScreen extends Screen {
 			} else if (contains(mouseX, mouseY, sliderX, opacitySliderY - 4, sliderWidth, UiWidgets.SLIDER_HEIGHT + 8)) {
 				drag = Drag.OPACITY_SLIDER;
 				applySlider(mouseX);
-			} else if (contains(mouseX, mouseY, cardResetX, cardResetY, cardResetWidth, TOOLBAR_BUTTON)) {
+			} else if (contains(mouseX, mouseY, cardResetX, cardResetY, cardResetWidth, RESET_HEIGHT)) {
 				resetSelected();
 			}
 			return true;
@@ -544,6 +551,21 @@ public final class HudEditorScreen extends Screen {
 		if (!HudLayoutManager.editorElements().isEmpty()) {
 			selected = HudLayoutManager.editorElements().getFirst().id();
 		}
+	}
+
+	/** Drags the Size slider to {@code fraction} of its width, as the mouse would (null ends the drag); used by UI snapshots. */
+	public void dragSizeSliderForSnapshot(@Nullable Float fraction) {
+		if (fraction == null) {
+			drag = Drag.NONE;
+			return;
+		}
+		drag = Drag.SCALE_SLIDER;
+		applySlider(sliderX + fraction * sliderWidth);
+	}
+
+	/** Where the selected element's card is drawn; used by UI snapshots. */
+	public int cardXForSnapshot() {
+		return cardX;
 	}
 
 	/** The selected element's draft layout; used by UI snapshots. */

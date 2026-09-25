@@ -313,7 +313,7 @@
   "emutils.ui.hud_editor.reset_all": "Reset all",
   "emutils.ui.hud_editor.save": "Save",
   "emutils.ui.hud_editor.size": "Size",
-  "emutils.ui.hud_editor.opacity": "Opacity",
+  "emutils.ui.hud_editor.opacity": "Background opacity",
   "emutils.ui.hud_editor.reset": "Reset",
   "emutils.ui.mass_drop.count": "%s items dropped",
   "emutils.ui.mass_drop.count_one": "1 item dropped",

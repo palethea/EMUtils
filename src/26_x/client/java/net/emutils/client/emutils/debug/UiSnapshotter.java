@@ -746,7 +746,30 @@ public final class UiSnapshotter {
 				next();
 			}
 			case 156 -> captureAfter(client, 15, "hud editor, selected");
+			// Dragging the Size slider over several frames: the card must stay put and the size only grow.
 			case 157 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					if (stepTicks == 1) {
+						sliderCardX = screen.cardXForSnapshot();
+						sliderScales.clear();
+					}
+					screen.dragSizeSliderForSnapshot(0.1F + stepTicks * 0.04F);
+					HudLayoutDraft draft = screen.selectedDraftForSnapshot();
+					sliderScales.add(draft == null ? -1 : draft.scale());
+					boolean steady = screen.cardXForSnapshot() == sliderCardX;
+					if (stepTicks >= 12 || !steady) {
+						boolean rising = true;
+						for (int i = 1; i < sliderScales.size(); i++) {
+							rising &= sliderScales.get(i) >= sliderScales.get(i - 1);
+						}
+						check(steady && rising, "dragging the Size slider keeps the card still and the size steady: " + sliderScales);
+						screen.dragSizeSliderForSnapshot(null);
+						next();
+					}
+				}
+			}
+			case 158 -> captureAfter(client, 10, "hud editor, resized");
+			case 159 -> {
 				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 					check(MinecraftClientCompat.screen(client) instanceof HudEditorScreen, "Esc first deselects, keeping the editor open");
@@ -868,6 +891,8 @@ public final class UiSnapshotter {
 	private static final int SCRIPTS_CLEANUP_STEP = 130;
 	private static List<String> shortcutsBefore = List.of();
 	private static java.util.Set<String> massDropBefore = java.util.Set.of();
+	private static int sliderCardX;
+	private static final List<Integer> sliderScales = new java.util.ArrayList<>();
 	private static final String EDIT_EXPECTED = "def greet(name):\n    print(\"hi\")\ngreet(1)";
 	private static @Nullable String savedMinescriptConfig;
 
