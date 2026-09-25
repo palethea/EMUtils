@@ -1,9 +1,7 @@
 package net.emutils.client.emutils.gui.ui;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import net.emutils.client.EMUtilsClient;
@@ -14,13 +12,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
  * A color picker popover: a saturation/brightness square, a hue bar, and a preview with the hex value.
- * The square is the hue color with baked white and black gradient masks on top, so it stays smooth and
- * needs no new texture while dragging. The color is saved when the mouse is released.
+ * The square is one texture with its rounded edge anti-aliased once, rebaked in place when the hue
+ * changes. The color is saved when the mouse is released.
  */
 public final class UiColorPicker {
 	private static final int WIDTH = 156;
@@ -33,8 +32,8 @@ public final class UiColorPicker {
 	private static final int HEIGHT = PADDING + FIELD_HEIGHT + GAP + HUE_HEIGHT + GAP + PREVIEW + PADDING;
 	private static final int HANDLE = 11;
 	private static final int HEX_WIDTH = 72;
-	private static final Map<String, Identifier> TEXTURES = new HashMap<>();
-	private static int textureScale;
+	private static final Baked FIELD = new Baked("field");
+	private static final Baked HUE_BAR = new Baked("hue");
 
 	private final IntSupplier getter;
 	private final IntConsumer setter;
@@ -80,15 +79,11 @@ public final class UiColorPicker {
 		int fieldX = x + PADDING;
 		int fieldY = y + PADDING;
 		int fieldWidth = WIDTH - PADDING * 2;
-		// Hue color, then white fading out to the right, then black fading in towards the bottom.
-		// All three layers share one baked edge, so their rounded corners line up exactly.
-		blitTexture(context, texture(Layer.BASE, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFF000000 | fromHsv(hue, 1.0F, 1.0F));
-		blitTexture(context, texture(Layer.WHITE, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFFFFFFFF);
-		blitTexture(context, texture(Layer.BLACK, fieldWidth, FIELD_HEIGHT), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFF000000);
+		blitTexture(context, field(fieldWidth, FIELD_HEIGHT, hue), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFFFFFFFF);
 		handle(context, theme, fieldX + saturation * fieldWidth, fieldY + (1.0F - brightness) * FIELD_HEIGHT, 0xFF000000 | fromHsv(hue, saturation, brightness));
 
 		int hueY = fieldY + FIELD_HEIGHT + GAP;
-		blitTexture(context, texture(Layer.HUE, fieldWidth, HUE_HEIGHT), fieldX, hueY, fieldWidth, HUE_HEIGHT, 0xFFFFFFFF);
+		blitTexture(context, hueBar(fieldWidth, HUE_HEIGHT), fieldX, hueY, fieldWidth, HUE_HEIGHT, 0xFFFFFFFF);
 		handle(context, theme, fieldX + hue * fieldWidth, hueY + HUE_HEIGHT / 2.0F, 0xFF000000 | fromHsv(hue, 1.0F, 1.0F));
 
 		int previewY = hueY + HUE_HEIGHT + GAP;
@@ -220,13 +215,6 @@ public final class UiColorPicker {
 
 	// ---- textures -------------------------------------------------------------------------------
 
-	private enum Layer {
-		BASE,
-		WHITE,
-		BLACK,
-		HUE
-	}
-
 	private static void blitTexture(GuiGraphicsExtractor context, Identifier texture, int x, int y, int width, int height, int color) {
 		int scale = scale();
 		context.pose().pushMatrix();
@@ -242,40 +230,81 @@ public final class UiColorPicker {
 		return Math.max(1, (int) Math.ceil(Minecraft.getInstance().getWindow().getGuiScale()));
 	}
 
-	private static Identifier texture(Layer layer, int width, int height) {
+	/** The hue bar, baked at physical pixels with its rounded ends anti-aliased into the alpha. */
+	private static Identifier hueBar(int width, int height) {
 		int scale = scale();
-		if (scale != textureScale) {
-			for (Identifier texture : TEXTURES.values()) {
-				Minecraft.getInstance().getTextureManager().release(texture);
+		if (HUE_BAR.resize(width * scale, height * scale)) {
+			NativeImage image = HUE_BAR.texture.getPixels();
+			for (int py = 0; py < HUE_BAR.height; py++) {
+				for (int px = 0; px < HUE_BAR.width; px++) {
+					image.setPixel(px, py, edgeAlpha(px, py, HUE_BAR.width, HUE_BAR.height, HUE_BAR.height / 2.0F) | fromHsv(px / (float) HUE_BAR.width, 1.0F, 1.0F));
+				}
 			}
-			TEXTURES.clear();
-			textureScale = scale;
+			HUE_BAR.texture.upload();
 		}
-		return TEXTURES.computeIfAbsent(layer + "@" + width + "x" + height, ignored -> bake(layer, width * scale, height * scale, scale));
+		return HUE_BAR.id;
 	}
 
-	/** Bakes one layer at physical pixels, with the rounded corners anti-aliased into its alpha. */
-	private static Identifier bake(Layer layer, int width, int height, int scale) {
-		NativeImage image = new NativeImage(width, height, true);
-		float radius = layer == Layer.HUE ? height / 2.0F : FIELD_RADIUS * scale;
-		for (int py = 0; py < height; py++) {
-			for (int px = 0; px < width; px++) {
-				float coverage = Math.clamp(0.5F - roundedDistance(px + 0.5F, py + 0.5F, width, height, radius), 0.0F, 1.0F);
-				if (coverage <= 0.0F) {
-					continue;
+	/**
+	 * The saturation/brightness square for {@code hue}, at physical pixels, rebaked in place when the hue
+	 * changes. It is one texture so its rounded edge is blended once: stacking separately masked gradient
+	 * layers let the background show through each layer's partly covered edge pixels, which left a dark
+	 * rim around the corners.
+	 */
+	private static Identifier field(int width, int height, float hue) {
+		int scale = scale();
+		if (FIELD.resize(width * scale, height * scale) || hue != FIELD.hue) {
+			FIELD.hue = hue;
+			NativeImage image = FIELD.texture.getPixels();
+			for (int py = 0; py < FIELD.height; py++) {
+				float value = 1.0F - py / (float) (FIELD.height - 1);
+				for (int px = 0; px < FIELD.width; px++) {
+					image.setPixel(px, py, edgeAlpha(px, py, FIELD.width, FIELD.height, FIELD_RADIUS * scale) | fromHsv(hue, px / (float) (FIELD.width - 1), value));
 				}
-				int argb = switch (layer) {
-					case BASE -> ((int) (255 * coverage) << 24) | 0xFFFFFF;
-					case WHITE -> ((int) (255 * coverage * (1.0F - px / (float) (width - 1))) << 24) | 0xFFFFFF;
-					case BLACK -> ((int) (255 * coverage * (py / (float) (height - 1))) << 24) | 0xFFFFFF;
-					case HUE -> ((int) (255 * coverage) << 24) | (fromHsv(px / (float) width, 1.0F, 1.0F) & 0xFFFFFF);
-				};
-				image.setPixel(px, py, argb);
 			}
+			FIELD.texture.upload();
 		}
-		Identifier id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_color/" + layer.name().toLowerCase(Locale.ROOT) + "_" + width + "x" + height);
-		Minecraft.getInstance().getTextureManager().register(id, VersionedTextures.smoothTexture(() -> "EMUtils color picker", image));
-		return id;
+		return FIELD.id;
+	}
+
+	/**
+	 * The anti-aliased alpha of a rounded rect's pixel, as the top byte of an ARGB color. Fully
+	 * transparent pixels still get the real color from the caller, so linear filtering never blends
+	 * black into the edge.
+	 */
+	private static int edgeAlpha(int px, int py, int width, int height, float radius) {
+		float coverage = Math.clamp(0.5F - roundedDistance(px + 0.5F, py + 0.5F, width, height, radius), 0.0F, 1.0F);
+		return Math.round(255.0F * coverage) << 24;
+	}
+
+	/** A texture that is recreated when its size changes (for example with the GUI scale) and otherwise rewritten in place. */
+	private static final class Baked {
+		private final String name;
+		private DynamicTexture texture;
+		private Identifier id;
+		private int width;
+		private int height;
+		private float hue = Float.NaN;
+
+		private Baked(String name) {
+			this.name = name;
+		}
+
+		/** Returns true when a new, empty texture was made and needs its pixels written. */
+		private boolean resize(int width, int height) {
+			if (texture != null && this.width == width && this.height == height) {
+				return false;
+			}
+			if (id != null) {
+				Minecraft.getInstance().getTextureManager().release(id);
+			}
+			this.width = width;
+			this.height = height;
+			texture = VersionedTextures.smoothTexture(() -> "EMUtils color picker " + name, new NativeImage(width, height, true));
+			id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_color/" + name + "_" + width + "x" + height);
+			Minecraft.getInstance().getTextureManager().register(id, texture);
+			return true;
+		}
 	}
 
 	private static float roundedDistance(float x, float y, float width, float height, float radius) {
