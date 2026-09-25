@@ -3,14 +3,18 @@ package net.emutils.client.emutils.compat;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.LoadingOverlay;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 public final class IrisCompat {
 	private IrisCompat() {
@@ -151,18 +155,25 @@ public final class IrisCompat {
 	}
 
 	public static void applyShaderPackWithLoading(Minecraft client, Screen returnScreen, String filename, Consumer<Boolean> callback) {
-		runShaderReloadWithLoading(client, returnScreen, () -> prepareShaderPack(filename), callback);
+		runShaderReloadWithLoading(client, returnScreen, () -> prepareShaderPack(filename), callback, Component.translatable(EMUtilsTexts.UI_LOADING_APPLY_SHADER), Component.literal(packName(filename)));
 	}
 
 	public static void disableShaderPackWithLoading(Minecraft client, Screen returnScreen, Consumer<Boolean> callback) {
-		runShaderReloadWithLoading(client, returnScreen, IrisCompat::prepareDisableShaders, callback);
+		runShaderReloadWithLoading(client, returnScreen, IrisCompat::prepareDisableShaders, callback, Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF), Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF_DESC));
+	}
+
+	/** A shader pack's file name without its .zip ending, for showing to the player. */
+	private static String packName(String filename) {
+		return filename.toLowerCase(Locale.ROOT).endsWith(".zip") ? filename.substring(0, filename.length() - 4) : filename;
 	}
 
 	private static void runShaderReloadWithLoading(
 		Minecraft client,
 		Screen returnScreen,
 		BooleanSupplier prepare,
-		Consumer<Boolean> callback
+		Consumer<Boolean> callback,
+		Component title,
+		Component subtitle
 	) {
 		if (!isIrisLoaded()) {
 			callback.accept(false);
@@ -174,8 +185,18 @@ public final class IrisCompat {
 			return;
 		}
 
-		LoadingOverlay.registerTextures(client.getTextureManager());
 		IrisShaderResourceReload reload = new IrisShaderResourceReload();
+		if (EMUtilsClient.config() != null && EMUtilsClient.config().settingsUiPreview()) {
+			// The new UI's loading card (#112): it shows fully before the compile freezes the game, then fades out.
+			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, UiLoadingOverlay.blocking(client, reload, reload::start, optional -> client.execute(() -> {
+				callback.accept(optional.isEmpty());
+				if (client.gui.screen() != returnScreen) {
+					client.gui.setScreen(returnScreen);
+				}
+			}), title, subtitle));
+			return;
+		}
+		LoadingOverlay.registerTextures(client.getTextureManager());
 		net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, new ShaderPackLoadingOverlay(client, reload, optional -> {
 			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, null);
 			client.execute(() -> {
