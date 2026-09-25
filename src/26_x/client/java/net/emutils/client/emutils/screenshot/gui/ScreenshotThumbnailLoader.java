@@ -13,9 +13,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.screenshot.ScreenshotRepository.ScreenshotEntry;
+import net.emutils.client.versioned.VersionedTextures;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
 public final class ScreenshotThumbnailLoader implements AutoCloseable {
@@ -106,9 +106,11 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 		try {
 			Identifier id = Identifier.fromNamespaceAndPath(
 				EMUtilsClient.MOD_ID,
-				"screenshot_gallery/" + Integer.toUnsignedString(entry.path().toString().hashCode(), 16) + "_" + entry.modifiedMillis()
+				// Sizes get their own textures, so a large preview doesn't replace the grid thumbnail.
+				"screenshot_gallery/" + Integer.toUnsignedString(entry.path().toString().hashCode(), 16) + "_" + entry.modifiedMillis() + "_" + targetWidth + "x" + targetHeight
 			);
-			client.getTextureManager().register(id, new DynamicTexture(() -> entry.filename(), image));
+			// Smooth filtering keeps thumbnails clean when they are drawn smaller or larger than their pixels.
+			client.getTextureManager().register(id, VersionedTextures.smoothTexture(() -> entry.filename(), image));
 			onLoaded.onLoaded(
 				entry.path(),
 				new LoadedThumbnail(id, image.getWidth(), image.getHeight(), targetWidth, targetHeight)
