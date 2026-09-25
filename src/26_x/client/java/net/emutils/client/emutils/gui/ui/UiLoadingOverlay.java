@@ -43,6 +43,7 @@ public final class UiLoadingOverlay extends Overlay {
 	private int framesShown;
 	private boolean started;
 	private long doneAt = -1L;
+	private boolean failed;
 	private float progress;
 
 	private UiLoadingOverlay(Minecraft minecraft, ReloadInstance reload, Consumer<Optional<Throwable>> onFinish, Component title, Component subtitle, @Nullable Runnable start) {
@@ -77,6 +78,7 @@ public final class UiLoadingOverlay extends Overlay {
 				reload.checkExceptions();
 				onFinish.accept(Optional.empty());
 			} catch (Throwable failure) {
+				failed = true;
 				onFinish.accept(Optional.of(failure));
 			}
 			doneAt = now;
@@ -125,11 +127,11 @@ public final class UiLoadingOverlay extends Overlay {
 		int left = x + PADDING;
 		int textWidth = WIDTH - PADDING * 2;
 		boolean done = doneAt >= 0L;
-		Component heading = done ? Component.translatable(EMUtilsTexts.UI_LOADING_DONE) : title;
+		Component heading = !done ? title : Component.translatable(failed ? EMUtilsTexts.UI_LOADING_FAILED : EMUtilsTexts.UI_LOADING_DONE);
 		UiText.draw(context, minecraft.font, UiText.ellipsize(minecraft.font, heading, UiText.Size.BOLD, textWidth - 16), UiText.Size.BOLD, left, y + PADDING, theme.text());
 		if (done) {
 			int check = 10;
-			UiIcons.draw(context, HubIcons.CHECK, x + WIDTH - PADDING - check, y + PADDING - 1, check, theme.accent());
+			UiIcons.draw(context, failed ? HubIcons.X : HubIcons.CHECK, x + WIDTH - PADDING - check, y + PADDING - 1, check, failed ? theme.warning() : theme.accent());
 		}
 		UiText.draw(context, minecraft.font, UiText.ellipsize(minecraft.font, subtitle, UiText.Size.BODY, textWidth), UiText.Size.BODY, left, y + PADDING + titleHeight + 7, theme.muted());
 

@@ -276,6 +276,7 @@
   "emutils.ui.not_bound": "None",
   "emutils.ui.needs_mod": "Needs %s",
   "emutils.ui.loading.done": "Done",
+  "emutils.ui.loading.failed": "Couldn't finish loading",
   "emutils.ui.loading.shader_note": "Compiling shaders can take a few seconds.",
   "emutils.ui.loading.apply_shader": "Applying shader pack",
   "emutils.ui.loading.shaders_off": "Turning shaders off",

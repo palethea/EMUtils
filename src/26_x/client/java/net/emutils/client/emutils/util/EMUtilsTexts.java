@@ -24,6 +24,7 @@ public final class EMUtilsTexts {
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
     public static final String UI_LOADING_DONE = "emutils.ui.loading.done";
+    public static final String UI_LOADING_FAILED = "emutils.ui.loading.failed";
     public static final String UI_LOADING_SHADER_NOTE = "emutils.ui.loading.shader_note";
     public static final String UI_LOADING_APPLY_SHADER = "emutils.ui.loading.apply_shader";
     public static final String UI_LOADING_SHADERS_OFF = "emutils.ui.loading.shaders_off";
