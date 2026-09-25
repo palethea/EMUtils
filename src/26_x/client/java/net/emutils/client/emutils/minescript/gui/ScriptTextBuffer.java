@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import net.emutils.client.versioned.VersionedInput;
@@ -94,9 +95,9 @@ public final class ScriptTextBuffer {
 		if (query == null || query.isEmpty()) {
 			return matches;
 		}
-		String needle = query.toLowerCase(java.util.Locale.ROOT);
+		String needle = query.toLowerCase(Locale.ROOT);
 		for (int line = 0; line < lines.size(); line++) {
-			String haystack = lines.get(line).toLowerCase(java.util.Locale.ROOT);
+			String haystack = lines.get(line).toLowerCase(Locale.ROOT);
 			int from = 0;
 			int at;
 			while ((at = haystack.indexOf(needle, from)) >= 0) {
@@ -410,7 +411,7 @@ public final class ScriptTextBuffer {
 			// Don't pair an apostrophe in a word (don't) unless the word is a string prefix (f", rb').
 			String word = before.substring(wordStartBefore(before, before.length()));
 			if (!word.isEmpty() && isWordCharacter(word.charAt(word.length() - 1))
-				&& !STRING_PREFIXES.contains(word.toLowerCase(java.util.Locale.ROOT))) {
+				&& !STRING_PREFIXES.contains(word.toLowerCase(Locale.ROOT))) {
 				return false;
 			}
 		}

@@ -647,9 +647,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 			running = isRunning();
 			pollError();
 		}
-		if (error != null && editor.version() != errorVersion) {
-			// Edited since it failed: the error may no longer apply.
-			MinescriptCompat.dismissError(selected.commandName());
+		if (error != null && (selected == null || editor.version() != errorVersion)) {
+			// Edited since it failed, or closed (deleted): the error no longer applies.
+			if (selected != null) {
+				MinescriptCompat.dismissError(selected.commandName());
+			}
 			error = null;
 			editor.setErrorLine(-1);
 		}
