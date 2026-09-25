@@ -66,12 +66,12 @@ public final class HubFeatureCatalog {
 				HubFeature.Icon.EYE,
 				toggle(config::tweakFreeCamera, config::setTweakFreeCamera),
 				List.of(
-					new HubSettingRow.Cycle<>(
+					HubSettingRow.Cycle.ofEnum(
 						EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE,
 						config::freeCameraHudMode,
 						config::setFreeCameraHudMode,
-						() -> config.freeCameraHudMode().next(),
-						() -> Component.translatable(config.freeCameraHudMode().labelKey())
+						FreeCameraHudMode.class,
+						mode -> Component.translatable(mode.labelKey())
 					),
 					new HubSettingRow.Slider(
 						EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,

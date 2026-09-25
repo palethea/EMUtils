@@ -1,5 +1,7 @@
 package net.emutils.client.emutils.gui.ui;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -38,6 +40,8 @@ public final class UiText {
 		LABEL("ui_label", 8.5F, 1.0F, UiFontRenderer.Weight.EXTRABOLD),
 		/** Small labels such as badges. */
 		SMALL("ui_small", 7.0F, 0.75F, UiFontRenderer.Weight.EXTRABOLD),
+		/** Sheet titles. */
+		HEADING("ui_heading", 13.0F, 1.3F, UiFontRenderer.Weight.BLACK),
 		/** The screen title. */
 		TITLE("ui_title", 17.0F, 1.6F, UiFontRenderer.Weight.BLACK);
 
@@ -158,7 +162,7 @@ public final class UiText {
 		int left = x * scale - rendered.left();
 		context.pose().pushMatrix();
 		context.pose().scale(1.0F / scale, 1.0F / scale);
-		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), color);
+		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), UiOpacity.apply(color));
 		context.pose().popMatrix();
 	}
 
@@ -166,14 +170,45 @@ public final class UiText {
 		float scale = fallbackScale(size);
 		Component styled = styled(text, size);
 		if (scale == 1.0F) {
-			context.text(font, styled, x, Math.round(y), color, false);
+			context.text(font, styled, x, Math.round(y), UiOpacity.apply(color), false);
 			return;
 		}
 		context.pose().pushMatrix();
 		context.pose().translate(x, Math.round(y));
 		context.pose().scale(scale, scale);
-		context.text(font, styled, 0, 0, color, false);
+		context.text(font, styled, 0, 0, UiOpacity.apply(color), false);
 		context.pose().popMatrix();
+	}
+
+	/**
+	 * Renders {@code text} ahead of time so drawing it later does not stall a frame, for example before
+	 * an animation starts.
+	 */
+	public static void prepare(Component text, Size size) {
+		String value = text.getString();
+		if (freeType() && !value.isEmpty()) {
+			int scale = guiScale();
+			UiFontRenderer.render(size.weight, size.em * scale, value);
+		}
+	}
+
+	/** Splits {@code text} into lines that fit {@code maxWidth}, breaking at spaces. */
+	public static List<Component> wrap(Font font, Component text, Size size, int maxWidth) {
+		List<Component> lines = new ArrayList<>();
+		String line = "";
+		for (String word : text.getString().split(" ")) {
+			String candidate = line.isEmpty() ? word : line + " " + word;
+			if (!line.isEmpty() && width(font, Component.literal(candidate), size) > maxWidth) {
+				lines.add(Component.literal(line));
+				line = word;
+			} else {
+				line = candidate;
+			}
+		}
+		if (!line.isEmpty()) {
+			lines.add(Component.literal(line));
+		}
+		return lines;
 	}
 
 	/** Shortens {@code text} with an ellipsis so it fits in {@code maxWidth}. */

@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.gui.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.function.IntPredicate;
 import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -19,6 +20,7 @@ public final class UiTextField {
 
 	private final Object owner;
 	private final int maxLength;
+	private final IntPredicate allowed;
 	private String text = "";
 	private int cursor;
 	private int anchor;
@@ -29,8 +31,22 @@ public final class UiTextField {
 	private int lastWidth;
 
 	public UiTextField(Object owner, int maxLength) {
+		this(owner, maxLength, codepoint -> true);
+	}
+
+	/** A field that only accepts typed or pasted characters matching {@code allowed}. */
+	public UiTextField(Object owner, int maxLength, IntPredicate allowed) {
 		this.owner = owner;
 		this.maxLength = maxLength;
+		this.allowed = allowed;
+	}
+
+	/** Replaces the text and selects all of it, ready to be typed over. */
+	public void setText(String value) {
+		text = value.length() > maxLength ? value.substring(0, maxLength) : value;
+		anchor = 0;
+		cursor = text.length();
+		scrollX = 0;
 	}
 
 	public String text() {
@@ -171,7 +187,7 @@ public final class UiTextField {
 		if (hasSelection()) {
 			int start = x - scrollX + widthOf(font, text.substring(0, Math.min(cursor, anchor)));
 			int end = x - scrollX + widthOf(font, text.substring(0, Math.max(cursor, anchor)));
-			context.fill(start, centerY - capHeight / 2 - 2, end, centerY + capHeight / 2 + 3, UiTheme.fade(theme.accent(), 0.45F));
+			context.fill(start, centerY - capHeight / 2 - 2, end, centerY + capHeight / 2 + 3, UiOpacity.apply(UiTheme.fade(theme.accent(), 0.45F)));
 		}
 		if (!text.isEmpty()) {
 			UiText.drawCentered(context, font, Component.literal(text), UiText.Size.BODY, x - scrollX, centerY, theme.text());
@@ -179,7 +195,7 @@ public final class UiTextField {
 		long sinceEdit = Util.getMillis() - lastEditMillis;
 		if (focused && (sinceEdit < BLINK_MILLIS || (sinceEdit / BLINK_MILLIS) % 2L == 0L)) {
 			int caretX = x - scrollX + caretOffset;
-			context.fill(caretX, centerY - capHeight / 2 - 2, caretX + 1, centerY + capHeight / 2 + 3, theme.text());
+			context.fill(caretX, centerY - capHeight / 2 - 2, caretX + 1, centerY + capHeight / 2 + 3, UiOpacity.apply(theme.text()));
 		}
 		context.disableScissor();
 	}
@@ -205,7 +221,9 @@ public final class UiTextField {
 	}
 
 	private void replace(int start, int end, String value, Runnable changed) {
-		String inserted = value.replace('\n', ' ').replace('\r', ' ');
+		StringBuilder filtered = new StringBuilder();
+		value.replace('\n', ' ').replace('\r', ' ').codePoints().filter(allowed).forEach(filtered::appendCodePoint);
+		String inserted = filtered.toString();
 		int room = maxLength - (text.length() - (end - start));
 		if (inserted.length() > room) {
 			inserted = inserted.substring(0, Math.max(0, room));

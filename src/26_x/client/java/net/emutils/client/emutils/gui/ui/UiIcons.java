@@ -37,7 +37,7 @@ public final class UiIcons {
 		if (texture == null) {
 			return;
 		}
-		context.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, size, size, pixels, pixels, pixels, pixels, color);
+		context.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, size, size, pixels, pixels, pixels, pixels, UiOpacity.apply(color));
 	}
 
 	public static void clearCache() {

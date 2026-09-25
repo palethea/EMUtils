@@ -1,0 +1,363 @@
+package net.emutils.client.emutils.gui.ui;
+
+import com.mojang.blaze3d.platform.NativeImage;
+import java.util.Locale;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+import net.emutils.client.EMUtilsClient;
+import net.emutils.client.versioned.VersionedTextures;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+
+/**
+ * A color picker popover: a saturation/brightness square, a hue bar, and a preview with the hex value.
+ * The square is one texture with its rounded edge anti-aliased once, rebaked in place when the hue
+ * changes. The color is saved when the mouse is released.
+ */
+public final class UiColorPicker {
+	private static final int WIDTH = 156;
+	private static final int PADDING = 10;
+	private static final int FIELD_HEIGHT = 92;
+	private static final int FIELD_RADIUS = 7;
+	private static final int HUE_HEIGHT = 10;
+	private static final int GAP = 9;
+	private static final int PREVIEW = 18;
+	private static final int HEIGHT = PADDING + FIELD_HEIGHT + GAP + HUE_HEIGHT + GAP + PREVIEW + PADDING;
+	private static final int HANDLE = 11;
+	private static final int HEX_WIDTH = 72;
+	private static final Baked FIELD = new Baked("field");
+	private static final Baked HUE_BAR = new Baked("hue");
+
+	private final IntSupplier getter;
+	private final IntConsumer setter;
+	private final int alpha;
+	private int x;
+	private int y;
+	private float hue;
+	private float saturation;
+	private float brightness;
+	private boolean draggingField;
+	private boolean draggingHue;
+	private boolean dirty;
+	private final UiTextField hex = new UiTextField(this, 6, codepoint -> Character.digit(codepoint, 16) >= 0);
+
+	/** Opens the picker beside the point {@code anchorX, anchorY} (usually the left edge of a swatch). */
+	public UiColorPicker(IntSupplier getter, IntConsumer setter, int anchorX, int anchorY, int screenWidth, int screenHeight) {
+		this.getter = getter;
+		this.setter = setter;
+		int color = getter.getAsInt();
+		int originalAlpha = (color >>> 24) & 0xFF;
+		this.alpha = originalAlpha == 0 ? 0xFF : originalAlpha;
+		float[] hsv = toHsv(color);
+		hue = hsv[0];
+		saturation = hsv[1];
+		brightness = hsv[2];
+		x = Math.clamp(anchorX - WIDTH - 8, 8, Math.max(8, screenWidth - WIDTH - 8));
+		y = Math.clamp(anchorY - HEIGHT / 2, 8, Math.max(8, screenHeight - HEIGHT - 8));
+	}
+
+	public boolean contains(double mouseX, double mouseY) {
+		return mouseX >= x && mouseX < x + WIDTH && mouseY >= y && mouseY < y + HEIGHT;
+	}
+
+	/** The color currently shown, with the original alpha kept. */
+	public int color() {
+		return (alpha << 24) | (fromHsv(hue, saturation, brightness) & 0xFFFFFF);
+	}
+
+	public void render(GuiGraphicsExtractor context, Font font, UiTheme theme) {
+		UiShapes.shadow(context, x, y, WIDTH, HEIGHT, 12, 14, theme.shadow());
+		UiShapes.borderedRect(context, x, y, WIDTH, HEIGHT, 12, theme.surface(), theme.line());
+
+		int fieldX = x + PADDING;
+		int fieldY = y + PADDING;
+		int fieldWidth = WIDTH - PADDING * 2;
+		blitTexture(context, field(fieldWidth, FIELD_HEIGHT, hue), fieldX, fieldY, fieldWidth, FIELD_HEIGHT, 0xFFFFFFFF);
+		handle(context, theme, fieldX + saturation * fieldWidth, fieldY + (1.0F - brightness) * FIELD_HEIGHT, 0xFF000000 | fromHsv(hue, saturation, brightness));
+
+		int hueY = fieldY + FIELD_HEIGHT + GAP;
+		blitTexture(context, hueBar(fieldWidth, HUE_HEIGHT), fieldX, hueY, fieldWidth, HUE_HEIGHT, 0xFFFFFFFF);
+		handle(context, theme, fieldX + hue * fieldWidth, hueY + HUE_HEIGHT / 2.0F, 0xFF000000 | fromHsv(hue, 1.0F, 1.0F));
+
+		int previewY = hueY + HUE_HEIGHT + GAP;
+		UiShapes.roundedRect(context, fieldX, previewY, PREVIEW, PREVIEW, 5, theme.line());
+		UiShapes.roundedRect(context, fieldX + 1, previewY + 1, PREVIEW - 2, PREVIEW - 2, 4, 0xFF000000 | color());
+		int hexX = fieldX + PREVIEW + 8;
+		UiShapes.borderedRect(context, hexX, previewY, HEX_WIDTH, PREVIEW, 5, theme.segmentBackground(), hex.focused() ? theme.accent() : theme.line());
+		UiText.drawCentered(context, font, Component.literal("#"), UiText.Size.LABEL, hexX + 6, previewY + PREVIEW / 2, theme.muted());
+		if (hex.focused()) {
+			hex.draw(context, font, theme, hexX + 14, previewY + PREVIEW / 2, HEX_WIDTH - 20, Component.empty());
+		} else {
+			UiText.drawCentered(context, font, Component.literal(hexOf(color())), UiText.Size.LABEL, hexX + 14, previewY + PREVIEW / 2, theme.text());
+		}
+	}
+
+	private static String hexOf(int color) {
+		return String.format(Locale.ROOT, "%06X", color & 0xFFFFFF);
+	}
+
+	/** Applies the typed hex value once it is a complete color. */
+	private void hexChanged() {
+		String value = hex.text();
+		if (value.length() == 6) {
+			float[] hsv = toHsv(Integer.parseInt(value, 16));
+			hue = hsv[0];
+			saturation = hsv[1];
+			brightness = hsv[2];
+			dirty = true;
+		}
+	}
+
+	/** Enter saves the typed color, Esc stops editing; other keys edit the hex value. */
+	public boolean keyPressed(KeyEvent input) {
+		if (!hex.focused()) {
+			return false;
+		}
+		if (input.isConfirmation()) {
+			hex.setFocused(false);
+			release();
+			return true;
+		}
+		if (input.isEscape()) {
+			hex.setFocused(false);
+			return true;
+		}
+		return hex.keyPressed(input, this::hexChanged);
+	}
+
+	public boolean charTyped(CharacterEvent input) {
+		return hex.charTyped(input, this::hexChanged);
+	}
+
+	/** Stops editing the hex value, for example when the picker closes. */
+	public void blur() {
+		if (hex.focused()) {
+			hex.setFocused(false);
+		}
+	}
+
+	/** A round handle centered on a point, which may be fractional so dragging glides. */
+	private static void handle(GuiGraphicsExtractor context, UiTheme theme, float centerX, float centerY, int color) {
+		float left = centerX - HANDLE / 2.0F;
+		float top = centerY - HANDLE / 2.0F;
+		int wholeX = (int) Math.floor(left);
+		int wholeY = (int) Math.floor(top);
+		context.pose().pushMatrix();
+		context.pose().translate(left - wholeX, top - wholeY);
+		UiShapes.shadow(context, wholeX, wholeY, HANDLE, HANDLE, HANDLE / 2, 3, UiTheme.fade(theme.shadow(), 0.9F));
+		UiShapes.circle(context, wholeX, wholeY, HANDLE, 0xFFFFFFFF);
+		UiShapes.circle(context, wholeX + 2, wholeY + 2, HANDLE - 4, color);
+		context.pose().popMatrix();
+	}
+
+	public boolean mouseClicked(double mouseX, double mouseY) {
+		int fieldX = x + PADDING;
+		int fieldY = y + PADDING;
+		int fieldWidth = WIDTH - PADDING * 2;
+		int hueY = fieldY + FIELD_HEIGHT + GAP;
+		if (mouseX >= fieldX - 3 && mouseX < fieldX + fieldWidth + 3 && mouseY >= fieldY - 3 && mouseY < fieldY + FIELD_HEIGHT + 3) {
+			draggingField = true;
+			drag(mouseX, mouseY);
+			return true;
+		}
+		if (mouseX >= fieldX - 3 && mouseX < fieldX + fieldWidth + 3 && mouseY >= hueY - 3 && mouseY < hueY + HUE_HEIGHT + 3) {
+			draggingHue = true;
+			drag(mouseX, mouseY);
+			return true;
+		}
+		int hexX = fieldX + PREVIEW + 8;
+		int previewY = hueY + HUE_HEIGHT + GAP;
+		if (mouseX >= hexX && mouseX < hexX + HEX_WIDTH && mouseY >= previewY && mouseY < previewY + PREVIEW) {
+			if (!hex.focused()) {
+				hex.setText(hexOf(color()));
+				hex.setFocused(true);
+			}
+			return true;
+		}
+		hex.setFocused(false);
+		return contains(mouseX, mouseY);
+	}
+
+	public boolean drag(double mouseX, double mouseY) {
+		int fieldX = x + PADDING;
+		int fieldY = y + PADDING;
+		int fieldWidth = WIDTH - PADDING * 2;
+		if (draggingField) {
+			saturation = (float) Math.clamp((mouseX - fieldX) / fieldWidth, 0.0, 1.0);
+			brightness = 1.0F - (float) Math.clamp((mouseY - fieldY) / FIELD_HEIGHT, 0.0, 1.0);
+			dirty = true;
+			return true;
+		}
+		if (draggingHue) {
+			hue = (float) Math.clamp((mouseX - fieldX) / fieldWidth, 0.0, 0.999);
+			dirty = true;
+			return true;
+		}
+		return false;
+	}
+
+	/** Saves the color if it changed; call when the mouse is released and when the picker closes. */
+	public void release() {
+		draggingField = false;
+		draggingHue = false;
+		if (dirty) {
+			dirty = false;
+			setter.accept(color());
+		}
+	}
+
+	// ---- textures -------------------------------------------------------------------------------
+
+	private static void blitTexture(GuiGraphicsExtractor context, Identifier texture, int x, int y, int width, int height, int color) {
+		int scale = scale();
+		context.pose().pushMatrix();
+		context.pose().translate(x, y);
+		context.pose().scale(1.0F / scale, 1.0F / scale);
+		int pixelWidth = width * scale;
+		int pixelHeight = height * scale;
+		context.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, pixelWidth, pixelHeight, pixelWidth, pixelHeight, pixelWidth, pixelHeight, UiOpacity.apply(color));
+		context.pose().popMatrix();
+	}
+
+	private static int scale() {
+		return Math.max(1, (int) Math.ceil(Minecraft.getInstance().getWindow().getGuiScale()));
+	}
+
+	/** The hue bar, baked at physical pixels with its rounded ends anti-aliased into the alpha. */
+	private static Identifier hueBar(int width, int height) {
+		int scale = scale();
+		if (HUE_BAR.resize(width * scale, height * scale)) {
+			NativeImage image = HUE_BAR.texture.getPixels();
+			for (int py = 0; py < HUE_BAR.height; py++) {
+				for (int px = 0; px < HUE_BAR.width; px++) {
+					image.setPixel(px, py, edgeAlpha(px, py, HUE_BAR.width, HUE_BAR.height, HUE_BAR.height / 2.0F) | fromHsv(px / (float) HUE_BAR.width, 1.0F, 1.0F));
+				}
+			}
+			HUE_BAR.texture.upload();
+		}
+		return HUE_BAR.id;
+	}
+
+	/**
+	 * The saturation/brightness square for {@code hue}, at physical pixels, rebaked in place when the hue
+	 * changes. It is one texture so its rounded edge is blended once: stacking separately masked gradient
+	 * layers let the background show through each layer's partly covered edge pixels, which left a dark
+	 * rim around the corners.
+	 */
+	private static Identifier field(int width, int height, float hue) {
+		int scale = scale();
+		if (FIELD.resize(width * scale, height * scale) || hue != FIELD.hue) {
+			FIELD.hue = hue;
+			NativeImage image = FIELD.texture.getPixels();
+			for (int py = 0; py < FIELD.height; py++) {
+				float value = 1.0F - py / (float) (FIELD.height - 1);
+				for (int px = 0; px < FIELD.width; px++) {
+					image.setPixel(px, py, edgeAlpha(px, py, FIELD.width, FIELD.height, FIELD_RADIUS * scale) | fromHsv(hue, px / (float) (FIELD.width - 1), value));
+				}
+			}
+			FIELD.texture.upload();
+		}
+		return FIELD.id;
+	}
+
+	/**
+	 * The anti-aliased alpha of a rounded rect's pixel, as the top byte of an ARGB color. Fully
+	 * transparent pixels still get the real color from the caller, so linear filtering never blends
+	 * black into the edge.
+	 */
+	private static int edgeAlpha(int px, int py, int width, int height, float radius) {
+		float coverage = Math.clamp(0.5F - roundedDistance(px + 0.5F, py + 0.5F, width, height, radius), 0.0F, 1.0F);
+		return Math.round(255.0F * coverage) << 24;
+	}
+
+	/** A texture that is recreated when its size changes (for example with the GUI scale) and otherwise rewritten in place. */
+	private static final class Baked {
+		private final String name;
+		private DynamicTexture texture;
+		private Identifier id;
+		private int width;
+		private int height;
+		private float hue = Float.NaN;
+
+		private Baked(String name) {
+			this.name = name;
+		}
+
+		/** Returns true when a new, empty texture was made and needs its pixels written. */
+		private boolean resize(int width, int height) {
+			if (texture != null && this.width == width && this.height == height) {
+				return false;
+			}
+			if (id != null) {
+				Minecraft.getInstance().getTextureManager().release(id);
+			}
+			this.width = width;
+			this.height = height;
+			texture = VersionedTextures.smoothTexture(() -> "EMUtils color picker " + name, new NativeImage(width, height, true));
+			id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_color/" + name + "_" + width + "x" + height);
+			Minecraft.getInstance().getTextureManager().register(id, texture);
+			return true;
+		}
+	}
+
+	private static float roundedDistance(float x, float y, float width, float height, float radius) {
+		float ax = Math.abs(x - width / 2.0F) - (width / 2.0F - radius);
+		float ay = Math.abs(y - height / 2.0F) - (height / 2.0F - radius);
+		float outside = (float) Math.sqrt(Math.max(ax, 0.0F) * Math.max(ax, 0.0F) + Math.max(ay, 0.0F) * Math.max(ay, 0.0F));
+		return outside + Math.min(Math.max(ax, ay), 0.0F) - radius;
+	}
+
+	// ---- color math -----------------------------------------------------------------------------
+
+	/** HSV (each 0..1) to RGB. */
+	private static int fromHsv(float h, float s, float v) {
+		float hue = (h - (float) Math.floor(h)) * 6.0F;
+		int sector = (int) hue;
+		float fraction = hue - sector;
+		float p = v * (1.0F - s);
+		float q = v * (1.0F - s * fraction);
+		float t = v * (1.0F - s * (1.0F - fraction));
+		float r;
+		float g;
+		float b;
+		switch (sector) {
+			case 0 -> { r = v; g = t; b = p; }
+			case 1 -> { r = q; g = v; b = p; }
+			case 2 -> { r = p; g = v; b = t; }
+			case 3 -> { r = p; g = q; b = v; }
+			case 4 -> { r = t; g = p; b = v; }
+			default -> { r = v; g = p; b = q; }
+		}
+		return (Math.round(r * 255.0F) << 16) | (Math.round(g * 255.0F) << 8) | Math.round(b * 255.0F);
+	}
+
+	private static float[] toHsv(int color) {
+		float r = ((color >>> 16) & 0xFF) / 255.0F;
+		float g = ((color >>> 8) & 0xFF) / 255.0F;
+		float b = (color & 0xFF) / 255.0F;
+		float max = Math.max(r, Math.max(g, b));
+		float min = Math.min(r, Math.min(g, b));
+		float delta = max - min;
+		float h = 0.0F;
+		if (delta > 0.0F) {
+			if (max == r) {
+				h = ((g - b) / delta) / 6.0F;
+			} else if (max == g) {
+				h = ((b - r) / delta + 2.0F) / 6.0F;
+			} else {
+				h = ((r - g) / delta + 4.0F) / 6.0F;
+			}
+			if (h < 0.0F) {
+				h += 1.0F;
+			}
+		}
+		return new float[] {h, max <= 0.0F ? 0.0F : delta / max, max};
+	}
+}

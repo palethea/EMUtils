@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
+import net.emutils.client.emutils.inventory.InventorySortSpeed;
+import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
+import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
@@ -129,12 +132,11 @@ public final class HubSettingsRegistry {
 			config::chatMentionAlertVolume,
 			config::setChatMentionAlertVolume
 		));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofNames(
 			EMUtilsTexts.OPTION_CHAT_MENTION_ALERT_SOUND,
-			() -> config.chatMentionAlertSound(),
+			config::chatMentionAlertSound,
 			config::setChatMentionAlertSound,
-			() -> (config.chatMentionAlertSound() + 1) % 7,
-			() -> Component.literal(ChatMentionAlerts.soundNames()[config.chatMentionAlertSound()])
+			ChatMentionAlerts.soundNames()
 		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CHAT_MENTION_HIGHLIGHT, config::chatMentionHighlight, config::setChatMentionHighlight));
 		rows.add(new HubSettingRow.Rgb(
@@ -142,12 +144,11 @@ public final class HubSettingsRegistry {
 			config::chatMentionHighlightColor,
 			config::setChatMentionHighlightColor
 		));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofNames(
 			EMUtilsTexts.OPTION_CHAT_MENTION_HIGHLIGHT_STYLE,
-			() -> config.chatMentionHighlightStyle(),
+			config::chatMentionHighlightStyle,
 			config::setChatMentionHighlightStyle,
-			() -> (config.chatMentionHighlightStyle() + 1) % 4,
-			() -> Component.literal(HIGHLIGHT_STYLES[config.chatMentionHighlightStyle()])
+			HIGHLIGHT_STYLES
 		));
 		return rows;
 	}
@@ -157,12 +158,12 @@ public final class HubSettingsRegistry {
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINTS, config::waypointEnabled, config::setWaypointEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_AUTO_COPY, config::waypointAutoCopyCoords, config::setWaypointAutoCopyCoords));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_WAYPOINT_COORD_FORMAT,
 			config::waypointCoordinateFormat,
 			config::setWaypointCoordinateFormat,
-			() -> config.waypointCoordinateFormat().next(),
-			() -> Component.translatable(config.waypointCoordinateFormat().labelKey())
+			WaypointCoordinateFormat.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Rgb(
@@ -232,12 +233,12 @@ public final class HubSettingsRegistry {
 	private static List<HubSettingRow> screenshotGalleryRows(Runnable refresh) {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_SCREENSHOT_SORT,
 			config::screenshotGallerySort,
 			config::setScreenshotGallerySort,
-			() -> config.screenshotGallerySort().next(),
-			() -> Component.translatable(config.screenshotGallerySort().labelKey())
+			ScreenshotGallerySort.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(new HubSettingRow.Toggle(
 			EMUtilsTexts.OPTION_SCREENSHOT_DELETE_CONFIRMATION,
@@ -402,12 +403,12 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, config::tweakSafeWalk, config::setTweakSafeWalk));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA, config::tweakFreeCamera, config::setTweakFreeCamera));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_FREE_CAMERA_HUD_MODE,
 			config::freeCameraHudMode,
 			config::setFreeCameraHudMode,
-			() -> config.freeCameraHudMode().next(),
-			() -> Component.translatable(config.freeCameraHudMode().labelKey())
+			FreeCameraHudMode.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(new HubSettingRow.Slider(
 			EMUtilsTexts.OPTION_FREE_CAMERA_BOOST_MULTIPLIER,
@@ -439,12 +440,12 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_TOOL, config::autoToolEnabled, config::setAutoToolEnabled));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_AUTO_TOOL_MODE,
 			config::autoToolMode,
 			config::setAutoToolMode,
-			() -> config.autoToolMode().next(),
-			() -> Component.translatable(config.autoToolMode().labelKey())
+			AutoToolMode.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(new HubSettingRow.Toggle(
 			EMUtilsTexts.OPTION_AUTO_TOOL_RETURN_TO_PREVIOUS_ITEM,
@@ -492,12 +493,12 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CUSTOM_CAPES, config::customCapes, config::setCustomCapes));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_CAPE_PREFERRED_PROVIDER,
 			config::capePreferredProvider,
 			config::setCapePreferredProvider,
-			() -> config.capePreferredProvider().next(),
-			() -> Component.translatable(config.capePreferredProvider().labelKey())
+			CapePreferredProvider.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_OPTIFINE, config::capeOptifine, config::setCapeOptifine));
@@ -532,21 +533,21 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER_GLOBAL, config::hoverTransferGlobal, config::setHoverTransferGlobal));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SORT_BUTTONS, config::sortButtonsEnabled, config::setSortButtonsEnabled));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_SORT_SPEED,
 			config::sortSpeed,
 			config::setSortSpeed,
-			() -> config.sortSpeed().next(),
-			() -> Component.translatable(config.sortSpeed().labelKey())
+			InventorySortSpeed.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_QUICK_STACK, config::quickStackEnabled, config::setQuickStackEnabled));
-		rows.add(new HubSettingRow.Cycle<>(
+		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_QUICK_STACK_SPEED,
 			config::quickStackSpeed,
 			config::setQuickStackSpeed,
-			() -> config.quickStackSpeed().next(),
-			() -> Component.translatable(config.quickStackSpeed().labelKey())
+			InventorySortSpeed.class,
+			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_REFILL, config::autoRefillEnabled, config::setAutoRefillEnabled));

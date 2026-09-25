@@ -64,6 +64,7 @@ public final class SettingsScreen extends Screen {
 	private final List<CategoryButton> categoryButtons = new ArrayList<>();
 	private final List<CardBox> cards = new ArrayList<>();
 	private HubFeature.@Nullable Group selectedGroup;
+	private @Nullable SettingsSheet sheet;
 	private int panelX;
 	private int panelY;
 	private int panelWidth;
@@ -169,10 +170,19 @@ public final class SettingsScreen extends Screen {
 		UiShapes.shadow(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, 18, theme.shadow());
 		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, theme.panel());
 
+		// While a sheet is open, nothing underneath reacts to the mouse.
+		int backX = sheet == null ? mouseX : Integer.MIN_VALUE / 2;
+		int backY = sheet == null ? mouseY : Integer.MIN_VALUE / 2;
 		drawTitle(context, theme);
-		drawControl(context, theme, mouseX, mouseY);
-		drawRightButtons(context, theme, mouseX, mouseY);
-		drawCards(context, theme, mouseX, mouseY);
+		drawControl(context, theme, backX, backY);
+		drawRightButtons(context, theme, backX, backY);
+		drawCards(context, theme, backX, backY);
+		if (sheet != null) {
+			sheet.render(context, theme, mouseX, mouseY, panelX, panelY, panelWidth, panelHeight, width, height);
+			if (sheet.isClosed()) {
+				sheet = null;
+			}
+		}
 	}
 
 	private void drawTitle(GuiGraphicsExtractor context, UiTheme theme) {
@@ -370,7 +380,7 @@ public final class SettingsScreen extends Screen {
 	 * The feature's name without the trailing "..." the classic hub uses to mark features that open a
 	 * submenu; here every card opens its settings the same way.
 	 */
-	private static Component title(HubFeature feature) {
+	static Component title(HubFeature feature) {
 		String name = feature.title().getString().strip();
 		while (name.endsWith(".") || name.endsWith("…")) {
 			name = name.substring(0, name.length() - 1).stripTrailing();
@@ -402,6 +412,9 @@ public final class SettingsScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		double mouseX = click.x();
 		double mouseY = click.y();
+		if (sheet != null) {
+			return sheet.mouseClicked(mouseX, mouseY);
+		}
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
 		boolean onSearch = contains(mouseX, mouseY, controlX, controlY, controlWidth, SEARCH_ROW);
 		search.setFocused(onSearch);
@@ -439,19 +452,62 @@ public final class SettingsScreen extends Screen {
 		return super.mouseClicked(click, doubled);
 	}
 
-	/** The switch toggles the feature; the rest of the card opens its screen, if it has one. */
+	/**
+	 * The switch toggles the feature. The rest of the card opens the feature's own screen if it has one,
+	 * and its settings sheet otherwise.
+	 */
 	private void clickCard(CardBox card, double mouseX, double mouseY) {
 		HubFeature feature = card.feature();
 		boolean onControl = contains(mouseX, mouseY, card.controlX() - 2, card.controlY() - 2, card.controlWidth() + 4, card.controlHeight() + 4);
 		if (onControl && feature.toggle() != null) {
 			feature.toggle().setter().accept(!feature.toggle().getter().getAsBoolean());
-		} else if (feature.primaryAction() != null && feature.primaryActionEnabled()) {
-			feature.primaryAction().run();
+		} else if (feature.primaryAction() != null) {
+			if (feature.primaryActionEnabled()) {
+				feature.primaryAction().run();
+			}
+		} else {
+			search.setFocused(false);
+			sheet = new SettingsSheet(font, anim, feature);
+		}
+	}
+
+	/** Opens the settings sheet of the feature with this id, if there is one; used by UI snapshots. */
+	public void openSheet(String featureId) {
+		for (HubFeature feature : features) {
+			if (feature.id().equals(featureId)) {
+				sheet = new SettingsSheet(font, anim, feature);
+			}
+		}
+	}
+
+	/** Opens the color picker in the open sheet; used by UI snapshots. */
+	public void openColorPickerInSheet() {
+		if (sheet != null) {
+			sheet.openFirstColorPicker();
 		}
 	}
 
 	@Override
+	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
+		if (sheet != null && sheet.mouseDragged(click.x(), click.y())) {
+			return true;
+		}
+		return super.mouseDragged(click, deltaX, deltaY);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent click) {
+		if (sheet != null) {
+			return sheet.mouseReleased();
+		}
+		return super.mouseReleased(click);
+	}
+
+	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		if (sheet != null) {
+			return sheet.mouseScrolled(mouseX, mouseY, verticalAmount);
+		}
 		if (scroll.scroll(mouseX, mouseY, verticalAmount)) {
 			return true;
 		}
@@ -460,6 +516,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent input) {
+		if (sheet != null) {
+			return sheet.keyPressed(input);
+		}
 		if (!search.focused() && (input.hasControlDown() || (input.modifiers() & InputConstants.MOD_SUPER) != 0) && input.key() == InputConstants.KEY_F) {
 			search.setFocused(true);
 			return true;
@@ -472,6 +531,9 @@ public final class SettingsScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent input) {
+		if (sheet != null) {
+			return sheet.charTyped(input);
+		}
 		if (search.charTyped(input, scroll::reset)) {
 			return true;
 		}
