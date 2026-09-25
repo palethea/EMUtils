@@ -28,6 +28,8 @@ public final class SpotifyPlaybackService {
 	});
 
 	private volatile SpotifyTrackState state = SpotifyTrackState.unavailable();
+	/** Shown instead of Spotify's state while set, for UI snapshots of songs that aren't playing. */
+	private volatile SpotifyTrackState snapshotState;
 	private volatile boolean polling;
 	private volatile boolean pendingPlaying;
 	private volatile long pendingPlayingUntil;
@@ -37,7 +39,12 @@ public final class SpotifyPlaybackService {
 	private SpotifyArtLoader artLoader;
 
 	public SpotifyTrackState state() {
-		return state;
+		SpotifyTrackState shown = snapshotState;
+		return shown != null ? shown : state;
+	}
+
+	public void setStateForSnapshot(SpotifyTrackState shown) {
+		snapshotState = shown;
 	}
 
 	public SpotifyArtLoader.ArtResult art(SpotifyTrackState trackState) {

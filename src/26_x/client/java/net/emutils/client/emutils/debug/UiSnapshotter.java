@@ -867,6 +867,26 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// A small window: the pause menu card shrinks to fit below the menu's buttons.
+			case 177 -> {
+				setGuiScale(client, 4);
+				client.gui.setScreen(new PauseScreen(true));
+				next();
+			}
+			case 178 -> captureAfter(client, 20, "spotify pause menu, gui scale 4");
+			// A title too long for the card scrolls through after a pause.
+			case 179 -> {
+				client.gui.setScreen(null);
+				setGuiScale(client, 2);
+				EMUtilsClient.spotify().setStateForSnapshot(SpotifyTrackState.track("A Real Hero (feat. Electric Youth) - Drive Original Soundtrack", "College, Electric Youth", true, "", 65_000L, 267_000L));
+				next();
+			}
+			case 180 -> captureAfter(client, 10, "spotify hud, long title before scrolling");
+			case 181 -> captureAfter(client, 60, "spotify hud, long title scrolling");
+			case 182 -> {
+				EMUtilsClient.spotify().setStateForSnapshot(null);
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;

@@ -26,25 +26,34 @@ import org.jspecify.annotations.Nullable;
  * the bottom of the pause menu. The song fades in when it changes, and the cover fades in once loaded.
  */
 public final class SpotifyPlayerOverlay {
-	private static final int MARGIN = 8;
-	private static final int PADDING = 8;
-	private static final int RADIUS = 10;
-	private static final int SHADOW_BLUR = 10;
+	private static final int MARGIN = 6;
+	/** Space kept between the pause menu's lowest button and the card. */
+	private static final int MENU_GAP = 4;
+	/** The pause menu card shrinks to fit below the menu, but not below this. */
+	private static final float MIN_PAUSE_SCALE = 0.5F;
+	private static final int PADDING = 6;
+	private static final int RADIUS = 9;
+	private static final int SHADOW_BLUR = 8;
 	private static final int ART_SIZE = SpotifyArtLoader.DISPLAY_SIZE;
 	private static final int ART_RADIUS = Math.round(SpotifyArtLoader.CORNER_RADIUS);
-	private static final int PLACEHOLDER_ICON_SIZE = 14;
-	private static final int TEXT_GAP = 9;
-	private static final int CONTENT_WIDTH = 140;
-	private static final int LINE_GAP = 5;
-	private static final int PROGRESS_GAP = 7;
+	private static final int PLACEHOLDER_ICON_SIZE = 12;
+	private static final int TEXT_GAP = 8;
+	private static final int CONTENT_WIDTH = 124;
+	private static final int LINE_GAP = 4;
+	private static final int PROGRESS_GAP = 5;
 	private static final int BAR_HEIGHT = 3;
-	private static final int TIME_GAP = 5;
-	private static final int SECTION_GAP = 12;
-	private static final int PLAY_SIZE = 22;
-	private static final int SKIP_SIZE = 18;
-	private static final int BUTTON_GAP = 4;
+	private static final int TIME_GAP = 4;
+	private static final int SECTION_GAP = 10;
+	private static final int PLAY_SIZE = 20;
+	private static final int SKIP_SIZE = 16;
+	private static final int BUTTON_GAP = 3;
 	private static final int BUTTON_ROW_WIDTH = SKIP_SIZE * 2 + PLAY_SIZE + BUTTON_GAP * 2;
 	private static final long FADE_MS = 250L;
+	/** Long titles scroll like Spotify's: hold, scroll to the end, hold, scroll back, repeat. */
+	private static final long MARQUEE_HOLD_START_MS = 2_500L;
+	private static final long MARQUEE_HOLD_END_MS = 1_500L;
+	private static final float MARQUEE_PIXELS_PER_MS = 0.03F;
+	private static final Layout HUD_LAYOUT = layout(false);
 
 	/** The song on show and when it appeared, for fading it in; shared by the HUD and the pause menu. */
 	private static String shownSong = "";
@@ -53,51 +62,49 @@ public final class SpotifyPlayerOverlay {
 	private static @Nullable Identifier previousArt;
 	private static long artShownAt;
 
+	/** The pause menu card: drawn at {@link #originX}, {@link #originY}, scaled by {@link #scale}. */
+	private final Layout layout = layout(true);
+	private final float scale;
+	private final float originX;
+	private final float originY;
 	private SpotifyControlButton previousButton;
 	private SpotifyControlButton playPauseButton;
 	private SpotifyControlButton nextButton;
 
-	private SpotifyPlayerOverlay() {
+	private SpotifyPlayerOverlay(int screenWidth, int screenHeight, int menuBottom) {
+		// Shrinks to fit between the menu's buttons and the bottom of the screen, and within its width.
+		float fitHeight = (screenHeight - MARGIN - menuBottom - MENU_GAP) / (float) layout.height();
+		float fitWidth = (screenWidth - MARGIN * 2) / (float) layout.width();
+		scale = Math.clamp(Math.min(fitHeight, fitWidth), MIN_PAUSE_SCALE, 1.0F);
+		originX = (screenWidth - layout.width() * scale) / 2.0F;
+		originY = screenHeight - MARGIN - layout.height() * scale;
 	}
 
-	public static SpotifyPlayerOverlay create(int screenWidth, int screenHeight, Consumer<AbstractWidget> addWidget) {
-		SpotifyPlayerOverlay overlay = new SpotifyPlayerOverlay();
-		overlay.init(pauseMenuLayout(screenWidth, screenHeight), addWidget);
+	/**
+	 * The pause menu player, with its buttons added through {@code addWidget}; {@code menuBottom} is
+	 * the bottom of the menu's lowest button, which the card stays below.
+	 */
+	public static SpotifyPlayerOverlay create(int screenWidth, int screenHeight, int menuBottom, Consumer<AbstractWidget> addWidget) {
+		SpotifyPlayerOverlay overlay = new SpotifyPlayerOverlay(screenWidth, screenHeight, menuBottom);
+		overlay.init(addWidget);
 		return overlay;
 	}
 
-	private void init(Layout layout, Consumer<AbstractWidget> addWidget) {
+	private void init(Consumer<AbstractWidget> addWidget) {
 		int x = layout.buttonsX();
-		int centerY = layout.centerY();
-		addWidget.accept(previousButton = new SpotifyControlButton(
-			x,
-			centerY - SKIP_SIZE / 2,
-			SKIP_SIZE,
-			Component.translatable(EMUtilsTexts.SPOTIFY_PREVIOUS),
-			SpotifyIcons.PREVIOUS,
-			false,
-			() -> EMUtilsClient.spotify().previous()
-		));
+		addWidget.accept(previousButton = button(x, SKIP_SIZE, EMUtilsTexts.SPOTIFY_PREVIOUS, SpotifyIcons.PREVIOUS, false, () -> EMUtilsClient.spotify().previous()));
 		x += SKIP_SIZE + BUTTON_GAP;
-		addWidget.accept(playPauseButton = new SpotifyControlButton(
-			x,
-			centerY - PLAY_SIZE / 2,
-			PLAY_SIZE,
-			Component.translatable(EMUtilsTexts.SPOTIFY_PLAY_PAUSE),
-			playPauseIcon(EMUtilsClient.spotify().state()),
-			true,
-			() -> EMUtilsClient.spotify().playPause()
-		));
+		addWidget.accept(playPauseButton = button(x, PLAY_SIZE, EMUtilsTexts.SPOTIFY_PLAY_PAUSE, playPauseIcon(EMUtilsClient.spotify().state()), true, () -> EMUtilsClient.spotify().playPause()));
 		x += PLAY_SIZE + BUTTON_GAP;
-		addWidget.accept(nextButton = new SpotifyControlButton(
-			x,
-			centerY - SKIP_SIZE / 2,
-			SKIP_SIZE,
-			Component.translatable(EMUtilsTexts.SPOTIFY_NEXT),
-			SpotifyIcons.NEXT,
-			false,
-			() -> EMUtilsClient.spotify().next()
-		));
+		addWidget.accept(nextButton = button(x, SKIP_SIZE, EMUtilsTexts.SPOTIFY_NEXT, SpotifyIcons.NEXT, false, () -> EMUtilsClient.spotify().next()));
+	}
+
+	/** A button at {@code localX} in the card, vertically centered, placed on screen with the card's scale. */
+	private SpotifyControlButton button(int localX, int size, String label, Identifier icon, boolean primary, Runnable action) {
+		int scaledSize = Math.max(8, Math.round(size * scale));
+		int centerX = Math.round(originX + (localX + size / 2.0F) * scale);
+		int centerY = Math.round(originY + layout.centerY() * scale);
+		return new SpotifyControlButton(centerX - scaledSize / 2, centerY - scaledSize / 2, scaledSize, Component.translatable(label), icon, primary, action);
 	}
 
 	public void setVisible(boolean visible) {
@@ -119,22 +126,21 @@ public final class SpotifyPlayerOverlay {
 	}
 
 	/** The card behind the pause menu controls, drawn before the buttons. */
-	public static void renderBackground(GuiGraphicsExtractor context, int screenWidth, int screenHeight) {
-		Layout layout = pauseMenuLayout(screenWidth, screenHeight);
-		drawCard(context, layout, UiTheme.current(), 100);
+	public void renderBackground(GuiGraphicsExtractor context) {
+		drawScaled(context, originX, originY, scale, () -> drawCard(context, layout, UiTheme.current(), 100));
 	}
 
 	/** The cover and song of the pause menu card, drawn after the buttons. */
-	public static void renderContent(GuiGraphicsExtractor context, int screenWidth, int screenHeight, SpotifyTrackState state) {
-		drawContent(context, pauseMenuLayout(screenWidth, screenHeight), UiTheme.current(), state);
+	public void renderContent(GuiGraphicsExtractor context, SpotifyTrackState state) {
+		drawScaled(context, originX, originY, scale, () -> drawContent(context, layout, UiTheme.current(), state));
 	}
 
 	public static int hudPanelWidth() {
-		return hudLayout().width();
+		return HUD_LAYOUT.width();
 	}
 
 	public static int hudPanelHeight() {
-		return hudLayout().height();
+		return HUD_LAYOUT.height();
 	}
 
 	/**
@@ -149,15 +155,21 @@ public final class SpotifyPlayerOverlay {
 		int opacityPercent,
 		float scale
 	) {
-		Layout layout = hudLayout();
 		UiTheme theme = UiTheme.current();
+		drawScaled(context, x, y, scale, () -> {
+			drawCard(context, HUD_LAYOUT, theme, opacityPercent);
+			drawContent(context, HUD_LAYOUT, theme, state);
+		});
+	}
+
+	/** Draws with the card's origin at {@code x, y}, scaled, with text and icons rasterized for that scale. */
+	private static void drawScaled(GuiGraphicsExtractor context, float x, float y, float scale, Runnable draw) {
 		context.pose().pushMatrix();
 		UiRasterScale.set(scale);
 		try {
 			context.pose().translate(x, y);
 			context.pose().scale(scale, scale);
-			drawCard(context, layout, theme, opacityPercent);
-			drawContent(context, layout, theme, state);
+			draw.run();
 		} finally {
 			UiRasterScale.reset();
 			context.pose().popMatrix();
@@ -196,7 +208,7 @@ public final class SpotifyPlayerOverlay {
 		float outer = UiOpacity.get();
 		UiOpacity.set(outer * songFade);
 		try {
-			drawText(context, layout, theme, state);
+			drawText(context, layout, theme, state, now - songShownAt);
 		} finally {
 			UiOpacity.set(outer);
 		}
@@ -238,7 +250,7 @@ public final class SpotifyPlayerOverlay {
 		context.blit(RenderPipelines.GUI_TEXTURED, cover, x, y, 0.0F, 0.0F, ART_SIZE, ART_SIZE, size, size, size, size, color);
 	}
 
-	private static void drawText(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state) {
+	private static void drawText(GuiGraphicsExtractor context, Layout layout, UiTheme theme, SpotifyTrackState state, long shownMs) {
 		Font font = Minecraft.getInstance().font;
 		int x = layout.textX();
 		if (!state.hasTrack()) {
@@ -259,18 +271,45 @@ public final class SpotifyPlayerOverlay {
 			+ (hasProgress ? PROGRESS_GAP + rowHeight : 0);
 		int top = layout.centerY() - height / 2;
 
-		Component title = UiText.ellipsize(font, Component.literal(state.title()), UiText.Size.BOLD, CONTENT_WIDTH);
-		UiText.draw(context, font, title, UiText.Size.BOLD, x, top, theme.text());
+		drawMarquee(context, font, Component.literal(state.title()), UiText.Size.BOLD, x, top, titleHeight, theme.text(), shownMs);
 		top += titleHeight;
 		if (hasArtist) {
 			top += LINE_GAP;
-			Component artist = UiText.ellipsize(font, Component.literal(state.artist()), UiText.Size.BODY, CONTENT_WIDTH);
-			UiText.draw(context, font, artist, UiText.Size.BODY, x, top, theme.textSecondary());
+			drawMarquee(context, font, Component.literal(state.artist()), UiText.Size.BODY, x, top, artistHeight, theme.textSecondary(), shownMs);
 			top += artistHeight;
 		}
 		if (hasProgress) {
 			drawProgress(context, font, theme, x, top + PROGRESS_GAP + rowHeight / 2, state);
 		}
+	}
+
+	/** Draws one line of the song; if it's too long for the card, it scrolls back and forth through it. */
+	private static void drawMarquee(GuiGraphicsExtractor context, Font font, Component text, UiText.Size size, int x, int top, int height, int color, long shownMs) {
+		int overflow = UiText.width(font, text, size) - CONTENT_WIDTH;
+		if (overflow <= 0) {
+			UiText.draw(context, font, text, size, x, top, color);
+			return;
+		}
+		long scrollMs = (long) Math.ceil(overflow / MARQUEE_PIXELS_PER_MS);
+		long t = shownMs % (MARQUEE_HOLD_START_MS + scrollMs + MARQUEE_HOLD_END_MS + scrollMs);
+		float progress;
+		if (t < MARQUEE_HOLD_START_MS) {
+			progress = 0.0F;
+		} else if (t < MARQUEE_HOLD_START_MS + scrollMs) {
+			progress = easeInOut((t - MARQUEE_HOLD_START_MS) / (float) scrollMs);
+		} else if (t < MARQUEE_HOLD_START_MS + scrollMs + MARQUEE_HOLD_END_MS) {
+			progress = 1.0F;
+		} else {
+			progress = 1.0F - easeInOut((t - MARQUEE_HOLD_START_MS - scrollMs - MARQUEE_HOLD_END_MS) / (float) scrollMs);
+		}
+		// Room above and below the capitals for accents and descenders.
+		context.enableScissor(x, top - height, x + CONTENT_WIDTH, top + height * 2);
+		UiText.drawExact(context, font, text, size, x - overflow * progress, top, color);
+		context.disableScissor();
+	}
+
+	private static float easeInOut(float t) {
+		return t * t * (3.0F - 2.0F * t);
 	}
 
 	private static void drawProgress(GuiGraphicsExtractor context, Font font, UiTheme theme, int x, int centerY, SpotifyTrackState state) {
@@ -305,28 +344,20 @@ public final class SpotifyPlayerOverlay {
 		return minutes + ":" + (seconds < 10L ? "0" : "") + seconds;
 	}
 
-	private static Layout hudLayout() {
-		return layout(0, 0, false);
-	}
-
-	private static Layout pauseMenuLayout(int screenWidth, int screenHeight) {
-		Layout origin = layout(0, 0, true);
-		return layout(screenWidth / 2 - origin.width() / 2, screenHeight - MARGIN - origin.height(), true);
-	}
-
-	private static Layout layout(int x, int y, boolean withButtons) {
+	/** The card at the origin; the pause menu's also has room for the buttons. */
+	private static Layout layout(boolean withButtons) {
 		int width = PADDING * 2 + ART_SIZE + TEXT_GAP + CONTENT_WIDTH + (withButtons ? SECTION_GAP + BUTTON_ROW_WIDTH : 0);
 		int height = PADDING * 2 + ART_SIZE;
 		return new Layout(
-			x,
-			y,
+			0,
+			0,
 			width,
 			height,
-			x + PADDING,
-			y + PADDING,
-			x + PADDING + ART_SIZE + TEXT_GAP,
-			x + width - PADDING - BUTTON_ROW_WIDTH,
-			y + height / 2
+			PADDING,
+			PADDING,
+			PADDING + ART_SIZE + TEXT_GAP,
+			width - PADDING - BUTTON_ROW_WIDTH,
+			height / 2
 		);
 	}
 

@@ -47,9 +47,9 @@ public final class SpotifyArtLoader implements AutoCloseable {
 	}
 
 	public static final int TEXTURE_SIZE = 128;
-	public static final int DISPLAY_SIZE = 34;
+	public static final int DISPLAY_SIZE = 28;
 	/** Corner radius at {@link #DISPLAY_SIZE}. */
-	public static final float CORNER_RADIUS = 6.0F;
+	public static final float CORNER_RADIUS = 5.0F;
 
 	private static final AtomicInteger ART_COUNTER = new AtomicInteger();
 
