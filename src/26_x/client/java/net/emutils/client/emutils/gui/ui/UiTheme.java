@@ -1,5 +1,9 @@
 package net.emutils.client.emutils.gui.ui;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 
@@ -96,8 +100,42 @@ public record UiTheme(
 		0x521B2320
 	);
 
+	private static final RecordComponent[] COMPONENTS = UiTheme.class.getRecordComponents();
+	private static final Constructor<UiTheme> CONSTRUCTOR = canonicalConstructor();
+
+	private static Constructor<UiTheme> canonicalConstructor() {
+		try {
+			return UiTheme.class.getDeclaredConstructor(Arrays.stream(COMPONENTS).map(RecordComponent::getType).toArray(Class<?>[]::new));
+		} catch (NoSuchMethodException exception) {
+			throw new IllegalStateException(exception);
+		}
+	}
+
 	public static UiTheme current() {
 		return EMUtilsClient.config() == null || EMUtilsClient.config().settingsUiDark() ? DARK : LIGHT;
+	}
+
+	/**
+	 * Every color blended from {@code from} to {@code to}; {@code t} = 0 gives {@code from}, 1 gives
+	 * {@code to}. Used to crossfade when switching between dark and light.
+	 */
+	public static UiTheme blend(UiTheme from, UiTheme to, float t) {
+		if (t <= 0.0F) {
+			return from;
+		}
+		if (t >= 1.0F) {
+			return to;
+		}
+		try {
+			Object[] colors = new Object[COMPONENTS.length];
+			for (int i = 0; i < COMPONENTS.length; i++) {
+				Method accessor = COMPONENTS[i].getAccessor();
+				colors[i] = mix((int) accessor.invoke(from), (int) accessor.invoke(to), t);
+			}
+			return CONSTRUCTOR.newInstance(colors);
+		} catch (ReflectiveOperationException exception) {
+			throw new IllegalStateException("Could not blend UI themes", exception);
+		}
 	}
 
 	public int groupColor(HubFeature.Group group) {

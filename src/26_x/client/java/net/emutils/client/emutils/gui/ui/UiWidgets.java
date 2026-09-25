@@ -68,10 +68,20 @@ public final class UiWidgets {
 
 	/** A square button showing a white icon texture tinted to the theme. */
 	public static void iconButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int size, Identifier icon, float hover) {
+		iconButton(context, theme, x, y, size, icon, icon, 0.0F, hover);
+	}
+
+	/** An icon button whose icon crossfades from {@code from} to {@code to} as {@code blend} goes from 0 to 1. */
+	public static void iconButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int size, Identifier from, Identifier to, float blend, float hover) {
 		UiShapes.roundedRect(context, x, y, size, size, size / 2, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover));
 		int iconSize = Math.round(size * 0.5F);
 		int offset = (size - iconSize) / 2;
-		UiIcons.draw(context, icon, x + offset, y + offset, iconSize, theme.textSecondary());
+		if (blend < 1.0F) {
+			UiIcons.draw(context, from, x + offset, y + offset, iconSize, UiTheme.fade(theme.textSecondary(), 1.0F - blend));
+		}
+		if (blend > 0.0F) {
+			UiIcons.draw(context, to, x + offset, y + offset, iconSize, UiTheme.fade(theme.textSecondary(), blend));
+		}
 	}
 
 	public static final int SLIDER_HEIGHT = 12;

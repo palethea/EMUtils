@@ -68,6 +68,11 @@ public final class UiAnim {
 		return tween.value(now, seconds);
 	}
 
+	/** Jumps a {@link #transition} value to {@code value}, so the next transition starts from there. */
+	public void snap(String key, float value) {
+		tweens.put(key, new Tween(value, value, System.nanoTime(), false));
+	}
+
 	public float transition(String key, boolean on, float seconds) {
 		return transition(key, on ? 1.0F : 0.0F, seconds);
 	}

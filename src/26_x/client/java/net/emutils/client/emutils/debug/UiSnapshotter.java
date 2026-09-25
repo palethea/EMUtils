@@ -10,7 +10,7 @@ import net.minecraft.client.Screenshot;
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
  * the client enters a test world, opens the new settings screen, saves screenshots of it at GUI
  * scales 3 (dark and light), 2, 1 and 4, then a few settings sheets and the color picker at each
- * scale, and quits. Screenshots land in the run directory.
+ * scale, closes the screen, and quits. Screenshots land in the run directory.
  */
 public final class UiSnapshotter {
 	private static final String ENABLED_PROPERTY = "emutils.uiSnapshot";
@@ -69,6 +69,14 @@ public final class UiSnapshotter {
 			}
 			case 26 -> pickColor(client);
 			case 27 -> capture(client, "gui scale 4, color picker");
+			case 28 -> closeScreen(client);
+			case 29 -> waitForClose(client);
+			case 30 -> {
+				client.gui.setScreen(new SettingsScreen(null));
+				next();
+			}
+			case 31 -> captureAfter(client, 2, "opening, mid-animation");
+			case 32 -> capture(client, "opened");
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -110,8 +118,32 @@ public final class UiSnapshotter {
 		next();
 	}
 
+	private static void closeScreen(Minecraft client) {
+		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+			screen.onClose();
+		}
+		next();
+	}
+
+	/** Checks that the close animation hands back to the game instead of leaving the screen open. */
+	private static void waitForClose(Minecraft client) {
+		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen) {
+			if (stepTicks > 40) {
+				EMUtilsClient.LOGGER.error("EMUtils UI snapshot: the settings screen did not close");
+				next();
+			}
+			return;
+		}
+		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: settings screen closed after {} ticks", stepTicks);
+		next();
+	}
+
 	private static void capture(Minecraft client, String label) {
-		if (stepTicks < SETTLE_TICKS) {
+		captureAfter(client, SETTLE_TICKS, label);
+	}
+
+	private static void captureAfter(Minecraft client, int ticks, String label) {
+		if (stepTicks < ticks) {
 			return;
 		}
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {}", label);
