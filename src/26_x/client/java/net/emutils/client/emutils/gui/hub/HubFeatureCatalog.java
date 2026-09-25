@@ -11,7 +11,7 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
-import net.emutils.client.emutils.packs.gui.PackManagerScreen;
+import net.emutils.client.emutils.packs.gui.PackScreens;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsBuild;
@@ -122,7 +122,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_PACK_MANAGER_DESC,
 				HubFeature.Icon.PACKAGE,
 				toggle(config::packManagerEnabled, config::setPackManagerEnabled),
-				openScreenAction(PackManagerScreen::new),
+				openScreenAction(PackScreens::manager),
 				true,
 				config::resetPackManagerDefaults
 			),

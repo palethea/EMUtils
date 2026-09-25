@@ -28,8 +28,19 @@ public final class ModrinthClient {
 	}
 
 	public List<ModrinthSearchResult> search(PackType type, String query, String minecraftVersion, int limit, String index) throws IOException, InterruptedException {
+		return search(type, query, minecraftVersion, limit, index, 0);
+	}
+
+	/** One page of search results, starting {@code offset} results in. An empty query lists the most downloaded. */
+	public List<ModrinthSearchResult> search(PackType type, String query, String minecraftVersion, int limit, int offset) throws IOException, InterruptedException {
+		String index = query == null || query.isBlank() ? "downloads" : "relevance";
+		return search(type, query, minecraftVersion, limit, index, offset);
+	}
+
+	private List<ModrinthSearchResult> search(PackType type, String query, String minecraftVersion, int limit, String index, int offset) throws IOException, InterruptedException {
 		String facets = "[[\"project_type:" + type.modrinthProjectType() + "\"],[\"versions:" + minecraftVersion + "\"]]";
 		String url = API + "/search?limit=" + limit
+			+ "&offset=" + offset
 			+ "&index=" + encode(index)
 			+ "&query=" + encode(query == null ? "" : query)
 			+ "&facets=" + encode(facets);
