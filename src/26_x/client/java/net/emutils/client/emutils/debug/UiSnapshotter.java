@@ -7,9 +7,11 @@ import java.nio.file.Path;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
@@ -23,6 +25,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -243,6 +246,72 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
+			// The Script Manager (#118), with a few test scripts in the run folder's minescript folder.
+			case 76 -> {
+				if (client.options.guiScale().get() != 2) {
+					client.options.guiScale().set(2);
+					client.resizeGui();
+				}
+				writeTestScripts();
+				client.gui.setScreen(new ScriptsScreen(null));
+				next();
+			}
+			case 77 -> {
+				if (stepTicks >= 15 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/hello.py");
+					next();
+				}
+			}
+			case 78 -> captureAfter(client, 30, "scripts, gui scale 2, dark");
+			case 79 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_DOWN, 0, 0));
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_DOWN, 0, 0));
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_END, 0, 0));
+					" # edited".codePoints().forEach(codepoint -> screen.charTyped(new CharacterEvent(codepoint)));
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_UP, 0, InputConstants.MOD_SHIFT));
+				}
+				next();
+			}
+			case 80 -> captureAfter(client, 10, "scripts, edited");
+			case 81 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openKeybindForSnapshot();
+				}
+				next();
+			}
+			case 82 -> {
+				if (stepTicks >= 10 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_K, 0, InputConstants.MOD_CONTROL));
+					next();
+				}
+			}
+			case 83 -> captureAfter(client, 15, "scripts, keybind dialog");
+			case 84 -> {
+				escape(client);
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.newScriptForSnapshot();
+				}
+				next();
+			}
+			case 85 -> captureAfter(client, 25, "scripts, new script dialog");
+			case 86 -> {
+				escape(client);
+				EMUtilsClient.config().setSettingsUiDark(false);
+				client.options.guiScale().set(3);
+				client.resizeGui();
+				next();
+			}
+			case 87 -> captureAfter(client, 30, "scripts, gui scale 3, light");
+			case 88 -> {
+				EMUtilsClient.config().setSettingsUiDark(true);
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.discardForSnapshot();
+				}
+				client.gui.setScreen(null);
+				deleteTestScripts();
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -348,6 +417,47 @@ public final class UiSnapshotter {
 			Files.writeString(folder.resolve("pack.mcmeta"), "{\"pack\":{\"description\":\"EMUtils UI snapshot test\",\"min_format\":65,\"max_format\":999}}");
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("Could not write the snapshot test pack.", exception);
+		}
+	}
+
+	/** A folder of its own inside the minescript folder, so the test never touches real scripts. */
+	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
+	private static final List<String> TEST_SCRIPTS = List.of("hello.py", "tools/fly_toggle.py", "tools/auto_farm.py", "legacy.pyj");
+
+	private static void writeTestScripts() {
+		Path folder = MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER);
+		try {
+			Files.createDirectories(folder.resolve("tools"));
+			Files.writeString(folder.resolve("hello.py"), """
+				import minescript
+
+				# Greets the player and says where they stand.
+				def greet(name):
+				    x, y, z = minescript.player_position()
+				    minescript.echo(f"Hello {name}! You're at {int(x)}, {int(y)}, {int(z)}.")
+				    return True
+
+				for step in range(3):
+				\tgreet("world")  # a tab-indented line
+				""");
+			Files.writeString(folder.resolve("tools/fly_toggle.py"), "import minescript\n\nminescript.execute(\"/fly\")\n");
+			Files.writeString(folder.resolve("tools/auto_farm.py"), "import minescript\n\nwhile True:\n    pass\n");
+			Files.writeString(folder.resolve("legacy.pyj"), "# read-only in EMUtils\n");
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not write the snapshot test scripts.", exception);
+		}
+	}
+
+	private static void deleteTestScripts() {
+		Path folder = MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER);
+		try {
+			for (String script : TEST_SCRIPTS) {
+				Files.deleteIfExists(folder.resolve(script));
+			}
+			Files.deleteIfExists(folder.resolve("tools"));
+			Files.deleteIfExists(folder);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not delete the snapshot test scripts.", exception);
 		}
 	}
 

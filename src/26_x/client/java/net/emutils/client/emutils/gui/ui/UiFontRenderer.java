@@ -34,7 +34,8 @@ import org.lwjgl.util.freetype.FreeType;
 public final class UiFontRenderer {
 	/** Coverage curve: values below 1 thicken anti-aliased edges slightly. */
 	private static final double COVERAGE_GAMMA = 0.8;
-	private static final int MAX_CACHED_STRINGS = 600;
+	/** Enough for a screen of settings plus the visible code in the script editor, token by token. */
+	private static final int MAX_CACHED_STRINGS = 2000;
 	private static final int PADDING = 1;
 	/**
 	 * FT_LOAD_TARGET_LIGHT: light, vertical-only hinting. Computed from the render mode because LWJGL 3.4.1
@@ -63,14 +64,23 @@ public final class UiFontRenderer {
 	}
 
 	public enum Weight {
-		SEMIBOLD("nunito_semibold.ttf"),
-		EXTRABOLD("nunito_extrabold.ttf"),
-		BLACK("nunito_black.ttf");
+		SEMIBOLD("nunito_semibold.ttf", 0.705F),
+		EXTRABOLD("nunito_extrabold.ttf", 0.705F),
+		BLACK("nunito_black.ttf", 0.705F),
+		/** JetBrains Mono, for code such as the script editor's (#118). */
+		MONO("jetbrains_mono_regular.ttf", 0.73F);
 
 		private final String file;
+		private final float capHeight;
 
-		Weight(String file) {
+		Weight(String file, float capHeight) {
 			this.file = file;
+			this.capHeight = capHeight;
+		}
+
+		/** The font's cap height as a fraction of its em size. */
+		public float capHeight() {
+			return capHeight;
 		}
 	}
 

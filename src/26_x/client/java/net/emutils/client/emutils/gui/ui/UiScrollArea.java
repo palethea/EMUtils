@@ -78,6 +78,16 @@ public final class UiScrollArea {
 		target = 0.0;
 	}
 
+	/** Where the scroll is heading, which the smooth offset follows. */
+	public double target() {
+		return target;
+	}
+
+	/** Scrolls smoothly to {@code target}, for example to keep a caret in view. */
+	public void scrollTo(double target) {
+		this.target = Mth.clamp(target, 0.0, maxScroll());
+	}
+
 	public boolean contains(double mouseX, double mouseY) {
 		return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
 	}

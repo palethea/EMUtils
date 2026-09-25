@@ -22,8 +22,6 @@ public final class UiText {
 	private static final int MAX_FONT_SCALE = 6;
 	/** Minecraft draws every glyph with its baseline this far below the text's y. */
 	private static final float BASELINE = 7.0F;
-	/** Nunito's cap height as a fraction of its em size. */
-	private static final float CAP_HEIGHT = 0.705F;
 
 	private static Boolean customFonts;
 	private static int lastScale;
@@ -43,7 +41,9 @@ public final class UiText {
 		/** Sheet titles. */
 		HEADING("ui_heading", 13.0F, 1.3F, UiFontRenderer.Weight.BLACK),
 		/** The screen title. */
-		TITLE("ui_title", 17.0F, 1.6F, UiFontRenderer.Weight.BLACK);
+		TITLE("ui_title", 17.0F, 1.6F, UiFontRenderer.Weight.BLACK),
+		/** Code, in JetBrains Mono so columns line up. */
+		CODE("ui_code", 8.5F, 1.0F, UiFontRenderer.Weight.MONO);
 
 		private final String font;
 		private final float em;
@@ -98,7 +98,7 @@ public final class UiText {
 
 	/** Height of capital letters, used to center text and size things around it. */
 	private static float capHeight(Size size) {
-		return customFonts() ? size.em * CAP_HEIGHT : BASELINE * size.fallbackScale;
+		return customFonts() ? size.em * size.weight.capHeight() : BASELINE * size.fallbackScale;
 	}
 
 	/** Distance from the text's y to the top of its capital letters. */
@@ -148,18 +148,42 @@ public final class UiText {
 		drawAt(context, font, text, size, x, centerY - capHeight(size) / 2.0F - capTop(size), color);
 	}
 
+	/**
+	 * Draws with the top of the capitals at {@code top}, placed to the nearest screen pixel instead of
+	 * the nearest GUI pixel, for text that has to line up exactly, such as code in columns.
+	 */
+	public static void drawExact(GuiGraphicsExtractor context, Font font, Component text, Size size, float x, float top, int color) {
+		if (freeType()) {
+			drawFreeType(context, text, size, x, top, color);
+			return;
+		}
+		drawAt(context, font, text, size, Math.round(x), top - capTop(size), color);
+	}
+
+	/**
+	 * Width of one character in GUI pixels, with its fraction. Only meaningful for {@link Size#CODE},
+	 * whose font is monospaced.
+	 */
+	public static float advance(Font font, Size size) {
+		if (freeType()) {
+			int scale = guiScale();
+			return UiFontRenderer.measure(size.weight, size.em * scale, "0") / scale;
+		}
+		return font.width(styled("0", size)) * fallbackScale(size);
+	}
+
 	/** Draws with the top of the capitals at {@code capTop}, snapped to whole screen pixels. */
-	private static void drawFreeType(GuiGraphicsExtractor context, Component text, Size size, int x, float capTop, int color) {
+	private static void drawFreeType(GuiGraphicsExtractor context, Component text, Size size, float x, float capTop, int color) {
 		String value = text.getString();
 		if (value.isEmpty()) {
 			return;
 		}
 		int scale = guiScale();
 		UiFontRenderer.Rendered rendered = UiFontRenderer.render(size.weight, size.em * scale, value);
-		int capPixels = Math.round(size.em * CAP_HEIGHT * scale);
+		int capPixels = Math.round(size.em * size.weight.capHeight() * scale);
 		int baseline = Math.round(capTop * scale) + capPixels;
 		int top = baseline - rendered.baseline();
-		int left = x * scale - rendered.left();
+		int left = Math.round(x * scale) - rendered.left();
 		context.pose().pushMatrix();
 		context.pose().scale(1.0F / scale, 1.0F / scale);
 		context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, top, 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), UiOpacity.apply(color));
