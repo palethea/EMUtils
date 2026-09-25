@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.compat.MinescriptCompat;
@@ -309,6 +311,74 @@ public final class UiSnapshotter {
 					screen.discardForSnapshot();
 				}
 				client.gui.setScreen(null);
+				if (MinescriptCompat.isLoaded()) {
+					client.options.guiScale().set(2);
+					client.resizeGui();
+					client.gui.setScreen(new ScriptsScreen(null));
+					next();
+				} else {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: Minescript isn't installed, so no scripts are run");
+					step = SCRIPTS_CLEANUP_STEP;
+					stepTicks = 0;
+				}
+			}
+			// With Minescript installed: run scripts in folders through the Run/Stop button (#118).
+			case 89 -> {
+				if (stepTicks >= 15 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/tools/marker.py");
+					screen.runForSnapshot();
+					next();
+				}
+			}
+			case 90 -> waitForCheck(Files.isRegularFile(testScript("tools/marker.marker")), 200, "a script in a folder runs");
+			case 91 -> captureAfter(client, 5, "scripts, ran a script in a folder");
+			case 92 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/tools/auto_farm.py");
+					screen.runForSnapshot();
+				}
+				next();
+			}
+			case 93 -> waitForCheck(MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen && screen.runningForSnapshot(), 200, "a running script in a folder shows as running");
+			case 94 -> captureAfter(client, 25, "scripts, a script in a folder running");
+			case 95 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.runForSnapshot();
+				}
+				next();
+			}
+			case 96 -> waitForCheck(MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen && !screen.runningForSnapshot() && MinescriptCompat.findActiveJobIdsForCommand(TEST_SCRIPT_FOLDER + "/tools/auto_farm").isEmpty(), 200, "Stop ends a script in a folder");
+			case 97 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.newScriptForSnapshot();
+				}
+				next();
+			}
+			case 98 -> {
+				if (stepTicks >= 10 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.keyPressed(selectAll());
+					type(screen, TEST_SCRIPT_FOLDER + "/made/new_script");
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
+					next();
+				}
+			}
+			case 99 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					check(Files.isRegularFile(testScript("made/new_script.py")), "the new script dialog creates a script in a new folder");
+					check((TEST_SCRIPT_FOLDER + "/made/new_script.py").equals(screen.selectedForSnapshot()), "the new script opens in the editor");
+					// Replace the template with a line that leaves a marker, save with Ctrl+S, and run it.
+					screen.keyPressed(selectAll());
+					type(screen, "open(__file__[:-3] + \".marker\", \"w\").write(\"ok\")");
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_S, 0, InputConstants.MOD_CONTROL));
+					check(readTestScript("made/new_script.py").startsWith("open(__file__"), "Ctrl+S saves the edited script");
+					screen.runForSnapshot();
+					next();
+				}
+			}
+			case 100 -> waitForCheck(Files.isRegularFile(testScript("made/new_script.marker")), 200, "a new script in a new folder runs");
+			case 101 -> captureAfter(client, 5, "scripts, ran a new script in a new folder");
+			case SCRIPTS_CLEANUP_STEP -> {
+				client.gui.setScreen(null);
 				deleteTestScripts();
 				next();
 			}
@@ -422,7 +492,7 @@ public final class UiSnapshotter {
 
 	/** A folder of its own inside the minescript folder, so the test never touches real scripts. */
 	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
-	private static final List<String> TEST_SCRIPTS = List.of("hello.py", "tools/fly_toggle.py", "tools/auto_farm.py", "legacy.pyj");
+	private static final int SCRIPTS_CLEANUP_STEP = 102;
 
 	private static void writeTestScripts() {
 		Path folder = MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER);
@@ -441,7 +511,9 @@ public final class UiSnapshotter {
 				\tgreet("world")  # a tab-indented line
 				""");
 			Files.writeString(folder.resolve("tools/fly_toggle.py"), "import minescript\n\nminescript.execute(\"/fly\")\n");
-			Files.writeString(folder.resolve("tools/auto_farm.py"), "import minescript\n\nwhile True:\n    pass\n");
+			Files.writeString(folder.resolve("tools/auto_farm.py"), "import time\n\nwhile True:\n    time.sleep(0.1)\n");
+			// Leaves a marker next to itself, so the snapshot can check that it ran.
+			Files.writeString(folder.resolve("tools/marker.py"), "open(__file__[:-3] + \".marker\", \"w\").write(\"ok\")\n");
 			Files.writeString(folder.resolve("legacy.pyj"), "# read-only in EMUtils\n");
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("Could not write the snapshot test scripts.", exception);
@@ -450,14 +522,52 @@ public final class UiSnapshotter {
 
 	private static void deleteTestScripts() {
 		Path folder = MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER);
-		try {
-			for (String script : TEST_SCRIPTS) {
-				Files.deleteIfExists(folder.resolve(script));
+		if (!Files.isDirectory(folder)) {
+			return;
+		}
+		try (Stream<Path> paths = Files.walk(folder)) {
+			for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+				Files.delete(path);
 			}
-			Files.deleteIfExists(folder.resolve("tools"));
-			Files.deleteIfExists(folder);
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("Could not delete the snapshot test scripts.", exception);
+		}
+	}
+
+	private static Path testScript(String relativePath) {
+		return MinescriptCompat.scriptsDir().resolve(TEST_SCRIPT_FOLDER).resolve(relativePath);
+	}
+
+	private static String readTestScript(String relativePath) {
+		try {
+			return Files.readString(testScript(relativePath));
+		} catch (IOException exception) {
+			return "";
+		}
+	}
+
+	/** Ctrl+A; 26.3 reads shortcuts from the key's layout character, so the event carries it too. */
+	private static KeyEvent selectAll() {
+		return new KeyEvent(InputConstants.KEY_A, 'a', InputConstants.MOD_CONTROL);
+	}
+
+	private static void type(Screen screen, String text) {
+		text.codePoints().forEach(codepoint -> screen.charTyped(new CharacterEvent(codepoint)));
+	}
+
+	private static void check(boolean passed, String what) {
+		if (passed) {
+			EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: {}", what);
+		} else {
+			EMUtilsClient.LOGGER.error("EMUtils UI snapshot check FAILED: {}", what);
+		}
+	}
+
+	/** Moves on once the condition holds, or after the timeout with a failed check. */
+	private static void waitForCheck(boolean condition, int timeoutTicks, String what) {
+		if (condition || stepTicks >= timeoutTicks) {
+			check(condition, what + " (" + stepTicks + " ticks)");
+			next();
 		}
 	}
 

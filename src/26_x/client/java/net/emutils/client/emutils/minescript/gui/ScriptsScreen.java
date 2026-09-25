@@ -798,15 +798,16 @@ public final class ScriptsScreen extends UiPanelScreen {
 		if (closing()) {
 			return true;
 		}
-		if (confirm != null) {
+		// A dialog that is closing lets keys through, so typing right after Enter reaches the editor.
+		if (confirm != null && !confirm.closing()) {
 			confirm.keyPressed(input);
 			return true;
 		}
-		if (prompt != null) {
+		if (prompt != null && !prompt.closing()) {
 			prompt.keyPressed(input);
 			return true;
 		}
-		if (keybind != null) {
+		if (keybind != null && !keybind.closing()) {
 			keybind.keyPressed(input);
 			return true;
 		}
@@ -834,11 +835,11 @@ public final class ScriptsScreen extends UiPanelScreen {
 		if (closing()) {
 			return true;
 		}
-		if (prompt != null) {
+		if (prompt != null && !prompt.closing()) {
 			prompt.charTyped(input);
 			return true;
 		}
-		if (dialogOpen()) {
+		if ((confirm != null && !confirm.closing()) || (keybind != null && !keybind.closing())) {
 			return true;
 		}
 		if (filter.charTyped(input, listScroll::reset)) {
@@ -886,6 +887,21 @@ public final class ScriptsScreen extends UiPanelScreen {
 	public void newScriptForSnapshot() {
 		editor.markClean();
 		askForNewScript();
+	}
+
+	/** Presses Run/Stop for the open script, as the button does; used by UI snapshots. */
+	public void runForSnapshot() {
+		runSelected();
+	}
+
+	/** Whether the open script has a running job, as the Run/Stop button shows it; used by UI snapshots. */
+	public boolean runningForSnapshot() {
+		return isRunning();
+	}
+
+	/** The open script's path inside the minescript folder, or null; used by UI snapshots. */
+	public @Nullable String selectedForSnapshot() {
+		return selected == null ? null : selected.relativePath();
 	}
 
 	/** Throws away edits so the screen can close without asking; used by UI snapshots. */

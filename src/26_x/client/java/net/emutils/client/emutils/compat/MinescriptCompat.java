@@ -73,14 +73,30 @@ public final class MinescriptCompat {
         if (space >= 0) {
             normalized = normalized.substring(0, space);
         }
-        int slash = Math.max(
-            normalized.lastIndexOf('/'),
-            normalized.lastIndexOf('\\')
-        );
-        if (slash >= 0 && slash + 1 < normalized.length()) {
-            normalized = normalized.substring(slash + 1);
-        }
-        return normalized;
+        // Keep the folder: Minescript runs minescript/test/foo.py as \test/foo, and \foo would look in
+        // the minescript folder itself.
+        return normalized.replace('\\', '/');
+    }
+
+    /**
+     * The command that runs a script file: its path inside the minescript folder without the
+     * extension, such as test/foo. Minescript's own system/exec scripts, and any others outside the
+     * folder, go by their path from system/exec or their file name.
+     */
+    private static String commandForScript(Path scriptPath) {
+        Path root = scriptsDir().toAbsolutePath().normalize();
+        Path systemExec = root.resolve("system").resolve("exec");
+        Path path = scriptPath.isAbsolute()
+            ? scriptPath.normalize()
+            : FabricLoader.getInstance().getGameDir().resolve(scriptPath).toAbsolutePath().normalize();
+        String command = path.startsWith(systemExec)
+            ? systemExec.relativize(path).toString()
+            : path.startsWith(root)
+                ? root.relativize(path).toString()
+                : path.getFileName().toString();
+        command = command.replace('\\', '/');
+        int dot = command.lastIndexOf('.');
+        return dot > command.lastIndexOf('/') ? command.substring(0, dot) : command;
     }
 
     public static boolean runCommand(String command) {
@@ -313,8 +329,20 @@ public final class MinescriptCompat {
 
     private static boolean matchesCommand(Object job, String command)
         throws ReflectiveOperationException {
-        String lowerCommand = command.toLowerCase();
+        // The script's own path is exact: test/foo never matches foo, or the other way around.
+        Object boundCommand = job
+            .getClass()
+            .getMethod("boundCommand")
+            .invoke(job);
+        Path scriptPath = (Path) boundCommand
+            .getClass()
+            .getMethod("scriptPath")
+            .invoke(boundCommand);
+        if (scriptPath != null) {
+            return commandForScript(scriptPath).equalsIgnoreCase(command);
+        }
 
+        String lowerCommand = command.toLowerCase();
         String display = (String) job
             .getClass()
             .getMethod("toString")
@@ -330,54 +358,10 @@ public final class MinescriptCompat {
             .getClass()
             .getMethod("jobSummary")
             .invoke(job);
-        if (
+        return (
             summary != null &&
             matchesInJobText(summary.toLowerCase(), lowerCommand)
-        ) {
-            return true;
-        }
-
-        Object boundCommand = job
-            .getClass()
-            .getMethod("boundCommand")
-            .invoke(job);
-        String[] parts = (String[]) boundCommand
-            .getClass()
-            .getMethod("command")
-            .invoke(boundCommand);
-        if (parts != null) {
-            for (String part : parts) {
-                if (normalizeScriptCommand(part).equalsIgnoreCase(command)) {
-                    return true;
-                }
-            }
-        }
-
-        Path scriptPath = (Path) boundCommand
-            .getClass()
-            .getMethod("scriptPath")
-            .invoke(boundCommand);
-        if (scriptPath != null) {
-            String fileName = scriptPath.getFileName().toString();
-            if (fileName.endsWith(".py")) {
-                fileName = fileName.substring(0, fileName.length() - 3);
-            }
-            if (fileName.equalsIgnoreCase(command)) {
-                return true;
-            }
-            String pathString = scriptPath
-                .toString()
-                .replace('\\', '/')
-                .toLowerCase();
-            if (
-                pathString.endsWith("/" + lowerCommand + ".py") ||
-                pathString.endsWith(lowerCommand + ".py")
-            ) {
-                return true;
-            }
-        }
-
-        return false;
+        );
     }
 
     private static boolean matchesInJobText(String text, String lowerCommand) {
@@ -385,10 +369,7 @@ public final class MinescriptCompat {
             text.endsWith(": " + lowerCommand) ||
             text.endsWith(":" + lowerCommand) ||
             text.endsWith(" " + lowerCommand) ||
-            text.contains("running: " + lowerCommand) ||
-            text.contains("running:" + lowerCommand) ||
-            text.contains("\\" + lowerCommand) ||
-            text.contains("/" + lowerCommand + ".py")
+            text.contains("\\" + lowerCommand + " ")
         );
     }
 

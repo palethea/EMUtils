@@ -56,7 +56,9 @@ def mcFamilies = [
 		versionResourcePath: "${versionPath}/resources",
 		minecraftVersion: selected26.minecraftVersion,
 		fabricApiVersion: selected26.fabricApiVersion,
-		loaderVersion: "0.19.3",
+		// The loader the dev runs use; Minescript 5.0 needs 0.19.5 in the test runs. Players only need minLoaderVersion.
+		loaderVersion: "0.19.5",
+		minLoaderVersion: "0.19.3",
 		javaVersion: 25,
 		mappingNamespace: "mojang",
 		mappingFile: selected26.mappingFile,
@@ -179,7 +181,7 @@ processResources {
 	inputs.property "minecraft_dependency", selectedMc.minecraftDependency
 	inputs.property "minecraft_description", selectedMc.minecraftDescription
 	inputs.property "java_version", selectedMc.javaVersion
-	inputs.property "loader_version", selectedMc.loaderVersion
+	inputs.property "loader_version", selectedMc.minLoaderVersion
 
 	filesMatching("fabric.mod.json") {
 		expand(
@@ -187,7 +189,7 @@ processResources {
 			"minecraft_dependency": selectedMc.minecraftDependency,
 			"minecraft_description": selectedMc.minecraftDescription,
 			"java_version": selectedMc.javaVersion,
-			"loader_version": selectedMc.loaderVersion
+			"loader_version": selectedMc.minLoaderVersion
 		)
 	}
 }

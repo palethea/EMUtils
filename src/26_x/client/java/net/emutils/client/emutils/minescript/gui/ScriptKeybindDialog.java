@@ -73,6 +73,11 @@ final class ScriptKeybindDialog {
 		return frame.isClosed();
 	}
 
+	/** Whether the dialog is animating out; it no longer takes keys then. */
+	boolean closing() {
+		return frame.closing();
+	}
+
 	/** Another script's keybind that uses the same keys as the draft, if any. */
 	private Optional<MinescriptKeyBinding> duplicate() {
 		if (draft == null) {

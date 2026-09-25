@@ -67,6 +67,11 @@ public final class UiPromptDialog {
 		return frame.isClosed();
 	}
 
+	/** Whether the dialog is animating out; it no longer takes keys then. */
+	public boolean closing() {
+		return frame.closing();
+	}
+
 	public void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
 		List<Component> lines = UiText.wrap(font, message, UiText.Size.BODY, WIDTH - PADDING * 2);
 		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
