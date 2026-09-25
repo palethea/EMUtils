@@ -38,6 +38,7 @@
 		"LevelExtractorFreeCameraMixin",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
+		"LoadingOverlayAccessor",
 		"MinecraftClientMixin",
 		"MinecraftAntiDurabilityBreakMixin",
 		"MinecraftFastPlaceMixin",

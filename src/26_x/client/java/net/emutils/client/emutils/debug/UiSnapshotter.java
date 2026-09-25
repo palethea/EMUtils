@@ -1,10 +1,15 @@
 package net.emutils.client.emutils.debug;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.packs.PackType;
+import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.waypoint.Waypoint;
@@ -179,6 +184,34 @@ public final class UiSnapshotter {
 				next();
 			}
 			case 63 -> captureAfter(client, 60, "gui scale 2, packs search");
+			// The loading card: a tiny resource pack is turned on and off like the Pack Manager does.
+			case 64 -> {
+				client.gui.setScreen(new PacksScreen(null));
+				writeTestPack(client);
+				next();
+			}
+			case 65 -> {
+				if (stepTicks == 50) {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: packs with the test pack installed");
+					Screenshot.grab(client, false);
+				}
+				if (stepTicks >= 60) {
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: enable test pack: {}", ResourcePackController.setResourcePackEnabled(client, TEST_PACK, true).message());
+					next();
+				}
+			}
+			case 66 -> captureAfter(client, 3, "loading card, resource pack");
+			case 67 -> captureAfter(client, 60, "after the resource pack loaded");
+			case 68 -> {
+				ResourcePackController.setResourcePackEnabled(client, TEST_PACK, false);
+				next();
+			}
+			case 69 -> {
+				if (stepTicks >= 60) {
+					deleteTestPack(client);
+					next();
+				}
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -269,6 +302,29 @@ public final class UiSnapshotter {
 		List<Waypoint> waypoints = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
 		if (waypoints.size() > 2) {
 			EMUtilsClient.waypoint().toggleHidden(waypoints.get(2).timestamp());
+		}
+	}
+
+	private static final String TEST_PACK = "EMUtils Snapshot Pack";
+
+	/** A resource pack folder with just a pack.mcmeta, enough for Minecraft to list and load it. */
+	private static void writeTestPack(Minecraft client) {
+		try {
+			Path folder = ResourcePackController.folder(client, PackType.RESOURCE).resolve(TEST_PACK);
+			Files.createDirectories(folder);
+			Files.writeString(folder.resolve("pack.mcmeta"), "{\"pack\":{\"description\":\"EMUtils UI snapshot test\",\"min_format\":65,\"max_format\":999}}");
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not write the snapshot test pack.", exception);
+		}
+	}
+
+	private static void deleteTestPack(Minecraft client) {
+		try {
+			Path folder = ResourcePackController.folder(client, PackType.RESOURCE).resolve(TEST_PACK);
+			Files.deleteIfExists(folder.resolve("pack.mcmeta"));
+			Files.deleteIfExists(folder);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not delete the snapshot test pack.", exception);
 		}
 	}
 

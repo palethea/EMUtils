@@ -347,7 +347,8 @@ public final class PacksScreen extends UiPanelScreen {
 			if (!filter.isEmpty() && !item.title().toLowerCase(Locale.ROOT).contains(filter) && !pack.filename().toLowerCase(Locale.ROOT).contains(filter)) {
 				continue;
 			}
-			String meta = pack.emutilsInstalled() ? pack.filename() : Component.translatable(EMUtilsTexts.UI_PACK_LOCAL).getString();
+			// The description already says whether it's a local pack, so the second line names the file.
+			String meta = pack.filename();
 			list.add(new Row("installed:" + pack.filename(), item.title(), item.description(), meta, item.iconUrl(), null, pack));
 		}
 		return list;
