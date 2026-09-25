@@ -1,0 +1,182 @@
+package net.emutils.client.emutils.gui.ui;
+
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * A screen of the new UI (#88): a centered rounded panel that fades and scales in when it opens and
+ * back out when it closes, over a dimmed and blurred world, in the current theme with a crossfade
+ * when the theme switches. Subclasses lay out and draw what goes inside the panel, plus anything that
+ * floats above it, such as sheets.
+ */
+public abstract class UiPanelScreen extends Screen {
+	protected static final int PANEL_RADIUS = 14;
+	private static final int MARGIN = 14;
+	private static final float OPEN_SECONDS = 0.2F;
+	private static final float THEME_SECONDS = 0.3F;
+	private static final Identifier INWORLD_MENU_BACKGROUND = Identifier.withDefaultNamespace("textures/gui/inworld_menu_background.png");
+
+	protected final @Nullable Screen parent;
+	protected final UiAnim anim = new UiAnim();
+	protected int panelX;
+	protected int panelY;
+	protected int panelWidth;
+	protected int panelHeight;
+	private boolean prepared;
+	private boolean closing;
+	private float openProgress;
+	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
+	private float lightness;
+
+	protected UiPanelScreen(Component title, @Nullable Screen parent) {
+		super(title);
+		this.parent = parent;
+		// Starts the open animation from nothing.
+		anim.transition("open", 0.0F, OPEN_SECONDS, true);
+	}
+
+	/** The panel's largest size; it shrinks to fit smaller windows. */
+	protected int maxPanelWidth() {
+		return 720;
+	}
+
+	protected int maxPanelHeight() {
+		return 430;
+	}
+
+	/** Lays out the panel's contents after {@link #panelX} and friends are set, and whenever the window resizes. */
+	protected abstract void layout();
+
+	/** Draws the panel's contents; the panel itself is already drawn and the open animation applied. */
+	protected abstract void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY);
+
+	/** Draws what floats above the panel, such as a sheet; called after the panel, without its animation. */
+	protected void drawOverlay(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+	}
+
+	/** Called at the start of every frame, before anything is drawn. */
+	protected void beforeFrame() {
+	}
+
+	/**
+	 * Opened from gameplay, the world behind has no blur yet, so the blur fades in and out with the panel
+	 * instead of appearing and vanishing in one frame. Opened from another menu, which already blurs,
+	 * the blur stays as it is.
+	 */
+	protected boolean fadesBlur() {
+		return parent == null && minecraft.level != null;
+	}
+
+	/** The current theme, crossfading for a moment after switching between dark and light. */
+	protected UiTheme theme() {
+		lightness = anim.transition("theme", UiTheme.current() == UiTheme.LIGHT, THEME_SECONDS);
+		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness);
+	}
+
+	/** 0 in dark mode, 1 in light mode, in between while the theme crossfades. */
+	protected float lightness() {
+		return lightness;
+	}
+
+	/** How far the open animation is, from 0 (closed) to 1 (open). */
+	protected float openProgress() {
+		return openProgress;
+	}
+
+	/** Whether the screen is fading out; it ignores input meanwhile. */
+	protected boolean closing() {
+		return closing;
+	}
+
+	@Override
+	protected final void init() {
+		if (!prepared) {
+			UiBlur.set(fadesBlur() ? 0.0F : 1.0F);
+		}
+		UiText.refreshFonts();
+		panelWidth = Math.min(maxPanelWidth(), width - MARGIN * 2);
+		panelHeight = Math.min(maxPanelHeight(), height - MARGIN * 2);
+		panelX = (width - panelWidth) / 2;
+		panelY = (height - panelHeight) / 2;
+		layout();
+	}
+
+	@Override
+	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+		super.extractBackground(context, mouseX, mouseY, delta);
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), openProgress));
+	}
+
+	/**
+	 * Vanilla darkens the world with this texture in the same frame the screen opens and stops the
+	 * frame it closes; opened from gameplay, it fades with the panel instead, like the blur.
+	 */
+	@Override
+	protected void extractMenuBackground(GuiGraphicsExtractor context) {
+		if (!fadesBlur()) {
+			super.extractMenuBackground(context);
+			return;
+		}
+		if (openProgress > 0.0F) {
+			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, openProgress));
+		}
+	}
+
+	@Override
+	public final void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+		anim.frame();
+		beforeFrame();
+		UiTheme theme = theme();
+		// The first frame draws everything invisibly, so every text texture exists before the open
+		// animation's clock starts and the animation can't hitch.
+		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
+		UiOpacity.set(openProgress);
+		UiBlur.set(fadesBlur() ? openProgress : 1.0F);
+		float scale = 0.97F + 0.03F * openProgress;
+		context.pose().pushMatrix();
+		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
+		context.pose().scale(scale, scale);
+		context.pose().translate(-(panelX + panelWidth / 2.0F), -(panelY + panelHeight / 2.0F));
+		UiShapes.shadow(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, 18, theme.shadow());
+		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, theme.panel());
+		drawPanel(context, theme, mouseX, mouseY);
+		context.pose().popMatrix();
+		UiOpacity.reset();
+		prepared = true;
+		drawOverlay(context, theme, mouseX, mouseY);
+	}
+
+	/** Once the close animation has finished, returns to the previous screen; not while drawing, like vanilla. */
+	@Override
+	public void tick() {
+		super.tick();
+		if (closing && openProgress <= 0.0F) {
+			minecraft.gui.setScreen(parent);
+		}
+	}
+
+	@Override
+	public void removed() {
+		UiBlur.reset();
+		super.removed();
+	}
+
+	/** Fades and scales the panel out, then returns to the previous screen. */
+	@Override
+	public void onClose() {
+		closing = true;
+	}
+
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+
+	protected static boolean contains(double mouseX, double mouseY, int x, int y, int width, int height) {
+		return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+	}
+}

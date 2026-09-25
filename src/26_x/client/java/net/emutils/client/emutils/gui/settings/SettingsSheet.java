@@ -10,9 +10,9 @@ import net.emutils.client.emutils.gui.hub.HubSettingsRegistry;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiColorPicker;
 import net.emutils.client.emutils.gui.ui.UiIcons;
-import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.gui.ui.UiSheetFrame;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
@@ -47,7 +47,6 @@ final class SettingsSheet {
 	private static final int FADE_HEIGHT = 10;
 	/** Choices use a segmented control when they have at most this many options and fit on one line. */
 	private static final int MAX_SEGMENTS = 4;
-	private static final float OPEN_SECONDS = 0.2F;
 	private static final int KEYS_HEADING = 16;
 
 	private final Font font;
@@ -58,9 +57,7 @@ final class SettingsSheet {
 	private final List<RowBox> boxes = new ArrayList<>();
 	private List<HubSettingRow> rows;
 	private boolean rowsDirty;
-	private boolean closing;
-	private float progress;
-	private boolean prepared;
+	private final UiSheetFrame frame;
 	private @Nullable Dropdown dropdown;
 	private HubSettingRow.@Nullable Slider draggingSlider;
 	private int draggingX;
@@ -89,12 +86,7 @@ final class SettingsSheet {
 		this.feature = feature;
 		this.capture = capture;
 		this.rows = loadRows();
-		// Starts the open animation from nothing.
-		anim.transition(animKey(), 0.0F, OPEN_SECONDS, true);
-	}
-
-	private String animKey() {
-		return "sheet:" + feature.id();
+		this.frame = new UiSheetFrame(anim, "sheet:" + feature.id(), RADIUS);
 	}
 
 	private List<HubSettingRow> loadRows() {
@@ -108,11 +100,11 @@ final class SettingsSheet {
 	}
 
 	boolean isClosed() {
-		return closing && progress <= 0.0F;
+		return frame.isClosed();
 	}
 
 	void close() {
-		closing = true;
+		frame.close();
 		dropdown = null;
 		draggingSlider = null;
 		closeColorPicker();
@@ -123,34 +115,18 @@ final class SettingsSheet {
 			rowsDirty = false;
 			rows = loadRows();
 		}
-		if (!prepared) {
-			// Rendering every label up front means the first frames of the animation have nothing new
-			// to create, so it runs without a hitch; the animation's clock starts after this.
-			prepared = true;
+		if (frame.firstFrame()) {
 			layout(panelX, panelY, panelWidth, panelHeight);
 			prepareText();
 		}
-		progress = anim.transition(animKey(), closing ? 0.0F : 1.0F, OPEN_SECONDS, true);
-		context.fill(0, 0, screenWidth, screenHeight, UiTheme.fade(theme.overlay(), progress));
-		if (progress <= 0.0F) {
+		layout(panelX, panelY, panelWidth, panelHeight);
+		if (!frame.begin(context, theme, screenWidth, screenHeight, x, y, width, height)) {
 			return;
 		}
-
-		layout(panelX, panelY, panelWidth, panelHeight);
-		// The whole sheet fades with the animation instead of popping away on its last frame.
-		UiOpacity.set(progress);
-		float scale = 0.96F + 0.04F * progress;
-		context.pose().pushMatrix();
-		context.pose().translate(x + width / 2.0F, y + height / 2.0F);
-		context.pose().scale(scale, scale);
-		context.pose().translate(-(x + width / 2.0F), -(y + height / 2.0F));
-
-		UiShapes.shadow(context, x, y, width, height, RADIUS, 22, UiTheme.fade(theme.shadow(), progress * 1.6F));
-		UiShapes.borderedRect(context, x, y, width, height, RADIUS, theme.surface(), theme.border());
 		drawHeader(context, theme, mouseX, mouseY);
 		drawRows(context, theme, mouseX, mouseY);
 		drawFooter(context, theme, mouseX, mouseY);
-		context.pose().popMatrix();
+		frame.endBody(context);
 
 		if (dropdown != null) {
 			drawDropdown(context, theme, dropdown, mouseX, mouseY);
@@ -158,7 +134,7 @@ final class SettingsSheet {
 		if (colorPicker != null) {
 			colorPicker.render(context, font, theme);
 		}
-		UiOpacity.reset();
+		frame.end();
 	}
 
 	private void layout(int panelX, int panelY, int panelWidth, int panelHeight) {
@@ -541,7 +517,7 @@ final class SettingsSheet {
 	// ---- input ----------------------------------------------------------------------------------
 
 	boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (closing) {
+		if (frame.closing()) {
 			return true;
 		}
 		if (button != InputConstants.MOUSE_BUTTON_LEFT) {
