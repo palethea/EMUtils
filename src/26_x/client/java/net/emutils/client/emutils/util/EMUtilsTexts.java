@@ -54,6 +54,13 @@ public final class EMUtilsTexts {
     public static final String UI_SCRIPT_NAME_PLACEHOLDER = "emutils.ui.script.name_placeholder";
     public static final String UI_SCRIPT_KEYBIND_MOVES = "emutils.ui.script.keybind_moves";
     public static final String UI_SCRIPT_KEYBIND_REMOVE = "emutils.ui.script.keybind_remove";
+    public static final String UI_HUD_EDITOR_TITLE = "emutils.ui.hud_editor.title";
+    public static final String UI_HUD_EDITOR_HINT = "emutils.ui.hud_editor.hint";
+    public static final String UI_HUD_EDITOR_RESET_ALL = "emutils.ui.hud_editor.reset_all";
+    public static final String UI_HUD_EDITOR_SAVE = "emutils.ui.hud_editor.save";
+    public static final String UI_HUD_EDITOR_SIZE = "emutils.ui.hud_editor.size";
+    public static final String UI_HUD_EDITOR_OPACITY = "emutils.ui.hud_editor.opacity";
+    public static final String UI_HUD_EDITOR_RESET = "emutils.ui.hud_editor.reset";
     public static final String UI_MASS_DROP_COUNT = "emutils.ui.mass_drop.count";
     public static final String UI_MASS_DROP_COUNT_ONE = "emutils.ui.mass_drop.count_one";
     public static final String UI_MASS_DROP_SEARCH = "emutils.ui.mass_drop.search";

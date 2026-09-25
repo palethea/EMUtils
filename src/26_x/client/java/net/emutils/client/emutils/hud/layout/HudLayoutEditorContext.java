@@ -1,5 +1,6 @@
 package net.emutils.client.emutils.hud.layout;
 
+import net.emutils.client.emutils.hud.editor.HudEditorScreen;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorScreen;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
@@ -11,7 +12,7 @@ public final class HudLayoutEditorContext {
 	}
 
 	public static boolean isActive(@Nullable Minecraft client) {
-		return client != null && (MinecraftClientCompat.screen(client) instanceof HudLayoutEditorScreen || HudLayoutEditorOverlay.isActive());
+		return client != null && (MinecraftClientCompat.screen(client) instanceof HudLayoutEditorScreen || MinecraftClientCompat.screen(client) instanceof HudEditorScreen || HudLayoutEditorOverlay.isActive());
 	}
 
 	public static void beginVanillaHudDim() {

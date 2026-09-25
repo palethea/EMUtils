@@ -15,6 +15,9 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.hud.editor.HudEditorScreen;
+import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
+import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
@@ -720,6 +723,36 @@ public final class UiSnapshotter {
 					}
 				}
 				client.gui.setScreen(null);
+				next();
+			}
+			// The HUD Layout Editor (#136): select an element, nudge it, and cancel without saving.
+			case 153 -> {
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 154 -> captureAfter(client, 20, "hud editor");
+			case 155 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					screen.selectFirstForSnapshot();
+					HudLayoutDraft before = screen.selectedDraftForSnapshot();
+					for (int i = 0; i < 3; i++) {
+						press(screen, InputConstants.KEY_RIGHT, 0);
+					}
+					HudLayoutDraft after = screen.selectedDraftForSnapshot();
+					check(before != null && after != null && after.x() == before.x() + 3, "arrow keys nudge the selected element: " + (before == null ? "none" : before.x()) + " -> " + (after == null ? "none" : after.x()));
+				}
+				next();
+			}
+			case 156 -> captureAfter(client, 15, "hud editor, selected");
+			case 157 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					check(MinecraftClientCompat.screen(client) instanceof HudEditorScreen, "Esc first deselects, keeping the editor open");
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc again cancels and closes the editor");
 				next();
 			}
 			default -> {
