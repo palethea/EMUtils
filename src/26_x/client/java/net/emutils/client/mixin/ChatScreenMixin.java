@@ -1,5 +1,6 @@
 package net.emutils.client.mixin;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.emutils.client.emutils.chat.ChatCopyHandler;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ChatScreenMixin {
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void emutils$copyChatOnCtrlMouseButtonEvent(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		if (click.button() != 0 || !click.hasControlDownWithQuirk()) {
+		if (click.button() != InputConstants.MOUSE_BUTTON_LEFT || !click.hasControlDownWithQuirk()) {
 			return;
 		}
 
