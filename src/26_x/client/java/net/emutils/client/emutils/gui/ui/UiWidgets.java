@@ -156,6 +156,28 @@ public final class UiWidgets {
 		return edges;
 	}
 
+	public static final int KEYCAP_HEIGHT = 13;
+
+	public static int keycapWidth(Font font, Component label) {
+		return Math.max(KEYCAP_HEIGHT, UiText.width(font, label, UiText.Size.SMALL) + 10);
+	}
+
+	/**
+	 * A keycap showing a key, like the Ctrl F hint. {@code listening} highlights it while it waits for a
+	 * key, and {@code clash} shows the key in the warning color when something else uses it too.
+	 */
+	public static void keycap(GuiGraphicsExtractor context, Font font, UiTheme theme, int x, int y, Component label, boolean listening, boolean clash, float hover) {
+		int width = keycapWidth(font, label);
+		int background = listening ? UiTheme.fade(theme.accent(), 0.25F) : UiTheme.mix(theme.segmentBackground(), theme.segmentSelected(), hover);
+		if (listening) {
+			UiShapes.borderedRect(context, x, y, width, KEYCAP_HEIGHT, 4, background, theme.accent());
+		} else {
+			UiShapes.roundedRect(context, x, y, width, KEYCAP_HEIGHT, 4, background);
+		}
+		int color = listening ? theme.text() : clash ? theme.warning() : theme.textSecondary();
+		UiText.drawCentered(context, font, label, UiText.Size.SMALL, x + (width - UiText.width(font, label, UiText.Size.SMALL)) / 2, y + KEYCAP_HEIGHT / 2, color);
+	}
+
 	/** A small rounded label such as the DEV badge; returns its width. */
 	public static int badge(GuiGraphicsExtractor context, Font font, int x, int y, Component label, int background, int text) {
 		int width = UiText.width(font, label, UiText.Size.SMALL) + 8;
