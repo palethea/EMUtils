@@ -5,18 +5,22 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
+import org.jspecify.annotations.Nullable;
 
 public final class MinescriptCompat {
 
@@ -28,6 +32,17 @@ public final class MinescriptCompat {
         ConcurrentHashMap.newKeySet();
     private static final Map<String, Set<Integer>> TRACKED_JOB_IDS =
         new ConcurrentHashMap<>();
+    /** What each script EMUtils started last wrote to stderr, by command; replaced when it runs again. */
+    private static final Map<String, List<String>> STDERR =
+        new ConcurrentHashMap<>();
+    private static final int MAX_STDERR_LINES = 200;
+    private static final Pattern TRACEBACK_FILE =
+        Pattern.compile("^\\s*File \"(.+)\", line (\\d+)");
+    private static final Pattern ERROR_NAME =
+        Pattern.compile("^[A-Za-z_][\\w.]*(Error|Exception|Interrupt|Exit)\\b.*");
+
+    /** Why a script's last run failed: the line in the script (1-based, 0 when unknown) and the error. */
+    public record ScriptError(int line, String message) {}
 
     public enum ToggleResult {
         STARTED,
@@ -120,6 +135,93 @@ public final class MinescriptCompat {
         }
     }
 
+    /**
+     * Called from {@code MinescriptJobMixin}, on Minescript's threads, for each line a script writes to
+     * stderr. Only runs EMUtils started are kept.
+     */
+    public static void onJobStderr(Object job, String line) {
+        try {
+            Object boundCommand = job.getClass().getMethod("boundCommand").invoke(job);
+            Path scriptPath = (Path) boundCommand
+                .getClass()
+                .getMethod("scriptPath")
+                .invoke(boundCommand);
+            if (scriptPath == null || line == null) {
+                return;
+            }
+            List<String> lines = STDERR.get(commandForScript(scriptPath));
+            if (lines != null && lines.size() < MAX_STDERR_LINES) {
+                lines.add(line);
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // Not a job we can read; its output still goes to chat.
+        }
+    }
+
+    /**
+     * Why {@code command}'s last run from EMUtils failed, read from its Python traceback, or null when it
+     * is still running, succeeded, or wasn't started from EMUtils.
+     */
+    public static @Nullable ScriptError lastError(String command) {
+        String normalized = normalizeScriptCommand(command);
+        List<String> lines = STDERR.get(normalized);
+        if (lines == null || lines.isEmpty() || !findActiveJobIdsForCommand(normalized).isEmpty()) {
+            return null;
+        }
+        List<String> copy;
+        synchronized (lines) {
+            copy = List.copyOf(lines);
+        }
+        return parseError(normalized, copy);
+    }
+
+    /** Forgets the last run's error, once the script was changed. */
+    public static void dismissError(String command) {
+        STDERR.remove(normalizeScriptCommand(command));
+    }
+
+    /** Moves a remembered error along when a script is renamed or moved. */
+    public static void renameCommand(String from, String to) {
+        List<String> lines = STDERR.remove(normalizeScriptCommand(from));
+        if (lines != null) {
+            STDERR.put(normalizeScriptCommand(to), lines);
+        }
+    }
+
+    /**
+     * Reads a Python traceback: the error is its last unindented line (such as "NameError: name 'x' is
+     * not defined"), and the line is the last "File ..., line N" frame in this script, since that's
+     * where its own code went wrong even when the error was raised inside a library.
+     */
+    static @Nullable ScriptError parseError(String command, List<String> lines) {
+        boolean traceback = false;
+        String message = null;
+        int line = 0;
+        for (String text : lines) {
+            if (text.startsWith("Traceback (most recent call last)")) {
+                traceback = true;
+            }
+            Matcher file = TRACEBACK_FILE.matcher(text);
+            if (file.find()) {
+                try {
+                    if (commandForScript(Path.of(file.group(1))).equalsIgnoreCase(command)) {
+                        line = Integer.parseInt(file.group(2));
+                    }
+                } catch (RuntimeException ignored) {
+                    // Not a path, such as "<string>".
+                }
+                continue;
+            }
+            if (!text.isBlank() && !Character.isWhitespace(text.charAt(0))) {
+                message = text.strip();
+            }
+        }
+        if (message == null || (!traceback && !ERROR_NAME.matcher(message).matches())) {
+            return null;
+        }
+        return new ScriptError(line, message);
+    }
+
     public static boolean runCommand(String command) {
         return sendChatCommand(command) == ToggleResult.STARTED;
     }
@@ -146,10 +248,14 @@ public final class MinescriptCompat {
         }
 
         Set<Integer> before = snapshotActiveJobIds();
+        // Collect its stderr from the start; the first lines can come in before this returns.
+        STDERR.put(normalized, Collections.synchronizedList(new ArrayList<>()));
         ToggleResult started = sendChatCommand(normalized);
         if (started == ToggleResult.STARTED) {
             RUNNING_FROM_EMUTILS.add(normalized);
             rememberNewJobs(normalized, before);
+        } else {
+            STDERR.remove(normalized);
         }
         return started;
     }

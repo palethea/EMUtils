@@ -25,6 +25,7 @@ public final class HubIcons {
 	public static final Identifier FLAME = icon("flame");
 	public static final Identifier FOLDER = icon("folder");
 	public static final Identifier FOLDER_COG = icon("folder-cog");
+	public static final Identifier FOLDER_PLUS = icon("folder-plus");
 	public static final Identifier IMAGE = icon("image");
 	public static final Identifier KEYBOARD = icon("keyboard");
 	public static final Identifier MAP_PIN = icon("map-pin");
@@ -35,6 +36,7 @@ public final class HubIcons {
 	public static final Identifier MUSIC = icon("music");
 	public static final Identifier PACKAGE = icon("package");
 	public static final Identifier PACKAGE_OPEN = icon("package-open");
+	public static final Identifier PENCIL = icon("pencil");
 	public static final Identifier PLAY = icon("play");
 	public static final Identifier PLUS = icon("plus");
 	public static final Identifier REFRESH_CW = icon("refresh-cw");

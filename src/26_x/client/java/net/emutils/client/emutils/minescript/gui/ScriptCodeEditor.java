@@ -2,6 +2,7 @@ package net.emutils.client.emutils.minescript.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
@@ -29,6 +30,8 @@ final class ScriptCodeEditor {
 	private static final int TAB_WIDTH = 4;
 	private static final long BLINK_MILLIS = 530L;
 	private static final int FADE_HEIGHT = 10;
+	/** Find matches are amber, so they don't read as the selection (accent) or an error (warning). */
+	private static final int FIND_COLOR = 0xFFE2B03A;
 
 	private final Font font;
 	private final UiAnim anim;
@@ -45,6 +48,12 @@ final class ScriptCodeEditor {
 	private float horizontalTarget;
 	private float horizontal;
 	private long caretMovedAt;
+	private String findQuery = "";
+	private List<ScriptTextBuffer.Match> matches = List.of();
+	private int matchesVersion = -1;
+	private String matchesQuery = "";
+	/** The line the last run's error points at, or -1. */
+	private int errorLine = -1;
 
 	ScriptCodeEditor(Font font, UiAnim anim, Runnable dirtyListener) {
 		this.font = font;
@@ -91,6 +100,99 @@ final class ScriptCodeEditor {
 
 	int caretColumn() {
 		return buffer.caretColumn();
+	}
+
+	/** Changes with every edit, so the screen can tell when the script was changed. */
+	int version() {
+		return buffer.version();
+	}
+
+	/** Marks {@code line} (0-based) as where the last run failed, or clears it with -1. */
+	void setErrorLine(int line) {
+		errorLine = line;
+	}
+
+	/** Moves the caret to the start of {@code line}'s code and brings it into view. */
+	void goToLine(int line) {
+		int row = Mth.clamp(line, 0, buffer.lineCount() - 1);
+		String text = buffer.line(row);
+		buffer.setCaret(row, text.length() - text.stripLeading().length(), false);
+	}
+
+	/** The selected text when it's on one line, to start a search with. */
+	@Nullable String singleLineSelection() {
+		if (!buffer.hasSelection() || buffer.selectionStart().line() != buffer.selectionEnd().line()) {
+			return null;
+		}
+		return buffer.selectedText();
+	}
+
+	// ---- find -----------------------------------------------------------------------------------
+
+	void setFindQuery(String query) {
+		findQuery = query == null ? "" : query;
+	}
+
+	List<ScriptTextBuffer.Match> matches() {
+		if (matchesVersion != buffer.version() || !matchesQuery.equals(findQuery)) {
+			matches = buffer.find(findQuery);
+			matchesVersion = buffer.version();
+			matchesQuery = findQuery;
+		}
+		return matches;
+	}
+
+	/** The index of the match that is selected, or -1. */
+	int currentMatch() {
+		if (!buffer.hasSelection()) {
+			return -1;
+		}
+		ScriptTextBuffer.Position start = buffer.selectionStart();
+		ScriptTextBuffer.Position end = buffer.selectionEnd();
+		List<ScriptTextBuffer.Match> all = matches();
+		for (int i = 0; i < all.size(); i++) {
+			ScriptTextBuffer.Match match = all.get(i);
+			if (match.line() == start.line() && match.start() == start.column() && match.line() == end.line() && match.end() == end.column()) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * Selects the next match after the selection (or the previous one before it), wrapping around.
+	 * With {@code fromCaret}, the match at the caret itself counts, so typing a query finds it in place.
+	 */
+	void findNext(boolean forward, boolean fromCaret) {
+		List<ScriptTextBuffer.Match> all = matches();
+		if (all.isEmpty()) {
+			return;
+		}
+		ScriptTextBuffer.Position from = fromCaret || !forward ? buffer.selectionStart() : buffer.selectionEnd();
+		ScriptTextBuffer.Match target = null;
+		if (forward) {
+			for (ScriptTextBuffer.Match match : all) {
+				if (match.line() > from.line() || match.line() == from.line() && match.start() >= from.column()) {
+					target = match;
+					break;
+				}
+			}
+			if (target == null) {
+				target = all.getFirst();
+			}
+		} else {
+			for (int i = all.size() - 1; i >= 0; i--) {
+				ScriptTextBuffer.Match match = all.get(i);
+				if (match.line() < from.line() || match.line() == from.line() && match.start() < from.column()) {
+					target = match;
+					break;
+				}
+			}
+			if (target == null) {
+				target = all.getLast();
+			}
+		}
+		buffer.select(target.line(), target.start(), target.end());
 	}
 
 	boolean focused() {
@@ -247,16 +349,35 @@ final class ScriptCodeEditor {
 		scroll.begin(context);
 		for (int line = first; line <= last; line++) {
 			float top = y + PAD_TOP + line * LINE_HEIGHT - offset;
-			if (focused && !selection && line == caretLine) {
+			if (line == errorLine) {
+				// The line the last run failed on: a warning tint across it and a bar at the gutter's edge.
+				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + LINE_HEIGHT, UiTheme.fade(theme.warning(), 0.14F));
+				fill(context, x, top, x + 2, top + LINE_HEIGHT, theme.warning());
+			} else if (focused && !selection && line == caretLine) {
 				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + LINE_HEIGHT, UiTheme.fade(theme.text(), 0.05F));
 			}
 			String number = String.valueOf(line + 1);
-			int numberColor = line == caretLine && focused ? theme.textSecondary() : UiTheme.fade(theme.muted(), 0.8F);
+			int numberColor = line == errorLine
+				? theme.warning()
+				: line == caretLine && focused ? theme.textSecondary() : UiTheme.fade(theme.muted(), 0.8F);
 			UiText.drawExact(context, font, Component.literal(number), UiText.Size.CODE, gutterRight - number.length() * advance, top + textInset, numberColor);
 		}
 
 		context.enableScissor(codeX - 2, y, codeRight, y + height);
 		int selectionColor = UiTheme.fade(theme.accent(), focused ? 0.32F : 0.2F);
+		List<ScriptTextBuffer.Match> found = findQuery.isEmpty() ? List.of() : matches();
+		int current = found.isEmpty() ? -1 : currentMatch();
+		for (int i = 0; i < found.size(); i++) {
+			ScriptTextBuffer.Match match = found.get(i);
+			if (match.line() < first || match.line() > last) {
+				continue;
+			}
+			String text = buffer.line(match.line());
+			float top = y + PAD_TOP + match.line() * LINE_HEIGHT - offset;
+			float startX = codeX - horizontal + visualColumn(text, match.start()) * advance;
+			float endX = codeX - horizontal + visualColumn(text, match.end()) * advance;
+			fill(context, startX, top + 1.0F, endX, top + LINE_HEIGHT - 1.0F, UiTheme.fade(FIND_COLOR, i == current ? 0.55F : 0.25F));
+		}
 		for (int line = first; line <= last; line++) {
 			String text = buffer.line(line);
 			float top = y + PAD_TOP + line * LINE_HEIGHT - offset;

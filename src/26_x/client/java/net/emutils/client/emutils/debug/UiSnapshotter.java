@@ -13,6 +13,8 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
+import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
 import net.emutils.client.emutils.minescript.MinescriptPython;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.PackType;
@@ -420,8 +422,172 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			case SCRIPTS_CLEANUP_STEP -> {
+			// Finishing the editor (#125): editing keys, find, run errors and file management.
+			case 110 -> {
 				client.gui.setScreen(null);
+				// A keybind on a script that gets moved below, so the move can check it comes along.
+				MinescriptKeybindStore store = MinescriptKeybindStore.load();
+				MinescriptKeyBinding binding = MinescriptKeyBinding.from(TEST_SCRIPT_FOLDER + "/tools/marker", new KeyEvent(InputConstants.KEY_K, 'k', InputConstants.MOD_CONTROL | InputConstants.MOD_ALT));
+				if (binding != null) {
+					store.put(binding);
+				}
+				client.gui.setScreen(new ScriptsScreen(null));
+				next();
+			}
+			case 111 -> {
+				if (stepTicks >= 10 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/edit.py");
+					// Brackets and quotes close themselves and typing the closer steps over it; Enter indents after
+					// a colon and keeps the indentation; Shift+Tab outdents.
+					type(screen, "def greet(name");
+					type(screen, "):");
+					press(screen, InputConstants.KEY_RETURN, 0);
+					type(screen, "print(\"hi");
+					type(screen, "\")");
+					press(screen, InputConstants.KEY_RETURN, 0);
+					press(screen, InputConstants.KEY_TAB, InputConstants.MOD_SHIFT);
+					type(screen, "greet(1)");
+					check(screen.editorTextForSnapshot().equals(EDIT_EXPECTED), "typing closes pairs, indents after a colon and Shift+Tab outdents: " + screen.editorTextForSnapshot().replace("\n", "\\n"));
+
+					screen.keyPressed(selectAll());
+					press(screen, InputConstants.KEY_TAB, 0);
+					check(screen.editorTextForSnapshot().equals("    def greet(name):\n        print(\"hi\")\n    greet(1)"), "Tab indents every selected line");
+					press(screen, InputConstants.KEY_TAB, InputConstants.MOD_SHIFT);
+					check(screen.editorTextForSnapshot().equals(EDIT_EXPECTED), "Shift+Tab outdents every selected line");
+					press(screen, InputConstants.KEY_SLASH, InputConstants.MOD_CONTROL);
+					check(screen.editorTextForSnapshot().equals("# def greet(name):\n#     print(\"hi\")\n# greet(1)"), "Ctrl+/ comments the selected lines");
+					press(screen, InputConstants.KEY_SLASH, InputConstants.MOD_CONTROL);
+					check(screen.editorTextForSnapshot().equals(EDIT_EXPECTED), "Ctrl+/ again uncomments them");
+
+					press(screen, InputConstants.KEY_END, 0);
+					press(screen, InputConstants.KEY_D, InputConstants.MOD_CONTROL);
+					check(screen.editorTextForSnapshot().equals(EDIT_EXPECTED + "\ngreet(1)"), "Ctrl+D duplicates the line");
+					press(screen, InputConstants.KEY_UP, 0);
+					press(screen, InputConstants.KEY_UP, 0);
+					press(screen, InputConstants.KEY_END, 0);
+					press(screen, InputConstants.KEY_RETURN, 0);
+					check(screen.editorTextForSnapshot().split("\n", -1)[2].equals("    "), "Enter keeps the indentation");
+					press(screen, InputConstants.KEY_BACKSPACE, 0);
+					check(screen.editorTextForSnapshot().split("\n", -1)[2].isEmpty(), "Backspace removes a whole indentation level");
+					press(screen, InputConstants.KEY_BACKSPACE, 0);
+					check(screen.editorTextForSnapshot().equals(EDIT_EXPECTED + "\ngreet(1)"), "Backspace at the line start joins the lines");
+
+					press(screen, InputConstants.KEY_F, InputConstants.MOD_CONTROL);
+					type(screen, "greet");
+					int[] found = screen.findForSnapshot();
+					check(found[1] == 3 && found[0] > 0, "Ctrl+F finds every match and selects one: " + found[0] + " of " + found[1]);
+					next();
+				}
+			}
+			case 112 -> captureAfter(client, 15, "scripts, find");
+			case 113 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					int before = screen.findForSnapshot()[0];
+					press(screen, InputConstants.KEY_RETURN, 0);
+					check(screen.findForSnapshot()[0] == before % 3 + 1, "Enter in the find bar goes to the next match");
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.discardForSnapshot();
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/broken.py");
+					screen.runForSnapshot();
+				}
+				next();
+			}
+			case 114 -> {
+				MinescriptCompat.ScriptError error = MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen ? screen.errorForSnapshot() : null;
+				waitForCheck(error != null && error.line() == 2 && error.message().startsWith("NameError"), 200, "a failed run shows its line and error: " + error);
+			}
+			case 115 -> captureAfter(client, 15, "scripts, run error");
+			case 116 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					type(screen, "x");
+				}
+				next();
+			}
+			case 117 -> {
+				if (stepTicks >= 2 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					check(screen.errorForSnapshot() == null, "editing the script clears the error");
+					screen.discardForSnapshot();
+					screen.newFolderForSnapshot(TEST_SCRIPT_FOLDER);
+					next();
+				}
+			}
+			case 118 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					// The dialog selects just "new_folder", so typing replaces the name and keeps the parent.
+					type(screen, "lib");
+					press(screen, InputConstants.KEY_RETURN, 0);
+					next();
+				}
+			}
+			case 119 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					check(Files.isDirectory(testScript("lib")), "New Folder creates a folder inside the selected one");
+					screen.renameForSnapshot(TEST_SCRIPT_FOLDER + "/tools/marker.py");
+					next();
+				}
+			}
+			case 120 -> captureAfter(client, 20, "scripts, rename dialog");
+			case 121 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.keyPressed(selectAll());
+					type(screen, TEST_SCRIPT_FOLDER + "/lib/marker_moved");
+					press(screen, InputConstants.KEY_RETURN, 0);
+				}
+				next();
+			}
+			case 122 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					check(Files.isRegularFile(testScript("lib/marker_moved.py")) && !Files.exists(testScript("tools/marker.py")), "renaming moves a script to another folder");
+					check(MinescriptKeybindStore.load().get(TEST_SCRIPT_FOLDER + "/lib/marker_moved").isPresent(), "the keybind moves with the script");
+					screen.renameForSnapshot(TEST_SCRIPT_FOLDER + "/lib");
+					next();
+				}
+			}
+			case 123 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.keyPressed(selectAll());
+					type(screen, TEST_SCRIPT_FOLDER + "/library");
+					press(screen, InputConstants.KEY_RETURN, 0);
+					next();
+				}
+			}
+			case 124 -> {
+				if (stepTicks >= 5 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					check(Files.isRegularFile(testScript("library/marker_moved.py")), "renaming a folder moves its scripts");
+					check(MinescriptKeybindStore.load().get(TEST_SCRIPT_FOLDER + "/library/marker_moved").isPresent(), "keybinds follow a renamed folder");
+					screen.menuForSnapshot(TEST_SCRIPT_FOLDER + "/library", 150, 150);
+					next();
+				}
+			}
+			case 125 -> captureAfter(client, 15, "scripts, folder menu");
+			case 126 -> {
+				escape(client);
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.deleteFolderForSnapshot(TEST_SCRIPT_FOLDER + "/library");
+				}
+				next();
+			}
+			case 127 -> captureAfter(client, 20, "scripts, delete folder");
+			case 128 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					press(screen, InputConstants.KEY_RETURN, 0);
+				}
+				next();
+			}
+			case 129 -> {
+				if (stepTicks >= 5) {
+					check(!Files.exists(testScript("library")), "Delete folder removes the folder and its scripts");
+					check(MinescriptKeybindStore.load().get(TEST_SCRIPT_FOLDER + "/library/marker_moved").isEmpty(), "deleting a folder removes its scripts' keybinds");
+					next();
+				}
+			}
+			case SCRIPTS_CLEANUP_STEP -> {
+				if (MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.discardForSnapshot();
+				}
+				client.gui.setScreen(null);
+				MinescriptKeybindStore.load().removeFolder(TEST_SCRIPT_FOLDER);
+				EMUtilsClient.minescriptKeybinds().reload();
 				deleteTestScripts();
 				next();
 			}
@@ -535,7 +701,8 @@ public final class UiSnapshotter {
 
 	/** A folder of its own inside the minescript folder, so the test never touches real scripts. */
 	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
-	private static final int SCRIPTS_CLEANUP_STEP = 110;
+	private static final int SCRIPTS_CLEANUP_STEP = 130;
+	private static final String EDIT_EXPECTED = "def greet(name):\n    print(\"hi\")\ngreet(1)";
 	private static @Nullable String savedMinescriptConfig;
 
 	private static String readMinescriptConfig() {
@@ -580,6 +747,8 @@ public final class UiSnapshotter {
 				""");
 			Files.writeString(folder.resolve("tools/fly_toggle.py"), "import minescript\n\nminescript.execute(\"/fly\")\n");
 			Files.writeString(folder.resolve("tools/auto_farm.py"), "import time\n\nwhile True:\n    time.sleep(0.1)\n");
+			Files.writeString(folder.resolve("edit.py"), "");
+			Files.writeString(folder.resolve("broken.py"), "x = 1\nprint(undefined_name)\n");
 			// Leaves a marker next to itself, so the snapshot can check that it ran.
 			Files.writeString(folder.resolve("tools/marker.py"), "open(__file__[:-3] + \".marker\", \"w\").write(\"ok\")\n");
 			Files.writeString(folder.resolve("legacy.pyj"), "# read-only in EMUtils\n");
@@ -617,6 +786,10 @@ public final class UiSnapshotter {
 	/** Ctrl+A; 26.3 reads shortcuts from the key's layout character, so the event carries it too. */
 	private static KeyEvent selectAll() {
 		return new KeyEvent(InputConstants.KEY_A, 'a', InputConstants.MOD_CONTROL);
+	}
+
+	private static void press(Screen screen, int key, int modifiers) {
+		screen.keyPressed(new KeyEvent(key, 0, modifiers));
 	}
 
 	private static void type(Screen screen, String text) {
