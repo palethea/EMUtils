@@ -23,7 +23,7 @@ public final class ScreenshotMetadataSaver {
 	}
 
 	public static void trySave(File screenshot) {
-		if (EMUtilsClient.config() == null || !EMUtilsClient.config().screenshotMetadataSaver()) {
+		if (EMUtilsClient.config() == null || !EMUtilsClient.config().screenshotHelper() || !EMUtilsClient.config().screenshotMetadataSaver()) {
 			return;
 		}
 

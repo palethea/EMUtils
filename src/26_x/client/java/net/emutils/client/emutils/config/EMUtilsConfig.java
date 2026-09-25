@@ -77,6 +77,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean screenshotMetadataSaver = Boolean.TRUE;
 	private Boolean screenshotGalleryDeleteConfirmation = Boolean.TRUE;
 	private String screenshotGallerySort = ScreenshotGallerySort.NEWEST_FIRST.name();
+	/** The Chat Features main toggle; null in configs from before it existed, then derived on load. */
+	private Boolean chatFeaturesEnabled;
 	private Boolean copyChat = Boolean.TRUE;
 	private Boolean copyChatFormatting = Boolean.FALSE;
 	private Boolean copyChatFeedback = Boolean.TRUE;
@@ -202,6 +204,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean capeCosmetica = Boolean.TRUE;
 	private Boolean capeCloaksPlus = Boolean.TRUE;
 	private String capePreferredProvider = CapePreferredProvider.AUTO.name();
+	/** The Spotify Player main toggle; null in configs from before it existed, then derived on load. */
+	private Boolean spotifyEnabled;
 	private Boolean spotifyPlayerEnabled = Boolean.FALSE;
 	private Boolean spotifyHudOverlay = Boolean.FALSE;
 	private String spotifyHudAnchor = HudOverlayAnchor.BOTTOM_RIGHT.name();
@@ -328,6 +332,20 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setScreenshotGalleryMaxCount(int maxCount) {
 		screenshotGalleryMaxCount = clampScreenshotMaxCount(maxCount);
+		save();
+	}
+
+	/** Chat's main toggle: with it off, none of the chat features below apply (#127). */
+	public boolean chatFeaturesEnabled() {
+		return chatFeaturesEnabled == null || chatFeaturesEnabled;
+	}
+
+	/** Turning chat on with every part off brings back Copy Chat, so the toggle always does something. */
+	public void setChatFeaturesEnabled(boolean enabled) {
+		chatFeaturesEnabled = enabled;
+		if (enabled && !copyChat() && !chatTimestamps() && !smartChatFilters() && !chatMentionAlerts() && !chatMentionHighlight()) {
+			copyChat = Boolean.TRUE;
+		}
 		save();
 	}
 
@@ -1419,6 +1437,21 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 				|| capeCloaksPlus());
 	}
 
+	/** Spotify's main toggle: with it off, neither the pause menu player nor the HUD player shows (#127). */
+	public boolean spotifyEnabled() {
+		return spotifyEnabled != null && spotifyEnabled;
+	}
+
+	/** Turning Spotify on with both players off turns both on, so the toggle always does something. */
+	public void setSpotifyEnabled(boolean enabled) {
+		spotifyEnabled = enabled;
+		if (enabled && !spotifyPlayerEnabled() && !spotifyHudOverlay()) {
+			spotifyPlayerEnabled = Boolean.TRUE;
+			spotifyHudOverlay = Boolean.TRUE;
+		}
+		save();
+	}
+
 	public boolean spotifyPlayerEnabled() {
 		return spotifyPlayerEnabled != null && spotifyPlayerEnabled;
 	}
@@ -1773,6 +1806,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	}
 
 	public void resetChatDefaults() {
+		chatFeaturesEnabled = Boolean.TRUE;
 		copyChat = Boolean.TRUE;
 		copyChatFormatting = Boolean.FALSE;
 		copyChatFeedback = Boolean.TRUE;
@@ -1948,6 +1982,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	}
 
 	public void resetSpotifyPlayerDefaults() {
+		spotifyEnabled = Boolean.FALSE;
 		spotifyPlayerEnabled = Boolean.FALSE;
 		spotifyHudOverlay = Boolean.FALSE;
 		spotifyHudBackgroundOpacity = 100;
@@ -2352,6 +2387,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (spotifyHudOverlay == null) {
 			spotifyHudOverlay = Boolean.FALSE;
+		}
+		if (spotifyEnabled == null) {
+			// Configs from before the main toggle: on when either player was on, so nothing changes.
+			spotifyEnabled = spotifyPlayerEnabled || spotifyHudOverlay;
+		}
+		if (chatFeaturesEnabled == null) {
+			chatFeaturesEnabled = copyChat() || chatTimestamps() || smartChatFilters() || chatMentionAlerts() || chatMentionHighlight();
 		}
 		spotifyHudAnchor = spotifyHudAnchor().name();
 		spotifyHudBackgroundOpacity = spotifyHudBackgroundOpacity();

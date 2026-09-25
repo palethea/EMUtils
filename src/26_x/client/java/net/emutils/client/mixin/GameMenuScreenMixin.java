@@ -91,7 +91,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 	@Unique
 	private void emutils$initSpotifyPlayer() {
 		emutils$spotifyOverlay = null;
-		if (!EMUtilsClient.config().spotifyPlayerEnabled()) {
+		if (!EMUtilsClient.config().spotifyEnabled() || !EMUtilsClient.config().spotifyPlayerEnabled()) {
 			return;
 		}
 

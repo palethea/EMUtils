@@ -9,7 +9,7 @@ public final class ScreenshotAutoCopy {
 	}
 
 	public static void tryCopy(File screenshot) {
-		if (!EMUtilsClient.config().screenshotAutoCopy()) {
+		if (!EMUtilsClient.config().screenshotHelper() || !EMUtilsClient.config().screenshotAutoCopy()) {
 			return;
 		}
 
