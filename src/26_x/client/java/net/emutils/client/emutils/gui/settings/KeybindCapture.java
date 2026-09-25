@@ -9,9 +9,10 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Rebinding a key from the new settings UI, like the vanilla Controls screen: after clicking a keycap,
- * the next key or mouse side button is bound. Esc cancels (in this UI it always backs out), Backspace
- * unbinds, and a left or right click cancels.
+ * Rebinding a key from a settings sheet's Keybinds section, like the vanilla Controls screen: after
+ * clicking a keybind, the next key or mouse side button is bound. Esc cancels and keeps the key as it
+ * was, even if that was unbound (in this UI Esc always backs out), Backspace unbinds, and a left or right
+ * click cancels.
  */
 final class KeybindCapture {
 	private @Nullable KeyMapping listening;

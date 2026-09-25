@@ -20,7 +20,6 @@ import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -437,7 +436,6 @@ public final class SettingsScreen extends Screen {
 		int controlRight = x + width - CARD_PADDING;
 		Box switchBox = null;
 		Box openBox = null;
-		Box keyBox = null;
 		if (feature.toggle() != null) {
 			int switchX = controlRight - UiWidgets.SWITCH_WIDTH;
 			int switchY = rowCenter - UiWidgets.SWITCH_HEIGHT / 2;
@@ -465,35 +463,20 @@ public final class SettingsScreen extends Screen {
 		Component name = UiText.ellipsize(font, title(feature), UiText.Size.BOLD, controlRight - nameX);
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter, theme.text());
 
-		// Bottom row: the description, with a needs-another-mod badge or the keybind on the right.
+		// Bottom row: the description, with a needs-another-mod badge on the right.
 		int bottomCenter = y + CARD_HEIGHT - CARD_PADDING - 3;
 		int descriptionRight = x + width - CARD_PADDING;
-		KeyMapping key = firstKey(feature);
 		if (feature.missingMod() != null) {
 			Component badge = Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, feature.missingMod());
 			int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
 			int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
 			UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
 			descriptionRight -= badgeWidth + 6;
-		} else if (key != null) {
-			Component label = capture.label(key);
-			int capWidth = UiWidgets.keycapWidth(font, label);
-			int capX = descriptionRight - capWidth;
-			int capY = bottomCenter - UiWidgets.KEYCAP_HEIGHT / 2;
-			float capHover = hovered && contains(mouseX, mouseY, capX, capY, capWidth, UiWidgets.KEYCAP_HEIGHT) ? 1.0F : 0.0F;
-			UiWidgets.keycap(context, font, theme, capX, capY, label, capture.isListening(key), KeybindCapture.clashes(key), capHover);
-			keyBox = new Box(capX, capY, capWidth, UiWidgets.KEYCAP_HEIGHT);
-			descriptionRight = capX - 6;
 		}
 		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
 		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		context.pose().popMatrix();
-		return new CardBox(feature, x, y, width, CARD_HEIGHT, switchBox, openBox, keyBox);
-	}
-
-	/** The key mapping shown on a feature's card: its first one, if it has any. */
-	private static @Nullable KeyMapping firstKey(HubFeature feature) {
-		return feature.keyNames().isEmpty() ? null : KeybindCapture.mapping(feature.keyNames().getFirst());
+		return new CardBox(feature, x, y, width, CARD_HEIGHT, switchBox, openBox);
 	}
 
 	/** Whether the feature's sheet has anything to show: settings or keybinds. */
@@ -547,13 +530,6 @@ public final class SettingsScreen extends Screen {
 			return sheet.mouseClicked(mouseX, mouseY, click.button());
 		}
 		if (click.button() != 0) {
-			// Other buttons only matter on keycaps, where a right-click resets the key.
-			for (CardBox card : cards) {
-				if (scroll.contains(mouseX, mouseY) && card.keyBox() != null && card.keyBox().contains(mouseX, mouseY) && click.button() == 1) {
-					KeybindCapture.resetToDefault(firstKey(card.feature()));
-					return true;
-				}
-			}
 			return super.mouseClicked(click, doubled);
 		}
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
@@ -600,17 +576,13 @@ public final class SettingsScreen extends Screen {
 	}
 
 	/**
-	 * The switch toggles the feature, Open opens its screen and the keycap waits for a new key. The rest
-	 * of the card opens the settings sheet when there's something to set up there, and the feature's
-	 * screen otherwise.
+	 * The switch toggles the feature and Open opens its screen. The rest of the card opens the settings
+	 * sheet when there's something to set up there (settings or keybinds), and the feature's screen
+	 * otherwise.
 	 */
 	private void clickCard(CardBox card, double mouseX, double mouseY) {
 		HubFeature feature = card.feature();
-		KeyMapping key = firstKey(feature);
-		if (card.keyBox() != null && key != null && card.keyBox().contains(mouseX, mouseY)) {
-			search.setFocused(false);
-			capture.start(key);
-		} else if (card.switchBox() != null && card.switchBox().contains(mouseX, mouseY)) {
+		if (card.switchBox() != null && card.switchBox().contains(mouseX, mouseY)) {
 			feature.toggle().setter().accept(!feature.toggle().getter().getAsBoolean());
 		} else if (card.openBox() != null && card.openBox().contains(mouseX, mouseY)) {
 			if (feature.primaryActionEnabled()) {
@@ -631,13 +603,15 @@ public final class SettingsScreen extends Screen {
 		scroll.reset();
 	}
 
-	/** Starts listening for a new key for the feature's card keycap; used by UI snapshots. */
-	public void listenForKey(String featureId) {
-		for (HubFeature feature : features) {
-			KeyMapping key = firstKey(feature);
-			if (feature.id().equals(featureId) && key != null) {
-				capture.start(key);
-			}
+	/** Whether a settings sheet is open; used by UI snapshots. */
+	public boolean sheetOpen() {
+		return sheet != null;
+	}
+
+	/** Waits for a new key for the open sheet's first keybind; used by UI snapshots. */
+	public void listenForKeyInSheet() {
+		if (sheet != null) {
+			sheet.listenForFirstKey();
 		}
 	}
 
@@ -784,7 +758,7 @@ public final class SettingsScreen extends Screen {
 	private record Group(HubFeature.Group group, List<HubFeature> features) {
 	}
 
-	private record CardBox(HubFeature feature, int x, int y, int width, int height, @Nullable Box switchBox, @Nullable Box openBox, @Nullable Box keyBox) {
+	private record CardBox(HubFeature feature, int x, int y, int width, int height, @Nullable Box switchBox, @Nullable Box openBox) {
 	}
 
 	/** Where a control on a card is; clicks within 2 pixels of it count, so small controls are easy to hit. */

@@ -1,10 +1,13 @@
 package net.emutils.client.emutils.debug;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.input.KeyEvent;
 
 /**
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
@@ -79,15 +82,16 @@ public final class UiSnapshotter {
 			case 32 -> capture(client, "opened");
 			case 33 -> search(client, "manager");
 			case 34 -> capture(client, "gui scale 2, search manager");
-			case 35 -> {
-				search(client, "zoom");
+			case 35 -> sheet(client, "freelook", 2);
+			case 36 -> capture(client, "gui scale 2, freelook sheet with keybind");
+			case 37 -> {
 				if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
-					screen.listenForKey("zoom");
+					screen.listenForKeyInSheet();
 				}
+				next();
 			}
-			case 36 -> capture(client, "gui scale 2, zoom keycap listening");
-			case 37 -> sheet(client, "freelook", 2);
-			case 38 -> capture(client, "gui scale 2, freelook sheet with keybind");
+			case 38 -> capture(client, "gui scale 2, freelook sheet waiting for a key");
+			case 39 -> checkKeybindInput(client);
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -116,6 +120,42 @@ public final class UiSnapshotter {
 		if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
 			screen.openSheet(featureId);
 		}
+		next();
+	}
+
+	/**
+	 * Presses keys while the Freelook sheet waits for a key, the way a player would: Esc keeps the key
+	 * as it was, bound or not, and leaves the sheet open; Backspace unbinds; any other key binds.
+	 */
+	private static void checkKeybindInput(Minecraft client) {
+		if (!(MinecraftClientCompat.screen(client) instanceof SettingsScreen screen)) {
+			next();
+			return;
+		}
+		KeyMapping freelook = KeyMapping.get("key.emutils.freelook");
+		String before = freelook.saveString();
+		screen.keyPressed(new KeyEvent(InputConstants.KEY_ESCAPE, 0, 0));
+		boolean escKeepsBound = freelook.saveString().equals(before) && screen.sheetOpen();
+
+		screen.listenForKeyInSheet();
+		screen.keyPressed(new KeyEvent(InputConstants.KEY_BACKSPACE, 0, 0));
+		boolean backspaceUnbinds = freelook.isUnbound();
+
+		screen.listenForKeyInSheet();
+		screen.keyPressed(new KeyEvent(InputConstants.KEY_ESCAPE, 0, 0));
+		boolean escKeepsUnbound = freelook.isUnbound() && screen.sheetOpen();
+
+		screen.listenForKeyInSheet();
+		screen.keyPressed(new KeyEvent(InputConstants.KEY_G, 0, 0));
+		boolean keyBinds = freelook.saveString().equals("key.keyboard.g");
+
+		freelook.setKey(freelook.getDefaultKey());
+		KeyMapping.resetMapping();
+		client.options.save();
+		EMUtilsClient.LOGGER.info(
+			"EMUtils UI snapshot: keybind input (was {}): Esc keeps a bound key {}, Backspace unbinds {}, Esc keeps it unbound {}, G binds {}",
+			before, escKeepsBound, backspaceUnbinds, escKeepsUnbound, keyBinds
+		);
 		next();
 	}
 

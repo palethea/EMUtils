@@ -159,7 +159,7 @@ public final class HubFeature {
 		return resetAction;
 	}
 
-	/** Names of the feature's key mappings, such as {@code key.emutils.zoom}; the first is shown on its card. */
+	/** Names of the feature's key mappings, such as {@code key.emutils.zoom}, listed in its settings sheet. */
 	public List<String> keyNames() {
 		return keyNames;
 	}

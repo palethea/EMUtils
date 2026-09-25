@@ -701,6 +701,16 @@ final class SettingsSheet {
 		return true;
 	}
 
+	/** Waits for a new key for the first keybind; used by UI snapshots. */
+	void listenForFirstKey() {
+		for (RowBox box : boxes) {
+			if (box.key != null) {
+				capture.start(box.key);
+				return;
+			}
+		}
+	}
+
 	/** Opens the color picker of the first color setting; used by UI snapshots. */
 	void openFirstColorPicker() {
 		for (RowBox box : boxes) {
