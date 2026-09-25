@@ -25,6 +25,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
@@ -61,6 +62,8 @@ public final class SettingsScreen extends Screen {
 	private static final float THEME_SECONDS = 0.3F;
 	private static final float CATEGORY_SECONDS = 0.2F;
 	private static final float LIST_SECONDS = 0.2F;
+
+	private static final Identifier INWORLD_MENU_BACKGROUND = Identifier.withDefaultNamespace("textures/gui/inworld_menu_background.png");
 
 	private final Screen parent;
 	private final List<HubFeature> features;
@@ -192,6 +195,21 @@ public final class SettingsScreen extends Screen {
 	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		super.extractBackground(context, mouseX, mouseY, delta);
 		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), openProgress));
+	}
+
+	/**
+	 * Vanilla darkens the world with this texture in the same frame the screen opens and stops the
+	 * frame it closes; opened from gameplay, it fades with the panel instead, like the blur.
+	 */
+	@Override
+	protected void extractMenuBackground(GuiGraphicsExtractor context) {
+		if (!fadesBlur()) {
+			super.extractMenuBackground(context);
+			return;
+		}
+		if (openProgress > 0.0F) {
+			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, openProgress));
+		}
 	}
 
 	@Override
