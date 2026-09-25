@@ -25,6 +25,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -529,7 +530,9 @@ public final class SettingsScreen extends Screen {
 		if (sheet != null) {
 			return sheet.mouseClicked(mouseX, mouseY, click.button());
 		}
-		if (click.button() != 0) {
+		// Mouse button numbers differ between versions (26.3 uses SDL's, where left is 1), so compare
+		// against the constants rather than raw numbers.
+		if (click.button() != InputConstants.MOUSE_BUTTON_LEFT) {
 			return super.mouseClicked(click, doubled);
 		}
 		int controlHeight = SEARCH_ROW + 1 + CATEGORY_ROW;
@@ -601,6 +604,20 @@ public final class SettingsScreen extends Screen {
 		sheet = null;
 		search.setText(text);
 		scroll.reset();
+	}
+
+	/**
+	 * Left-clicks the dark/light button through {@link #mouseClicked}, with this version's left button
+	 * number; used by UI snapshots to catch clicks being dropped. Returns whether the theme switched.
+	 */
+	public boolean clickThemeButton() {
+		boolean dark = EMUtilsClient.config().settingsUiDark();
+		MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
+		mouseClicked(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left), false);
+		mouseReleased(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left));
+		boolean switched = EMUtilsClient.config().settingsUiDark() != dark;
+		EMUtilsClient.config().setSettingsUiDark(dark);
+		return switched;
 	}
 
 	/** Whether a settings sheet is open; used by UI snapshots. */

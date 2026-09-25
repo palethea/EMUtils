@@ -60,7 +60,7 @@ final class KeybindCapture {
 			return false;
 		}
 		listening = null;
-		if (button > 1) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT && button != InputConstants.MOUSE_BUTTON_RIGHT) {
 			apply(mapping, InputConstants.Type.MOUSE.getOrCreate(button));
 		}
 		return true;

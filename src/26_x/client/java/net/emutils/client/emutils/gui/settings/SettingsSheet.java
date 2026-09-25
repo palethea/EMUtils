@@ -1,5 +1,6 @@
 package net.emutils.client.emutils.gui.settings;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.emutils.gui.hub.HubFeature;
@@ -543,9 +544,9 @@ final class SettingsSheet {
 		if (closing) {
 			return true;
 		}
-		if (button != 0) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT) {
 			// Other buttons only matter on keybind rows, where a right-click resets the key.
-			if (button == 1 && dropdown == null && colorPicker == null && scroll.contains(mouseX, mouseY)) {
+			if (button == InputConstants.MOUSE_BUTTON_RIGHT && dropdown == null && colorPicker == null && scroll.contains(mouseX, mouseY)) {
 				for (RowBox box : boxes) {
 					if (box.key != null && contains(mouseX, mouseY, box.x, box.y, box.width, box.height)) {
 						KeybindCapture.resetToDefault(box.key);

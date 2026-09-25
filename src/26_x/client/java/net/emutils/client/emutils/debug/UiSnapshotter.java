@@ -92,6 +92,13 @@ public final class UiSnapshotter {
 			}
 			case 38 -> capture(client, "gui scale 2, freelook sheet waiting for a key");
 			case 39 -> checkKeybindInput(client);
+			case 40 -> {
+				if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.searchFor("");
+					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: a left click on the theme button switches it: {}", screen.clickThemeButton());
+				}
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
