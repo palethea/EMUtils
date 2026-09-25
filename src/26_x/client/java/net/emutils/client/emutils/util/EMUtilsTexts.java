@@ -43,6 +43,17 @@ public final class EMUtilsTexts {
     public static final String UI_PACK_FILTER_INSTALLED = "emutils.ui.pack.filter_installed";
     public static final String UI_PACK_NO_MATCH = "emutils.ui.pack.no_match";
     public static final String UI_PACK_DOWNLOADING = "emutils.ui.pack.downloading";
+    public static final String UI_SCRIPT_COUNT = "emutils.ui.script.count";
+    public static final String UI_SCRIPT_FILTER = "emutils.ui.script.filter";
+    public static final String UI_SCRIPT_NO_MATCH = "emutils.ui.script.no_match";
+    public static final String UI_SCRIPT_PICK = "emutils.ui.script.pick";
+    public static final String UI_SCRIPT_STOP = "emutils.ui.script.stop";
+    public static final String UI_SCRIPT_CURSOR = "emutils.ui.script.cursor";
+    public static final String UI_SCRIPT_READ_ONLY = "emutils.ui.script.read_only";
+    public static final String UI_SCRIPT_UNSAVED = "emutils.ui.script.unsaved";
+    public static final String UI_SCRIPT_NAME_PLACEHOLDER = "emutils.ui.script.name_placeholder";
+    public static final String UI_SCRIPT_KEYBIND_MOVES = "emutils.ui.script.keybind_moves";
+    public static final String UI_SCRIPT_KEYBIND_REMOVE = "emutils.ui.script.keybind_remove";
     public static final String UI_COPY_IMAGE = "emutils.ui.gallery.copy_image";
     public static final String UI_OPEN_IN_VIEWER = "emutils.ui.gallery.open_in_viewer";
     public static final String UI_SHOW_IN_FOLDER = "emutils.ui.gallery.show_in_folder";

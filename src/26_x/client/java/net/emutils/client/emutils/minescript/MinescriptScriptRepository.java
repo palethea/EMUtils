@@ -67,8 +67,7 @@ public final class MinescriptScriptRepository {
 			return false;
 		}
 		try {
-			Path path = safePath(root.resolve(command + ".py"));
-			return Files.isRegularFile(path);
+			return Files.isRegularFile(safePath(root.resolve(command + ".py"))) || Files.isRegularFile(safePath(root.resolve(command + ".pyj")));
 		} catch (IOException ignored) {
 			return false;
 		}
