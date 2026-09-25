@@ -16,10 +16,15 @@ import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
+import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -215,6 +220,29 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Minecraft's Resource Packs button opening the Pack Manager (#114), and Back returning to Options.
+			case 70 -> {
+				EMUtilsClient.config().setPackManagerReplaceResourcePacksButton(true);
+				client.gui.setScreen(VersionedScreens.options(null, client));
+				next();
+			}
+			case 71 -> {
+				if (stepTicks >= 10) {
+					pressResourcePacks(client);
+					next();
+				}
+			}
+			case 72 -> captureAfter(client, 40, "resource packs button opened: " + screenName(client));
+			case 73 -> {
+				escape(client);
+				next();
+			}
+			case 74 -> captureAfter(client, 20, "back from the pack manager: " + screenName(client));
+			case 75 -> {
+				EMUtilsClient.config().setPackManagerReplaceResourcePacksButton(false);
+				client.gui.setScreen(null);
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -385,6 +413,35 @@ public final class UiSnapshotter {
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {}", label);
 		Screenshot.grab(client, false);
 		next();
+	}
+
+	/** Presses the Options screen's Resource Packs button with Enter, which runs its real press handler. */
+	private static void pressResourcePacks(Minecraft client) {
+		Screen screen = MinecraftClientCompat.screen(client);
+		if (screen == null) {
+			return;
+		}
+		Component label = Component.translatable("options.resourcepack");
+		for (GuiEventListener child : screen.children()) {
+			if (child instanceof Button button && button.getMessage().equals(label)) {
+				screen.setFocused(button);
+				screen.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
+				return;
+			}
+		}
+		EMUtilsClient.LOGGER.warn("EMUtils UI snapshot: no Resource Packs button on {}", screenName(client));
+	}
+
+	private static void escape(Minecraft client) {
+		Screen screen = MinecraftClientCompat.screen(client);
+		if (screen != null) {
+			screen.keyPressed(new KeyEvent(InputConstants.KEY_ESCAPE, 0, 0));
+		}
+	}
+
+	private static String screenName(Minecraft client) {
+		Screen screen = MinecraftClientCompat.screen(client);
+		return screen == null ? "no screen" : screen.getClass().getSimpleName();
 	}
 
 	private static void next() {

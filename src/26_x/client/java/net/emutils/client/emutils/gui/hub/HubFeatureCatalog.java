@@ -116,7 +116,7 @@ public final class HubFeatureCatalog {
 			).keys("key.emutils.open_waypoints"),
 			actionFeature(
 				"pack_manager",
-				null,
+				HubCategory.PACK_MANAGER,
 				HubFeature.Group.MANAGEMENT,
 				EMUtilsTexts.OPTION_PACK_MANAGER,
 				EMUtilsTexts.HUB_FEATURE_PACK_MANAGER_DESC,

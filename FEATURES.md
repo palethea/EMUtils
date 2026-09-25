@@ -166,6 +166,7 @@ Browse installed and online resource packs or shader packs in-game.
 - Resource Pack Management: enable, disable, delete, and apply installed resource packs.
 - Shader Pack Management: apply or turn off Iris shader packs when Iris is installed.
 - Modrinth Support: search and download resource packs or shader packs into the right pack folders.
+- Replace Resource Packs Button: make the Resource Packs button in Minecraft's Options open the Pack Manager. Shift-click it for Minecraft's own screen. Off by default.
 
 ### Script Manager
 

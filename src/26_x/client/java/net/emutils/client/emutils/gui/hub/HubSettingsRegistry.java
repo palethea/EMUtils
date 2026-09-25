@@ -36,6 +36,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.SCREENSHOT, HubSettingsRegistry::screenshotRows);
 		ROWS.put(HubCategory.SCREENSHOT_GALLERY, HubSettingsRegistry::screenshotGalleryRows);
 		ROWS.put(HubCategory.MANAGERS, HubSettingsRegistry::managerRows);
+		ROWS.put(HubCategory.PACK_MANAGER, HubSettingsRegistry::packManagerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
@@ -70,6 +71,7 @@ public final class HubSettingsRegistry {
 			case SCREENSHOT -> config::resetScreenshotHelperDefaults;
 			case SCREENSHOT_GALLERY -> config::resetScreenshotGalleryDefaults;
 			case MANAGERS -> config::resetManagerDefaults;
+			case PACK_MANAGER -> config::resetPackManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case ZOOM -> config::resetZoomDefaults;
@@ -266,6 +268,17 @@ public final class HubSettingsRegistry {
 		rows.add(navRow(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS, CommandShortcutListScreen::new));
 		rows.add(divider());
 		rows.add(navRow(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER, ScriptManagerScreen::new, MinescriptCompat.isLoaded()));
+		return rows;
+	}
+
+	private static List<HubSettingRow> packManagerRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(
+			EMUtilsTexts.OPTION_PACK_MANAGER_REPLACE_RESOURCE_PACKS_BUTTON,
+			config::packManagerReplaceResourcePacksButton,
+			config::setPackManagerReplaceResourcePacksButton
+		));
 		return rows;
 	}
 
