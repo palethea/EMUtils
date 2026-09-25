@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
+import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
@@ -591,6 +593,93 @@ public final class UiSnapshotter {
 				deleteTestScripts();
 				next();
 			}
+			// Command Shortcuts (#131): add one through the sheet, try a second on the same keys, then the list.
+			case 131 -> {
+				shortcutsBefore = EMUtilsClient.commandShortcuts().store().shortcuts().stream().map(CommandShortcut::id).toList();
+				client.options.guiScale().set(2);
+				client.resizeGui();
+				client.gui.setScreen(new CommandShortcutsScreen(null));
+				next();
+			}
+			case 132 -> captureAfter(client, 25, "shortcuts, empty");
+			case 133 -> {
+				if (MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					screen.openSheetForSnapshot(null);
+					// A new shortcut starts in the text field; Tab goes on to the keys, and again to the name.
+					type(screen, "/home");
+					press(screen, InputConstants.KEY_TAB, 0);
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_H, 'h', InputConstants.MOD_CONTROL));
+					press(screen, InputConstants.KEY_TAB, 0);
+					type(screen, "Home");
+					press(screen, InputConstants.KEY_RETURN, 0);
+					check(EMUtilsClient.commandShortcuts().store().shortcuts().stream().anyMatch(shortcut -> shortcut.displayName().equals("Home") && shortcut.displayText().equals("/home") && shortcut.keyCombo().ctrl()), "the sheet adds a shortcut with its name, command and keys");
+				}
+				next();
+			}
+			case 134 -> {
+				if (stepTicks >= 15 && MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					screen.openSheetForSnapshot(null);
+					type(screen, "hello everyone");
+					press(screen, InputConstants.KEY_TAB, 0);
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_H, 'h', InputConstants.MOD_CONTROL));
+					int before = EMUtilsClient.commandShortcuts().store().shortcuts().size();
+					press(screen, InputConstants.KEY_RETURN, 0);
+					check(EMUtilsClient.commandShortcuts().store().shortcuts().size() == before, "keys another shortcut uses aren't saved");
+					next();
+				}
+			}
+			case 135 -> captureAfter(client, 20, "shortcuts, keys taken");
+			case 136 -> {
+				if (MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					press(screen, InputConstants.KEY_TAB, InputConstants.MOD_SHIFT);
+					press(screen, InputConstants.KEY_TAB, 0);
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_G, 'g', InputConstants.MOD_CONTROL));
+					press(screen, InputConstants.KEY_RETURN, 0);
+					check(EMUtilsClient.commandShortcuts().store().shortcuts().stream().anyMatch(shortcut -> shortcut.displayText().equals("hello everyone") && !shortcut.isCommand()), "other keys save it as a chat message");
+				}
+				next();
+			}
+			case 137 -> captureAfter(client, 25, "shortcuts, list");
+			case 138 -> {
+				if (MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					screen.openMenuForSnapshot(620, 150);
+				}
+				next();
+			}
+			case 139 -> captureAfter(client, 15, "shortcuts, menu");
+			case 140 -> {
+				escape(client);
+				EMUtilsClient.config().setSettingsUiDark(false);
+				client.options.guiScale().set(3);
+				client.resizeGui();
+				next();
+			}
+			case 141 -> captureAfter(client, 30, "shortcuts, gui scale 3, light");
+			case 142 -> {
+				// Opened from the settings screen, like from the hub: Run now closes both into the game.
+				EMUtilsClient.config().setSettingsUiDark(true);
+				client.options.guiScale().set(2);
+				client.resizeGui();
+				client.gui.setScreen(new CommandShortcutsScreen(new SettingsScreen(null)));
+				next();
+			}
+			case 143 -> {
+				if (stepTicks >= 10 && MinecraftClientCompat.screen(client) instanceof CommandShortcutsScreen screen) {
+					screen.runFirstForSnapshot();
+					next();
+				}
+			}
+			case 144 -> waitForCheck(MinecraftClientCompat.screen(client) == null, 40, "Run now closes every menu, back to the game");
+			case 145 -> {
+				for (CommandShortcut shortcut : EMUtilsClient.commandShortcuts().store().shortcuts()) {
+					if (!shortcutsBefore.contains(shortcut.id())) {
+						EMUtilsClient.commandShortcuts().store().remove(shortcut.id());
+					}
+				}
+				EMUtilsClient.commandShortcuts().reload();
+				client.gui.setScreen(null);
+				next();
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -702,6 +791,7 @@ public final class UiSnapshotter {
 	/** A folder of its own inside the minescript folder, so the test never touches real scripts. */
 	private static final String TEST_SCRIPT_FOLDER = "emutils_snapshot";
 	private static final int SCRIPTS_CLEANUP_STEP = 130;
+	private static List<String> shortcutsBefore = List.of();
 	private static final String EDIT_EXPECTED = "def greet(name):\n    print(\"hi\")\ngreet(1)";
 	private static @Nullable String savedMinescriptConfig;
 

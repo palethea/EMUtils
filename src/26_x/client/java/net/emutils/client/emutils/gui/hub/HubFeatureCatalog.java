@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
+import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutScreens;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -146,7 +146,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_COMMAND_SHORTCUTS_DESC,
 				HubFeature.Icon.TOOL,
 				toggle(config::commandShortcutsEnabled, config::setCommandShortcutsEnabled),
-				openScreenAction(CommandShortcutListScreen::new),
+				openScreenAction(CommandShortcutScreens::list),
 				true,
 				config::resetCommandShortcutsDefaults
 			),

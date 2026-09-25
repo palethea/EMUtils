@@ -48,6 +48,7 @@ public final class HubIcons {
 	public static final Identifier SQUARE = icon("square");
 	public static final Identifier SUN = icon("sun");
 	public static final Identifier TAG = icon("tag");
+	public static final Identifier TERMINAL = icon("terminal");
 	public static final Identifier TRASH = icon("trash");
 	public static final Identifier WRENCH = icon("wrench");
 	public static final Identifier X = icon("x");

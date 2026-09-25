@@ -11,7 +11,7 @@ import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
-import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutListScreen;
+import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutScreens;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.inventory.gui.MassDropScreen;
@@ -267,7 +267,7 @@ public final class HubSettingsRegistry {
 		rows.add(navRow(EMUtilsTexts.HUB_OPEN_PACK_MANAGER, PackManagerScreen::new));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COMMAND_SHORTCUTS, config::commandShortcutsEnabled, config::setCommandShortcutsEnabled));
-		rows.add(navRow(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS, CommandShortcutListScreen::new));
+		rows.add(navRow(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS, CommandShortcutScreens::list));
 		rows.add(divider());
 		rows.add(navRow(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER, ScriptManagerScreen::new, MinescriptCompat.isLoaded()));
 		return rows;
