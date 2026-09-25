@@ -184,8 +184,8 @@ When Minescript is installed, browse and manage scripts from `minecraft/minescri
 
 Create and manage saved quick commands.
 
-- Saved Commands: keep reusable chat commands or messages.
-- Shortcut Management: add, edit, and clear shortcuts from the EMUtils settings hub.
+- Saved Commands: keep reusable commands (starting with /) or chat messages, each sent by its own key combination while playing.
+- Shortcut Management: add and edit shortcuts in a form with a key field that captures the combination (keys another shortcut uses are refused), run one right away, delete one, or clear them all.
 
 ## QoL
 

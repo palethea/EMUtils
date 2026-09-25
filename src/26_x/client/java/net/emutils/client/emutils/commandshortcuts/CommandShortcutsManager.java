@@ -37,7 +37,8 @@ public final class CommandShortcutsManager {
 		}
 	}
 
-	private void runShortcut(Minecraft client, CommandShortcut shortcut) {
+	/** Runs the command or sends the message now, as its keys would. */
+	public void runShortcut(Minecraft client, CommandShortcut shortcut) {
 		if (client == null || client.player == null || client.getConnection() == null || shortcut == null) {
 			return;
 		}
