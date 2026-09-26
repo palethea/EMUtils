@@ -87,9 +87,13 @@ public final class ProfileManager {
 	}
 
 	private void ensureDefault() {
-		if (byId(Profile.DEFAULT_ID) == null) {
-			profiles.addFirst(new Profile(Profile.DEFAULT_ID, null, ProfileIcon.GLOBE, ProfileColor.GRAY));
+		Profile defaults = byId(Profile.DEFAULT_ID);
+		if (defaults == null) {
+			defaults = new Profile(Profile.DEFAULT_ID, null, ProfileIcon.GLOBE, ProfileColor.GRAY);
 		}
+		// Default always comes first, even in a hand-edited list.
+		profiles.remove(defaults);
+		profiles.addFirst(defaults);
 		if (byId(active) == null) {
 			active = Profile.DEFAULT_ID;
 		}
@@ -189,6 +193,7 @@ public final class ProfileManager {
 			return;
 		}
 		if (!switchTo(target)) {
+			reportSwitchFailed(client);
 			return;
 		}
 		if (client.player != null) {
@@ -197,16 +202,41 @@ public final class ProfileManager {
 		}
 	}
 
+	/** Says in chat that a switch was refused because the current settings couldn't be saved. */
+	public static void reportSwitchFailed(Minecraft client) {
+		if (client.player != null) {
+			client.player.sendSystemMessage(EmUtilsChatPrefix.chat(Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED)));
+		}
+	}
+
 	private @Nullable Profile linkedProfile(Minecraft client) {
-		boolean singleplayer = client.hasSingleplayerServer();
+		if (client.hasSingleplayerServer()) {
+			for (Profile profile : profiles) {
+				if (profile.singleplayer()) {
+					return profile;
+				}
+			}
+			return null;
+		}
 		ServerData server = client.getCurrentServer();
-		String address = singleplayer || server == null ? null : server.ip;
+		return server == null || server.ip == null ? null : profileForServer(server.ip);
+	}
+
+	/**
+	 * The profile that loads on a server at {@code address}: the one with the most specific matching
+	 * rule, so overlapping domains don't depend on the order of the list. Null when none matches.
+	 */
+	public @Nullable Profile profileForServer(String address) {
+		Profile best = null;
+		int bestScore = -1;
 		for (Profile profile : profiles) {
-			if (singleplayer ? profile.singleplayer() : address != null && profile.matchesServer(address)) {
-				return profile;
+			int score = profile.matchScore(address);
+			if (score > bestScore) {
+				best = profile;
+				bestScore = score;
 			}
 		}
-		return null;
+		return best;
 	}
 
 	/** The address of the server you're on, or null in singleplayer or outside a world. */
@@ -234,13 +264,17 @@ public final class ProfileManager {
 		return profile;
 	}
 
-	/** Adds a copy of {@code source}, settings included, right after it. */
-	public Profile duplicate(Profile source) {
+	/** Adds a copy of {@code source}, settings included, right after it; null if its settings can't be read. */
+	public @Nullable Profile duplicate(Profile source) {
+		EMUtilsConfig settings = settingsOf(source);
+		if (settings == null) {
+			return null;
+		}
 		String name = uniqueName(Component.translatable(EMUtilsTexts.UI_PROFILE_COPY_NAME, source.name()).getString());
 		Profile copy = new Profile(newId(), name, source.icon(), source.color());
 		// Auto-switching stays with the original; two profiles for one server would fight over it.
 		copy.set(name, source.icon(), source.color(), List.of(), false);
-		settingsOf(source).copyTo(file(copy)).flush();
+		settings.copyTo(file(copy)).flush();
 		profiles.add(profiles.indexOf(source) + 1, copy);
 		save();
 		return copy;
@@ -311,7 +345,7 @@ public final class ProfileManager {
 		if (profile.isDefault() || !profiles.contains(profile)) {
 			return false;
 		}
-		if (profile.id().equals(active) && !switchTo(profiles.getFirst())) {
+		if (profile.id().equals(active) && !switchTo(byId(Profile.DEFAULT_ID))) {
 			return false;
 		}
 		if (profile.id().equals(picked)) {
@@ -370,12 +404,17 @@ public final class ProfileManager {
 
 	/** {@code name}, or "name 2", "name 3"... when it's taken, so the command can tell profiles apart. */
 	private String uniqueName(String name) {
-		String base = name.strip();
+		// Checked at the length it's saved at, since longer names are cut when saved.
+		String whole = name.strip();
+		if (whole.length() > Profile.MAX_NAME_LENGTH) {
+			whole = whole.substring(0, Profile.MAX_NAME_LENGTH).strip();
+		}
+		if (!nameTaken(whole, null)) {
+			return whole;
+		}
+		String base = whole;
 		if (base.length() > Profile.MAX_NAME_LENGTH - 3) {
 			base = base.substring(0, Profile.MAX_NAME_LENGTH - 3).strip();
-		}
-		if (!nameTaken(name, null)) {
-			return name.strip();
 		}
 		int number = 2;
 		while (nameTaken(base + " " + number, null)) {
@@ -384,13 +423,16 @@ public final class ProfileManager {
 		return base + " " + number;
 	}
 
-	/** The live settings for the active profile, or the saved ones for any other. */
-	private EMUtilsConfig settingsOf(Profile profile) {
+	/**
+	 * The live settings for the active profile, or the saved ones for any other, read without writing
+	 * the file back. Null when the file can't be read, so a damaged profile is reported, not reset.
+	 */
+	private @Nullable EMUtilsConfig settingsOf(Profile profile) {
 		EMUtilsConfig current = EMUtilsClient.config();
 		if (profile.id().equals(active) && current != null) {
 			return current;
 		}
-		return EMUtilsConfig.load(file(profile));
+		return EMUtilsConfig.read(file(profile));
 	}
 
 	private String newId() {
@@ -407,13 +449,17 @@ public final class ProfileManager {
 	 * The profile as text to share: its name, icon, color and settings. Which servers it loads on is left
 	 * out, since that's about where you play rather than how.
 	 */
-	public String export(Profile profile) {
+	public @Nullable String export(Profile profile) {
+		EMUtilsConfig settings = settingsOf(profile);
+		if (settings == null) {
+			return null;
+		}
 		JsonObject root = new JsonObject();
 		root.addProperty("emutilsProfile", EXPORT_VERSION);
 		root.addProperty("name", profile.name().getString());
 		root.addProperty("icon", profile.icon().name());
 		root.addProperty("color", profile.color().name());
-		root.add("settings", JsonParser.parseString(settingsOf(profile).toJson()));
+		root.add("settings", JsonParser.parseString(settings.toJson()));
 		return GSON.toJson(root);
 	}
 

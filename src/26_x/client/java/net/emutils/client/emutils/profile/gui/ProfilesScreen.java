@@ -102,7 +102,9 @@ public final class ProfilesScreen extends UiPanelScreen {
 	}
 
 	private void duplicate(Profile profile) {
-		manager().duplicate(profile);
+		if (manager().duplicate(profile) == null) {
+			showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_UNREADABLE, profile.name()), true);
+		}
 	}
 
 	private void confirmDelete(Profile profile) {
@@ -143,7 +145,12 @@ public final class ProfilesScreen extends UiPanelScreen {
 	}
 
 	private void export(Profile profile) {
-		minecraft.keyboardHandler.setClipboard(manager().export(profile));
+		String exported = manager().export(profile);
+		if (exported == null) {
+			showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_UNREADABLE, profile.name()), true);
+			return;
+		}
+		minecraft.keyboardHandler.setClipboard(exported);
 		showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_EXPORTED, profile.name()), false);
 	}
 

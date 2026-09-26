@@ -53,7 +53,9 @@ final class ProfileSheet {
 	private final UiSheetFrame frame;
 	private final String key;
 	private final UiTextField name = new UiTextField(this, Profile.MAX_NAME_LENGTH);
-	private final UiTextField servers = new UiTextField(this, 256);
+	/** Long enough for far more servers than anyone links; picks that wouldn't fit are refused, never cut. */
+	private static final int SERVERS_MAX_LENGTH = 4096;
+	private final UiTextField servers = new UiTextField(this, SERVERS_MAX_LENGTH);
 	private @Nullable ServerPicker picker;
 	private ProfileIcon icon;
 	private ProfileColor color;
@@ -162,7 +164,10 @@ final class ProfileSheet {
 		if (!list.remove(address)) {
 			list.add(address);
 		}
-		servers.setText(String.join(", ", list));
+		String text = String.join(", ", list);
+		if (text.length() <= SERVERS_MAX_LENGTH) {
+			servers.setText(text);
+		}
 	}
 
 	private boolean hasServer(String address) {

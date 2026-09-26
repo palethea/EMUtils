@@ -64,6 +64,8 @@ public final class SettingsScreen extends UiPanelScreen {
 	private EMUtilsConfig featuresConfig;
 	private @Nullable ProfileMenu profileMenu;
 	private int profileButtonX;
+	/** Until when the profile button says a switch was refused, because the settings couldn't be saved. */
+	private long switchFailedUntil;
 	private final UiTextField search = new UiTextField(this, 64);
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final KeybindCapture capture = new KeybindCapture();
@@ -175,6 +177,9 @@ public final class SettingsScreen extends UiPanelScreen {
 			if (profileMenu.isClosed()) {
 				profileMenu = null;
 			}
+		} else if (sheet == null && System.currentTimeMillis() < switchFailedUntil) {
+			Component failed = Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED);
+			UiWidgets.tooltip(context, font, theme, failed, profileButtonX + PROFILE_BUTTON_WIDTH / 2, rightButtonsY + ROUND_BUTTON + 2, width, height);
 		} else if (sheet == null && !closing() && contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
 			Component tip = Component.translatable(EMUtilsTexts.UI_PROFILE_BUTTON, EMUtilsClient.profiles().active().name());
 			UiWidgets.tooltip(context, font, theme, tip, mouseX, mouseY, width, height);
@@ -532,7 +537,11 @@ public final class SettingsScreen extends UiPanelScreen {
 			anim,
 			profileButtonX + PROFILE_BUTTON_WIDTH,
 			rightButtonsY + ROUND_BUTTON + 4,
-			profile -> EMUtilsClient.profiles().pick(profile),
+			profile -> {
+				if (!EMUtilsClient.profiles().pick(profile)) {
+					switchFailedUntil = System.currentTimeMillis() + 3000L;
+				}
+			},
 			() -> minecraft.gui.setScreen(new ProfilesScreen(this))
 		);
 	}

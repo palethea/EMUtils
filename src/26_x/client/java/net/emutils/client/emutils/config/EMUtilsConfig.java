@@ -2,7 +2,9 @@ package net.emutils.client.emutils.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
@@ -22,8 +24,13 @@ import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -69,6 +76,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int HOTBAR_SLOT_MAX = 9;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	/** The names settings are saved under, to recognise an EMUtils config among other JSON. */
+	private static final Set<String> SETTING_NAMES = Arrays.stream(EMUtilsConfig.class.getDeclaredFields())
+		.filter(field -> !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()))
+		.map(Field::getName)
+		.collect(Collectors.toUnmodifiableSet());
 	private static final long SAVE_DELAY_MILLIS = 1000L;
 	/** Unsaved changes; transient, so they're not part of the saved config. */
 	private transient boolean dirty;
@@ -285,6 +297,28 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		config.save();
 		config.flush();
 		return config;
+	}
+
+	/**
+	 * Reads the config saved in {@code file} without writing anything back, for looking at a profile
+	 * that isn't active. Null when the file is missing or can't be read.
+	 */
+	public static @Nullable EMUtilsConfig read(Path file) {
+		if (!Files.exists(file)) {
+			return null;
+		}
+		try (Reader reader = Files.newBufferedReader(file)) {
+			EMUtilsConfig config = GSON.fromJson(reader, EMUtilsConfig.class);
+			if (config == null) {
+				return null;
+			}
+			config.file = file;
+			config.applyDefaults();
+			return config;
+		} catch (IOException | JsonParseException | IllegalStateException exception) {
+			EMUtilsClient.LOGGER.warn("Could not read the EMUtils config {}.", file, exception);
+			return null;
+		}
 	}
 
 	/** A config with every setting at its default, saved to {@code file}. */
@@ -2117,7 +2151,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 
 		try {
-			EMUtilsConfig config = GSON.fromJson(json, EMUtilsConfig.class);
+			// Any JSON object would parse as a config of defaults; only accept one with EMUtils settings in it.
+			JsonElement parsed = JsonParser.parseString(json);
+			if (!parsed.isJsonObject() || parsed.getAsJsonObject().keySet().stream().noneMatch(SETTING_NAMES::contains)) {
+				return null;
+			}
+			EMUtilsConfig config = GSON.fromJson(parsed, EMUtilsConfig.class);
 			if (config == null) {
 				return null;
 			}

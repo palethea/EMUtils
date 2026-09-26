@@ -333,8 +333,13 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void handleKeyMappings(Minecraft client) {
 		while (nextProfileKeyMapping != null && nextProfileKeyMapping.consumeClick()) {
+			if (profileManager.profiles().size() < 2) {
+				continue;
+			}
 			Profile next = profileManager.pickNext();
-			if (next != null && client.player != null) {
+			if (next == null) {
+				ProfileManager.reportSwitchFailed(client);
+			} else if (client.player != null) {
 				client.player.sendSystemMessage(EmUtilsChatPrefix.chat(Component.translatable(EMUtilsTexts.PROFILE_SWITCHED, next.name())));
 			}
 		}

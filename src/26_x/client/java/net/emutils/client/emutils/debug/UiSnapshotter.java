@@ -1285,6 +1285,42 @@ public final class UiSnapshotter {
 		next();
 	}
 
+	/** The cases from the PR review of profiles (#89): long names, overlapping domains, other JSON, damaged files. */
+	private static void checkProfileReviewFixes(ProfileManager profiles, Profile hypixel) {
+		Profile longName = profiles.create("Survival Hardcore Friends Server", ProfileIcon.STAR, ProfileColor.BLUE, List.of(), false, false);
+		Profile copy = profiles.duplicate(longName);
+		check(copy != null && !copy.name().getString().equalsIgnoreCase(longName.name().getString()), "a copy of a profile with a 32-character name gets a name of its own (" + (copy == null ? null : copy.name().getString()) + ")");
+		profiles.delete(longName);
+		if (copy != null) {
+			profiles.delete(copy);
+		}
+
+		// Hypixel has hypixel.net and is higher in the list; the more specific rule still wins.
+		Profile minigames = profiles.create("Minigames", ProfileIcon.GAMEPAD, ProfileColor.PURPLE, List.of("mc.hypixel.net"), false, false);
+		check(profiles.profileForServer("mc.hypixel.net") == minigames && profiles.profileForServer("MC.Hypixel.net:25565") == minigames, "the most specific server rule wins over a domain higher in the list");
+		check(profiles.profileForServer("play.hypixel.net") == hypixel && profiles.profileForServer("example.org") == null, "a domain still covers its other subdomains");
+		profiles.delete(minigames);
+
+		check(profiles.importProfile("{}") == null && profiles.importProfile("{\"someOtherMod\": true}") == null, "JSON that isn't an EMUtils config doesn't import");
+		Profile plain = profiles.importProfile(EMUtilsClient.config().toJson());
+		check(plain != null, "a plain /emutils export still imports");
+		if (plain != null) {
+			profiles.delete(plain);
+		}
+
+		// A damaged profile file is reported, not overwritten with the defaults.
+		Profile damaged = profiles.create("Damaged", ProfileIcon.FLAME, ProfileColor.RED, List.of(), false, false);
+		Path file = EMUtilsPaths.profilesDir().resolve(damaged.id() + ".json");
+		try {
+			Files.writeString(file, "not json");
+			boolean reported = profiles.export(damaged) == null && profiles.duplicate(damaged) == null;
+			check(reported && Files.readString(file).equals("not json"), "a damaged profile file is reported and left alone by export and duplicate");
+		} catch (IOException exception) {
+			check(false, "a damaged profile file can be written for the check: " + exception);
+		}
+		profiles.delete(damaged);
+	}
+
 	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */
 	private static void checkProfileReset() {
 		ProfileManager profiles = EMUtilsClient.profiles();
@@ -1360,6 +1396,8 @@ public final class UiSnapshotter {
 		}
 		check(profiles.importProfile("not a profile") == null, "text that isn't a profile doesn't import");
 		check(ProfileManager.parseServers(" Play.Example.net:25565 ,hypixel.net  mc.x.org.").equals(List.of("play.example.net", "hypixel.net", "mc.x.org")), "typed servers are split and normalized");
+
+		checkProfileReviewFixes(profiles, hypixel);
 
 		profiles.onJoin(client);
 		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");

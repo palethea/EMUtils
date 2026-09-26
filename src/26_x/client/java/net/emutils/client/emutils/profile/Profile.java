@@ -87,22 +87,32 @@ public final class Profile {
 		this.singleplayer = singleplayer;
 	}
 
-	/** Whether joining a server at {@code address} loads this profile. */
-	boolean matchesServer(String address) {
+	/**
+	 * How closely this profile's rules match a server at {@code address}, or -1 when none does. An exact
+	 * address beats a domain that covers it, a rule with the port beats one without, and a longer domain
+	 * beats a shorter one, so {@code mc.hypixel.net} wins over {@code hypixel.net} whatever the order.
+	 */
+	int matchScore(String address) {
 		String joined = normalizeAddress(address);
 		String joinedHost = host(joined);
+		int best = -1;
 		for (String server : servers()) {
 			String rule = normalizeAddress(server);
 			if (rule.isEmpty()) {
 				continue;
 			}
 			// A rule with a port only matches that port; one without matches the host on any port.
-			String candidate = rule.contains(":") ? joined : joinedHost;
-			if (candidate.equals(rule) || candidate.endsWith("." + rule)) {
-				return true;
+			boolean withPort = rule.contains(":");
+			String candidate = withPort ? joined : joinedHost;
+			int score = -1;
+			if (candidate.equals(rule)) {
+				score = 100_000 + (withPort ? 10_000 : 0) + rule.length();
+			} else if (candidate.endsWith("." + rule)) {
+				score = rule.length();
 			}
+			best = Math.max(best, score);
 		}
-		return false;
+		return best;
 	}
 
 	/** Makes addresses comparable: lower case, no spaces, and without the default port or a trailing dot. */

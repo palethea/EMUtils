@@ -1091,6 +1091,8 @@ public final class EMUtilsTexts {
     public static final String UI_PROFILE_FILTER_SERVERS = "emutils.ui.profile.filter_servers";
     public static final String UI_PROFILE_NO_MATCHING_SERVERS = "emutils.ui.profile.no_matching_servers";
 
+    public static final String UI_PROFILE_UNREADABLE = "emutils.ui.profile.unreadable";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

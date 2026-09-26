@@ -146,6 +146,8 @@ public final class EMUtilsCommand {
 			return 0;
 		}
 
+		// The settings UI's look belongs to the player, as when switching profiles.
+		imported.setSettingsUiDark(current.settingsUiDark());
 		EMUtilsClient.replaceConfig(imported);
 		feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_IMPORTED));
 		return 1;
