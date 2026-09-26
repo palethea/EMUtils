@@ -12,7 +12,7 @@ import net.minecraft.network.chat.FontDescription;
 import net.minecraft.resources.Identifier;
 
 /**
- * Text in the settings UI, set in the bundled Nunito font. It is normally drawn by
+ * Text in the settings UI, set in the font picked in the menu settings (#120), Nunito by default. It is normally drawn by
  * {@link UiFontRenderer}, which renders each string with FreeType at the physical pixel size. If that
  * is unavailable, it falls back to Minecraft's text rendering with one font definition per GUI scale
  * ({@code ui_body_s3} renders glyphs at 3x, since font atlases use nearest sampling), and without the
@@ -82,9 +82,42 @@ public final class UiText {
 		return scale;
 	}
 
-	/** Our own FreeType rendering; the font definitions below are only the fallback. */
-	private static boolean freeType() {
-		return customFonts() && UiFontRenderer.available();
+	/**
+	 * Our own FreeType rendering; the font definitions below are only the fallback. With Minecraft's font
+	 * picked in the menu settings (#120), everything but code uses the game's font instead.
+	 */
+	private static boolean freeType(Size size) {
+		return bundledFont(size) && UiFontRenderer.available();
+	}
+
+	/** Whether this size uses a bundled font rather than Minecraft's. */
+	private static boolean bundledFont(Size size) {
+		if (!customFonts()) {
+			return false;
+		}
+		UiFontRenderer.syncFonts();
+		return size == Size.CODE || EMUtilsClient.config() == null || !EMUtilsClient.config().uiFont().minecraft();
+	}
+
+	/**
+	 * Changes whenever text would measure differently: another font, Minecraft's font turned on or off,
+	 * or another code size (#120). Screens compare it to lay out again.
+	 */
+	public static int layoutVersion() {
+		if (customFonts()) {
+			UiFontRenderer.syncFonts();
+		}
+		boolean minecraft = EMUtilsClient.config() != null && EMUtilsClient.config().uiFont().minecraft();
+		int codeSize = EMUtilsClient.config() == null ? 100 : EMUtilsClient.config().uiCodeSize();
+		return (UiFontRenderer.generation() * 31 + (minecraft ? 1 : 0)) * 1009 + codeSize;
+	}
+
+	/** The size's em in GUI pixels; code follows the size picked in the menu settings. */
+	private static float em(Size size) {
+		if (size == Size.CODE && EMUtilsClient.config() != null) {
+			return size.em * EMUtilsClient.config().uiCodeSize() / 100.0F;
+		}
+		return size.em;
 	}
 
 	private static Identifier fontFor(Size size) {
@@ -93,12 +126,12 @@ public final class UiText {
 	}
 
 	private static float fallbackScale(Size size) {
-		return customFonts() ? 1.0F : size.fallbackScale;
+		return bundledFont(size) ? 1.0F : size.fallbackScale;
 	}
 
 	/** Height of capital letters, used to center text and size things around it. */
 	private static float capHeight(Size size) {
-		return customFonts() ? size.em * size.weight.capHeight() : BASELINE * size.fallbackScale;
+		return bundledFont(size) ? em(size) * size.weight.capHeight() : BASELINE * size.fallbackScale;
 	}
 
 	/** Distance from the text's y to the top of its capital letters. */
@@ -107,7 +140,7 @@ public final class UiText {
 	}
 
 	public static Component styled(Component text, Size size) {
-		if (!customFonts()) {
+		if (!bundledFont(size)) {
 			return text;
 		}
 		return text.copy().withStyle(style -> style.withFont(new FontDescription.Resource(fontFor(size))));
@@ -118,9 +151,9 @@ public final class UiText {
 	}
 
 	public static int width(Font font, Component text, Size size) {
-		if (freeType()) {
+		if (freeType(size)) {
 			float scale = guiScale() * UiRasterScale.get();
-			return (int) Math.ceil(UiFontRenderer.measure(size.weight, size.em * scale, text.getString()) / scale);
+			return (int) Math.ceil(UiFontRenderer.measure(size.weight, em(size) * scale, text.getString()) / scale);
 		}
 		return Math.round(font.width(styled(text, size)) * fallbackScale(size));
 	}
@@ -132,7 +165,7 @@ public final class UiText {
 
 	/** Draws text with the top of its capital letters at {@code top}. */
 	public static void draw(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int top, int color) {
-		if (freeType()) {
+		if (freeType(size)) {
 			drawFreeType(context, text, size, x, top, color);
 			return;
 		}
@@ -141,7 +174,7 @@ public final class UiText {
 
 	/** Draws text with its capital letters vertically centered on {@code centerY}. */
 	public static void drawCentered(GuiGraphicsExtractor context, Font font, Component text, Size size, int x, int centerY, int color) {
-		if (freeType()) {
+		if (freeType(size)) {
 			drawFreeType(context, text, size, x, centerY - capHeight(size) / 2.0F, color);
 			return;
 		}
@@ -153,7 +186,7 @@ public final class UiText {
 	 * the nearest GUI pixel, for text that has to line up exactly, such as code in columns.
 	 */
 	public static void drawExact(GuiGraphicsExtractor context, Font font, Component text, Size size, float x, float top, int color) {
-		if (freeType()) {
+		if (freeType(size)) {
 			drawFreeType(context, text, size, x, top, color);
 			return;
 		}
@@ -165,9 +198,9 @@ public final class UiText {
 	 * whose font is monospaced.
 	 */
 	public static float advance(Font font, Size size) {
-		if (freeType()) {
+		if (freeType(size)) {
 			int scale = guiScale();
-			return UiFontRenderer.measure(size.weight, size.em * scale, "0") / scale;
+			return UiFontRenderer.measure(size.weight, em(size) * scale, "0") / scale;
 		}
 		return font.width(styled("0", size)) * fallbackScale(size);
 	}
@@ -179,8 +212,8 @@ public final class UiText {
 			return;
 		}
 		float scale = guiScale() * UiRasterScale.get();
-		UiFontRenderer.Rendered rendered = UiFontRenderer.render(size.weight, size.em * scale, value);
-		int capPixels = Math.round(size.em * size.weight.capHeight() * scale);
+		UiFontRenderer.Rendered rendered = UiFontRenderer.render(size.weight, em(size) * scale, value);
+		int capPixels = Math.round(em(size) * size.weight.capHeight() * scale);
 		int baseline = Math.round(capTop * scale) + capPixels;
 		int top = baseline - rendered.baseline();
 		int left = Math.round(x * scale) - rendered.left();
@@ -210,13 +243,13 @@ public final class UiText {
 	 * numbers and short values.
 	 */
 	public static void drawGlyphs(GuiGraphicsExtractor context, Font font, String text, Size size, float x, float top, int color) {
-		if (!freeType()) {
+		if (!freeType(size)) {
 			drawAt(context, font, Component.literal(text), size, Math.round(x), top - capTop(size), color);
 			return;
 		}
 		float scale = guiScale() * UiRasterScale.get();
-		float pixelSize = size.em * scale;
-		int capPixels = Math.round(size.em * size.weight.capHeight() * scale);
+		float pixelSize = em(size) * scale;
+		int capPixels = Math.round(em(size) * size.weight.capHeight() * scale);
 		int baseline = Math.round(top * scale) + capPixels;
 		float pen = Math.round(x * scale);
 		int tint = UiOpacity.apply(color);
@@ -238,11 +271,11 @@ public final class UiText {
 
 	/** Width of {@link #drawGlyphs} text. */
 	public static int glyphsWidth(Font font, String text, Size size) {
-		if (!freeType()) {
+		if (!freeType(size)) {
 			return width(font, Component.literal(text), size);
 		}
 		float scale = guiScale() * UiRasterScale.get();
-		float pixelSize = size.em * scale;
+		float pixelSize = em(size) * scale;
 		float pen = 0.0F;
 		for (int i = 0; i < text.length(); ) {
 			int codepoint = text.codePointAt(i);
@@ -258,9 +291,9 @@ public final class UiText {
 	 */
 	public static void prepare(Component text, Size size) {
 		String value = text.getString();
-		if (freeType() && !value.isEmpty()) {
+		if (freeType(size) && !value.isEmpty()) {
 			int scale = guiScale();
-			UiFontRenderer.render(size.weight, size.em * scale, value);
+			UiFontRenderer.render(size.weight, em(size) * scale, value);
 		}
 	}
 

@@ -229,7 +229,7 @@ public final class HudEditorScreen extends Screen {
 		int chipHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 6;
 		int chipY = y - chipHeight - 3 < 0 ? y + h + 3 : y - chipHeight - 3;
 		UiShapes.roundedRect(context, x, chipY, chipWidth, chipHeight, 5, isSelected ? theme.accent() : theme.surface());
-		UiText.drawCentered(context, font, name, UiText.Size.SMALL, x + 5, chipY + chipHeight / 2, isSelected ? 0xFFFFFFFF : theme.text());
+		UiText.drawCentered(context, font, name, UiText.Size.SMALL, x + 5, chipY + chipHeight / 2, isSelected ? theme.onAccent() : theme.text());
 		int handleX = draft.x() + panel.width() - HANDLE / 2;
 		int handleY = draft.y() + panel.height() - HANDLE / 2;
 		UiShapes.circle(context, handleX - 1, handleY - 1, HANDLE + 2, 0xFFFFFFFF);

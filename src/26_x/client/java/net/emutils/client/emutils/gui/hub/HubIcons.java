@@ -44,6 +44,7 @@ public final class HubIcons {
 	public static final Identifier MUSIC = icon("music");
 	public static final Identifier PACKAGE = icon("package");
 	public static final Identifier PACKAGE_OPEN = icon("package-open");
+	public static final Identifier PALETTE = icon("palette");
 	public static final Identifier PENCIL = icon("pencil");
 	public static final Identifier PICKAXE = icon("pickaxe");
 	public static final Identifier PLAY = icon("play");

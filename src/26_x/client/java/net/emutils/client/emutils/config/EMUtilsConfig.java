@@ -22,6 +22,8 @@ import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
+import net.emutils.client.emutils.gui.ui.UiCodeFont;
+import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.lang.reflect.Field;
@@ -74,6 +76,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MAX = 10;
 	public static final int HOTBAR_SLOT_MIN = 1;
 	public static final int HOTBAR_SLOT_MAX = 9;
+	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
+	public static final int UI_CODE_SIZE_MIN = 80;
+	public static final int UI_CODE_SIZE_MAX = 150;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	/** The names settings are saved under, to recognise an EMUtils config among other JSON. */
@@ -217,6 +222,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean settingsUiDark = Boolean.TRUE;
+	// How the menus look (#120). Shared by every profile, like the dark or light theme: see
+	// copyMenuSettingsFrom.
+	private Integer uiAccent = UI_ACCENT_DEFAULT;
+	private Boolean uiAccentFromProfile = Boolean.FALSE;
+	private String uiFont = UiFontFamily.NUNITO.name();
+	private String uiCodeFont = UiCodeFont.JETBRAINS_MONO.name();
+	private Integer uiCodeSize = 100;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
 	private Boolean packManagerReplaceResourcePacksButton = Boolean.FALSE;
 	private Boolean customCapes = Boolean.TRUE;
@@ -1416,6 +1428,78 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** The accent color picked for the menus, opaque. */
+	public int uiAccent() {
+		return uiAccent == null ? UI_ACCENT_DEFAULT : uiAccent | 0xFF000000;
+	}
+
+	public void setUiAccent(int argb) {
+		uiAccent = argb | 0xFF000000;
+		save();
+	}
+
+	/** Whether the active profile's color is the accent instead of {@link #uiAccent()}. */
+	public boolean uiAccentFromProfile() {
+		return uiAccentFromProfile != null && uiAccentFromProfile;
+	}
+
+	public void setUiAccentFromProfile(boolean fromProfile) {
+		uiAccentFromProfile = fromProfile;
+		save();
+	}
+
+	public UiFontFamily uiFont() {
+		return UiFontFamily.byName(uiFont);
+	}
+
+	public void setUiFont(UiFontFamily family) {
+		uiFont = family.name();
+		save();
+	}
+
+	public UiCodeFont uiCodeFont() {
+		return UiCodeFont.byName(uiCodeFont);
+	}
+
+	public void setUiCodeFont(UiCodeFont font) {
+		uiCodeFont = font.name();
+		save();
+	}
+
+	/** The code font's size, in percent of the normal size. */
+	public int uiCodeSize() {
+		return clamp(uiCodeSize == null ? 100 : uiCodeSize, UI_CODE_SIZE_MIN, UI_CODE_SIZE_MAX);
+	}
+
+	public void setUiCodeSize(int percent) {
+		uiCodeSize = clamp(percent, UI_CODE_SIZE_MIN, UI_CODE_SIZE_MAX);
+		save();
+	}
+
+	public void resetMenuSettings() {
+		settingsUiDark = Boolean.TRUE;
+		uiAccent = UI_ACCENT_DEFAULT;
+		uiAccentFromProfile = Boolean.FALSE;
+		uiFont = UiFontFamily.NUNITO.name();
+		uiCodeFont = UiCodeFont.JETBRAINS_MONO.name();
+		uiCodeSize = 100;
+		save();
+	}
+
+	/**
+	 * Takes over how the menus look from {@code other}: the theme, accent and fonts belong to the
+	 * player, not to a profile, so they carry over when profiles switch or a config is imported.
+	 */
+	public void copyMenuSettingsFrom(EMUtilsConfig other) {
+		settingsUiDark = other.settingsUiDark();
+		uiAccent = other.uiAccent();
+		uiAccentFromProfile = other.uiAccentFromProfile();
+		uiFont = other.uiFont().name();
+		uiCodeFont = other.uiCodeFont().name();
+		uiCodeSize = other.uiCodeSize();
+		save();
+	}
+
 	public boolean packManagerShowShadersWithoutIris() {
 		return packManagerShowShadersWithoutIris == null || packManagerShowShadersWithoutIris;
 	}
@@ -2481,6 +2565,21 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (settingsUiDark == null) {
 			settingsUiDark = Boolean.TRUE;
+		}
+		if (uiAccent == null) {
+			uiAccent = UI_ACCENT_DEFAULT;
+		}
+		if (uiAccentFromProfile == null) {
+			uiAccentFromProfile = Boolean.FALSE;
+		}
+		if (uiFont == null) {
+			uiFont = UiFontFamily.NUNITO.name();
+		}
+		if (uiCodeFont == null) {
+			uiCodeFont = UiCodeFont.JETBRAINS_MONO.name();
+		}
+		if (uiCodeSize == null) {
+			uiCodeSize = 100;
 		}
 		if (packManagerShowShadersWithoutIris == null) {
 			packManagerShowShadersWithoutIris = Boolean.TRUE;

@@ -1096,6 +1096,19 @@ public final class EMUtilsTexts {
     public static final String UI_PROFILE_SAVE_FAILED = "emutils.ui.profile.save_failed";
     public static final String UI_PROFILE_DUPLICATE_FAILED = "emutils.ui.profile.duplicate_failed";
 
+    public static final String UI_MENUS_TITLE = "emutils.ui.menus.title";
+    public static final String HUB_FEATURE_MENUS_DESC = "emutils.hub.feature.menus.desc";
+    public static final String UI_MENUS_BUTTON = "emutils.ui.menus.button";
+    public static final String UI_MENUS_THEME = "emutils.ui.menus.theme";
+    public static final String UI_MENUS_THEME_DARK = "emutils.ui.menus.theme.dark";
+    public static final String UI_MENUS_THEME_LIGHT = "emutils.ui.menus.theme.light";
+    public static final String UI_MENUS_ACCENT = "emutils.ui.menus.accent";
+    public static final String UI_MENUS_ACCENT_CUSTOM = "emutils.ui.menus.accent.custom";
+    public static final String UI_MENUS_ACCENT_FROM_PROFILE = "emutils.ui.menus.accent_from_profile";
+    public static final String UI_MENUS_FONT = "emutils.ui.menus.font";
+    public static final String UI_MENUS_CODE_FONT = "emutils.ui.menus.code_font";
+    public static final String UI_MENUS_CODE_SIZE = "emutils.ui.menus.code_size";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

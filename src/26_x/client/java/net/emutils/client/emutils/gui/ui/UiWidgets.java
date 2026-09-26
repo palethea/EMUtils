@@ -66,7 +66,7 @@ public final class UiWidgets {
 			case OUTLINE -> UiTheme.fade(theme.hover(), hover);
 		};
 		int text = switch (style) {
-			case PRIMARY -> 0xFFFFFFFF;
+			case PRIMARY -> theme.onAccent();
 			case GHOST -> theme.textSecondary();
 			case SURFACE -> theme.text();
 			case DANGER -> theme.warning();

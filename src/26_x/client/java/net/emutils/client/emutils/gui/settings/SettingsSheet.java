@@ -10,6 +10,7 @@ import net.emutils.client.emutils.gui.hub.HubSettingsRegistry;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiColorPicker;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiSheetFrame;
@@ -43,6 +44,9 @@ final class SettingsSheet {
 	private static final int LINE_HEIGHT = 11;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int SWATCH = 16;
+	/** The dots of a {@link HubSettingRow.Swatches} row and the gap between them. */
+	private static final int DOT = 14;
+	private static final int DOT_GAP = 8;
 	private static final int DROPDOWN_ROW = 16;
 	private static final int FADE_HEIGHT = 10;
 	/** Choices use a segmented control when they have at most this many options and fit on one line. */
@@ -241,6 +245,8 @@ final class SettingsSheet {
 					content += 7 + UiWidgets.SLIDER_HEIGHT;
 				} else if (row instanceof HubSettingRow.Cycle<?> cycle && usesSegments(cycle)) {
 					content += 7 + UiWidgets.SEGMENT_HEIGHT;
+				} else if (row instanceof HubSettingRow.Swatches) {
+					content += 7 + DOT + 2;
 				}
 			}
 			box.height = content + ROW_PADDING * 2;
@@ -335,6 +341,9 @@ final class SettingsSheet {
 		if (row instanceof HubSettingRow.Rgb rgb) {
 			return rgb.labelKey();
 		}
+		if (row instanceof HubSettingRow.Swatches swatches) {
+			return swatches.labelKey();
+		}
 		return null;
 	}
 
@@ -420,6 +429,8 @@ final class SettingsSheet {
 			UiWidgets.slider(context, theme, left, below, right - left, fraction, sliderHover ? 1.0F : 0.0F);
 		} else if (row instanceof HubSettingRow.Cycle<?> cycle) {
 			drawCycle(context, theme, box, cycle, left, right, labelCenter, below, mouseX, mouseY);
+		} else if (row instanceof HubSettingRow.Swatches swatches) {
+			drawSwatches(context, theme, box, swatches, left, below + 1, mouseX, mouseY);
 		} else if (row instanceof HubSettingRow.Rgb rgb) {
 			int swatchX = right - SWATCH;
 			int swatchY = labelCenter - SWATCH / 2;
@@ -429,6 +440,44 @@ final class SettingsSheet {
 			UiShapes.roundedRect(context, swatchX - 1, swatchY - 1, SWATCH + 2, SWATCH + 2, 5, theme.line());
 			UiShapes.roundedRect(context, swatchX, swatchY, SWATCH, SWATCH, 4, 0xFF000000 | rgb.getter().getAsInt());
 		}
+	}
+
+	/**
+	 * The preset dots, then one more for any other color: it shows that color, or a plus while a preset
+	 * is picked. The picked dot gets a ring in its own color.
+	 */
+	private void drawSwatches(GuiGraphicsExtractor context, UiTheme theme, RowBox box, HubSettingRow.Swatches swatches, int left, int top, int mouseX, int mouseY) {
+		boolean enabled = swatches.enabled().getAsBoolean();
+		float shown = anim.towards("swatches:" + swatches.labelKey(), enabled, 16.0F);
+		int current = swatches.getter().getAsInt() | 0xFF000000;
+		boolean custom = !swatches.presets().contains(current);
+		int count = swatches.presets().size() + 1;
+		box.swatchX = left + 2;
+		box.swatchY = top;
+		box.setControl(left, top - 3, count * (DOT + DOT_GAP), DOT + 6);
+		float opacity = UiOpacity.get();
+		UiOpacity.set(opacity * (0.35F + 0.65F * shown));
+		for (int i = 0; i < count; i++) {
+			int dotX = box.swatchX + i * (DOT + DOT_GAP);
+			boolean isCustom = i == count - 1;
+			int color = isCustom ? (custom ? current : theme.segmentBackground()) : swatches.presets().get(i);
+			boolean selected = isCustom ? custom : color == current;
+			boolean hovered = enabled && contains(mouseX, mouseY, dotX - 3, top - 3, DOT + 6, DOT + 6);
+			if (selected || hovered) {
+				// A ring around the dot, with the row's color between it and the dot.
+				UiShapes.circle(context, dotX - 2, top - 2, DOT + 4, selected ? color : theme.line());
+				UiShapes.circle(context, dotX - 1, top - 1, DOT + 2, theme.surfaceAlt());
+			}
+			UiShapes.circle(context, dotX, top, DOT, color);
+			if (isCustom && !custom) {
+				UiIcons.draw(context, HubIcons.PLUS, dotX + 3, top + 3, DOT - 6, theme.textSecondary());
+			}
+			if (isCustom) {
+				box.anchorX = dotX;
+				box.anchorY = top + DOT / 2;
+			}
+		}
+		UiOpacity.set(opacity);
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
@@ -603,6 +652,23 @@ final class SettingsSheet {
 			} else if (cycle.options() == null && contains(mouseX, mouseY, box.controlX, box.controlY, box.controlWidth, box.controlHeight)) {
 				cycle.setter().accept(cycle.next().get());
 			}
+		} else if (row instanceof HubSettingRow.Swatches swatches) {
+			if (!swatches.enabled().getAsBoolean()) {
+				return;
+			}
+			int count = swatches.presets().size() + 1;
+			for (int i = 0; i < count; i++) {
+				int dotX = box.swatchX + i * (DOT + DOT_GAP);
+				if (!contains(mouseX, mouseY, dotX - DOT_GAP / 2, box.swatchY - 4, DOT + DOT_GAP, DOT + 8)) {
+					continue;
+				}
+				if (i < swatches.presets().size()) {
+					swatches.setter().accept(swatches.presets().get(i));
+				} else {
+					colorPicker = new UiColorPicker(swatches.getter(), swatches.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
+				}
+				return;
+			}
 		} else if (row instanceof HubSettingRow.Rgb rgb) {
 			colorPicker = new UiColorPicker(rgb.getter(), rgb.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
 		} else if (row instanceof HubSettingRow.Action action) {
@@ -742,6 +808,9 @@ final class SettingsSheet {
 		private int anchorX;
 		private int anchorY;
 		private int @Nullable [] segmentEdges;
+		/** Where the first dot of a swatches row is. */
+		private int swatchX;
+		private int swatchY;
 
 		private RowBox(@Nullable HubSettingRow row, int top) {
 			this.row = row;

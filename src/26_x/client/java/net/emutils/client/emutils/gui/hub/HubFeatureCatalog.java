@@ -162,6 +162,7 @@ public final class HubFeatureCatalog {
 				true,
 				null
 			).keys("key.emutils.next_profile"),
+			categoryFeature("menus", HubCategory.MENUS, HubFeature.Group.MANAGEMENT, EMUtilsTexts.UI_MENUS_TITLE, EMUtilsTexts.HUB_FEATURE_MENUS_DESC, HubFeature.Icon.PALETTE, null),
 			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::chatFeaturesEnabled, config::setChatFeaturesEnabled)),
 			categoryFeature("inventory", HubCategory.INVENTORY, HubFeature.Group.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, HubFeature.Icon.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)).keys("key.emutils.slot_lock", "key.emutils.slot_bind", "key.emutils.quick_stack", "key.emutils.mass_drop"),
 			categoryFeature("auto_tool", HubCategory.AUTO_TOOL, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, HubFeature.Icon.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),

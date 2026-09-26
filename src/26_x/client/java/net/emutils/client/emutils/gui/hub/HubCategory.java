@@ -19,7 +19,8 @@ public enum HubCategory {
 	AUTO_TOOL(EMUtilsTexts.OPTION_AUTO_TOOL),
 	CAPES(EMUtilsTexts.HUB_CAPES),
 	INVENTORY(EMUtilsTexts.HUB_INVENTORY_TOOLS),
-	SPOTIFY(EMUtilsTexts.HUB_SPOTIFY_PLAYER);
+	SPOTIFY(EMUtilsTexts.HUB_SPOTIFY_PLAYER),
+	MENUS(EMUtilsTexts.UI_MENUS_TITLE);
 
 	private final String titleKey;
 

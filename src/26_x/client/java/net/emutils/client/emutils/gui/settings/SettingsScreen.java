@@ -76,7 +76,7 @@ public final class SettingsScreen extends UiPanelScreen {
 	private int controlX;
 	private int controlY;
 	private int controlWidth;
-	private int themeButtonX;
+	private int menusButtonX;
 	private int rightButtonsY;
 	private int titleY;
 	private boolean stackedHeader;
@@ -114,8 +114,8 @@ public final class SettingsScreen extends UiPanelScreen {
 		// When the header stacks, the tagline goes too, to leave room for the cards.
 		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
-		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
-		profileButtonX = themeButtonX - 6 - PROFILE_BUTTON_WIDTH;
+		menusButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
+		profileButtonX = menusButtonX - 6 - PROFILE_BUTTON_WIDTH;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
@@ -180,6 +180,8 @@ public final class SettingsScreen extends UiPanelScreen {
 		} else if (sheet == null && System.currentTimeMillis() < switchFailedUntil) {
 			Component failed = Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED);
 			UiWidgets.tooltip(context, font, theme, failed, profileButtonX + PROFILE_BUTTON_WIDTH / 2, rightButtonsY + ROUND_BUTTON + 2, width, height);
+		} else if (sheet == null && !closing() && contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_MENUS_BUTTON), mouseX, mouseY, width, height);
 		} else if (sheet == null && !closing() && contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
 			Component tip = Component.translatable(EMUtilsTexts.UI_PROFILE_BUTTON, EMUtilsClient.profiles().active().name());
 			UiWidgets.tooltip(context, font, theme, tip, mouseX, mouseY, width, height);
@@ -303,9 +305,9 @@ public final class SettingsScreen extends UiPanelScreen {
 		ProfileBadge.draw(context, EMUtilsClient.profiles().active(), profileButtonX + badgeOffset, rightButtonsY + badgeOffset, PROFILE_BADGE);
 		UiIcons.draw(context, HubIcons.CHEVRON_DOWN, profileButtonX + PROFILE_BUTTON_WIDTH - 13, rightButtonsY + (ROUND_BUTTON - 8) / 2, 8, theme.muted());
 
-		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
-		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
-		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness(), themeHover);
+		// The menu settings (#120): theme, accent and fonts.
+		float menusHover = anim.towards("menus-button", contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
+		UiWidgets.iconButton(context, theme, menusButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.PALETTE, menusHover);
 	}
 
 	private void drawCards(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -512,8 +514,8 @@ public final class SettingsScreen extends UiPanelScreen {
 			openProfileMenu();
 			return true;
 		}
-		if (contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
-			EMUtilsClient.config().setSettingsUiDark(UiTheme.current() != UiTheme.DARK);
+		if (contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			openMenuSettings();
 			return true;
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
@@ -574,18 +576,24 @@ public final class SettingsScreen extends UiPanelScreen {
 		scroll.reset();
 	}
 
+	/** Opens the menu settings (#120) in a sheet, as the palette button does. */
+	private void openMenuSettings() {
+		search.setFocused(false);
+		openSheet("menus");
+	}
+
 	/**
-	 * Left-clicks the dark/light button through {@link #mouseClicked}, with this version's left button
-	 * number; used by UI snapshots to catch clicks being dropped. Returns whether the theme switched.
+	 * Left-clicks the palette button through {@link #mouseClicked}, with this version's left button
+	 * number; used by UI snapshots to catch clicks being dropped. Returns whether the menu settings
+	 * opened, and closes them again.
 	 */
-	public boolean clickThemeButton() {
-		boolean dark = EMUtilsClient.config().settingsUiDark();
+	public boolean clickMenusButton() {
 		MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
-		mouseClicked(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left), false);
-		mouseReleased(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left));
-		boolean switched = EMUtilsClient.config().settingsUiDark() != dark;
-		EMUtilsClient.config().setSettingsUiDark(dark);
-		return switched;
+		mouseClicked(new MouseButtonEvent(menusButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left), false);
+		mouseReleased(new MouseButtonEvent(menusButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left));
+		boolean opened = sheet != null;
+		sheet = null;
+		return opened;
 	}
 
 	/** Opens the profile switcher's list; used by UI snapshots. */

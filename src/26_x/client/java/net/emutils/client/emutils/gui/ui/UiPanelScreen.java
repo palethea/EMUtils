@@ -37,6 +37,11 @@ public abstract class UiPanelScreen extends Screen {
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
 	private float lightness;
+	/** The accent crossfades from {@code accentFrom} to {@code accentTo}; 0 until the first frame. */
+	private int accentFrom;
+	private int accentTo;
+	/** {@link UiText#layoutVersion()} at the last layout; text widths change with the font (#120). */
+	private int textLayout;
 
 	protected UiPanelScreen(Component title, @Nullable Screen parent) {
 		super(title);
@@ -77,10 +82,26 @@ public abstract class UiPanelScreen extends Screen {
 		return (parent == null || closingToGame) && minecraft.level != null;
 	}
 
-	/** The current theme, crossfading for a moment after switching between dark and light. */
+	/**
+	 * The current theme, crossfading for a moment after switching between dark and light, or after the
+	 * accent color changes (#120), for example when the menus follow the profile and it switches.
+	 */
 	protected UiTheme theme() {
-		lightness = anim.transition("theme", UiTheme.current() == UiTheme.LIGHT, THEME_SECONDS);
-		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness);
+		lightness = anim.transition("theme", !UiTheme.dark(), THEME_SECONDS);
+		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness).withAccent(shownAccent(), lightness);
+	}
+
+	private int shownAccent() {
+		int target = UiTheme.accentColor();
+		if (accentTo == 0) {
+			accentFrom = target;
+			accentTo = target;
+		} else if (target != accentTo) {
+			accentFrom = UiTheme.mix(accentFrom, accentTo, anim.transition("accent", 1.0F, THEME_SECONDS, true));
+			accentTo = target;
+			anim.snap("accent", 0.0F);
+		}
+		return UiTheme.mix(accentFrom, accentTo, anim.transition("accent", 1.0F, THEME_SECONDS, true));
 	}
 
 	/**
@@ -128,6 +149,11 @@ public abstract class UiPanelScreen extends Screen {
 			UiBlur.set(fadesBlur() ? backgroundProgress() : 1.0F);
 		}
 		UiText.refreshFonts();
+		relayout();
+	}
+
+	private void relayout() {
+		textLayout = UiText.layoutVersion();
 		panelWidth = Math.min(maxPanelWidth(), width - MARGIN * 2);
 		panelHeight = Math.min(maxPanelHeight(), height - MARGIN * 2);
 		panelX = (width - panelWidth) / 2;
@@ -159,6 +185,9 @@ public abstract class UiPanelScreen extends Screen {
 
 	@Override
 	public final void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+		if (UiText.layoutVersion() != textLayout) {
+			relayout();
+		}
 		anim.frame();
 		beforeFrame();
 		UiTheme theme = theme();

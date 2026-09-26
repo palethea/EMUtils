@@ -286,7 +286,7 @@ public final class HudOverlayRenderer {
 
 	/** A dark shadow under the dark theme's light text, and a light one under the light theme's dark text. */
 	private static int shadowColor() {
-		return UiTheme.current() == UiTheme.LIGHT ? 0x99FFFFFF : 0x99000000;
+		return UiTheme.dark() ? 0x99000000 : 0x99FFFFFF;
 	}
 
 	/** One physical pixel, however the GUI and the element are scaled. */

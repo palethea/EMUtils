@@ -144,7 +144,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		float addHover = canAdd && addHovered ? 1.0F : 0.0F;
 		// Outside a world the button is greyed out, like Clear all with nothing to clear.
 		int addFill = canAdd ? UiTheme.mix(theme.accent(), theme.accentHover(), addHover) : theme.segmentBackground();
-		int addText = canAdd ? 0xFFFFFFFF : UiTheme.fade(theme.muted(), 0.6F);
+		int addText = canAdd ? theme.onAccent() : UiTheme.fade(theme.muted(), 0.6F);
 		UiShapes.roundedRect(context, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT, 8, addFill);
 		UiIcons.draw(context, HubIcons.PLUS, addX + 10, headerButtonsY + (HEADER_BUTTON_HEIGHT - iconSize) / 2, iconSize, addText);
 		UiText.drawCentered(context, font, add, UiText.Size.LABEL, addX + 10 + iconSize + 4, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, addText);

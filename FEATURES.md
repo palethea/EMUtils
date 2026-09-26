@@ -140,9 +140,15 @@ Save death and custom waypoints per world or server.
 
 ### Settings Hub
 
-Open the EMUtils settings from the pause menu, the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command. Every feature is a card with a short description, grouped by category, with search and a dark or light theme. A card's switch turns the feature on or off, Open opens its screen, and the rest of the card opens a sheet with its settings and keybinds. All EMUtils screens share this look.
+Open the EMUtils settings from the pause menu, the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command. Every feature is a card with a short description, grouped by category, with search. A card's switch turns the feature on or off, Open opens its screen, and the rest of the card opens a sheet with its settings and keybinds. All EMUtils screens share this look.
 
 - Mod Menu Integration: open the EMUtils settings from Mod Menu's config button when Mod Menu is installed.
+- Menu Settings: the palette button in the header, or the Menus card, sets how every EMUtils menu looks. Menu settings stay the same for every profile.
+  - Theme: dark or light.
+  - Accent Color: one of eight presets or any color, for buttons, switches and highlights. Text on a light accent turns dark so it stays readable.
+  - Use the Profile's Color: the accent follows the active profile's color, so you can see which profile you're on.
+  - Font: Nunito, Inter, Rubik, Figtree, or Minecraft's own font.
+  - Code Font: JetBrains Mono, Fira Code or Cascadia Code for scripts and shortcut commands, with a size from 80% to 150%.
 - `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the config through the clipboard.
 
 ### Screenshot Gallery
