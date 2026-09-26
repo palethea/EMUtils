@@ -262,7 +262,11 @@ public final class HudOverlayRenderer {
 		int centerY = rowY + ROW_HEIGHT / 2;
 		if (showIcons) {
 			if (shadow) {
-				UiIcons.draw(context, line.icon(), iconX, centerY - ICON_SIZE / 2 + 1, ICON_SIZE, shadowColor(theme));
+				float offset = shadowOffset();
+				context.pose().pushMatrix();
+				context.pose().translate(offset, offset);
+				UiIcons.draw(context, line.icon(), iconX, centerY - ICON_SIZE / 2, ICON_SIZE, shadowColor());
+				context.pose().popMatrix();
 			}
 			UiIcons.draw(context, line.icon(), iconX, centerY - ICON_SIZE / 2, ICON_SIZE, theme.muted());
 		}
@@ -272,7 +276,7 @@ public final class HudOverlayRenderer {
 		int valueTop = centerY - UiText.lineHeight(font, VALUE_SIZE) / 2;
 		if (shadow) {
 			float offset = shadowOffset();
-			int color = shadowColor(theme);
+			int color = shadowColor();
 			UiText.drawExact(context, font, label, LABEL_SIZE, textX + offset, labelTop + offset, color);
 			UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX + offset, valueTop + offset, color);
 		}
@@ -280,8 +284,8 @@ public final class HudOverlayRenderer {
 		UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX, valueTop, theme.text());
 	}
 
-	/** A dark shadow under light text and a light one under dark text. */
-	private static int shadowColor(UiTheme theme) {
+	/** A dark shadow under the dark theme's light text, and a light one under the light theme's dark text. */
+	private static int shadowColor() {
 		return UiTheme.current() == UiTheme.LIGHT ? 0x99FFFFFF : 0x99000000;
 	}
 
