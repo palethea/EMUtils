@@ -290,8 +290,9 @@ public final class MassDropItemsScreen extends UiPanelScreen {
 			}
 		}
 		int textWidth = right - textX;
-		UiText.draw(context, font, UiText.ellipsize(font, Component.literal(info.name()), UiText.Size.BODY, textWidth), UiText.Size.BODY, textX, y + 6, theme.text());
-		UiText.draw(context, font, UiText.ellipsize(font, Component.literal(info.id()), UiText.Size.SMALL, textWidth), UiText.Size.SMALL, textX, y + 19, theme.muted());
+		// The name in the bold list-title weight above its id, the two centered together in the row.
+		UiText.drawCentered(context, font, UiText.ellipsize(font, Component.literal(info.name()), UiText.Size.BOLD, textWidth), UiText.Size.BOLD, textX, center - 5, theme.text());
+		UiText.drawCentered(context, font, UiText.ellipsize(font, Component.literal(info.id()), UiText.Size.SMALL, textWidth), UiText.Size.SMALL, textX, center + 6, theme.muted());
 	}
 
 	@Override
