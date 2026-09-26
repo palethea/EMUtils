@@ -17,7 +17,7 @@ public abstract class AbstractHudLayoutElement implements HudLayoutElement {
 
 	protected static void renderScaled(GuiGraphicsExtractor context, int x, int y, float scale, Runnable drawUnscaled) {
 		context.pose().pushMatrix();
-		// Text and icons of the new UI are rasterized for the scale, so they stay sharp.
+		// Text and icons of the EMUtils UI are rasterized for the scale, so they stay sharp.
 		UiRasterScale.set(scale);
 		try {
 			context.pose().translate(x, y);

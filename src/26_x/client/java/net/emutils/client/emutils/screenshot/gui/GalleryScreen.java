@@ -37,7 +37,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Screenshot Gallery in the new UI (#106): a grid of the screenshots with their names and dates,
+ * The Screenshot Gallery (#106): a grid of the screenshots with their names and dates,
  * actions to copy, open, show in the folder and delete each one, and a large preview.
  */
 public final class GalleryScreen extends UiPanelScreen {

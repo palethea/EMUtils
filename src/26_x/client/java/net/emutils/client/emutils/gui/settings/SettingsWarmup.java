@@ -20,9 +20,9 @@ public final class SettingsWarmup {
 	private SettingsWarmup() {
 	}
 
-	/** Call every client tick; it prepares the screen when needed, once loading has finished, if the new UI is in use. */
+	/** Call every client tick; it prepares the screen when needed, once loading has finished. */
 	public static void tick(Minecraft client) {
-		if (client.gui.overlay() != null || EMUtilsClient.config() == null || !EMUtilsClient.config().settingsUiPreview()) {
+		if (client.gui.overlay() != null || EMUtilsClient.config() == null) {
 			return;
 		}
 		int scale = (int) Math.ceil(client.getWindow().getGuiScale());

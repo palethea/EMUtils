@@ -20,7 +20,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
- * The HUD Overlay (#93), in the look of the new UI: a rounded card in the settings UI's theme with
+ * The HUD Overlay (#93), in the look of the settings UI: a rounded card in the settings UI's theme with
  * smooth icons, labels in one column and values lined up in the next. Values change every tick, so
  * they are drawn from cached glyphs ({@link UiText#drawGlyphs}) rather than a texture per string.
  */

@@ -27,7 +27,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Command Shortcuts in the new UI (#131): each shortcut with its name, whether it runs a command or
+ * Command Shortcuts (#131): each shortcut with its name, whether it runs a command or
  * sends a message, the text itself and its keys, with buttons to run it now, edit or delete it, and a
  * right-click menu. Shortcuts are added and edited in a sheet over the list.
  */

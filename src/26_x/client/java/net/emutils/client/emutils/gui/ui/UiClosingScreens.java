@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
 /**
- * Screens of the new UI that were closed back into the game but are still fading out. The screen is
+ * EMUtils UI screens that were closed back into the game but are still fading out. The screen is
  * already gone, so the player can look around and move straight away, and its last fade is drawn on top
  * of the HUD instead.
  */

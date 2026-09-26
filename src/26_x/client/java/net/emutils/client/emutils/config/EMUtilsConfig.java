@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
-import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
@@ -193,7 +192,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean autoToolReturnToPreviousItem = Boolean.FALSE;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
-	private Boolean settingsUiPreview = Boolean.FALSE;
 	private Boolean settingsUiDark = Boolean.TRUE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
 	private Boolean packManagerReplaceResourcePacksButton = Boolean.FALSE;
@@ -1313,16 +1311,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	/** The new settings UI is only offered in dev builds until it is finished. */
-	public boolean settingsUiPreview() {
-		return EMUtilsBuild.isDev() && settingsUiPreview != null && settingsUiPreview;
-	}
-
-	public void setSettingsUiPreview(boolean enabled) {
-		settingsUiPreview = enabled;
-		save();
-	}
-
 	public boolean settingsUiDark() {
 		return settingsUiDark == null || settingsUiDark;
 	}
@@ -1852,15 +1840,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	public void resetManagerDefaults() {
-		commandShortcutsEnabled = Boolean.TRUE;
-		packManagerEnabled = Boolean.TRUE;
-		packManagerShowShadersWithoutIris = Boolean.TRUE;
-		packManagerReplaceResourcePacksButton = Boolean.FALSE;
-		packManagerSearchLimit = 20;
-		save();
-	}
-
 	public void resetHudDefaults() {
 		hudOverlay = Boolean.FALSE;
 		hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
@@ -2372,9 +2351,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (packManagerEnabled == null) {
 			packManagerEnabled = Boolean.TRUE;
-		}
-		if (settingsUiPreview == null) {
-			settingsUiPreview = Boolean.FALSE;
 		}
 		if (settingsUiDark == null) {
 			settingsUiDark = Boolean.TRUE;

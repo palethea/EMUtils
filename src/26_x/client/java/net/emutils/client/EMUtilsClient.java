@@ -11,23 +11,15 @@ import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
 import net.emutils.client.emutils.debug.UiSnapshotter;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
-import net.emutils.client.emutils.waypoint.gui.AddWaypointScreen;
-import net.emutils.client.emutils.waypoint.gui.WaypointListScreen;
-import net.emutils.client.emutils.waypoint.gui.WaypointScreens;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.emutils.client.emutils.food.FoodTooltipComponent;
 import net.emutils.client.emutils.food.FoodTooltipData;
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
-import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.settings.SettingsWarmup;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
-import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
-import net.emutils.client.emutils.minescript.gui.ScriptScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
-import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
-import net.emutils.client.emutils.screenshot.gui.ScreenshotGalleryScreen;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
@@ -313,31 +305,31 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static void handleKeyMappings(Minecraft client) {
 		while (openGalleryKeyMapping != null && openGalleryKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-			if (!(current instanceof ScreenshotGalleryScreen) && !(current instanceof GalleryScreen)) {
-				client.gui.setScreen(GalleryScreens.gallery(current));
+			if (!(current instanceof GalleryScreen)) {
+				client.gui.setScreen(new GalleryScreen(current));
 			}
 		}
 		while (openScriptManagerKeyMapping != null && openScriptManagerKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-			if (MinescriptCompat.isLoaded() && !(current instanceof ScriptManagerScreen) && !(current instanceof ScriptsScreen)) {
-				client.gui.setScreen(ScriptScreens.manager(current));
+			if (MinescriptCompat.isLoaded() && !(current instanceof ScriptsScreen)) {
+				client.gui.setScreen(new ScriptsScreen(current));
 			}
 		}
 		while (openSettingsHubKeyMapping != null && openSettingsHubKeyMapping.consumeClick()) {
-			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof CustomHubScreen)) {
-				client.gui.setScreen(SettingsScreens.hub(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+			if (!(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof SettingsScreen)) {
+				client.gui.setScreen(new SettingsScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			}
 		}
 		while (openWaypointsKeyMapping != null && openWaypointsKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-			if (!(current instanceof WaypointListScreen) && !(current instanceof WaypointsScreen)) {
-				client.gui.setScreen(WaypointScreens.list(current));
+			if (!(current instanceof WaypointsScreen)) {
+				client.gui.setScreen(new WaypointsScreen(current));
 			}
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-			if (!(current instanceof AddWaypointScreen) && !(current instanceof WaypointsScreen)) {
-				client.gui.setScreen(WaypointScreens.add(current));
+			if (!(current instanceof WaypointsScreen)) {
+				client.gui.setScreen(WaypointsScreen.addWaypoint(current));
 			}
 		}
 		while (openHudLayoutEditorKeyMapping != null && openHudLayoutEditorKeyMapping.consumeClick()) {

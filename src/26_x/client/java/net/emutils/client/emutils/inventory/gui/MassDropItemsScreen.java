@@ -34,7 +34,7 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Mass Drop list in the new UI (#134): the items the drop key throws out, each with how many you
+ * The Mass Drop list (#134): the items the drop key throws out, each with how many you
  * carry, and a search over every item to add or remove more. The Legit/Unfair mode and the drop key sit
  * in the header.
  */

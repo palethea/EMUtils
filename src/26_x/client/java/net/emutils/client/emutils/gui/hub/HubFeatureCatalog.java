@@ -6,17 +6,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutScreens;
+import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.minescript.gui.ScriptScreens;
-import net.emutils.client.emutils.packs.gui.PackScreens;
-import net.emutils.client.emutils.screenshot.gui.GalleryScreens;
+import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
+import net.emutils.client.emutils.packs.gui.PacksScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
-import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.emutils.client.emutils.waypoint.gui.WaypointScreens;
+import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -98,7 +97,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_SCREENSHOT_GALLERY_DESC,
 				HubFeature.Icon.IMAGE,
 				null,
-				openScreenAction(GalleryScreens::gallery),
+				openScreenAction(GalleryScreen::new),
 				true,
 				categoryReset(HubCategory.SCREENSHOT_GALLERY)
 			).keys("key.emutils.open_gallery"),
@@ -110,7 +109,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_CURRENT_WAYPOINTS_DESC,
 				HubFeature.Icon.PIN,
 				null,
-				openScreenAction(WaypointScreens::list),
+				openScreenAction(WaypointsScreen::new),
 				true,
 				null
 			).keys("key.emutils.open_waypoints"),
@@ -122,7 +121,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_PACK_MANAGER_DESC,
 				HubFeature.Icon.PACKAGE,
 				toggle(config::packManagerEnabled, config::setPackManagerEnabled),
-				openScreenAction(PackScreens::manager),
+				openScreenAction(PacksScreen::new),
 				true,
 				config::resetPackManagerDefaults
 			),
@@ -134,7 +133,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_SCRIPT_MANAGER_DESC,
 				HubFeature.Icon.SCRIPT,
 				null,
-				openScreenAction(ScriptScreens::manager),
+				openScreenAction(ScriptsScreen::new),
 				MinescriptCompat.isLoaded(),
 				null
 			).requiresMod("Minescript", MinescriptCompat.isLoaded()).keys("key.emutils.open_script_manager"),
@@ -146,7 +145,7 @@ public final class HubFeatureCatalog {
 				EMUtilsTexts.HUB_FEATURE_COMMAND_SHORTCUTS_DESC,
 				HubFeature.Icon.TOOL,
 				toggle(config::commandShortcutsEnabled, config::setCommandShortcutsEnabled),
-				openScreenAction(CommandShortcutScreens::list),
+				openScreenAction(CommandShortcutsScreen::new),
 				true,
 				config::resetCommandShortcutsDefaults
 			),
@@ -161,18 +160,6 @@ public final class HubFeatureCatalog {
 			leaf("place_below", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow), () -> config.setTweakPlaceBelow(false)).keys("key.emutils.place_below"),
 			leaf("locked_y_placement", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement), () -> config.setTweakLockedYPlacement(false)).keys("key.emutils.locked_y_placement")
 		));
-		if (EMUtilsBuild.isDev()) {
-			// Only dev builds can switch to the new settings UI while it is being built (#88).
-			features.add(leaf(
-				"settings_ui_preview",
-				HubFeature.Group.MANAGEMENT,
-				EMUtilsTexts.OPTION_SETTINGS_UI_PREVIEW,
-				EMUtilsTexts.HUB_FEATURE_SETTINGS_UI_PREVIEW_DESC,
-				HubFeature.Icon.SPARKLES,
-				toggle(config::settingsUiPreview, config::setSettingsUiPreview),
-				() -> config.setSettingsUiPreview(false)
-			));
-		}
 		return features;
 	}
 

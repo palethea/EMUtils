@@ -11,18 +11,13 @@ import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
-import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutScreens;
-import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.inventory.gui.MassDropScreens;
+import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
-import net.emutils.client.emutils.minescript.gui.ScriptManagerScreen;
-import net.emutils.client.emutils.packs.gui.PackManagerScreen;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public final class HubSettingsRegistry {
@@ -35,7 +30,6 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.AUTO_RECONNECT, HubSettingsRegistry::reconnectRows);
 		ROWS.put(HubCategory.SCREENSHOT, HubSettingsRegistry::screenshotRows);
 		ROWS.put(HubCategory.SCREENSHOT_GALLERY, HubSettingsRegistry::screenshotGalleryRows);
-		ROWS.put(HubCategory.MANAGERS, HubSettingsRegistry::managerRows);
 		ROWS.put(HubCategory.PACK_MANAGER, HubSettingsRegistry::packManagerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
@@ -70,7 +64,6 @@ public final class HubSettingsRegistry {
 			case AUTO_RECONNECT -> config::resetAutoReconnectDefaults;
 			case SCREENSHOT -> config::resetScreenshotHelperDefaults;
 			case SCREENSHOT_GALLERY -> config::resetScreenshotGalleryDefaults;
-			case MANAGERS -> config::resetManagerDefaults;
 			case PACK_MANAGER -> config::resetPackManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case FOOD_HUD -> config::resetFoodHudDefaults;
@@ -257,19 +250,6 @@ public final class HubSettingsRegistry {
 			config::screenshotGalleryMaxCount,
 			config::setScreenshotGalleryMaxCount
 		));
-		return rows;
-	}
-
-	private static List<HubSettingRow> managerRows(Runnable refresh) {
-		EMUtilsConfig config = config();
-		List<HubSettingRow> rows = new ArrayList<>();
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PACK_MANAGER, config::packManagerEnabled, config::setPackManagerEnabled));
-		rows.add(navRow(EMUtilsTexts.HUB_OPEN_PACK_MANAGER, PackManagerScreen::new));
-		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COMMAND_SHORTCUTS, config::commandShortcutsEnabled, config::setCommandShortcutsEnabled));
-		rows.add(navRow(EMUtilsTexts.HUB_OPEN_COMMAND_SHORTCUTS, CommandShortcutScreens::list));
-		rows.add(divider());
-		rows.add(navRow(EMUtilsTexts.HUB_OPEN_SCRIPT_MANAGER, ScriptManagerScreen::new, MinescriptCompat.isLoaded()));
 		return rows;
 	}
 
@@ -574,7 +554,7 @@ public final class HubSettingsRegistry {
 			Component.translatable("emutils.mass_drop.manage"),
 			() -> {
 				Minecraft client = Minecraft.getInstance();
-				client.gui.setScreen(MassDropScreens.list(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
+				client.gui.setScreen(new MassDropItemsScreen(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client)));
 			},
 			true
 		));
@@ -592,24 +572,6 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_OVERLAY, config::spotifyHudOverlay, config::setSpotifyHudOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SPOTIFY_HUD_SCROLL_TITLES, config::spotifyHudScrollTitles, config::setSpotifyHudScrollTitles));
 		return rows;
-	}
-
-	private static HubSettingRow navRow(String labelKey, Function<Screen, Screen> screenFactory) {
-		return navRow(labelKey, screenFactory, true);
-	}
-
-	private static HubSettingRow navRow(String labelKey, Function<Screen, Screen> screenFactory, boolean enabled) {
-		return new HubSettingRow.Action(
-			Component.translatable(labelKey),
-			() -> {
-				net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
-				if (client != null) {
-					Screen parent = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
-					client.gui.setScreen(screenFactory.apply(parent));
-				}
-			},
-			enabled
-		);
 	}
 
 	private static HubSettingRow divider() {

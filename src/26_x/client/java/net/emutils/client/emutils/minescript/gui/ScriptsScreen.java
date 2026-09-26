@@ -44,7 +44,7 @@ import net.minecraft.util.Util;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Script Manager in the new UI (#118): the Minescript folder as a tree on the left, and the selected
+ * The Script Manager (#118): the Minescript folder as a tree on the left, and the selected
  * script in an editor card on the right, with run, save, keybind, rename and delete. The tree has
  * right-click menus for scripts and folders, the editor finds text with Ctrl+F, and when a run fails the
  * footer says why and the editor marks the line (#125).
@@ -1404,7 +1404,7 @@ public final class ScriptsScreen extends UiPanelScreen {
 		return super.charTyped(input);
 	}
 
-	/** Asks before throwing away unsaved changes, like the classic screen. */
+	/** Asks before throwing away unsaved changes. */
 	@Override
 	public void onClose() {
 		if (dialogOpen()) {

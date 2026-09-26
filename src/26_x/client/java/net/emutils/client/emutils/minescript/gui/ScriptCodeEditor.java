@@ -18,8 +18,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 
 /**
- * The new UI's script editor (#118): the same editing as the classic one ({@link ScriptTextBuffer}),
- * set in JetBrains Mono so columns line up, with line numbers, syntax colors that follow the theme,
+ * The Script Manager's editor (#118): text editing through {@link ScriptTextBuffer}, set in
+ * JetBrains Mono so columns line up, with line numbers, syntax colors that follow the theme,
  * smooth scrolling and a blinking caret. The screen owns it, places it and passes it input.
  */
 final class ScriptCodeEditor {
