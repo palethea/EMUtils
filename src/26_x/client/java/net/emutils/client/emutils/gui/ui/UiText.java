@@ -205,6 +205,54 @@ public final class UiText {
 	}
 
 	/**
+	 * Draws text that changes often, such as HUD values, from cached single characters instead of one
+	 * texture per string, with the top of its capitals at {@code top}. Without kerning, so best for
+	 * numbers and short values.
+	 */
+	public static void drawGlyphs(GuiGraphicsExtractor context, Font font, String text, Size size, float x, float top, int color) {
+		if (!freeType()) {
+			drawAt(context, font, Component.literal(text), size, Math.round(x), top - capTop(size), color);
+			return;
+		}
+		float scale = guiScale() * UiRasterScale.get();
+		float pixelSize = size.em * scale;
+		int capPixels = Math.round(size.em * size.weight.capHeight() * scale);
+		int baseline = Math.round(top * scale) + capPixels;
+		float pen = Math.round(x * scale);
+		int tint = UiOpacity.apply(color);
+		context.pose().pushMatrix();
+		context.pose().scale(1.0F / scale, 1.0F / scale);
+		for (int i = 0; i < text.length(); ) {
+			int codepoint = text.codePointAt(i);
+			i += Character.charCount(codepoint);
+			UiFontRenderer.Glyph glyph = UiFontRenderer.glyph(size.weight, pixelSize, codepoint);
+			UiFontRenderer.Rendered rendered = glyph.rendered();
+			if (codepoint != ' ') {
+				int left = Math.round(pen) - rendered.left();
+				context.blit(RenderPipelines.GUI_TEXTURED, rendered.texture(), left, baseline - rendered.baseline(), 0.0F, 0.0F, rendered.width(), rendered.height(), rendered.width(), rendered.height(), rendered.width(), rendered.height(), tint);
+			}
+			pen += glyph.advance();
+		}
+		context.pose().popMatrix();
+	}
+
+	/** Width of {@link #drawGlyphs} text. */
+	public static int glyphsWidth(Font font, String text, Size size) {
+		if (!freeType()) {
+			return width(font, Component.literal(text), size);
+		}
+		float scale = guiScale() * UiRasterScale.get();
+		float pixelSize = size.em * scale;
+		float pen = 0.0F;
+		for (int i = 0; i < text.length(); ) {
+			int codepoint = text.codePointAt(i);
+			i += Character.charCount(codepoint);
+			pen += UiFontRenderer.glyph(size.weight, pixelSize, codepoint).advance();
+		}
+		return (int) Math.ceil(pen / scale);
+	}
+
+	/**
 	 * Renders {@code text} ahead of time so drawing it later does not stall a frame, for example before
 	 * an animation starts.
 	 */

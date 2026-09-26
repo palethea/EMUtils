@@ -69,7 +69,7 @@ Show third-party player capes from supported providers.
 
 ### HUD Overlay
 
-Show a configurable info panel with icons and useful world or client stats.
+Show a configurable info panel with icons and useful world or client stats, as a rounded card in the settings UI's dark or light theme with values lined up in a column. Below 50% background opacity the text gets a soft shadow, so it stays readable over the world.
 
 - HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element.
 - Show Icons: show icons beside overlay values.
