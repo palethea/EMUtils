@@ -641,6 +641,13 @@ public final class SettingsScreen extends UiPanelScreen {
 		}
 	}
 
+	/** Opens tab {@code index} of the open sheet; used by UI snapshots. */
+	public void selectSheetSectionForSnapshot(int index) {
+		if (sheet != null) {
+			sheet.selectSection(index);
+		}
+	}
+
 	/** Opens the color picker in the open sheet; used by UI snapshots. */
 	public void openColorPickerInSheet() {
 		if (sheet != null) {

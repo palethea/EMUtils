@@ -63,6 +63,10 @@ final class SettingsSheet {
 	private final UiSheetFrame frame;
 	private @Nullable Dropdown dropdown;
 	private HubSettingRow.@Nullable Slider draggingSlider;
+	/** The open tab, for rows split into sections (#149). */
+	private int section;
+	private int @Nullable [] sectionEdges;
+	private int sectionsY;
 	private int draggingX;
 	private int draggingWidth;
 	private float draggingFraction;
@@ -106,6 +110,15 @@ final class SettingsSheet {
 		return frame.isClosed();
 	}
 
+	/** Opens the tab of section {@code index}, at its top. */
+	void selectSection(int index) {
+		if (index != section) {
+			section = index;
+			scroll.reset();
+			dropdown = null;
+		}
+	}
+
 	void close() {
 		frame.close();
 		dropdown = null;
@@ -143,21 +156,37 @@ final class SettingsSheet {
 	private void layout(int panelX, int panelY, int panelWidth, int panelHeight) {
 		width = Math.min(MAX_WIDTH, panelWidth - 32);
 		int contentWidth = width - PADDING * 2;
-		measureRows(contentWidth);
-		int contentHeight = 0;
-		for (RowBox box : boxes) {
-			contentHeight = Math.max(contentHeight, box.top + box.height);
+		// With tabs, the sheet is as tall as its tallest tab, so it doesn't jump when switching them.
+		int tallest = 0;
+		int open = section;
+		int sections = Math.max(1, sectionLabels().size());
+		for (int i = 0; i < sections; i++) {
+			section = sections > 1 ? i : open;
+			measureRows(contentWidth);
+			tallest = Math.max(tallest, measuredHeight());
 		}
+		section = open;
+		measureRows(contentWidth);
+		int contentHeight = measuredHeight();
 		int headerHeight = headerHeight(contentWidth);
 		int footerHeight = BUTTON_HEIGHT + PADDING;
 		int maxHeight = panelHeight - 24;
-		height = Math.min(maxHeight, PADDING + headerHeight + 10 + Math.max(contentHeight, 18) + FADE_HEIGHT + 8 + footerHeight);
+		height = Math.min(maxHeight, PADDING + headerHeight + 10 + Math.max(tallest, 18) + FADE_HEIGHT + 8 + footerHeight);
 		x = panelX + (panelWidth - width) / 2;
 		y = panelY + (panelHeight - height) / 2;
 		footerY = y + height - PADDING - BUTTON_HEIGHT;
 		int listTop = y + PADDING + headerHeight + 10 - FADE_HEIGHT / 2;
 		scroll.setBounds(x + PADDING, listTop, contentWidth + UiScrollArea.GUTTER, footerY - 8 - listTop);
 		scroll.setContentHeight(contentHeight + FADE_HEIGHT);
+	}
+
+	/** How tall the rows measured last are. */
+	private int measuredHeight() {
+		int height = 0;
+		for (RowBox box : boxes) {
+			height = Math.max(height, box.top + box.height);
+		}
+		return height;
 	}
 
 	private void prepareText() {
@@ -188,7 +217,8 @@ final class SettingsSheet {
 	private int headerHeight(int contentWidth) {
 		int titleBlock = UiText.lineHeight(font, UiText.Size.HEADING) + 5 + UiText.lineHeight(font, UiText.Size.BODY);
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, contentWidth);
-		return titleBlock + 12 + description.size() * UiText.lineSpacing();
+		int tabs = sectionLabels().isEmpty() ? 0 : 8 + UiWidgets.SEGMENT_HEIGHT;
+		return titleBlock + 12 + description.size() * UiText.lineSpacing() + tabs;
 	}
 
 	private void drawHeader(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -212,15 +242,58 @@ final class SettingsSheet {
 		for (int i = 0; i < description.size(); i++) {
 			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * UiText.lineSpacing(), theme.textSecondary());
 		}
+
+		// Tabs for rows split into sections, such as the menu settings (#149).
+		List<Component> sections = sectionLabels();
+		if (!sections.isEmpty()) {
+			sectionsY = descriptionTop + description.size() * UiText.lineSpacing() + 8;
+			int hovered = -1;
+			int[] edges = UiWidgets.segmentEdges(font, left, sections);
+			for (int i = 0; i < sections.size(); i++) {
+				if (contains(mouseX, mouseY, edges[i], sectionsY, edges[i + 1] - edges[i], UiWidgets.SEGMENT_HEIGHT)) {
+					hovered = i;
+				}
+			}
+			float selection = anim.transition("sheet-section:" + feature.id(), section, 0.18F);
+			sectionEdges = UiWidgets.segmented(context, font, theme, left, sectionsY, sections, selection, hovered);
+		}
 	}
 
 	// ---- rows -----------------------------------------------------------------------------------
+
+	/** The section names, or an empty list when the rows aren't split into sections. */
+	private List<Component> sectionLabels() {
+		List<Component> labels = new ArrayList<>();
+		for (HubSettingRow row : rows) {
+			if (row instanceof HubSettingRow.Section header) {
+				labels.add(Component.translatable(header.labelKey()));
+			}
+		}
+		return labels;
+	}
+
+	/** The rows of the open section, or every row without sections. */
+	private List<HubSettingRow> visibleRows() {
+		if (sectionLabels().isEmpty()) {
+			return rows;
+		}
+		List<HubSettingRow> visible = new ArrayList<>();
+		int index = -1;
+		for (HubSettingRow row : rows) {
+			if (row instanceof HubSettingRow.Section) {
+				index++;
+			} else if (index == section) {
+				visible.add(row);
+			}
+		}
+		return visible;
+	}
 
 	private void measureRows(int contentWidth) {
 		boxes.clear();
 		rowContentWidth = contentWidth - ROW_PADDING * 2;
 		int top = FADE_HEIGHT / 2;
-		for (HubSettingRow row : rows) {
+		for (HubSettingRow row : visibleRows()) {
 			if (row instanceof HubSettingRow.Divider) {
 				top += 8;
 				continue;
@@ -604,6 +677,14 @@ final class SettingsSheet {
 			feature.resetAction().run();
 			rowsDirty = true;
 			return true;
+		}
+		if (sectionEdges != null) {
+			for (int i = 0; i + 1 < sectionEdges.length; i++) {
+				if (contains(mouseX, mouseY, sectionEdges[i], sectionsY, sectionEdges[i + 1] - sectionEdges[i], UiWidgets.SEGMENT_HEIGHT)) {
+					selectSection(i);
+					return true;
+				}
+			}
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
 			return true;

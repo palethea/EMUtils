@@ -836,7 +836,7 @@
   "emutils.ui.profile.save_failed": "Couldn’t save the new profile. Try again in a moment.",
   "emutils.ui.profile.duplicate_failed": "Couldn’t copy %s: its settings couldn’t be read or saved.",
   "emutils.ui.menus.title": "Menus",
-  "emutils.hub.feature.menus.desc": "Theme, accent color and fonts of these menus.",
+  "emutils.hub.feature.menus.desc": "How these menus look: colors, fonts, layout and effects.",
   "emutils.ui.menus.button": "Menu look",
   "emutils.ui.menus.theme": "Theme",
   "emutils.ui.menus.theme.dark": "Dark",
@@ -874,6 +874,10 @@
   "emutils.ui.menus.compact_cards.desc": "Smaller cards without descriptions, more to a row.",
   "emutils.ui.menus.category_colors.desc": "The colored dots next to category names.",
   "emutils.ui.menus.high_contrast.desc": "Stronger secondary text, borders and dividers.",
+  "emutils.ui.menus.section.colors": "Colors",
+  "emutils.ui.menus.section.fonts": "Fonts",
+  "emutils.ui.menus.section.layout": "Layout",
+  "emutils.ui.menus.section.effects": "Effects",
   "key.emutils.next_profile": "Switch to Next Profile",
   "key.emutils.debug_dump_gui": "DEBUG Dump Open GUI"
 }

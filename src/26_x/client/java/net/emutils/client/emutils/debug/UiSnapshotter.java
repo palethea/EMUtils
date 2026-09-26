@@ -1394,20 +1394,43 @@ public final class UiSnapshotter {
 				EMUtilsClient.config().setUiMotion(UiMotion.NORMAL);
 				next();
 			}
+			// The menu settings' tabs (#149).
 			case 252 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetMenuSettings();
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("menus");
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 20, "menu settings, Fonts tab");
+			}
+			case 253 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 15, "menu settings, Layout tab");
+			}
+			case 254 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.selectSheetSectionForSnapshot(3);
+				}
+				captureAfter(client, 15, "menu settings, Effects tab");
+			}
+			case 255 -> {
 				deleteTestScripts();
 				EMUtilsClient.config().resetMenuSettings();
 				client.gui.setScreen(null);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 253 -> {
+			case 256 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 254 -> {
+			case 257 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1416,7 +1439,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 255 -> {
+			case 258 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
-public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Swatches, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider {
+public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Swatches, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider, HubSettingRow.Section {
 	record Toggle(String labelKey, BooleanSupplier getter, Consumer<Boolean> setter) implements HubSettingRow {
 	}
 
@@ -88,5 +88,12 @@ public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRo
 	}
 
 	record Divider() implements HubSettingRow {
+	}
+
+	/**
+	 * Starts a section: the rows after it, up to the next section, are one tab of the settings sheet.
+	 * A sheet whose rows start with sections shows tabs instead of one long list (#149).
+	 */
+	record Section(String labelKey) implements HubSettingRow {
 	}
 }

@@ -1119,6 +1119,11 @@ public final class EMUtilsTexts {
     public static final String UI_MENUS_CATEGORY_COLORS = "emutils.ui.menus.category_colors";
     public static final String UI_MENUS_HIGH_CONTRAST = "emutils.ui.menus.high_contrast";
 
+    public static final String UI_MENUS_SECTION_COLORS = "emutils.ui.menus.section.colors";
+    public static final String UI_MENUS_SECTION_FONTS = "emutils.ui.menus.section.fonts";
+    public static final String UI_MENUS_SECTION_LAYOUT = "emutils.ui.menus.section.layout";
+    public static final String UI_MENUS_SECTION_EFFECTS = "emutils.ui.menus.section.effects";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {
