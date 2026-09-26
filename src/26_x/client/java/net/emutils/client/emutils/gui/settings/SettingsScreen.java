@@ -392,8 +392,8 @@ public final class SettingsScreen extends UiPanelScreen {
 	}
 
 	/**
-	 * The feature's name without the trailing "..." some feature names carry to mark
-	 * a submenu; here every card opens its settings the same way.
+	 * The feature's name without a trailing "...", which some names carry to mark a submenu; here every
+	 * card opens its settings the same way.
 	 */
 	static Component title(HubFeature feature) {
 		String name = feature.title().getString().strip();
