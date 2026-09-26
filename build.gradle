@@ -236,6 +236,11 @@ tasks.matching { it.name == "runClient" }.configureEach {
 			// Skips to that step, for checking only the newest snapshots.
 			jvmArgs "-Demutils.uiSnapshotFrom=${snapshotFrom}"
 		}
+		def snapshotTo = findProperty("emutilsUiSnapshotTo")
+		if (snapshotTo != null) {
+			// Stops after that step, so a range of steps checks only a few screens.
+			jvmArgs "-Demutils.uiSnapshotTo=${snapshotTo}"
+		}
 	}
 }
 

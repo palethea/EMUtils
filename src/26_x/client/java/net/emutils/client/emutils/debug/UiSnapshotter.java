@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
@@ -71,7 +72,13 @@ import org.jspecify.annotations.Nullable;
  * Development aid: with {@code -Demutils.uiSnapshot=true} (Gradle property {@code emutilsUiSnapshot}),
  * the client enters a test world, opens the new settings screen, saves screenshots of it at GUI
  * scales 3 (dark and light), 2, 1 and 4, then a few settings sheets and the color picker at each
- * scale, closes the screen, and quits. Screenshots land in the run directory.
+ * scale, closes the screen, and quits. Screenshots land in the run directory's {@code screenshots}
+ * folder, named after their step and label (for example {@code 151-mass-drop-list-with-items.png}),
+ * so a rerun replaces the old ones.
+ *
+ * <p>To check only a few screens, run a range of steps with {@code emutilsUiSnapshotFrom} and
+ * {@code emutilsUiSnapshotTo} (both inclusive). Include the section's setup and cleanup steps, since
+ * the run stops right after the last one.
  */
 public final class UiSnapshotter {
 	private static final String ENABLED_PROPERTY = "emutils.uiSnapshot";
@@ -81,6 +88,8 @@ public final class UiSnapshotter {
 	private static int worldTicks;
 	/** {@code -Demutils.uiSnapshotFrom=N} (Gradle property {@code emutilsUiSnapshotFrom}) starts at step N. */
 	private static int step = Integer.getInteger("emutils.uiSnapshotFrom", 0);
+	/** {@code -Demutils.uiSnapshotTo=N} (Gradle property {@code emutilsUiSnapshotTo}) stops after step N. */
+	private static final int LAST_STEP = Integer.getInteger("emutils.uiSnapshotTo", Integer.MAX_VALUE);
 	private static int stepTicks;
 	/** The screenshots the gallery showed the first time it opened. */
 	private static List<Path> galleryShown = List.of();
@@ -103,7 +112,14 @@ public final class UiSnapshotter {
 		if (worldTicks < 40) {
 			return;
 		}
+		if (worldTicks == 40) {
+			clearOldSnapshots(client);
+		}
 		stepTicks++;
+		if (step > LAST_STEP) {
+			finish(client);
+			return;
+		}
 		switch (step) {
 			case 0 -> setup(client, 3, true);
 			case 1 -> capture(client, "gui scale 3, dark");
@@ -221,7 +237,8 @@ public final class UiSnapshotter {
 				// The screenshot taken of the open gallery shows up in it without reopening.
 				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
 					List<Path> listed = screen.screenshotsForSnapshot();
-					if (listed.size() > galleryShown.size() && listed.containsAll(galleryShown)) {
+					// Compares files, not counts: the gallery lists at most its newest 200.
+					if (listed.stream().anyMatch(file -> !galleryShown.contains(file))) {
 						EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: an open gallery lists a new screenshot ({} -> {})", galleryShown.size(), listed.size());
 					} else {
 						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: an open gallery didn't list the new screenshot ({} -> {})", galleryShown.size(), listed.size());
@@ -290,8 +307,7 @@ public final class UiSnapshotter {
 			}
 			case 65 -> {
 				if (stepTicks == 50) {
-					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: packs with the test pack installed");
-					Screenshot.grab(client, false);
+					grab(client, "packs with the test pack installed");
 				}
 				if (stepTicks >= 60) {
 					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: enable test pack: {}", ResourcePackController.setResourcePackEnabled(client, TEST_PACK, true, TEST_PACK_ICON).message());
@@ -1446,11 +1462,7 @@ public final class UiSnapshotter {
 				}
 				capture(client, "waypoints, not in a world");
 			}
-			default -> {
-				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
-				enabled = false;
-				client.stop();
-			}
+			default -> finish(client);
 		}
 	}
 
@@ -1923,9 +1935,49 @@ public final class UiSnapshotter {
 		if (stepTicks < ticks) {
 			return;
 		}
-		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {}", label);
-		Screenshot.grab(client, false);
+		grab(client, label);
 		next();
+	}
+
+	/** Saves a screenshot named after the step and {@code label}, replacing one from an earlier run. */
+	private static void grab(Minecraft client, String label) {
+		String slug = label.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+		String name = String.format(Locale.ROOT, "%03d-%s.png", step, slug);
+		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {} ({})", label, name);
+		Screenshot.grab(client.gameDirectory, name, client.gameRenderer.mainRenderTarget(), 1, message -> {
+		});
+	}
+
+	/**
+	 * Deletes this range's screenshots from earlier runs, so each screen is taken fresh: the gallery
+	 * check needs its screenshot to be new, not a file it already listed.
+	 */
+	private static void clearOldSnapshots(Minecraft client) {
+		int first = step;
+		Path folder = client.gameDirectory.toPath().resolve("screenshots");
+		if (!Files.isDirectory(folder)) {
+			return;
+		}
+		try (Stream<Path> files = Files.list(folder)) {
+			for (Path file : files.toList()) {
+				String name = file.getFileName().toString();
+				if (!name.matches("\\d{3}-.*\\.png")) {
+					continue;
+				}
+				int fileStep = Integer.parseInt(name.substring(0, 3));
+				if (fileStep >= first && fileStep <= LAST_STEP) {
+					Files.deleteIfExists(file);
+				}
+			}
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot: couldn't clear old screenshots", exception);
+		}
+	}
+
+	private static void finish(Minecraft client) {
+		EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
+		enabled = false;
+		client.stop();
 	}
 
 	/** Presses the Options screen's Resource Packs button with Enter, which runs its real press handler. */
