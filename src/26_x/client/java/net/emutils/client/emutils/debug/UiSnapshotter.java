@@ -112,6 +112,9 @@ public final class UiSnapshotter {
 		if (worldTicks < 40) {
 			return;
 		}
+		if (worldTicks == 40) {
+			clearOldSnapshots(client);
+		}
 		stepTicks++;
 		if (step > LAST_STEP) {
 			finish(client);
@@ -234,7 +237,8 @@ public final class UiSnapshotter {
 				// The screenshot taken of the open gallery shows up in it without reopening.
 				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
 					List<Path> listed = screen.screenshotsForSnapshot();
-					if (listed.size() > galleryShown.size() && listed.containsAll(galleryShown)) {
+					// Compares files, not counts: the gallery lists at most its newest 200.
+					if (listed.stream().anyMatch(file -> !galleryShown.contains(file))) {
 						EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: an open gallery lists a new screenshot ({} -> {})", galleryShown.size(), listed.size());
 					} else {
 						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: an open gallery didn't list the new screenshot ({} -> {})", galleryShown.size(), listed.size());
@@ -1942,6 +1946,32 @@ public final class UiSnapshotter {
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {} ({})", label, name);
 		Screenshot.grab(client.gameDirectory, name, client.gameRenderer.mainRenderTarget(), 1, message -> {
 		});
+	}
+
+	/**
+	 * Deletes this range's screenshots from earlier runs, so each screen is taken fresh: the gallery
+	 * check needs its screenshot to be new, not a file it already listed.
+	 */
+	private static void clearOldSnapshots(Minecraft client) {
+		int first = step;
+		Path folder = client.gameDirectory.toPath().resolve("screenshots");
+		if (!Files.isDirectory(folder)) {
+			return;
+		}
+		try (Stream<Path> files = Files.list(folder)) {
+			for (Path file : files.toList()) {
+				String name = file.getFileName().toString();
+				if (!name.matches("\\d{3}-.*\\.png")) {
+					continue;
+				}
+				int fileStep = Integer.parseInt(name.substring(0, 3));
+				if (fileStep >= first && fileStep <= LAST_STEP) {
+					Files.deleteIfExists(file);
+				}
+			}
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot: couldn't clear old screenshots", exception);
+		}
 	}
 
 	private static void finish(Minecraft client) {
