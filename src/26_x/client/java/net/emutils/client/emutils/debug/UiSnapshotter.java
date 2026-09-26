@@ -72,6 +72,7 @@ public final class UiSnapshotter {
 	private static List<Path> galleryShown = List.of();
 	private static long configModifiedBefore;
 	private static boolean configCheckPending;
+	private static boolean leftWorld;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 
@@ -79,7 +80,8 @@ public final class UiSnapshotter {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!enabled || client.level == null || client.player == null) {
+		// The last steps leave the world on purpose, to check screens opened from the title screen.
+		if (!enabled || !leftWorld && (client.level == null || client.player == null)) {
 			return;
 		}
 
@@ -1007,6 +1009,29 @@ public final class UiSnapshotter {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 				}
 				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 195 -> {
+				SmokeLaunchVerifier.stopEnteringTestWorld();
+				leftWorld = true;
+				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
+				next();
+			}
+			case 196 -> {
+				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
+					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
+					next();
+				} else if (stepTicks > 400) {
+					check(false, "left the world for the outside-a-world snapshots");
+					next();
+				}
+			}
+			case 197 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					screen.openAddSheetForSnapshot();
+					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
+				}
+				capture(client, "waypoints, not in a world");
 			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");

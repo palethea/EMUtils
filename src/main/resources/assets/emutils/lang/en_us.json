@@ -400,6 +400,8 @@
   "emutils.ui.waypoint.beacon": "Beacon",
   "emutils.ui.waypoint.beacon.desc": "A beam of light that shows the way from far off.",
   "emutils.ui.waypoint.needs_world": "Join a world to add waypoints.",
+  "emutils.ui.waypoint.no_world_title": "Not in a world",
+  "emutils.ui.waypoint.no_world": "Waypoints belong to a world. Join a world or server to see and add them.",
   "emutils.ui.waypoint.turned_off": "Turn on Waypoints to add them.",
   "emutils.ui.waypoint.save_failed": "Couldn't save the waypoint. See the log.",
   "emutils.ui.waypoint.use_my_position": "Use my position",
