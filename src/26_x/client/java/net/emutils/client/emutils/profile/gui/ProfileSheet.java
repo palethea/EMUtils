@@ -115,7 +115,7 @@ final class ProfileSheet {
 	void close() {
 		if (!frame.closing()) {
 			focus(null);
-			picker = null;
+			closePicker();
 			frame.close();
 		}
 	}
@@ -163,7 +163,6 @@ final class ProfileSheet {
 			list.add(address);
 		}
 		servers.setText(String.join(", ", list));
-		focus(null);
 	}
 
 	private boolean hasServer(String address) {
@@ -172,8 +171,14 @@ final class ProfileSheet {
 
 	private void openPicker() {
 		focus(null);
-		int fieldX = autoX;
-		picker = new ServerPicker(font, anim, fieldX, serversY + FIELD_HEIGHT, serversY, autoWidth, this::hasServer, this::toggleServer);
+		picker = new ServerPicker(font, anim, this::hasServer, this::toggleServer);
+	}
+
+	private void closePicker() {
+		if (picker != null) {
+			picker.close();
+			picker = null;
+		}
 	}
 
 	/** What's wrong with the form or what saving takes away from another profile, or null. */
@@ -345,7 +350,7 @@ final class ProfileSheet {
 		UiWidgets.button(context, font, theme, saveX, footerY, saveWidth, BUTTON_HEIGHT, saveLabel, valid ? UiWidgets.ButtonStyle.PRIMARY : UiWidgets.ButtonStyle.SURFACE, valid && contains(hoverX, hoverY, saveX, footerY, saveWidth, BUTTON_HEIGHT) ? 1.0F : 0.0F);
 		frame.endBody(context);
 		if (picker != null) {
-			picker.render(context, theme, mouseX, mouseY, screenHeight);
+			picker.render(context, theme, mouseX, mouseY, autoX, serversY, serversY + FIELD_HEIGHT, autoWidth, screenHeight);
 			if (picker.isClosed()) {
 				picker = null;
 			}
@@ -516,7 +521,7 @@ final class ProfileSheet {
 
 	void mouseScrolled(double mouseX, double mouseY, double amount) {
 		if (picker != null && !picker.mouseScrolled(mouseX, mouseY, amount)) {
-			picker = null;
+			closePicker();
 		}
 	}
 
@@ -525,7 +530,9 @@ final class ProfileSheet {
 			return;
 		}
 		if (picker != null) {
-			if (input.isEscape()) {
+			// Typing filters the server list; Esc clears the filter, then closes the list.
+			picker.keyPressed(input);
+			if (picker.isClosed()) {
 				picker = null;
 			}
 			return;
@@ -552,7 +559,11 @@ final class ProfileSheet {
 	}
 
 	void charTyped(CharacterEvent input) {
-		if (frame.closing() || picker != null) {
+		if (frame.closing()) {
+			return;
+		}
+		if (picker != null) {
+			picker.charTyped(input);
 			return;
 		}
 		if (!name.charTyped(input, () -> {
@@ -578,6 +589,11 @@ final class ProfileSheet {
 			toggleServer(first);
 		}
 		return first;
+	}
+
+	/** Whether the server list is open; used by UI snapshots. */
+	@Nullable ServerPicker pickerForSnapshot() {
+		return picker;
 	}
 
 	/** Saves as the Add or Save button would; used by UI snapshots. */

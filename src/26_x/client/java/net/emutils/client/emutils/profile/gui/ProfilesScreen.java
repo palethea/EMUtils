@@ -518,6 +518,27 @@ public final class ProfilesScreen extends UiPanelScreen {
 		return sheet == null ? 0 : sheet.bottomForSnapshot();
 	}
 
+	/** How many servers the open server list shows; -1 when it isn't open. Used by UI snapshots. */
+	public int pickerCountForSnapshot() {
+		ServerPicker picker = sheet == null ? null : sheet.pickerForSnapshot();
+		return picker == null ? -1 : picker.visibleCountForSnapshot();
+	}
+
+	public @Nullable String pickerFirstForSnapshot() {
+		ServerPicker picker = sheet == null ? null : sheet.pickerForSnapshot();
+		return picker == null ? null : picker.firstAddressForSnapshot();
+	}
+
+	public boolean pickerScrollToEndForSnapshot() {
+		ServerPicker picker = sheet == null ? null : sheet.pickerForSnapshot();
+		return picker != null && picker.scrollToEndForSnapshot();
+	}
+
+	public boolean pickerFitsForSnapshot() {
+		ServerPicker picker = sheet == null ? null : sheet.pickerForSnapshot();
+		return picker != null && picker.fitsForSnapshot(height);
+	}
+
 	/** Saves the open sheet; used by UI snapshots. */
 	public void saveSheetForSnapshot() {
 		if (sheet != null) {

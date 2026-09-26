@@ -830,6 +830,8 @@
   "emutils.ui.profile.reset_message": "Every setting in it goes back to its default. Its name, icon and servers stay. This can’t be undone.",
   "emutils.ui.profile.reset_done": "%s is back to the defaults.",
   "emutils.ui.profile.reset_failed": "Couldn’t save the reset settings.",
+  "emutils.ui.profile.filter_servers": "Type to filter",
+  "emutils.ui.profile.no_matching_servers": "No servers match",
   "key.emutils.next_profile": "Switch to Next Profile",
   "key.emutils.debug_dump_gui": "DEBUG Dump Open GUI"
 }

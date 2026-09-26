@@ -1088,6 +1088,9 @@ public final class EMUtilsTexts {
     public static final String UI_PROFILE_RESET_DONE = "emutils.ui.profile.reset_done";
     public static final String UI_PROFILE_RESET_FAILED = "emutils.ui.profile.reset_failed";
 
+    public static final String UI_PROFILE_FILTER_SERVERS = "emutils.ui.profile.filter_servers";
+    public static final String UI_PROFILE_NO_MATCHING_SERVERS = "emutils.ui.profile.no_matching_servers";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

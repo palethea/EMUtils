@@ -1092,7 +1092,43 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 15, "profiles, edit sheet with the server list open");
 			}
+			// A long server list: typing filters it, it scrolls, and it stays on a short screen.
 			case 210 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					type(screen, "wynn");
+					check(screen.pickerCountForSnapshot() == 1 && "play.wynncraft.com".equals(screen.pickerFirstForSnapshot()), "typing filters the server list (" + screen.pickerCountForSnapshot() + " shown)");
+				}
+				next();
+			}
+			case 211 -> captureAfter(client, 10, "profiles, server list filtered");
+			case 212 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					check(screen.pickerCountForSnapshot() == 27, "Esc clears the filter and keeps the list open (" + screen.pickerCountForSnapshot() + " shown)");
+				}
+				next();
+			}
+			case 213 -> {
+				if (stepTicks == 3 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.pickerScrollToEndForSnapshot(), "a long server list scrolls");
+				}
+				captureAfter(client, 25, "profiles, server list with 27 servers, scrolled to the end");
+			}
+			case 214 -> {
+				setGuiScale(client, 4);
+				next();
+			}
+			case 215 -> {
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.pickerFitsForSnapshot(), "the server list stays on screen at gui scale 4");
+				}
+				captureAfter(client, 15, "profiles, server list at gui scale 4");
+			}
+			case 216 -> {
+				setGuiScale(client, 2);
+				next();
+			}
+			case 217 -> {
 				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 					press(screen, InputConstants.KEY_ESCAPE, 0);
@@ -1101,8 +1137,8 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			case 211 -> captureAfter(client, 15, "profiles, new profile sheet with a taken name");
-			case 212 -> {
+			case 218 -> captureAfter(client, 15, "profiles, new profile sheet with a taken name");
+			case 219 -> {
 				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 					setGuiScale(client, 4);
@@ -1110,13 +1146,13 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			case 213 -> {
+			case 220 -> {
 				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
 					check(screen.sheetWideForSnapshot() && screen.sheetBottomForSnapshot() <= screen.height, "the sheet fits a short window in two columns (bottom " + screen.sheetBottomForSnapshot() + " of " + screen.height + ")");
 				}
 				captureAfter(client, 15, "profiles, new profile sheet at gui scale 4");
 			}
-			case 214 -> {
+			case 221 -> {
 				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 				}
@@ -1130,17 +1166,17 @@ public final class UiSnapshotter {
 				settings.openProfileMenuForSnapshot();
 				next();
 			}
-			case 215 -> {
+			case 222 -> {
 				if (stepTicks == 3 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
 					check(screen.scrollProfileMenuForSnapshot(), "a profile list taller than the window scrolls");
 				}
 				captureAfter(client, 25, "settings, profile menu with 14 profiles, scrolled to the end");
 			}
-			case 216 -> {
+			case 223 -> {
 				checkProfileReset();
 				next();
 			}
-			case 217 -> {
+			case 224 -> {
 				ProfileManager profiles = EMUtilsClient.profiles();
 				profiles.pick(profiles.profiles().getFirst());
 				for (Profile profile : profiles.profiles()) {
@@ -1153,13 +1189,13 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 218 -> {
+			case 225 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 219 -> {
+			case 226 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1168,7 +1204,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 220 -> {
+			case 227 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1263,15 +1299,19 @@ public final class UiSnapshotter {
 		check(reset && profiles.active() == hypixel && !EMUtilsClient.config().tweakFullbright(), "resetting the active profile puts its settings back to the defaults");
 	}
 
-	/** Saves two servers to the multiplayer list when it's empty, for the server picker. */
+	/** Fills the multiplayer list up to 27 servers, Hypixel and Wynncraft first, for the server picker. */
 	private static void seedServerList(Minecraft client) {
 		ServerList list = new ServerList(client);
 		list.load();
 		if (list.size() == 0) {
 			list.add(new ServerData("Hypixel", "mc.hypixel.net", ServerData.Type.OTHER), false);
 			list.add(new ServerData("Wynncraft", "play.wynncraft.com", ServerData.Type.OTHER), false);
-			list.save();
 		}
+		// Enough servers that the picker has to scroll and filtering matters.
+		for (int i = list.size() + 1; list.size() < 27; i++) {
+			list.add(new ServerData("Survival server " + i, "play-" + i + ".example.net", ServerData.Type.OTHER), false);
+		}
+		list.save();
 	}
 
 	/**
