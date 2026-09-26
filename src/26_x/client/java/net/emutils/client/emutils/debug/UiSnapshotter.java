@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -18,6 +20,7 @@ import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.ui.UiFontRenderer;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
+import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.hud.editor.HudEditorScreen;
 import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -33,6 +36,7 @@ import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
+import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -43,6 +47,8 @@ import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
@@ -64,6 +70,9 @@ public final class UiSnapshotter {
 	private static int stepTicks;
 	/** The screenshots the gallery showed the first time it opened. */
 	private static List<Path> galleryShown = List.of();
+	private static long configModifiedBefore;
+	private static boolean configCheckPending;
+	private static boolean leftWorld;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 
@@ -71,7 +80,8 @@ public final class UiSnapshotter {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!enabled || client.level == null || client.player == null) {
+		// The last steps leave the world on purpose, to check screens opened from the title screen.
+		if (!enabled || !leftWorld && (client.level == null || client.player == null)) {
 			return;
 		}
 
@@ -223,7 +233,15 @@ public final class UiSnapshotter {
 				capture(client, "gui scale 2, gallery, light");
 			}
 			case 57 -> {
+				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					checkGalleryClickAfterRefresh(client, screen);
+				}
+				checkTextFieldSurrogates();
+				// The theme change is saved after a short delay; step 60 checks it was written.
+				configModifiedBefore = configModified();
 				EMUtilsClient.config().setSettingsUiDark(true);
+				check(configModified() == configModifiedBefore, "a settings change isn't written to disk straight away");
+				configCheckPending = true;
 				next();
 			}
 			case 58 -> {
@@ -232,6 +250,11 @@ public final class UiSnapshotter {
 			}
 			case 59 -> capture(client, "gui scale 2, packs installed");
 			case 60 -> {
+				if (configCheckPending) {
+					configCheckPending = false;
+					Path file = EMUtilsPaths.configFile();
+					check(configModified() != configModifiedBefore && !Files.exists(file.resolveSibling(file.getFileName() + ".tmp")), "a settings change is written about a second later, with no temporary file left");
+				}
 				if (MinecraftClientCompat.screen(client) instanceof PacksScreen screen) {
 					screen.searchModrinthForSnapshot("");
 				}
@@ -987,6 +1010,29 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 195 -> {
+				SmokeLaunchVerifier.stopEnteringTestWorld();
+				leftWorld = true;
+				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
+				next();
+			}
+			case 196 -> {
+				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
+					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
+					next();
+				} else if (stepTicks > 400) {
+					check(false, "left the world for the outside-a-world snapshots");
+					next();
+				}
+			}
+			case 197 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					screen.openAddSheetForSnapshot();
+					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
+				}
+				capture(client, "waypoints, not in a world");
+			}
 			default -> {
 				EMUtilsClient.LOGGER.info("EMUtils UI snapshots done; stopping Minecraft.");
 				enabled = false;
@@ -1201,6 +1247,67 @@ public final class UiSnapshotter {
 
 	private static void type(Screen screen, String text) {
 		text.codePoints().forEach(codepoint -> screen.charTyped(new CharacterEvent(codepoint)));
+	}
+
+	/**
+	 * A screenshot arriving between a frame and a click refreshes the gallery's list; clicking the first
+	 * tile drawn in that frame must still open that screenshot, not whichever moved into its place (#143).
+	 */
+	private static void checkGalleryClickAfterRefresh(Minecraft client, GalleryScreen screen) {
+		GalleryScreen.TileForSnapshot tile = screen.firstTileForSnapshot();
+		if (tile == null) {
+			check(false, "the gallery drew a tile to click");
+			return;
+		}
+		Path copy = tile.path().resolveSibling("emutils-snapshot-newest.png");
+		try {
+			Files.copy(tile.path(), copy, StandardCopyOption.REPLACE_EXISTING);
+			Files.setLastModifiedTime(copy, FileTime.fromMillis(System.currentTimeMillis() + 60_000L));
+			screen.refreshForSnapshot();
+			MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
+			screen.mouseClicked(new MouseButtonEvent(tile.x(), tile.y(), left), false);
+			screen.mouseReleased(new MouseButtonEvent(tile.x(), tile.y(), left));
+			check(tile.path().equals(screen.previewForSnapshot()), "a gallery click right after a new screenshot opens the screenshot that was clicked (" + screen.previewForSnapshot() + ")");
+		} catch (IOException exception) {
+			check(false, "the gallery click check could set up its screenshot: " + exception);
+		} finally {
+			screen.closePreviewForSnapshot();
+			try {
+				Files.deleteIfExists(copy);
+			} catch (IOException ignored) {
+			}
+			screen.refreshForSnapshot();
+		}
+	}
+
+	/** Text fields keep emoji (surrogate pairs) whole when placing the caret, deleting and cutting (#143). */
+	private static void checkTextFieldSurrogates() {
+		String emoji = new String(Character.toChars(0x1F600));
+		UiTextField field = new UiTextField(new Object(), 32);
+		field.setFocused(true);
+		field.setText("a" + emoji + "b");
+		field.select(2, 2);
+		field.charTyped(new CharacterEvent('X'), () -> {
+		});
+		check(field.text().equals("aX" + emoji + "b"), "a caret placed inside an emoji moves before it");
+		field.select(5, 5);
+		field.keyPressed(new KeyEvent(InputConstants.KEY_BACKSPACE, 0, 0), () -> {
+		});
+		field.keyPressed(new KeyEvent(InputConstants.KEY_BACKSPACE, 0, 0), () -> {
+		});
+		check(field.text().equals("aX"), "Backspace removes a whole emoji");
+		field.setFocused(false);
+		UiTextField short_ = new UiTextField(new Object(), 3);
+		short_.setText(emoji + emoji);
+		check(short_.text().equals(emoji), "the length limit doesn't cut an emoji in half");
+	}
+
+	private static long configModified() {
+		try {
+			return Files.getLastModifiedTime(EMUtilsPaths.configFile()).toMillis();
+		} catch (IOException exception) {
+			return -1L;
+		}
 	}
 
 	private static void check(boolean passed, String what) {

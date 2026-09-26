@@ -5,12 +5,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class InstalledPackIndex {
@@ -72,9 +72,7 @@ public final class InstalledPackIndex {
 	private void save() {
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.packInstallIndexFile())) {
-				GSON.toJson(this, writer);
-			}
+			AtomicFiles.writeString(EMUtilsPaths.packInstallIndexFile(), GSON.toJson(this));
 		} catch (IOException ignored) {
 		}
 	}

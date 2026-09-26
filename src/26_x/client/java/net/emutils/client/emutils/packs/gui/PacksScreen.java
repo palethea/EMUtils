@@ -759,9 +759,10 @@ public final class PacksScreen extends UiPanelScreen {
 				}
 				return PackOperationResult.error(exception.getMessage());
 			}
-		}, WORKERS).thenAccept(outcome -> minecraft.execute(() -> {
+		}, WORKERS).whenComplete((outcome, failure) -> minecraft.execute(() -> {
+			// Also on unexpected failures, so the row doesn't keep spinning.
 			downloading.remove(projectId);
-			report(outcome);
+			report(outcome, failure);
 			refreshInstalled(false);
 		}));
 	}
@@ -806,10 +807,22 @@ public final class PacksScreen extends UiPanelScreen {
 			}
 		}
 		CompletableFuture.supplyAsync(() -> ResourcePackController.deleteInstalledFile(minecraft, index, pack), WORKERS)
-			.thenAccept(outcome -> minecraft.execute(() -> {
-				report(outcome);
+			.whenComplete((outcome, failure) -> minecraft.execute(() -> {
+				report(outcome, failure);
 				refreshInstalled(false);
 			}));
+	}
+
+	/** Reports a background operation's result, or the unexpected exception it failed with. */
+	private void report(@Nullable PackOperationResult result, @Nullable Throwable failure) {
+		if (failure != null || result == null) {
+			Throwable cause = failure != null && failure.getCause() != null ? failure.getCause() : failure;
+			EMUtilsClient.LOGGER.warn("Pack operation failed.", cause);
+			String message = cause == null ? "unknown error" : cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+			report(PackOperationResult.error(message));
+			return;
+		}
+		report(result);
 	}
 
 	private void report(PackOperationResult result) {

@@ -19,6 +19,7 @@ import net.emutils.client.emutils.food.FoodTooltipData;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.settings.SettingsWarmup;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
+import net.emutils.client.emutils.gui.ui.UiFontRenderer;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryThumbnails;
@@ -42,6 +43,7 @@ import net.emutils.client.emutils.zoom.ZoomManager;
 import net.emutils.client.versioned.VersionedInput;
 import net.emutils.client.emutils.EMHelpers;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipComponent;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipData;
@@ -123,7 +125,10 @@ public class EMUtilsClient implements ClientModInitializer {
 			tweaksManager.resetSession();
 			autoReconnectManager.onDisconnected();
 			GalleryThumbnails.freeShared();
+			// Disconnects arrive on the network thread; write on the render thread, which changes the config.
+			client.execute(EMUtilsClient::flushConfig);
 		});
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> flushConfig());
 
 		String version = FabricLoader.getInstance()
 			.getModContainer(MOD_ID)
@@ -148,6 +153,10 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
 		BackgroundLaunch.tick(client);
+		UiFontRenderer.freeReleased();
+		if (config != null) {
+			config.flushIfDue();
+		}
 		SmokeLaunchVerifier.tick(client);
 		UiSnapshotter.tick(client);
 	}
@@ -367,6 +376,13 @@ public class EMUtilsClient implements ClientModInitializer {
 		}
 
 		HudLayoutManager.openEditor(MOD_ID, client);
+	}
+
+	/** Writes pending config changes now instead of waiting for the save delay. */
+	private static void flushConfig() {
+		if (config != null) {
+			config.flush();
+		}
 	}
 
 	public static void replaceConfig(EMUtilsConfig next) {

@@ -5,10 +5,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.nio.file.Files;
 
@@ -91,9 +91,7 @@ public final class MinescriptKeybindStore {
 	private void save() {
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.minescriptKeybindFile())) {
-				GSON.toJson(this, writer);
-			}
+			AtomicFiles.writeString(EMUtilsPaths.minescriptKeybindFile(), GSON.toJson(this));
 		} catch (IOException ignored) {
 		}
 	}

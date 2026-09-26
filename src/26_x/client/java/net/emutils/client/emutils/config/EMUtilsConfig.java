@@ -3,6 +3,7 @@ package net.emutils.client.emutils.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
+import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.capes.CustomCapeManager;
@@ -19,13 +20,14 @@ import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import org.jspecify.annotations.Nullable;
 
 public final class EMUtilsConfig implements HudLayoutConfig {
@@ -66,6 +68,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int HOTBAR_SLOT_MAX = 9;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final long SAVE_DELAY_MILLIS = 1000L;
+	/** Unsaved changes; transient, so they're not part of the saved config. */
+	private transient boolean dirty;
+	private transient long lastChangeMillis;
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
 	private static final float LEGACY_SIZE_REFERENCE_PERCENT = 15.0F;
 
@@ -235,13 +241,26 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer zoomOutSpeedMultiplier = 18;
 	private Integer packManagerSearchLimit = 20;
 
+	/** Keeps an unreadable config as {@code config.json.broken} before the defaults replace it. */
+	private static void keepBrokenCopy() {
+		try {
+			Files.copy(EMUtilsPaths.configFile(), EMUtilsPaths.configFile().resolveSibling("config.json.broken"), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not keep a copy of the unreadable EMUtils config.", exception);
+		}
+	}
+
 	public static EMUtilsConfig load() {
 		EMUtilsConfig config = null;
 
 		if (Files.exists(EMUtilsPaths.configFile())) {
 			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.configFile())) {
 				config = GSON.fromJson(reader, EMUtilsConfig.class);
-			} catch (IOException | JsonParseException | IllegalStateException ignored) {
+			} catch (IOException | JsonParseException | IllegalStateException exception) {
+				EMUtilsClient.LOGGER.warn("Could not read the EMUtils config; starting from defaults.", exception);
+			}
+			if (config == null) {
+				keepBrokenCopy();
 			}
 		}
 
@@ -251,6 +270,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 		config.applyDefaults();
 		config.save();
+		config.flush();
 		return config;
 	}
 
@@ -2016,13 +2036,35 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/**
+	 * Marks the config as changed. It's written about a second after the last change (see
+	 * {@link #flushIfDue()}), so dragging a slider doesn't write the file on every mouse move, and when
+	 * leaving a world or closing the game ({@link #flush()}).
+	 */
 	public void save() {
+		lastChangeMillis = System.currentTimeMillis();
+		dirty = true;
+	}
+
+	/** Writes the config if it changed and has been left alone for a moment; call every client tick. */
+	public void flushIfDue() {
+		if (dirty && System.currentTimeMillis() - lastChangeMillis >= SAVE_DELAY_MILLIS) {
+			flush();
+		}
+	}
+
+	/** Writes the config now if it changed. */
+	public void flush() {
+		if (!dirty) {
+			return;
+		}
 		try {
-			Files.createDirectories(EMUtilsPaths.configDir());
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.configFile())) {
-				GSON.toJson(this, writer);
-			}
-		} catch (IOException ignored) {
+			AtomicFiles.writeString(EMUtilsPaths.configFile(), GSON.toJson(this));
+			dirty = false;
+		} catch (IOException exception) {
+			// Stays pending and is tried again after the save delay, for example if the file was locked.
+			lastChangeMillis = System.currentTimeMillis();
+			EMUtilsClient.LOGGER.warn("Failed to save the EMUtils config; trying again shortly.", exception);
 		}
 	}
 

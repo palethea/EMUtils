@@ -4,9 +4,11 @@ import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.versioned.VersionedTextures;
@@ -52,7 +54,7 @@ public final class UiFontRenderer {
 		@Override
 		protected boolean removeEldestEntry(Map.Entry<String, Rendered> eldest) {
 			if (size() > MAX_CACHED_STRINGS) {
-				Minecraft.getInstance().getTextureManager().release(eldest.getValue().texture());
+				releaseLater(eldest.getValue().texture());
 				return true;
 			}
 			return false;
@@ -64,6 +66,12 @@ public final class UiFontRenderer {
 	 */
 	private static final Map<Long, Glyph> GLYPHS = new HashMap<>();
 	private static final int MAX_CACHED_GLYPHS = 2048;
+	/**
+	 * Evicted textures, freed on the next client tick. A cache can overflow halfway through a frame, and
+	 * Minecraft only draws the frame after collecting it, so a texture freed right away could still be
+	 * drawn in that frame. Ticks run between frames, so the frame that used it is finished by then.
+	 */
+	private static final List<Identifier> RELEASED = new ArrayList<>();
 	private static int texturesMade;
 
 	private UiFontRenderer() {
@@ -198,7 +206,7 @@ public final class UiFontRenderer {
 
 	private static void releaseGlyphs() {
 		for (Glyph glyph : GLYPHS.values()) {
-			Minecraft.getInstance().getTextureManager().release(glyph.rendered().texture());
+			releaseLater(glyph.rendered().texture());
 		}
 		GLYPHS.clear();
 	}
@@ -275,6 +283,21 @@ public final class UiFontRenderer {
 	}
 
 	/** How many text textures have been made so far, for checking that live text doesn't make new ones. */
+	private static void releaseLater(Identifier texture) {
+		RELEASED.add(texture);
+	}
+
+	/** Frees the textures evicted since the last call; call every client tick. */
+	public static void freeReleased() {
+		if (RELEASED.isEmpty()) {
+			return;
+		}
+		for (Identifier texture : RELEASED) {
+			Minecraft.getInstance().getTextureManager().release(texture);
+		}
+		RELEASED.clear();
+	}
+
 	public static int texturesMade() {
 		return texturesMade;
 	}
@@ -282,7 +305,7 @@ public final class UiFontRenderer {
 	/** Frees the cached strings, for example when the GUI scale changes or the screen closes. */
 	public static void clearCache() {
 		for (Rendered rendered : STRINGS.values()) {
-			Minecraft.getInstance().getTextureManager().release(rendered.texture());
+			releaseLater(rendered.texture());
 		}
 		STRINGS.clear();
 		WIDTHS.clear();

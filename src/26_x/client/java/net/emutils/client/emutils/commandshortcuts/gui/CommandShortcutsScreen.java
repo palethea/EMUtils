@@ -91,9 +91,17 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 
 	/** Runs the shortcut as its keys would, closing every menu first so you're back in the game to see it. */
 	private void run(CommandShortcut shortcut) {
+		if (!canRun()) {
+			return;
+		}
 		Minecraft client = minecraft;
 		closeToGame();
 		EMUtilsClient.commandShortcuts().runShortcut(client, shortcut);
+	}
+
+	/** Shortcuts need a world to send to; the screen can also be opened from the title screen. */
+	private boolean canRun() {
+		return minecraft.player != null && minecraft.getConnection() != null;
 	}
 
 	private void delete(CommandShortcut shortcut) {
@@ -118,7 +126,7 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 
 	private void openMenu(CommandShortcut shortcut, int mouseX, int mouseY) {
 		menu = new UiContextMenu(font, anim, mouseX, mouseY, List.of(
-			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SHORTCUT_RUN), () -> run(shortcut)),
+			new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_SHORTCUT_RUN), canRun(), false, () -> run(shortcut)),
 			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_SHORTCUT_EDIT_ACTION), () -> openSheet(shortcut)),
 			new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_DELETE), true, true, () -> delete(shortcut))
 		));
@@ -218,10 +226,11 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 		for (int i = 0; i < ACTIONS.length; i++) {
 			int actionX = actionsX + i * (ACTION + ACTION_GAP);
 			boolean actionHovered = contains(mouseX, mouseY, actionX, actionY, ACTION, ACTION);
-			int color = i == 2 && actionHovered ? theme.warning() : actionHovered ? theme.text() : theme.textSecondary();
-			UiWidgets.ghostIconButton(context, theme, actionX, actionY, ACTION, ACTIONS[i], color, actionHovered ? 1.0F : 0.0F);
+			boolean off = i == 0 && !canRun();
+			int color = off ? UiTheme.fade(theme.muted(), 0.5F) : i == 2 && actionHovered ? theme.warning() : actionHovered ? theme.text() : theme.textSecondary();
+			UiWidgets.ghostIconButton(context, theme, actionX, actionY, ACTION, ACTIONS[i], color, actionHovered && !off ? 1.0F : 0.0F);
 			if (actionHovered) {
-				showTooltip(Component.translatable(ACTION_TIPS[i]), mouseX, mouseY);
+				showTooltip(Component.translatable(off ? EMUtilsTexts.UI_SHORTCUT_NEEDS_WORLD : ACTION_TIPS[i]), mouseX, mouseY);
 			}
 		}
 		Component keys = Component.literal(shortcut.keyCombo().displayName());

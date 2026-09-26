@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
@@ -130,9 +130,7 @@ public final class InventoryToolsStore {
 				return;
 			}
 
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.inventoryToolsFile())) {
-				GSON.toJson(saveData, writer);
-			}
+			AtomicFiles.writeString(EMUtilsPaths.inventoryToolsFile(), GSON.toJson(saveData));
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("Failed to save inventory tools state.", exception);
 		}

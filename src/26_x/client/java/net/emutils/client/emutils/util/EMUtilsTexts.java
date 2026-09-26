@@ -75,6 +75,7 @@ public final class EMUtilsTexts {
     public static final String UI_SHORTCUT_EDIT = "emutils.ui.shortcut.edit";
     public static final String UI_SHORTCUT_EDIT_ACTION = "emutils.ui.shortcut.edit_action";
     public static final String UI_SHORTCUT_RUN = "emutils.ui.shortcut.run";
+    public static final String UI_SHORTCUT_NEEDS_WORLD = "emutils.ui.shortcut.needs_world";
     public static final String UI_SHORTCUT_NAME = "emutils.ui.shortcut.name";
     public static final String UI_SHORTCUT_NAME_PLACEHOLDER = "emutils.ui.shortcut.name_placeholder";
     public static final String UI_SHORTCUT_TEXT = "emutils.ui.shortcut.text";
@@ -159,6 +160,11 @@ public final class EMUtilsTexts {
     public static final String UI_WAYPOINT_BEACON = "emutils.ui.waypoint.beacon";
     public static final String UI_WAYPOINT_BEACON_DESC = "emutils.ui.waypoint.beacon.desc";
     public static final String UI_USE_MY_POSITION = "emutils.ui.waypoint.use_my_position";
+    public static final String UI_WAYPOINT_NEEDS_WORLD = "emutils.ui.waypoint.needs_world";
+    public static final String UI_WAYPOINT_NO_WORLD_TITLE = "emutils.ui.waypoint.no_world_title";
+    public static final String UI_WAYPOINT_NO_WORLD = "emutils.ui.waypoint.no_world";
+    public static final String UI_WAYPOINT_TURNED_OFF = "emutils.ui.waypoint.turned_off";
+    public static final String UI_WAYPOINT_SAVE_FAILED = "emutils.ui.waypoint.save_failed";
     public static final String UI_COPY_COORDINATES = "emutils.ui.waypoint.copy_coordinates";
     public static final String UI_BEACON_TURN_ON = "emutils.ui.waypoint.beacon_turn_on";
     public static final String UI_BEACON_TURN_OFF = "emutils.ui.waypoint.beacon_turn_off";

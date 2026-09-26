@@ -93,7 +93,15 @@ public final class WaypointsScreen extends UiPanelScreen {
 		return EMUtilsClient.waypoint().waypointsForCurrentWorld(minecraft);
 	}
 
+	/** Waypoints belong to a world; the screen can also be opened from the title screen, through the settings. */
+	private boolean inWorld() {
+		return minecraft.level != null;
+	}
+
 	private void openAddSheet() {
+		if (!inWorld()) {
+			return;
+		}
 		sheet = new AddWaypointSheet(font, anim, added -> {
 			if (addOnly) {
 				onClose();
@@ -118,18 +126,33 @@ public final class WaypointsScreen extends UiPanelScreen {
 		int left = panelX + PADDING;
 		int top = panelY + PADDING;
 		UiText.draw(context, font, title, UiText.Size.HEADING, left, top, theme.text());
-		Component where = minecraft.level == null ? Component.empty() : dimensionName(minecraft.level.dimension().identifier().toString());
-		Component countText = Component.translatable(count == 1 ? EMUtilsTexts.UI_WAYPOINT_COUNT_ONE : EMUtilsTexts.UI_WAYPOINT_COUNT, count);
-		UiText.draw(context, font, where.copy().append(" · ").append(countText), UiText.Size.BODY, left, top + UiText.lineHeight(font, UiText.Size.HEADING) + 6, theme.muted());
+		Component subtitle;
+		if (inWorld()) {
+			Component countText = Component.translatable(count == 1 ? EMUtilsTexts.UI_WAYPOINT_COUNT_ONE : EMUtilsTexts.UI_WAYPOINT_COUNT, count);
+			subtitle = dimensionName(minecraft.level.dimension().identifier().toString()).copy().append(" · ").append(countText);
+		} else {
+			subtitle = Component.translatable(EMUtilsTexts.UI_WAYPOINT_NO_WORLD_TITLE);
+		}
+		UiText.draw(context, font, subtitle, UiText.Size.BODY, left, top + UiText.lineHeight(font, UiText.Size.HEADING) + 6, theme.muted());
 
 		Component add = Component.translatable(EMUtilsTexts.UI_ADD_WAYPOINT);
 		int iconSize = 9;
 		addWidth = UiText.width(font, add, UiText.Size.LABEL) + iconSize + 4 + 20;
 		addX = panelX + panelWidth - PADDING - addWidth;
-		float addHover = contains(mouseX, mouseY, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT) ? 1.0F : 0.0F;
-		UiShapes.roundedRect(context, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT, 8, UiTheme.mix(theme.accent(), theme.accentHover(), addHover));
-		UiIcons.draw(context, HubIcons.PLUS, addX + 10, headerButtonsY + (HEADER_BUTTON_HEIGHT - iconSize) / 2, iconSize, 0xFFFFFFFF);
-		UiText.drawCentered(context, font, add, UiText.Size.LABEL, addX + 10 + iconSize + 4, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, 0xFFFFFFFF);
+		boolean canAdd = inWorld();
+		boolean addHovered = contains(mouseX, mouseY, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT);
+		float addHover = canAdd && addHovered ? 1.0F : 0.0F;
+		// Outside a world the button is greyed out, like Clear all with nothing to clear.
+		int addFill = canAdd ? UiTheme.mix(theme.accent(), theme.accentHover(), addHover) : theme.segmentBackground();
+		int addText = canAdd ? 0xFFFFFFFF : UiTheme.fade(theme.muted(), 0.6F);
+		UiShapes.roundedRect(context, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT, 8, addFill);
+		UiIcons.draw(context, HubIcons.PLUS, addX + 10, headerButtonsY + (HEADER_BUTTON_HEIGHT - iconSize) / 2, iconSize, addText);
+		UiText.drawCentered(context, font, add, UiText.Size.LABEL, addX + 10 + iconSize + 4, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, addText);
+		if (!canAdd && addHovered) {
+			tooltip = Component.translatable(EMUtilsTexts.UI_WAYPOINT_NEEDS_WORLD);
+			tooltipX = mouseX;
+			tooltipY = mouseY;
+		}
 
 		Component clear = Component.translatable(EMUtilsTexts.UI_CLEAR_ALL);
 		clearWidth = UiWidgets.buttonWidth(font, clear) + 4;
@@ -157,7 +180,9 @@ public final class WaypointsScreen extends UiPanelScreen {
 			y += ROW_HEIGHT + ROW_GAP;
 		}
 		context.pose().popMatrix();
-		if (waypoints.isEmpty()) {
+		if (!inWorld()) {
+			drawNoWorld(context, theme, scroll.x() + width / 2, width);
+		} else if (waypoints.isEmpty()) {
 			int centerX = scroll.x() + width / 2;
 			int iconSize = 22;
 			int top = scroll.y() + Math.max(20, scroll.height() / 2 - 30);
@@ -166,6 +191,25 @@ public final class WaypointsScreen extends UiPanelScreen {
 			UiText.draw(context, font, empty, UiText.Size.BODY, centerX - UiText.width(font, empty, UiText.Size.BODY) / 2, top + iconSize + 10, theme.muted());
 		}
 		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
+	}
+
+	/** Outside a world there's nothing to list or add, so the whole body says so. */
+	private void drawNoWorld(GuiGraphicsExtractor context, UiTheme theme, int centerX, int width) {
+		int iconSize = 32;
+		Component heading = Component.translatable(EMUtilsTexts.UI_WAYPOINT_NO_WORLD_TITLE);
+		List<Component> lines = UiText.wrap(font, Component.translatable(EMUtilsTexts.UI_WAYPOINT_NO_WORLD), UiText.Size.BODY, Math.min(width - 40, 320));
+		int headingHeight = UiText.lineHeight(font, UiText.Size.HEADING);
+		int lineHeight = UiText.lineHeight(font, UiText.Size.BODY) + 3;
+		int blockHeight = iconSize + 14 + headingHeight + 8 + lines.size() * lineHeight;
+		int top = scroll.y() + Math.max(20, (scroll.height() - blockHeight) / 2);
+		UiIcons.draw(context, HubIcons.MAP_PIN, centerX - iconSize / 2, top, iconSize, theme.muted());
+		int headingTop = top + iconSize + 14;
+		UiText.draw(context, font, heading, UiText.Size.HEADING, centerX - UiText.width(font, heading, UiText.Size.HEADING) / 2, headingTop, theme.text());
+		int lineTop = headingTop + headingHeight + 8;
+		for (int i = 0; i < lines.size(); i++) {
+			Component line = lines.get(i);
+			UiText.draw(context, font, line, UiText.Size.BODY, centerX - UiText.width(font, line, UiText.Size.BODY) / 2, lineTop + i * lineHeight, theme.textSecondary());
+		}
 	}
 
 	private RowBox drawRow(GuiGraphicsExtractor context, UiTheme theme, Waypoint waypoint, int x, int y, int width, int mouseX, int mouseY) {
@@ -386,6 +430,11 @@ public final class WaypointsScreen extends UiPanelScreen {
 	}
 
 	/** Opens the add sheet; used by UI snapshots. */
+	/** Whether the add sheet is open; used by UI snapshots. */
+	public boolean sheetOpenForSnapshot() {
+		return sheet != null;
+	}
+
 	public void openAddSheetForSnapshot() {
 		openAddSheet();
 	}

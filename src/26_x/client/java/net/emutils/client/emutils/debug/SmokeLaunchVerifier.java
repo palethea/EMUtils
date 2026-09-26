@@ -28,6 +28,11 @@ public final class SmokeLaunchVerifier {
 	private SmokeLaunchVerifier() {
 	}
 
+	/** Stops going back into the test world, so UI snapshots can check screens outside a world. */
+	public static void stopEnteringTestWorld() {
+		launchTestWorld = false;
+	}
+
 	public static void registerIfEnabled() {
 		enabled = Boolean.getBoolean(ENABLED_PROPERTY);
 		launchTestWorld = Boolean.getBoolean(LAUNCH_TEST_WORLD_PROPERTY);

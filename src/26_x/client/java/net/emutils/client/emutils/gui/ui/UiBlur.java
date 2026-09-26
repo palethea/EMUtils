@@ -15,6 +15,10 @@ public final class UiBlur {
 		factor = Math.clamp(value, 0.0F, 1.0F);
 	}
 
+	public static float get() {
+		return factor;
+	}
+
 	public static void reset() {
 		factor = 1.0F;
 	}
