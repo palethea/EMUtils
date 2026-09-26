@@ -103,7 +103,7 @@ public final class ProfilesScreen extends UiPanelScreen {
 
 	private void duplicate(Profile profile) {
 		if (manager().duplicate(profile) == null) {
-			showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_UNREADABLE, profile.name()), true);
+			showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_DUPLICATE_FAILED, profile.name()), true);
 		}
 	}
 

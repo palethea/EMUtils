@@ -62,6 +62,8 @@ final class ProfileSheet {
 	private boolean singleplayer;
 	/** For a new profile: start from the current settings rather than the defaults. */
 	private boolean copyCurrent = true;
+	/** The last Add couldn't save the new profile's settings. */
+	private boolean saveFailed;
 
 	// Layout, in screen coordinates; recomputed every frame.
 	private int x;
@@ -145,13 +147,18 @@ final class ProfileSheet {
 	}
 
 	private void save() {
+		saveFailed = false;
 		if (!valid()) {
 			return;
 		}
 		ProfileManager profiles = EMUtilsClient.profiles();
 		List<String> parsed = ProfileManager.parseServers(servers.text());
 		if (existing == null) {
-			profiles.create(name.text(), icon, color, parsed, singleplayer, copyCurrent);
+			if (profiles.create(name.text(), icon, color, parsed, singleplayer, copyCurrent) == null) {
+				// Stays open with the form filled in, so nothing typed is lost.
+				saveFailed = true;
+				return;
+			}
 		} else {
 			profiles.update(existing, name.text(), icon, color, parsed, singleplayer);
 		}
@@ -188,6 +195,9 @@ final class ProfileSheet {
 
 	/** What's wrong with the form or what saving takes away from another profile, or null. */
 	private @Nullable Component warning() {
+		if (saveFailed) {
+			return Component.translatable(EMUtilsTexts.UI_PROFILE_SAVE_FAILED);
+		}
 		if (nameTaken()) {
 			return Component.translatable(EMUtilsTexts.UI_PROFILE_NAME_TAKEN);
 		}

@@ -90,6 +90,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
 	private static final float LEGACY_SIZE_REFERENCE_PERCENT = 15.0F;
 
+	// Settings are saved under their field names. Never change a setting's type under the same name
+	// (a Boolean becoming an object, say): configs and profiles written before would then fail to load
+	// as a whole. Give the new type a new name and migrate the old value in applyDefaults instead.
 	private Boolean autoReconnect = Boolean.TRUE;
 	private Boolean autoReconnectUnlimitedTries = Boolean.FALSE;
 	private Boolean screenshotHelper = Boolean.TRUE;
@@ -301,11 +304,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	/**
 	 * Reads the config saved in {@code file} without writing anything back, for looking at a profile
-	 * that isn't active. Null when the file is missing or can't be read.
+	 * that isn't active. A missing file means the defaults, as in {@link #load(Path)}; null only when
+	 * the file can't be read.
 	 */
 	public static @Nullable EMUtilsConfig read(Path file) {
 		if (!Files.exists(file)) {
-			return null;
+			EMUtilsConfig config = new EMUtilsConfig();
+			config.file = file;
+			config.applyDefaults();
+			return config;
 		}
 		try (Reader reader = Files.newBufferedReader(file)) {
 			EMUtilsConfig config = GSON.fromJson(reader, EMUtilsConfig.class);

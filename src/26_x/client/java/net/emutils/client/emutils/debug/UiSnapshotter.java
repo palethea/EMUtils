@@ -1318,6 +1318,13 @@ public final class UiSnapshotter {
 		} catch (IOException exception) {
 			check(false, "a damaged profile file can be written for the check: " + exception);
 		}
+		// A profile whose file is missing reads as the defaults, the way switching to it would load it.
+		try {
+			Files.deleteIfExists(file);
+			check(profiles.export(damaged) != null, "a profile without a settings file exports as the defaults");
+		} catch (IOException exception) {
+			check(false, "a profile file can be removed for the check: " + exception);
+		}
 		profiles.delete(damaged);
 	}
 

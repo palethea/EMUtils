@@ -1093,6 +1093,9 @@ public final class EMUtilsTexts {
 
     public static final String UI_PROFILE_UNREADABLE = "emutils.ui.profile.unreadable";
 
+    public static final String UI_PROFILE_SAVE_FAILED = "emutils.ui.profile.save_failed";
+    public static final String UI_PROFILE_DUPLICATE_FAILED = "emutils.ui.profile.duplicate_failed";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

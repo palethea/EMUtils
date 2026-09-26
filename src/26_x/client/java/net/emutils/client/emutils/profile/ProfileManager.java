@@ -250,21 +250,26 @@ public final class ProfileManager {
 
 	// ---- editing --------------------------------------------------------------------------------
 
-	/** Adds a profile, starting from the current settings or from the defaults. */
-	public Profile create(String name, ProfileIcon icon, ProfileColor color, List<String> servers, boolean singleplayer, boolean copyCurrent) {
+	/**
+	 * Adds a profile, starting from the current settings or from the defaults. Returns null, and adds
+	 * nothing, when its settings can't be saved.
+	 */
+	public @Nullable Profile create(String name, ProfileIcon icon, ProfileColor color, List<String> servers, boolean singleplayer, boolean copyCurrent) {
 		Profile profile = new Profile(newId(), name, icon, color);
 		profile.set(name, icon, color, servers, singleplayer);
-		claim(profile);
 		EMUtilsConfig settings = copyCurrent && EMUtilsClient.config() != null
 			? EMUtilsClient.config().copyTo(file(profile))
 			: EMUtilsConfig.defaults(file(profile));
-		settings.flush();
+		if (!settings.flush()) {
+			return null;
+		}
+		claim(profile);
 		profiles.add(profile);
 		save();
 		return profile;
 	}
 
-	/** Adds a copy of {@code source}, settings included, right after it; null if its settings can't be read. */
+	/** Adds a copy of {@code source}, settings included, right after it; null if its settings can't be read or saved. */
 	public @Nullable Profile duplicate(Profile source) {
 		EMUtilsConfig settings = settingsOf(source);
 		if (settings == null) {
@@ -274,7 +279,9 @@ public final class ProfileManager {
 		Profile copy = new Profile(newId(), name, source.icon(), source.color());
 		// Auto-switching stays with the original; two profiles for one server would fight over it.
 		copy.set(name, source.icon(), source.color(), List.of(), false);
-		settings.copyTo(file(copy)).flush();
+		if (!settings.copyTo(file(copy)).flush()) {
+			return null;
+		}
 		profiles.add(profiles.indexOf(source) + 1, copy);
 		save();
 		return copy;
@@ -506,7 +513,9 @@ public final class ProfileManager {
 			return null;
 		}
 		profile.set(name, icon, color, List.of(), false);
-		settings.flush();
+		if (!settings.flush()) {
+			return null;
+		}
 		profiles.add(profile);
 		save();
 		return profile;
