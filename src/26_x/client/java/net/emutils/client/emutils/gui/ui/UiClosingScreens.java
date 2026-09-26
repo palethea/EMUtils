@@ -3,7 +3,9 @@ package net.emutils.client.emutils.gui.ui;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
@@ -42,6 +44,12 @@ public final class UiClosingScreens {
 
 	private static void render(GuiGraphicsExtractor context) {
 		if (SCREENS.isEmpty()) {
+			return;
+		}
+		// Another screen opened during the fade, such as the pause menu: it covers the fade, and its own
+		// background blur would be a second blur in this frame, which Minecraft doesn't allow.
+		if (MinecraftClientCompat.screen(Minecraft.getInstance()) != null) {
+			clear();
 			return;
 		}
 		long now = System.nanoTime();
