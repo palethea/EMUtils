@@ -1,13 +1,17 @@
 package net.emutils.client.emutils.screenshot.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiConfirmDialog;
 import net.emutils.client.emutils.gui.ui.UiIcons;
@@ -26,6 +30,7 @@ import net.emutils.client.emutils.screenshot.ScreenshotRepository.ScreenshotEntr
 import net.emutils.client.emutils.screenshot.gui.ScreenshotThumbnailLoader.LoadedThumbnail;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.versioned.VersionedPlatform;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -37,7 +42,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Screenshot Gallery in the new UI (#106): a grid of the screenshots with their names and dates,
+ * The Screenshot Gallery (#106): a grid of the screenshots with their names and dates,
  * actions to copy, open, show in the folder and delete each one, and a large preview.
  */
 public final class GalleryScreen extends UiPanelScreen {
@@ -57,9 +62,10 @@ public final class GalleryScreen extends UiPanelScreen {
 
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final List<TileBox> tiles = new ArrayList<>();
-	private @Nullable GalleryThumbnails thumbnails;
 	private List<ScreenshotEntry> screenshots = List.of();
 	private @Nullable GalleryPreview preview;
+	/** Screenshots drawn this frame whose image was still loading; read by UI snapshots. */
+	private final Set<Path> loadingThisFrame = new HashSet<>();
 	private @Nullable UiConfirmDialog dialog;
 	private int columns;
 	private int tileWidth;
@@ -75,6 +81,8 @@ public final class GalleryScreen extends UiPanelScreen {
 
 	public GalleryScreen(@Nullable Screen parent) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_SCREENSHOT_GALLERY), parent);
+		// Thumbnails stay cached between openings (#133); ones that failed get another try.
+		thumbnails().retryFailed();
 	}
 
 	@Override
@@ -91,6 +99,23 @@ public final class GalleryScreen extends UiPanelScreen {
 		refresh();
 	}
 
+	/**
+	 * Call when Minecraft saved a screenshot, from any thread: an open gallery lists it right away instead
+	 * of only on the next opening, and an open preview stays on the screenshot it shows.
+	 */
+	public static void onScreenshotSaved() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> {
+			if (MinecraftClientCompat.screen(client) instanceof GalleryScreen gallery) {
+				Path shown = gallery.preview != null && !gallery.screenshots.isEmpty() ? gallery.preview.shown() : null;
+				gallery.refresh();
+				if (gallery.preview != null && shown != null) {
+					gallery.preview.keepShowing(shown);
+				}
+			}
+		});
+	}
+
 	/** Reads the screenshots folder again, in the order and count the gallery settings ask for. */
 	void refresh() {
 		screenshots = ScreenshotRepository.list(minecraft);
@@ -101,18 +126,7 @@ public final class GalleryScreen extends UiPanelScreen {
 	}
 
 	GalleryThumbnails thumbnails() {
-		if (thumbnails == null) {
-			thumbnails = new GalleryThumbnails(minecraft);
-		}
-		return thumbnails;
-	}
-
-	@Override
-	protected void dispose() {
-		if (thumbnails != null) {
-			thumbnails.close();
-			thumbnails = null;
-		}
+		return GalleryThumbnails.shared();
 	}
 
 	/** Pixel size to load a screenshot at so it's drawn one pixel per screen pixel in a box of this GUI size. */
@@ -125,6 +139,7 @@ public final class GalleryScreen extends UiPanelScreen {
 	@Override
 	protected void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		tooltip = null;
+		loadingThisFrame.clear();
 		boolean interactive = preview == null && dialog == null && !closing();
 		int hoverX = interactive ? mouseX : Integer.MIN_VALUE / 2;
 		int hoverY = interactive ? mouseY : Integer.MIN_VALUE / 2;
@@ -256,6 +271,9 @@ public final class GalleryScreen extends UiPanelScreen {
 			return;
 		}
 		boolean failed = thumbnails().failed(screenshot, targetWidth, targetHeight);
+		if (!failed) {
+			loadingThisFrame.add(screenshot.path());
+		}
 		int iconSize = Math.min(18, height / 3);
 		// A gently pulsing icon while the image loads.
 		float pulse = failed ? 1.0F : 0.55F + 0.45F * (float) Math.sin(System.nanoTime() / 250_000_000.0);
@@ -460,6 +478,16 @@ public final class GalleryScreen extends UiPanelScreen {
 		if (index < screenshots.size()) {
 			preview = new GalleryPreview(font, anim, this, index);
 		}
+	}
+
+	/** The screenshots drawn in the last frame that were still loading; used by UI snapshots. */
+	public Set<Path> loadingThumbnailsForSnapshot() {
+		return Set.copyOf(loadingThisFrame);
+	}
+
+	/** The screenshots the gallery lists; used by UI snapshots. */
+	public List<Path> screenshotsForSnapshot() {
+		return screenshots.stream().map(ScreenshotEntry::path).toList();
 	}
 
 	private record TileBox(int index, int x, int y, int actionsX, int actionsY) {

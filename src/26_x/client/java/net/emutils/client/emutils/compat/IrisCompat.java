@@ -13,7 +13,6 @@ import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.LoadingOverlay;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
@@ -160,7 +159,7 @@ public final class IrisCompat {
 		applyShaderPackWithLoading(client, returnScreen, filename, null, callback);
 	}
 
-	/** Applies a shader pack; {@code icon} is the pack's icon for the new UI's loading card. */
+	/** Applies a shader pack; {@code icon} is the pack's icon for the loading card. */
 	public static void applyShaderPackWithLoading(Minecraft client, Screen returnScreen, String filename, UiLoadingOverlay.@Nullable Icon icon, Consumer<Boolean> callback) {
 		runShaderReloadWithLoading(client, returnScreen, () -> prepareShaderPack(filename), callback, Component.translatable(EMUtilsTexts.UI_LOADING_APPLY_SHADER), Component.literal(packName(filename)), icon);
 	}
@@ -169,7 +168,7 @@ public final class IrisCompat {
 		disableShaderPackWithLoading(client, returnScreen, null, callback);
 	}
 
-	/** Turns shaders off; {@code icon} is the icon of the pack being turned off, for the new UI's loading card. */
+	/** Turns shaders off; {@code icon} is the icon of the pack being turned off, for the loading card. */
 	public static void disableShaderPackWithLoading(Minecraft client, Screen returnScreen, UiLoadingOverlay.@Nullable Icon icon, Consumer<Boolean> callback) {
 		runShaderReloadWithLoading(client, returnScreen, IrisCompat::prepareDisableShaders, callback, Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF), Component.translatable(EMUtilsTexts.UI_LOADING_SHADERS_OFF_DESC), icon);
 	}
@@ -199,24 +198,13 @@ public final class IrisCompat {
 		}
 
 		IrisShaderResourceReload reload = new IrisShaderResourceReload();
-		if (EMUtilsClient.config() != null && EMUtilsClient.config().settingsUiPreview()) {
-			// The new UI's loading card (#112): it shows fully before the compile freezes the game, then fades out.
-			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, UiLoadingOverlay.blocking(client, reload, reload::start, optional -> client.execute(() -> {
-				callback.accept(optional.isEmpty());
-				if (client.gui.screen() != returnScreen) {
-					client.gui.setScreen(returnScreen);
-				}
-			}), title, subtitle, icon != null ? icon : UiLoadingOverlay.Icon.symbol(HubIcons.SPARKLES)));
-			return;
-		}
-		LoadingOverlay.registerTextures(client.getTextureManager());
-		net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, new ShaderPackLoadingOverlay(client, reload, optional -> {
-			net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, null);
-			client.execute(() -> {
-				callback.accept(optional.isEmpty());
+		// The loading card (#112): it shows fully before the compile freezes the game, then fades out.
+		net.emutils.client.emutils.compat.MinecraftClientCompat.setOverlay(client, UiLoadingOverlay.blocking(client, reload, reload::start, optional -> client.execute(() -> {
+			callback.accept(optional.isEmpty());
+			if (client.gui.screen() != returnScreen) {
 				client.gui.setScreen(returnScreen);
-			});
-		}));
+			}
+		}), title, subtitle, icon != null ? icon : UiLoadingOverlay.Icon.symbol(HubIcons.SPARKLES)));
 	}
 
 	public static boolean applyShaderPack(String filename, Minecraft client, Screen parent) {

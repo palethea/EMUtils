@@ -19,6 +19,10 @@ import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.resources.Identifier;
 
 public final class ScreenshotThumbnailLoader implements AutoCloseable {
+	/** A screenshot modified this recently may still be being written, so a failed read is tried again. */
+	private static final long WRITING_WINDOW_MS = 5000;
+	private static final long RETRY_DELAY_MS = 250;
+
 	private record LoadKey(Path path, int targetWidth, int targetHeight, long modifiedMillis) {
 		static LoadKey of(ScreenshotEntry entry, int targetWidth, int targetHeight) {
 			return new LoadKey(entry.path(), targetWidth, targetHeight, entry.modifiedMillis());
@@ -38,6 +42,8 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 	private final Map<LoadKey, CompletableFuture<NativeImage>> inFlight = new ConcurrentHashMap<>();
 	private final Set<LoadKey> active = ConcurrentHashMap.newKeySet();
 	private final Set<LoadKey> failed = ConcurrentHashMap.newKeySet();
+	/** Screenshots that were still being written when read, and when to read them again. */
+	private final Map<LoadKey, Long> retryAt = new ConcurrentHashMap<>();
 	private final AtomicBoolean closed = new AtomicBoolean();
 
 	public ScreenshotThumbnailLoader(Minecraft client, ThumbnailConsumer onLoaded) {
@@ -53,6 +59,13 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 		LoadKey key = LoadKey.of(entry, targetWidth, targetHeight);
 		if (failed.contains(key) || active.contains(key) || inFlight.containsKey(key)) {
 			return;
+		}
+		Long retry = retryAt.get(key);
+		if (retry != null) {
+			if (System.currentTimeMillis() < retry) {
+				return;
+			}
+			retryAt.remove(key);
 		}
 
 		active.add(key);
@@ -72,6 +85,7 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 
 	public void clearFailures() {
 		failed.clear();
+		retryAt.clear();
 	}
 
 	@Override
@@ -83,6 +97,7 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 		active.clear();
 		inFlight.clear();
 		failed.clear();
+		retryAt.clear();
 		worker.shutdownNow();
 	}
 
@@ -95,6 +110,11 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 			return;
 		}
 
+		if (error != null && recentlyWritten(entry.path())) {
+			// Minecraft writes screenshots in the background, so a new one can be read before it's complete.
+			retryAt.put(key, System.currentTimeMillis() + RETRY_DELAY_MS);
+			return;
+		}
 		if (error != null || image == null) {
 			failed.add(key);
 			if (error != null) {
@@ -113,12 +133,21 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 			client.getTextureManager().register(id, VersionedTextures.smoothTexture(() -> entry.filename(), image));
 			onLoaded.onLoaded(
 				entry.path(),
+				entry.modifiedMillis(),
 				new LoadedThumbnail(id, image.getWidth(), image.getHeight(), targetWidth, targetHeight)
 			);
 		} catch (RuntimeException exception) {
 			closeImage(image);
 			failed.add(key);
 			EMUtilsClient.LOGGER.warn("Failed to register screenshot thumbnail {}.", entry.path(), exception);
+		}
+	}
+
+	private static boolean recentlyWritten(Path path) {
+		try {
+			return System.currentTimeMillis() - Files.getLastModifiedTime(path).toMillis() < WRITING_WINDOW_MS;
+		} catch (IOException exception) {
+			return false;
 		}
 	}
 
@@ -158,6 +187,6 @@ public final class ScreenshotThumbnailLoader implements AutoCloseable {
 
 	@FunctionalInterface
 	public interface ThumbnailConsumer {
-		void onLoaded(Path path, LoadedThumbnail thumbnail);
+		void onLoaded(Path path, long modifiedMillis, LoadedThumbnail thumbnail);
 	}
 }

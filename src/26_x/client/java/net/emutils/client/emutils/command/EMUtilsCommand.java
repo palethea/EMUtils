@@ -6,7 +6,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
@@ -60,7 +60,7 @@ public final class EMUtilsCommand {
 			return 0;
 		}
 
-		client.gui.setScreen(SettingsScreens.hub(MinecraftClientCompat.screen(client)));
+		client.gui.setScreen(new SettingsScreen(MinecraftClientCompat.screen(client)));
 		return 1;
 	}
 

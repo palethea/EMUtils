@@ -16,7 +16,6 @@ public final class EMUtilsTexts {
     public static final String UI_ALL = "emutils.ui.all";
     public static final String UI_NO_RESULTS = "emutils.ui.no_results";
     public static final String UI_OPEN = "emutils.ui.open";
-    public static final String UI_CLASSIC = "emutils.ui.classic";
     public static final String UI_RESET = "emutils.ui.reset";
     public static final String UI_NOTHING_TO_SET_UP = "emutils.ui.nothing_to_set_up";
     public static final String UI_KEYBINDS = "emutils.ui.keybinds";
@@ -166,11 +165,6 @@ public final class EMUtilsTexts {
     public static final String UI_CLEAR_WAYPOINTS_TITLE = "emutils.ui.waypoint.clear_title";
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE = "emutils.ui.waypoint.clear_message";
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE_ONE = "emutils.ui.waypoint.clear_message_one";
-    public static final String OPTION_SETTINGS_UI_PREVIEW = "emutils.option.settings_ui_preview";
-    public static final String HUB_FEATURE_SETTINGS_UI_PREVIEW_DESC = "emutils.hub.feature.settings_ui_preview.desc";
-    public static final String HUB_MODERN_OPEN = "emutils.hub.modern_open";
-    public static final String HUB_CLASSIC_OPEN = "emutils.hub.classic_open";
-    public static final String HUB_ACTION_OPEN = "emutils.hub.action.open";
     public static final String HUB_ACTION_UNAVAILABLE =
         "emutils.hub.action.unavailable";
     public static final String HUB_OPEN_PACK_MANAGER =
@@ -181,7 +175,6 @@ public final class EMUtilsTexts {
         "emutils.hub.open_command_shortcuts";
     public static final String HUB_SEARCH_PLACEHOLDER =
         "emutils.hub.search_placeholder";
-    public static final String HUB_EMPTY_SEARCH = "emutils.hub.empty_search";
     public static final String HUB_GROUP_RENDER = "emutils.hub.group.render";
     public static final String HUB_GROUP_HUD = "emutils.hub.group.hud";
     public static final String HUB_GROUP_UTILITY = "emutils.hub.group.utility";
@@ -282,7 +275,6 @@ public final class EMUtilsTexts {
     public static final String OPTION_TOGGLE = "emutils.option.toggle";
     public static final String OPTION_LIGHT_LEVEL_OVERLAY =
         "emutils.option.light_level_overlay";
-    public static final String OPTION_VALUE = "emutils.option.value";
     public static final String OPTION_RESET_DEFAULTS =
         "emutils.option.reset_defaults";
 
@@ -295,7 +287,6 @@ public final class EMUtilsTexts {
         "emutils.hub.screenshot_helper";
     public static final String HUB_COPY_CHAT = "emutils.hub.copy_chat";
     public static final String HUB_CHAT_FEATURES = "emutils.hub.chat_features";
-    public static final String HUB_MANAGERS = "emutils.hub.managers";
     public static final String HUB_HUD_OVERLAY = "emutils.hub.hud_overlay";
     public static final String HUB_FOOD_HUD = "emutils.hub.food_hud";
     public static final String HUB_ZOOM = "emutils.hub.zoom";
@@ -314,19 +305,14 @@ public final class EMUtilsTexts {
     public static final String SCREEN_COPY_CHAT = "emutils.screen.copy_chat";
     public static final String SCREEN_CHAT_FEATURES =
         "emutils.screen.chat_features";
-    public static final String SCREEN_MANAGERS = "emutils.screen.managers";
     public static final String SCREEN_CURRENT_WAYPOINTS =
         "emutils.screen.current_waypoints";
     public static final String SCREEN_SCREENSHOT_GALLERY =
         "emutils.screen.screenshot_gallery";
     public static final String SCREEN_HUD_OVERLAY =
         "emutils.screen.hud_overlay";
-    public static final String SCREEN_FOOD_HUD = "emutils.screen.food_hud";
-    public static final String SCREEN_ZOOM = "emutils.screen.zoom";
-    public static final String SCREEN_TWEAKS = "emutils.screen.tweaks";
     public static final String SCREEN_PACK_MANAGER =
         "emutils.screen.pack_manager";
-    public static final String SCREEN_CAPES = "emutils.screen.capes";
     public static final String SCREEN_SPOTIFY_PLAYER =
         "emutils.screen.spotify_player";
     public static final String SCREEN_INVENTORY_TOOLS =
@@ -788,7 +774,6 @@ public final class EMUtilsTexts {
 
     // Waypoint system (new unified)
     public static final String HUB_WAYPOINTS = "emutils.hub.waypoints";
-    public static final String SCREEN_WAYPOINTS = "emutils.screen.waypoints";
     public static final String SCREEN_ADD_WAYPOINT =
         "emutils.screen.add_waypoint";
     public static final String OPTION_WAYPOINTS = "emutils.option.waypoints";
@@ -874,7 +859,6 @@ public final class EMUtilsTexts {
     public static final String PACK_TAB_MODRINTH = "emutils.pack.tab.modrinth";
     public static final String PACK_SEARCH_PLACEHOLDER =
         "emutils.pack.search.placeholder";
-    public static final String PACK_SEARCH = "emutils.pack.action.search";
     public static final String PACK_REFRESH = "emutils.pack.action.refresh";
     public static final String PACK_DOWNLOAD = "emutils.pack.action.download";
     public static final String PACK_DELETE = "emutils.pack.action.delete";

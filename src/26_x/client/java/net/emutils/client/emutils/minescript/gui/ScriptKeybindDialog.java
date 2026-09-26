@@ -22,8 +22,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Captures a key combination that runs a script (#118): press keys to see the combination, then save.
  * A combination another script already uses is shown with a warning, and saving moves it to this one.
- * A script that has a keybind can also remove it here. Esc cancels and Enter saves, like the classic
- * keybind screen.
+ * A script that has a keybind can also remove it here. Esc cancels and Enter saves.
  */
 final class ScriptKeybindDialog {
 	private static final int WIDTH = 300;

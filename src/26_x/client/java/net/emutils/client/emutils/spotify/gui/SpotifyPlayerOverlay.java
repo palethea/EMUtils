@@ -22,7 +22,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Spotify now-playing card, in the look of the new UI: on the HUD, and with playback controls at
+ * The Spotify now-playing card, in the look of the settings UI: on the HUD, and with playback controls at
  * the bottom of the pause menu. The song fades in when it changes, and the cover fades in once loaded.
  */
 public final class SpotifyPlayerOverlay {

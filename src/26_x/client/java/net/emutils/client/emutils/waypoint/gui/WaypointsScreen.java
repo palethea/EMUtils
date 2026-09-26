@@ -27,7 +27,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The waypoints of the current world and dimension in the new UI (#103): each one with its color,
+ * The waypoints of the current world and dimension (#103): each one with its color,
  * name, type, coordinates and distance, and buttons to copy the coordinates, hide it, toggle its
  * beacon or delete it. New waypoints are added in a sheet over the list.
  */

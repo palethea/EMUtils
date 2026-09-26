@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.gui.hub.CustomHubScreen;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
@@ -31,10 +30,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.Nullable;
 
-/**
- * The new EMUtils settings screen (#88). It is still being built, so it is only reachable in dev builds
- * through the "New Settings UI (Preview)" option; everyone else gets {@link CustomHubScreen}.
- */
+/** The EMUtils settings screen (#88). */
 public final class SettingsScreen extends UiPanelScreen {
 	private static final int PADDING = 16;
 	private static final int CONTROL_RADIUS = 10;
@@ -69,8 +65,6 @@ public final class SettingsScreen extends UiPanelScreen {
 	private int controlY;
 	private int controlWidth;
 	private int themeButtonX;
-	private int classicButtonX;
-	private int classicButtonWidth;
 	private int rightButtonsY;
 	private int titleY;
 	private boolean stackedHeader;
@@ -97,9 +91,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		buttonsWidth += (categoryButtons.size() - 1) * 2;
 		controlWidth = Math.min(panelWidth - PADDING * 2, Math.max(300, buttonsWidth + 8));
 
-		Component classic = Component.translatable(EMUtilsTexts.UI_CLASSIC);
-		classicButtonWidth = UiWidgets.buttonWidth(font, classic);
-		int rightButtonsWidth = ROUND_BUTTON + 6 + classicButtonWidth;
+		int rightButtonsWidth = ROUND_BUTTON;
 		int titleBlockWidth = titleBlockWidth();
 		int centeredX = panelX + (panelWidth - controlWidth) / 2;
 		stackedHeader = centeredX < panelX + PADDING + titleBlockWidth + 12
@@ -110,7 +102,6 @@ public final class SettingsScreen extends UiPanelScreen {
 		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
 		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
-		classicButtonX = themeButtonX - 6 - classicButtonWidth;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
@@ -274,9 +265,6 @@ public final class SettingsScreen extends UiPanelScreen {
 		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
 		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
 		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness(), themeHover);
-
-		float classicHover = anim.towards("classic", contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON), 16.0F);
-		UiWidgets.button(context, font, theme, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON, Component.translatable(EMUtilsTexts.UI_CLASSIC), UiWidgets.ButtonStyle.GHOST, classicHover);
 	}
 
 	private void drawCards(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -404,8 +392,8 @@ public final class SettingsScreen extends UiPanelScreen {
 	}
 
 	/**
-	 * The feature's name without the trailing "..." the classic hub uses to mark features that open a
-	 * submenu; here every card opens its settings the same way.
+	 * The feature's name without a trailing "...", which some names carry to mark a submenu; here every
+	 * card opens its settings the same way.
 	 */
 	static Component title(HubFeature feature) {
 		String name = feature.title().getString().strip();
@@ -475,11 +463,6 @@ public final class SettingsScreen extends UiPanelScreen {
 		}
 		if (contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
 			EMUtilsClient.config().setSettingsUiDark(UiTheme.current() != UiTheme.DARK);
-			return true;
-		}
-		if (contains(mouseX, mouseY, classicButtonX, rightButtonsY, classicButtonWidth, ROUND_BUTTON)) {
-			EMUtilsClient.config().setSettingsUiPreview(false);
-			minecraft.gui.setScreen(new CustomHubScreen(parent));
 			return true;
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {

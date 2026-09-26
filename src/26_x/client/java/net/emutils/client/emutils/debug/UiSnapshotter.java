@@ -62,6 +62,8 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotFrom=N} (Gradle property {@code emutilsUiSnapshotFrom}) starts at step N. */
 	private static int step = Integer.getInteger("emutils.uiSnapshotFrom", 0);
 	private static int stepTicks;
+	/** The screenshots the gallery showed the first time it opened. */
+	private static List<Path> galleryShown = List.of();
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 
@@ -178,7 +180,12 @@ public final class UiSnapshotter {
 				client.gui.setScreen(new GalleryScreen(null));
 				next();
 			}
-			case 52 -> capture(client, "gui scale 2, gallery");
+			case 52 -> {
+				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					galleryShown = screen.screenshotsForSnapshot();
+				}
+				capture(client, "gui scale 2, gallery");
+			}
 			case 53 -> {
 				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
 					screen.openPreviewForSnapshot(1);
@@ -187,11 +194,34 @@ public final class UiSnapshotter {
 			}
 			case 54 -> capture(client, "gui scale 2, gallery preview");
 			case 55 -> {
+				// The screenshot taken of the open gallery shows up in it without reopening.
+				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					List<Path> listed = screen.screenshotsForSnapshot();
+					if (listed.size() > galleryShown.size() && listed.containsAll(galleryShown)) {
+						EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: an open gallery lists a new screenshot ({} -> {})", galleryShown.size(), listed.size());
+					} else {
+						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: an open gallery didn't list the new screenshot ({} -> {})", galleryShown.size(), listed.size());
+					}
+				}
 				EMUtilsClient.config().setSettingsUiDark(false);
 				client.gui.setScreen(new GalleryScreen(null));
 				next();
 			}
-			case 56 -> capture(client, "gui scale 2, gallery, light");
+			case 56 -> {
+				// Reopened, the gallery shows its thumbnails from the shared cache right away (#133).
+				if (stepTicks == 2 && MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					// Screenshots taken since the first opening load now; the ones it showed must not.
+					List<Path> loading = screen.loadingThumbnailsForSnapshot().stream().filter(galleryShown::contains).toList();
+					if (galleryShown.isEmpty()) {
+						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: the gallery showed no screenshots to cache");
+					} else if (loading.isEmpty()) {
+						EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: a reopened gallery shows cached thumbnails at once");
+					} else {
+						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: a reopened gallery was still loading {}", loading);
+					}
+				}
+				capture(client, "gui scale 2, gallery, light");
+			}
 			case 57 -> {
 				EMUtilsClient.config().setSettingsUiDark(true);
 				next();

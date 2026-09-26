@@ -213,6 +213,12 @@ tasks.matching { it.name == "remapSourcesJar" }.configureEach {
 }
 
 tasks.matching { it.name == "runClient" }.configureEach {
+	if (mcFamily == "26.x" && (findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean() || uiSnapshot)) {
+		// Automated launches run in the background: no mouse grab, no pause on lost focus (see BackgroundLaunch),
+		// and SDL (26.3+) opens the window without taking focus.
+		jvmArgs "-Demutils.backgroundLaunch=true"
+		environment "SDL_WINDOW_ACTIVATE_WHEN_SHOWN", "0"
+	}
 	if (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.smokeLaunch=true"
 		jvmArgs "-Demutils.launchTestWorld=true"

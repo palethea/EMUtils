@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A screen of the new UI (#88): a centered rounded panel that fades and scales in when it opens and
+ * An EMUtils UI screen (#88): a centered rounded panel that fades and scales in when it opens and
  * back out when it closes, over a dimmed and blurred world, in the current theme with a crossfade
  * when the theme switches. Subclasses lay out and draw what goes inside the panel, plus anything that
  * floats above it, such as sheets.
@@ -84,7 +84,7 @@ public abstract class UiPanelScreen extends Screen {
 	}
 
 	/**
-	 * How strongly the dimmed, blurred background shows. Moving between two screens of the new UI, it
+	 * How strongly the dimmed, blurred background shows. Moving between two screens of the EMUtils UI, it
 	 * stays in place and only the panels animate, so the background doesn't dip in between.
 	 */
 	private float backgroundProgress() {
@@ -224,7 +224,7 @@ public abstract class UiPanelScreen extends Screen {
 
 	/**
 	 * Fades and scales the panel out, then returns to the previous screen. Going back to another screen
-	 * of the new UI, it switches right away instead, and that screen's panel fades and scales in, the
+	 * of the EMUtils UI, it switches right away instead, and that screen's panel fades and scales in, the
 	 * same way opening this one looked.
 	 */
 	@Override

@@ -29,9 +29,9 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A feature's settings in a centered sheet over the settings screen (#92). It lists the same rows as
- * the classic hub, so every setting works here, and shows an optional description under each one from
- * the language key {@code <label key>.desc}. The feature's keybinds follow under their own heading.
+ * A feature's settings in a centered sheet over the settings screen (#92). It lists the feature's rows
+ * from {@link HubSettingsRegistry} and shows an optional description under each one from the language
+ * key {@code <label key>.desc}. The feature's keybinds follow under their own heading.
  */
 final class SettingsSheet {
 	private static final int MAX_WIDTH = 380;
@@ -277,7 +277,7 @@ final class SettingsSheet {
 		return keys;
 	}
 
-	/** The classic hub lists a feature's own on/off switch as its first row; the sheet header has it already. */
+	/** Some features list their own on/off switch as the first row; the sheet header has it already. */
 	private boolean repeatsFeatureSwitch(HubSettingRow row) {
 		return feature.toggle() != null
 			&& row instanceof HubSettingRow.Toggle toggle

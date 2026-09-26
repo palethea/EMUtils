@@ -30,10 +30,10 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The HUD Layout Editor in the new UI (#136). The game stays visible behind the HUD elements, each
+ * The HUD Layout Editor (#136). The game stays visible behind the HUD elements, each
  * with a light outline; hovering or selecting one shows its name and a corner handle to resize it.
  * A selected element gets a card with Size and Opacity sliders. A toolbar at the top saves, cancels or
- * resets everything. It edits the same draft layout as the classic editor.
+ * resets everything. Changes go to a draft layout in {@link HudLayoutManager} until they are saved.
  */
 public final class HudEditorScreen extends Screen {
 	private static final int TOOLBAR_HEIGHT = 32;
@@ -365,7 +365,7 @@ public final class HudEditorScreen extends Screen {
 			return true;
 		}
 		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
-			// As in the classic editor: right-click puts an element back to its normal size.
+			// Right-click puts an element back to its normal size.
 			HudLayoutManager.setDraftScale(hit, 100);
 			refreshDimensions();
 			return true;

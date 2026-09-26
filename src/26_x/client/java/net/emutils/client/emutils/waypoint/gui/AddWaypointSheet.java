@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * Enter adds, Esc cancels, Tab moves between the fields.
  */
 final class AddWaypointSheet {
-	/** The colors the classic form cycles through; the default custom color is picked if it's one of them. */
+	/** The preset colors; the default custom color is picked if it's one of them. */
 	private static final int[] PRESET_COLORS = {
 		0xFFFF5555, 0xFF55FF55, 0xFF5555FF, 0xFFFFFF55, 0xFF55FFFF, 0xFFFF55FF, 0xFFFFAA55, 0xFFFFFFFF, 0xFF555555
 	};

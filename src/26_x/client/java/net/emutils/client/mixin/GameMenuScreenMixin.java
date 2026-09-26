@@ -1,7 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.gui.settings.SettingsScreens;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -86,7 +86,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 	private Button emutils$createHubButton(int x, int y, int width, int height) {
 		return Button.builder(
 			Component.translatable(EMUtilsTexts.HUB_TITLE),
-			open -> Minecraft.getInstance().gui.setScreen(SettingsScreens.hub(this))
+			open -> Minecraft.getInstance().gui.setScreen(new SettingsScreen(this))
 		).bounds(x, y, width, height).build();
 	}
 

@@ -13,7 +13,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
@@ -79,13 +78,10 @@ public final class ResourcePackController {
 	}
 
 	/**
-	 * With the new UI's preview on, replaces the Mojang loading screen Minecraft just opened for the
-	 * resource reload with the EMUtils loading card (#112), which takes over the same reload.
+	 * Replaces the Mojang loading screen Minecraft just opened for the resource reload with the EMUtils
+	 * loading card (#112), which takes over the same reload.
 	 */
 	private static void useLoadingCard(Minecraft client, String filename, boolean enabled, UiLoadingOverlay.@Nullable Icon icon) {
-		if (EMUtilsClient.config() == null || !EMUtilsClient.config().settingsUiPreview()) {
-			return;
-		}
 		if (client.gui.overlay() instanceof LoadingOverlayAccessor loading) {
 			String name = filename.toLowerCase(Locale.ROOT).endsWith(".zip") ? filename.substring(0, filename.length() - 4) : filename;
 			Component subtitle = Component.translatable(enabled ? EMUtilsTexts.UI_LOADING_TURNING_ON : EMUtilsTexts.UI_LOADING_TURNING_OFF, name);

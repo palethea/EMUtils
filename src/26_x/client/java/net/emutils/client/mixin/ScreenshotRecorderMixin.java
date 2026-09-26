@@ -6,6 +6,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.screenshot.ScreenshotAutoCopy;
 import net.emutils.client.emutils.screenshot.ScreenshotMetadataSaver;
 import net.emutils.client.emutils.screenshot.ScreenshotMessage;
+import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Screenshot;
 import net.minecraft.network.chat.Component;
@@ -20,5 +21,6 @@ public abstract class ScreenshotRecorderMixin {
 		consumer.accept(EMUtilsClient.config().screenshotHelper() ? ScreenshotMessage.saved(screenshot) : (Component) message);
 		ScreenshotMetadataSaver.trySave(screenshot);
 		ScreenshotAutoCopy.tryCopy(screenshot);
+		GalleryScreen.onScreenshotSaved();
 	}
 }

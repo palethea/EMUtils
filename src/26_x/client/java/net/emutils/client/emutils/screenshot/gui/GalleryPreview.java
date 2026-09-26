@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.screenshot.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -66,6 +67,24 @@ final class GalleryPreview {
 			return;
 		}
 		index = Math.min(index, screenshots.size() - 1);
+	}
+
+	/** The screenshot shown now. */
+	Path shown() {
+		List<ScreenshotEntry> screenshots = gallery.screenshots();
+		return screenshots.get(Math.min(index, screenshots.size() - 1)).path();
+	}
+
+	/** Keeps showing {@code path} after screenshots were added before it; falls back like a delete if it's gone. */
+	void keepShowing(Path path) {
+		List<ScreenshotEntry> screenshots = gallery.screenshots();
+		for (int i = 0; i < screenshots.size(); i++) {
+			if (screenshots.get(i).path().equals(path)) {
+				index = i;
+				return;
+			}
+		}
+		screenshotsChanged();
 	}
 
 	private void step(int delta) {

@@ -3,8 +3,8 @@ package net.emutils.client.mixin;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.gui.settings.SettingsScreens;
-import net.emutils.client.emutils.packs.gui.PackScreens;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.versioned.VersionedInput;
 import net.minecraft.client.Minecraft;
@@ -59,7 +59,7 @@ public abstract class OptionsScreenMixin extends Screen {
 			EMUtilsConfig config = EMUtilsClient.config();
 			Minecraft client = Minecraft.getInstance();
 			if (config != null && config.packManagerEnabled() && config.packManagerReplaceResourcePacksButton() && !VersionedInput.isShiftDown(client)) {
-				return PackScreens.manager(this);
+				return new PacksScreen(this);
 			}
 			return screen.get();
 		};
@@ -73,7 +73,7 @@ public abstract class OptionsScreenMixin extends Screen {
 		}
 
 		Button emutilsButton = Button.builder(Component.translatable(EMUtilsTexts.OPTIONS_BUTTON), button -> Minecraft.getInstance()
-			.gui.setScreen(SettingsScreens.hub(this))).build();
+			.gui.setScreen(new SettingsScreen(this))).build();
 		grid.addChild(emutilsButton, EMUTILS_ROW, 0, 1, 1, grid.defaultCellSetting());
 		addRenderableWidget(emutilsButton);
 

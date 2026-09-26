@@ -52,7 +52,7 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Pack Manager in the new UI (#110): installed resource and shader packs, and Modrinth search to find
+ * The Pack Manager (#110): installed resource and shader packs, and Modrinth search to find
  * and download more. Results animate in one after another, search runs as you type, and only the newest
  * search's results are ever shown.
  */

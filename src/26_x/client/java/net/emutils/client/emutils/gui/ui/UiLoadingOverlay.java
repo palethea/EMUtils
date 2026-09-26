@@ -15,7 +15,7 @@ import net.minecraft.util.Util;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A loading card in the new UI's style for applying packs (#112), replacing Minecraft's Mojang screen.
+ * A loading card in the settings UI's style for applying packs (#112), replacing Minecraft's Mojang screen.
  * It fades in over the dimmed game, shows the reload's progress, shows it's done for a moment, and fades
  * out. Its finishing follows Minecraft's loading screen: when the reload is done it calls
  * {@code onFinish} and re-initializes the open screen.
