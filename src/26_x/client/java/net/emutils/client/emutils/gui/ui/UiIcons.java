@@ -14,9 +14,10 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Icons resampled to the exact number of screen pixels they cover. Drawing a 32px icon at another
+ * Icons resampled to the exact number of screen pixels they cover. Drawing an icon texture at another
  * size lets the GPU pick nearest pixels, which makes thin lines break up; averaging the source pixels
- * once per size keeps them smooth at every GUI scale.
+ * once per size keeps them smooth at every GUI scale. The Lucide sources are 192px (#124), larger than
+ * any icon is drawn up to GUI scale 8, so they are only ever scaled down and stay sharp.
  */
 public final class UiIcons {
 	private static final Map<String, Identifier> CACHE = new HashMap<>();
