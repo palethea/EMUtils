@@ -1,6 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.debug.BackgroundLaunch;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.Options;
@@ -30,6 +31,14 @@ public abstract class MouseMixin {
 	private boolean emutils$enableCinematicCameraWhileZooming(Options options) {
 		return options.smoothCamera
 			|| EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldUseCinematicCamera();
+	}
+
+	/** Automated test launches leave the cursor alone, so the developer can keep using the mouse. */
+	@Inject(method = "grabMouse", at = @At("HEAD"), cancellable = true)
+	private void emutils$keepMouseFreeInBackgroundLaunches(CallbackInfo ci) {
+		if (BackgroundLaunch.active()) {
+			ci.cancel();
+		}
 	}
 
 	@Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)

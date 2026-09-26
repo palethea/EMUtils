@@ -7,6 +7,7 @@ import net.emutils.client.emutils.command.EMUtilsCommand;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
+import net.emutils.client.emutils.debug.BackgroundLaunch;
 import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
 import net.emutils.client.emutils.debug.UiSnapshotter;
 import net.emutils.client.emutils.waypoint.WaypointManager;
@@ -144,6 +145,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
 		tickSpotify(client);
+		BackgroundLaunch.tick(client);
 		SmokeLaunchVerifier.tick(client);
 		UiSnapshotter.tick(client);
 	}
