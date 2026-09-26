@@ -186,20 +186,24 @@ public final class UiFontRenderer {
 				boolean mono = weight == Weight.MONO;
 				String file = mono ? codeFont.file() : files.file(weight);
 				boolean variable = mono ? codeFont.variable() : files.variable();
-				ByteBuffer buffer = read(file);
+				ByteBuffer buffer;
+				try {
+					buffer = read(file);
+				} catch (IOException exception) {
+					release(faces, data);
+					throw exception;
+				}
 				FT_Face face = file == null ? null : openFace(buffer, variable ? weight.designWeight : 0, stack);
 				if (face == null) {
 					MemoryUtil.memFree(buffer);
-					data.values().forEach(MemoryUtil::memFree);
-					faces.values().forEach(FreeType::FT_Done_Face);
+					release(faces, data);
 					return false;
 				}
 				faces.put(weight, face);
 				data.put(weight, buffer);
 			}
 		}
-		FACES.values().forEach(FreeType::FT_Done_Face);
-		FACE_DATA.values().forEach(MemoryUtil::memFree);
+		release(FACES, FACE_DATA);
 		FACES.clear();
 		FACE_DATA.clear();
 		FACES.putAll(faces);
@@ -211,6 +215,12 @@ public final class UiFontRenderer {
 		generation++;
 		clearCache();
 		return true;
+	}
+
+	/** Closes faces before freeing the data FreeType reads them from. */
+	private static void release(Map<Weight, FT_Face> faces, Map<Weight, ByteBuffer> data) {
+		faces.values().forEach(FreeType::FT_Done_Face);
+		data.values().forEach(MemoryUtil::memFree);
 	}
 
 	private static ByteBuffer read(@Nullable String file) throws IOException {
