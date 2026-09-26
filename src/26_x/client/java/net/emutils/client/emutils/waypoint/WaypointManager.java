@@ -123,11 +123,14 @@ public final class WaypointManager {
             WaypointType.CUSTOM
         );
         waypoint.setBeaconEnabled(beacon);
+        // Trimming can drop the oldest waypoint, so keep the whole list to put back if saving fails.
+        List<Waypoint> before = new ArrayList<>(waypoints);
         waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
         if (!save()) {
             // Not written, so it wouldn't survive a restart; don't pretend it was added.
-            waypoints.remove(waypoint);
+            waypoints.clear();
+            waypoints.addAll(before);
             return false;
         }
         return true;

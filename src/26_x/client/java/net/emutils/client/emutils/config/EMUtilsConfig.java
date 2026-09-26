@@ -2058,11 +2058,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (!dirty) {
 			return;
 		}
-		dirty = false;
 		try {
 			AtomicFiles.writeString(EMUtilsPaths.configFile(), GSON.toJson(this));
+			dirty = false;
 		} catch (IOException exception) {
-			EMUtilsClient.LOGGER.warn("Failed to save the EMUtils config.", exception);
+			// Stays pending and is tried again after the save delay, for example if the file was locked.
+			lastChangeMillis = System.currentTimeMillis();
+			EMUtilsClient.LOGGER.warn("Failed to save the EMUtils config; trying again shortly.", exception);
 		}
 	}
 
