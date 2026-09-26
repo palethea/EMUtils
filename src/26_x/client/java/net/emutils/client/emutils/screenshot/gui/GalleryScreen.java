@@ -246,7 +246,7 @@ public final class GalleryScreen extends UiPanelScreen {
 		Component date = Component.literal(DATE_FORMAT.format(Instant.ofEpochMilli(screenshot.modifiedMillis()).atZone(ZoneId.systemDefault())));
 		UiText.draw(context, font, date, UiText.Size.BODY, x + IMAGE_INSET + 2, textTop + UiText.lineHeight(font, UiText.Size.BOLD) + 6, theme.muted());
 		context.pose().popMatrix();
-		return new TileBox(index, x, y, actionsX, actionsY);
+		return new TileBox(screenshot.path(), x, y, actionsX, actionsY);
 	}
 
 	/**
@@ -316,7 +316,10 @@ public final class GalleryScreen extends UiPanelScreen {
 		if (index < 0 || index >= screenshots.size()) {
 			return;
 		}
-		ScreenshotEntry screenshot = screenshots.get(index);
+		runAction(screenshots.get(index), action);
+	}
+
+	private void runAction(ScreenshotEntry screenshot, int action) {
 		switch (action) {
 			case 0 -> ScreenshotActions.copyWithFeedback(minecraft, screenshot.path().toFile());
 			case 1 -> ScreenshotActions.openImage(screenshot.path().toFile());
@@ -400,12 +403,20 @@ public final class GalleryScreen extends UiPanelScreen {
 			for (TileBox tile : tiles) {
 				for (int i = 0; i < ACTION_ICONS.length; i++) {
 					if (contains(mouseX, mouseY, tile.actionsX() + i * (ACTION + ACTION_GAP), tile.actionsY(), ACTION, ACTION)) {
-						runAction(tile.index(), i);
+						// By path: the list may have changed since the tiles were drawn, such as when a
+						// screenshot was just saved, and an index could now point at another screenshot.
+						int index = indexOf(tile.path());
+						if (index >= 0) {
+							runAction(index, i);
+						}
 						return true;
 					}
 				}
 				if (contains(mouseX, mouseY, tile.x(), tile.y(), tileWidth, tileHeight)) {
-					preview = new GalleryPreview(font, anim, this, tile.index());
+					int index = indexOf(tile.path());
+					if (index >= 0) {
+						preview = new GalleryPreview(font, anim, this, index);
+					}
 					return true;
 				}
 			}
@@ -490,6 +501,42 @@ public final class GalleryScreen extends UiPanelScreen {
 		return screenshots.stream().map(ScreenshotEntry::path).toList();
 	}
 
-	private record TileBox(int index, int x, int y, int actionsX, int actionsY) {
+	/** The first tile drawn in the last frame, with a point on its image; used by UI snapshots. */
+	public @Nullable TileForSnapshot firstTileForSnapshot() {
+		if (tiles.isEmpty()) {
+			return null;
+		}
+		TileBox tile = tiles.getFirst();
+		return new TileForSnapshot(tile.path(), tile.x() + tileWidth / 2, tile.y() + imageHeight / 2 + IMAGE_INSET);
+	}
+
+	/** Reads the folder again without drawing a frame, as a screenshot arriving would; used by UI snapshots. */
+	public void refreshForSnapshot() {
+		refresh();
+	}
+
+	/** The screenshot the open preview shows, or null; used by UI snapshots. */
+	public @Nullable Path previewForSnapshot() {
+		return preview == null || screenshots.isEmpty() ? null : preview.shown();
+	}
+
+	public void closePreviewForSnapshot() {
+		preview = null;
+	}
+
+	public record TileForSnapshot(Path path, int x, int y) {
+	}
+
+	/** Where {@code path} is in the list now, or -1 if it's gone. */
+	private int indexOf(Path path) {
+		for (int i = 0; i < screenshots.size(); i++) {
+			if (screenshots.get(i).path().equals(path)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private record TileBox(Path path, int x, int y, int actionsX, int actionsY) {
 	}
 }

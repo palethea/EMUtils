@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.minescript;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +122,8 @@ public final class MinescriptScriptRepository {
 	public int countScripts(MinescriptScript folder) {
 		try (Stream<Path> paths = Files.walk(safePath(folder.path()))) {
 			return (int) paths.filter(path -> Files.isRegularFile(path) && isVisibleScriptPath(path)).count();
-		} catch (IOException exception) {
+		} catch (IOException | UncheckedIOException exception) {
+			// Directory streams report read errors, such as a subfolder that can't be opened, unchecked.
 			return 0;
 		}
 	}
@@ -139,6 +141,9 @@ public final class MinescriptScriptRepository {
 			for (Path child : paths.sorted(Comparator.reverseOrder()).toList()) {
 				Files.delete(safePath(child));
 			}
+		} catch (UncheckedIOException exception) {
+			// Directory streams report read errors, such as a subfolder that can't be opened, unchecked.
+			throw exception.getCause();
 		}
 	}
 
@@ -156,6 +161,9 @@ public final class MinescriptScriptRepository {
 				.filter(this::isVisibleScriptPath)
 				.sorted(Comparator.comparing((Path path) -> !Files.isDirectory(path)).thenComparing(path -> path.getFileName().toString().toLowerCase(Locale.ROOT)))
 				.toList();
+		} catch (UncheckedIOException exception) {
+			// Directory streams report read errors unchecked; the screen handles the IOException.
+			throw exception.getCause();
 		}
 
 		for (Path child : children) {

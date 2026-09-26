@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.minescript;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -341,8 +342,8 @@ public final class MinescriptPython {
 				.filter(Files::isRegularFile)
 				.sorted(Comparator.comparing((Path file) -> versionKey(file.getParent().getFileName().toString())).reversed())
 				.forEach(file -> candidates.add(file.toString()));
-		} catch (IOException ignored) {
-			// Unreadable folder: nothing to add from it.
+		} catch (IOException | UncheckedIOException ignored) {
+			// Unreadable folder (directory streams report read errors unchecked): nothing to add from it.
 		}
 	}
 

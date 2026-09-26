@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class MassDropStore {
@@ -59,9 +59,7 @@ public final class MassDropStore {
 	private void save() {
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.massDropFile())) {
-				GSON.toJson(this, writer);
-			}
+			AtomicFiles.writeString(EMUtilsPaths.massDropFile(), GSON.toJson(this));
 		} catch (IOException ignored) {
 		}
 	}

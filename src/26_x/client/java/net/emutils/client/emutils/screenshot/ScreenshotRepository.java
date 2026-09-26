@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.screenshot;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -31,7 +32,8 @@ public final class ScreenshotRepository {
 				.sorted(sort)
 				.limit(EMUtilsClient.config() == null ? 200 : EMUtilsClient.config().screenshotGalleryMaxCount())
 				.toList();
-		} catch (IOException exception) {
+		} catch (IOException | UncheckedIOException exception) {
+			// Directory streams report read errors unchecked, partway through the listing.
 			EMUtilsClient.LOGGER.warn("Failed to list screenshots.", exception);
 			return List.of();
 		}

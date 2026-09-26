@@ -68,6 +68,8 @@ final class AddWaypointSheet {
 	private int beaconY;
 	private int footerY;
 	private int addX;
+	/** The last Add could not write the waypoints file. */
+	private boolean saveFailed;
 	private int addWidth;
 	private int cancelX;
 	private int cancelWidth;
@@ -122,7 +124,21 @@ final class AddWaypointSheet {
 	}
 
 	private boolean valid() {
-		return coordinate(0) != null && coordinate(1) != null && coordinate(2) != null;
+		return unavailable() == null && coordinate(0) != null && coordinate(1) != null && coordinate(2) != null;
+	}
+
+	/**
+	 * Why a waypoint can't be added right now, or null if it can. The sheet can be reached from the
+	 * title screen through the settings, where there's no world to add it to.
+	 */
+	private @Nullable Component unavailable() {
+		if (!EMUtilsClient.waypoint().enabled()) {
+			return Component.translatable(EMUtilsTexts.UI_WAYPOINT_TURNED_OFF);
+		}
+		if (Minecraft.getInstance().level == null) {
+			return Component.translatable(EMUtilsTexts.UI_WAYPOINT_NEEDS_WORLD);
+		}
+		return null;
 	}
 
 	boolean isClosed() {
@@ -156,7 +172,10 @@ final class AddWaypointSheet {
 		if (label.isEmpty()) {
 			label = "Waypoint";
 		}
-		EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon);
+		if (!EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon)) {
+			saveFailed = true;
+			return;
+		}
 		if (client.gui != null) {
 			MinecraftClientCompat.chat(client).addClientSystemMessage(EmUtilsChatPrefix.chat(
 				Component.translatable(EMUtilsTexts.WAYPOINT_ADDED, label).withStyle(ChatFormatting.GREEN)
@@ -239,6 +258,12 @@ final class AddWaypointSheet {
 		cancelX = addX - 6 - cancelWidth;
 		UiWidgets.button(context, font, theme, cancelX, y + footerY, cancelWidth, BUTTON_HEIGHT, CommonComponents.GUI_CANCEL, UiWidgets.ButtonStyle.GHOST, contains(hoverX, hoverY, cancelX, y + footerY, cancelWidth, BUTTON_HEIGHT) ? 1.0F : 0.0F);
 		UiWidgets.button(context, font, theme, addX, y + footerY, addWidth, BUTTON_HEIGHT, addLabel, valid() ? UiWidgets.ButtonStyle.PRIMARY : UiWidgets.ButtonStyle.SURFACE, valid() && contains(hoverX, hoverY, addX, y + footerY, addWidth, BUTTON_HEIGHT) ? 1.0F : 0.0F);
+		// Why Add is off, or why the last try failed, in the free space left of the buttons.
+		Component note = saveFailed ? Component.translatable(EMUtilsTexts.UI_WAYPOINT_SAVE_FAILED) : unavailable();
+		if (note != null) {
+			Component shown = UiText.ellipsize(font, note, UiText.Size.SMALL, cancelX - 8 - left);
+			UiText.drawCentered(context, font, shown, UiText.Size.SMALL, left, y + footerY + BUTTON_HEIGHT / 2, saveFailed ? theme.warning() : theme.muted());
+		}
 		frame.endBody(context);
 
 		if (colorPicker != null) {

@@ -5,13 +5,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import net.emutils.client.emutils.input.StoredKeyCombo;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 
 public final class CommandShortcutStore {
@@ -93,9 +93,7 @@ public final class CommandShortcutStore {
 	private void save() {
 		try {
 			Files.createDirectories(EMUtilsPaths.configDir());
-			try (Writer writer = Files.newBufferedWriter(EMUtilsPaths.commandShortcutsFile())) {
-				GSON.toJson(this, writer);
-			}
+			AtomicFiles.writeString(EMUtilsPaths.commandShortcutsFile(), GSON.toJson(this));
 		} catch (IOException ignored) {
 		}
 	}

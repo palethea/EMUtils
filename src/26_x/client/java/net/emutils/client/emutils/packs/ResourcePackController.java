@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.packs;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -174,6 +175,9 @@ public final class ResourcePackController {
 				for (Path nested : walk.sorted((a, b) -> b.getNameCount() - a.getNameCount()).toList()) {
 					Files.deleteIfExists(nested);
 				}
+			} catch (UncheckedIOException exception) {
+				// Directory streams report read errors, such as a subfolder that can't be opened, unchecked.
+				throw exception.getCause();
 			}
 			return;
 		}

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
@@ -90,7 +90,11 @@ public final class WaypointManager {
         }
     }
 
-    public void addCustom(
+    /**
+     * Adds a custom waypoint in the current world and dimension. Returns false, and keeps nothing, when
+     * waypoints are off, there's no world, or the waypoints couldn't be written.
+     */
+    public boolean addCustom(
         Minecraft client,
         String label,
         int x,
@@ -100,7 +104,7 @@ public final class WaypointManager {
         boolean beacon
     ) {
         if (!enabled() || client == null || client.level == null) {
-            return;
+            return false;
         }
 
         long timestamp = System.currentTimeMillis();
@@ -121,7 +125,12 @@ public final class WaypointManager {
         waypoint.setBeaconEnabled(beacon);
         waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
-        save();
+        if (!save()) {
+            // Not written, so it wouldn't survive a restart; don't pretend it was added.
+            waypoints.remove(waypoint);
+            return false;
+        }
+        return true;
     }
 
     public void tick(Minecraft client) {
@@ -562,25 +571,22 @@ public final class WaypointManager {
         }
     }
 
-    private void save() {
+    /** Writes the waypoints; returns false if that failed. */
+    private boolean save() {
         try {
             Files.createDirectories(EMUtilsPaths.configDir());
             if (waypoints.isEmpty()) {
                 Files.deleteIfExists(EMUtilsPaths.waypointFile());
-                return;
+                return true;
             }
 
             WaypointSaveData saveData = new WaypointSaveData();
             saveData.setWaypoints(new ArrayList<>(waypoints));
-            try (
-                Writer writer = Files.newBufferedWriter(
-                    EMUtilsPaths.waypointFile()
-                )
-            ) {
-                GSON.toJson(saveData, writer);
-            }
+            AtomicFiles.writeString(EMUtilsPaths.waypointFile(), GSON.toJson(saveData));
+            return true;
         } catch (IOException exception) {
             EMUtilsClient.LOGGER.warn("Failed to save waypoints.", exception);
+            return false;
         }
     }
 

@@ -43,7 +43,7 @@ public final class UiTextField {
 
 	/** Replaces the text and selects all of it, ready to be typed over. */
 	public void setText(String value) {
-		text = value.length() > maxLength ? value.substring(0, maxLength) : value;
+		text = value.length() > maxLength ? value.substring(0, boundaryBefore(value, maxLength)) : value;
 		anchor = 0;
 		cursor = text.length();
 		scrollX = 0;
@@ -55,8 +55,8 @@ public final class UiTextField {
 
 	/** Selects characters {@code start} to {@code end}, with the caret at the end. */
 	public void select(int start, int end) {
-		anchor = Math.clamp(start, 0, text.length());
-		cursor = Math.clamp(end, 0, text.length());
+		anchor = snap(start);
+		cursor = snap(end);
 	}
 
 	public boolean focused() {
@@ -120,11 +120,11 @@ public final class UiTextField {
 			return true;
 		}
 		if (input.isLeft()) {
-			moveTo(hasSelection() && !shift ? Math.min(cursor, anchor) : word ? previousWord(cursor) : cursor - 1, shift);
+			moveTo(hasSelection() && !shift ? Math.min(cursor, anchor) : word ? previousWord(cursor) : previous(cursor), shift);
 			return true;
 		}
 		if (input.isRight()) {
-			moveTo(hasSelection() && !shift ? Math.max(cursor, anchor) : word ? nextWord(cursor) : cursor + 1, shift);
+			moveTo(hasSelection() && !shift ? Math.max(cursor, anchor) : word ? nextWord(cursor) : next(cursor), shift);
 			return true;
 		}
 		if (input.key() == InputConstants.KEY_HOME) {
@@ -140,7 +140,7 @@ public final class UiTextField {
 				replaceSelection("", changed);
 			} else if (cursor > 0) {
 				// Ctrl+Backspace (Cmd on macOS, like vanilla text fields) removes the previous word.
-				replace(word ? previousWord(cursor) : cursor - 1, cursor, "", changed);
+				replace(word ? previousWord(cursor) : previous(cursor), cursor, "", changed);
 			}
 			return true;
 		}
@@ -148,7 +148,7 @@ public final class UiTextField {
 			if (hasSelection()) {
 				replaceSelection("", changed);
 			} else if (cursor < text.length()) {
-				replace(cursor, word ? nextWord(cursor) : cursor + 1, "", changed);
+				replace(cursor, word ? nextWord(cursor) : next(cursor), "", changed);
 			}
 			return true;
 		}
@@ -215,7 +215,7 @@ public final class UiTextField {
 	}
 
 	private void moveTo(int index, boolean extendSelection) {
-		cursor = Math.clamp(index, 0, text.length());
+		cursor = snap(index);
 		if (!extendSelection) {
 			anchor = cursor;
 		}
@@ -232,7 +232,7 @@ public final class UiTextField {
 		String inserted = filtered.toString();
 		int room = maxLength - (text.length() - (end - start));
 		if (inserted.length() > room) {
-			inserted = inserted.substring(0, Math.max(0, room));
+			inserted = inserted.substring(0, boundaryBefore(inserted, Math.max(0, room)));
 		}
 		String next = text.substring(0, start) + inserted + text.substring(end);
 		cursor = start + inserted.length();
@@ -245,13 +245,37 @@ public final class UiTextField {
 	}
 
 	private int indexAt(Font font, int offset) {
-		for (int i = 0; i < text.length(); i++) {
-			int middle = (widthOf(font, text.substring(0, i)) + widthOf(font, text.substring(0, i + 1))) / 2;
+		for (int i = 0; i < text.length(); i = next(i)) {
+			int middle = (widthOf(font, text.substring(0, i)) + widthOf(font, text.substring(0, next(i)))) / 2;
 			if (offset < middle) {
 				return i;
 			}
 		}
 		return text.length();
+	}
+
+	// Positions are kept between characters, never inside one: an emoji or other character outside the
+	// Basic Multilingual Plane is two chars (a surrogate pair), and splitting it leaves broken text.
+
+	/** {@code index} clamped to the text, moved back if it falls inside a surrogate pair. */
+	private int snap(int index) {
+		int clamped = Math.clamp(index, 0, text.length());
+		return clamped > 0 && clamped < text.length() && Character.isLowSurrogate(text.charAt(clamped)) && Character.isHighSurrogate(text.charAt(clamped - 1)) ? clamped - 1 : clamped;
+	}
+
+	/** The position one character before {@code index}. */
+	private int previous(int index) {
+		return index <= 0 ? 0 : text.offsetByCodePoints(snap(index), -1);
+	}
+
+	/** The position one character after {@code index}. */
+	private int next(int index) {
+		return index >= text.length() ? text.length() : text.offsetByCodePoints(snap(index), 1);
+	}
+
+	/** The largest length up to {@code length} that doesn't cut {@code value} inside a surrogate pair. */
+	private static int boundaryBefore(String value, int length) {
+		return length > 0 && length < value.length() && Character.isHighSurrogate(value.charAt(length - 1)) ? length - 1 : length;
 	}
 
 	private static int widthOf(Font font, String value) {
