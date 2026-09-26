@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiConfirmDialog;
 import net.emutils.client.emutils.gui.ui.UiIcons;
@@ -29,6 +30,7 @@ import net.emutils.client.emutils.screenshot.ScreenshotRepository.ScreenshotEntr
 import net.emutils.client.emutils.screenshot.gui.ScreenshotThumbnailLoader.LoadedThumbnail;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.versioned.VersionedPlatform;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -95,6 +97,23 @@ public final class GalleryScreen extends UiPanelScreen {
 		imageHeight = (tileWidth - IMAGE_INSET * 2) * 9 / 16;
 		tileHeight = IMAGE_INSET + imageHeight + 10 + UiText.lineHeight(font, UiText.Size.BOLD) + 6 + UiText.lineHeight(font, UiText.Size.BODY) + 10;
 		refresh();
+	}
+
+	/**
+	 * Call when Minecraft saved a screenshot, from any thread: an open gallery lists it right away instead
+	 * of only on the next opening, and an open preview stays on the screenshot it shows.
+	 */
+	public static void onScreenshotSaved() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> {
+			if (MinecraftClientCompat.screen(client) instanceof GalleryScreen gallery) {
+				Path shown = gallery.preview != null && !gallery.screenshots.isEmpty() ? gallery.preview.shown() : null;
+				gallery.refresh();
+				if (gallery.preview != null && shown != null) {
+					gallery.preview.keepShowing(shown);
+				}
+			}
+		});
 	}
 
 	/** Reads the screenshots folder again, in the order and count the gallery settings ask for. */

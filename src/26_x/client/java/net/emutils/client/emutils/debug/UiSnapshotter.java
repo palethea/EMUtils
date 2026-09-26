@@ -194,6 +194,15 @@ public final class UiSnapshotter {
 			}
 			case 54 -> capture(client, "gui scale 2, gallery preview");
 			case 55 -> {
+				// The screenshot taken of the open gallery shows up in it without reopening.
+				if (MinecraftClientCompat.screen(client) instanceof GalleryScreen screen) {
+					List<Path> listed = screen.screenshotsForSnapshot();
+					if (listed.size() > galleryShown.size() && listed.containsAll(galleryShown)) {
+						EMUtilsClient.LOGGER.info("EMUtils UI snapshot check passed: an open gallery lists a new screenshot ({} -> {})", galleryShown.size(), listed.size());
+					} else {
+						EMUtilsClient.LOGGER.error("EMUtils UI snapshot check failed: an open gallery didn't list the new screenshot ({} -> {})", galleryShown.size(), listed.size());
+					}
+				}
 				EMUtilsClient.config().setSettingsUiDark(false);
 				client.gui.setScreen(new GalleryScreen(null));
 				next();

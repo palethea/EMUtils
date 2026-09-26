@@ -39,8 +39,16 @@ public final class GalleryThumbnails {
 		return shared;
 	}
 
-	/** Frees every cached image, for example when leaving the world. */
+	/**
+	 * Frees every cached image, for example when leaving the world. Safe to call from any thread: the
+	 * disconnect event runs on the network thread, and textures can only be freed on the render thread.
+	 */
 	public static void freeShared() {
+		Minecraft client = Minecraft.getInstance();
+		if (!client.isSameThread()) {
+			client.execute(GalleryThumbnails::freeShared);
+			return;
+		}
 		if (shared != null) {
 			shared.close();
 			shared = null;
