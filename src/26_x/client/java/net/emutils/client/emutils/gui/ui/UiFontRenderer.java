@@ -58,6 +58,12 @@ public final class UiFontRenderer {
 			return false;
 		}
 	};
+	/**
+	 * Single characters, for text that changes all the time such as HUD values: each is rendered once
+	 * per size, and the text is put together from them, instead of a new texture per string.
+	 */
+	private static final Map<Long, Glyph> GLYPHS = new HashMap<>();
+	private static final int MAX_CACHED_GLYPHS = 2048;
 	private static int texturesMade;
 
 	private UiFontRenderer() {
@@ -86,6 +92,10 @@ public final class UiFontRenderer {
 
 	/** A string rendered to a white texture; {@code baseline} is the baseline's row in the texture. */
 	public record Rendered(Identifier texture, int width, int height, int baseline, int left) {
+	}
+
+	/** One character and how far it moves the pen, in physical pixels. */
+	public record Glyph(Rendered rendered, float advance) {
 	}
 
 	public static boolean available() {
@@ -164,7 +174,36 @@ public final class UiFontRenderer {
 		if (cached != null) {
 			return cached;
 		}
+		Rendered rendered = renderUncached(weight, pixelSize, text);
+		STRINGS.put(key, rendered);
+		return rendered;
+	}
 
+	/** One character at {@code pixelSize}, from the glyph cache. */
+	public static Glyph glyph(Weight weight, float pixelSize, int codepoint) {
+		long key = (Integer.toUnsignedLong(Float.floatToIntBits(pixelSize)) << 24) | ((long) weight.ordinal() << 21) | codepoint;
+		Glyph cached = GLYPHS.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		if (GLYPHS.size() >= MAX_CACHED_GLYPHS) {
+			// Only reached when sizes keep changing; start over rather than track use.
+			releaseGlyphs();
+		}
+		String text = new String(Character.toChars(codepoint));
+		Glyph glyph = new Glyph(renderUncached(weight, pixelSize, text), measure(weight, pixelSize, text));
+		GLYPHS.put(key, glyph);
+		return glyph;
+	}
+
+	private static void releaseGlyphs() {
+		for (Glyph glyph : GLYPHS.values()) {
+			Minecraft.getInstance().getTextureManager().release(glyph.rendered().texture());
+		}
+		GLYPHS.clear();
+	}
+
+	private static Rendered renderUncached(Weight weight, float pixelSize, String text) {
 		FT_Face face = FACES.get(weight);
 		setSize(face, pixelSize);
 		int ascender = (int) Math.ceil(face.size().metrics().ascender() / 64.0);
@@ -198,9 +237,7 @@ public final class UiFontRenderer {
 
 		Identifier id = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "ui_text/" + texturesMade++);
 		Minecraft.getInstance().getTextureManager().register(id, VersionedTextures.smoothTexture(() -> "EMUtils UI text", image));
-		Rendered rendered = new Rendered(id, width, height, baseline, PADDING);
-		STRINGS.put(key, rendered);
-		return rendered;
+		return new Rendered(id, width, height, baseline, PADDING);
 	}
 
 	private static void blitGlyph(NativeImage image, FT_GlyphSlot slot, int left, int top) {
@@ -237,6 +274,11 @@ public final class UiFontRenderer {
 		FreeType.FT_Set_Char_Size(face, 0L, Math.round(pixelSize * 64.0F), 72, 72);
 	}
 
+	/** How many text textures have been made so far, for checking that live text doesn't make new ones. */
+	public static int texturesMade() {
+		return texturesMade;
+	}
+
 	/** Frees the cached strings, for example when the GUI scale changes or the screen closes. */
 	public static void clearCache() {
 		for (Rendered rendered : STRINGS.values()) {
@@ -244,5 +286,6 @@ public final class UiFontRenderer {
 		}
 		STRINGS.clear();
 		WIDTHS.clear();
+		releaseGlyphs();
 	}
 }

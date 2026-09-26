@@ -4,36 +4,43 @@ import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiRasterScale;
+import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.gui.ui.UiText;
+import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.CommonColors;
 import net.minecraft.resources.Identifier;
 
+/**
+ * The HUD Overlay (#93), in the look of the new UI: a rounded card in the settings UI's theme with
+ * smooth icons, labels in one column and values lined up in the next. Values change every tick, so
+ * they are drawn from cached glyphs ({@link UiText#drawGlyphs}) rather than a texture per string.
+ */
 public final class HudOverlayRenderer {
 	private static final Identifier ID = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "hud_overlay");
 	private static final int PADDING_X = 8;
 	private static final int PADDING_Y = 7;
-	private static final int ROW_HEIGHT = 13;
-	private static final int ICON_SIZE = 8;
+	private static final int ROW_HEIGHT = 12;
+	private static final int RADIUS = 9;
+	private static final int SHADOW_BLUR = 8;
+	private static final int ICON_SIZE = 9;
 	private static final int ICON_GAP = 6;
-	private static final int LABEL_VALUE_GAP = 6;
-	private static final int MIN_CONTENT_WIDTH = 156;
-	private static final int BACKGROUND_COLOR = 0xB5222B3D;
-	private static final int SHADOW_COLOR = 0x66000000;
-	private static final int BORDER_COLOR = 0xCC101725;
-	private static final int VALUE_COLOR = 0xFF20F050;
-	private static final int ACCENT_COLOR = 0xFF20F050;
-	private static final int MEMORY_TRACK_COLOR = 0xFF101725;
+	private static final int LABEL_VALUE_GAP = 8;
+	private static final int MIN_CONTENT_WIDTH = 130;
 	private static final int MEMORY_BAR_HEIGHT = 3;
 	private static final int MEMORY_BAR_GAP = 3;
+	/** Below this background opacity the world shows through, so text gets a shadow to stay readable. */
+	private static final int TEXT_SHADOW_BELOW_OPACITY = 50;
+	private static final UiText.Size LABEL_SIZE = UiText.Size.BODY;
+	private static final UiText.Size VALUE_SIZE = UiText.Size.LABEL;
 
 	private static HudOverlayData data = HudOverlayData.empty();
 
@@ -55,27 +62,14 @@ public final class HudOverlayRenderer {
 	// The panel keeps its usual width and only grows while a line (a long biome name, for example) needs more room.
 	public static int unscaledPanelWidth(EMUtilsConfig config) {
 		Font font = Minecraft.getInstance().font;
-		boolean showIcons = config.hudShowIcons();
-		int contentWidth = MIN_CONTENT_WIDTH;
-		for (HudOverlayLine line : mainLines(config)) {
-			contentWidth = Math.max(contentWidth, lineWidth(font, line, showIcons));
+		List<HudOverlayLine> lines = allLines(config);
+		int labelWidth = labelColumnWidth(font, lines);
+		int valueWidth = 0;
+		for (HudOverlayLine line : lines) {
+			valueWidth = Math.max(valueWidth, UiText.glyphsWidth(font, line.value(), VALUE_SIZE));
 		}
-		if (config.hudShowMemory()) {
-			contentWidth = Math.max(contentWidth, lineWidth(font, memoryLine(), showIcons));
-		}
-		return contentWidth + PADDING_X * 2;
-	}
-
-	private static int lineWidth(Font font, HudOverlayLine line, boolean showIcons) {
-		int iconWidth = showIcons ? ICON_SIZE + ICON_GAP : 0;
-		return iconWidth
-			+ font.width(Component.translatable(line.labelKey()))
-			+ LABEL_VALUE_GAP
-			+ font.width(Component.literal(line.value()));
-	}
-
-	private static HudOverlayLine memoryLine() {
-		return new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory"));
+		int iconWidth = config.hudShowIcons() ? ICON_SIZE + ICON_GAP : 0;
+		return Math.max(MIN_CONTENT_WIDTH, iconWidth + labelWidth + LABEL_VALUE_GAP + valueWidth) + PADDING_X * 2;
 	}
 
 	public static int unscaledPanelHeight(EMUtilsConfig config) {
@@ -84,16 +78,11 @@ public final class HudOverlayRenderer {
 		if (mainLines.isEmpty() && !showMemory) {
 			return PADDING_Y * 2 + ROW_HEIGHT;
 		}
-
-		int mainLineCount = mainLines.size();
-		int panelHeight = PADDING_Y + mainLineCount * ROW_HEIGHT;
+		int height = PADDING_Y * 2 + mainLines.size() * ROW_HEIGHT;
 		if (showMemory) {
-			panelHeight += ROW_HEIGHT + MEMORY_BAR_GAP + MEMORY_BAR_HEIGHT + PADDING_Y;
-		} else {
-			panelHeight += PADDING_Y;
+			height += ROW_HEIGHT + MEMORY_BAR_GAP + MEMORY_BAR_HEIGHT;
 		}
-
-		return panelHeight;
+		return height;
 	}
 
 	public static void renderPanel(
@@ -118,23 +107,24 @@ public final class HudOverlayRenderer {
 		int panelHeight,
 		int opacityPercent
 	) {
-		List<HudOverlayLine> mainLines = mainLines(config);
-		boolean showMemory = config.hudShowMemory();
-		Font textRenderer = client.font;
-		boolean showIcons = config.hudShowIcons();
-		drawPanelBackground(context, x, y, panelWidth, panelHeight, opacityPercent);
-		drawLines(context, textRenderer, mainLines, showIcons, x + PADDING_X, y + PADDING_Y);
+		UiTheme theme = UiTheme.current();
+		drawCard(context, theme, x, y, panelWidth, panelHeight, opacityPercent);
 
-		if (showMemory) {
-			int memoryRowY = y + PADDING_Y + mainLines.size() * ROW_HEIGHT;
-			drawLine(context, textRenderer, memoryLine(), showIcons, x + PADDING_X, memoryRowY);
-			drawMemoryBar(
-				context,
-				x + PADDING_X,
-				memoryRowY + ROW_HEIGHT + MEMORY_BAR_GAP,
-				panelWidth - PADDING_X * 2,
-				data.memoryPercent()
-			);
+		List<HudOverlayLine> mainLines = mainLines(config);
+		List<HudOverlayLine> lines = allLines(config);
+		Font font = client.font;
+		boolean showIcons = config.hudShowIcons();
+		boolean shadow = opacityPercent < TEXT_SHADOW_BELOW_OPACITY;
+		int textX = x + PADDING_X + (showIcons ? ICON_SIZE + ICON_GAP : 0);
+		int valueX = textX + labelColumnWidth(font, lines) + LABEL_VALUE_GAP;
+		int rowY = y + PADDING_Y;
+		for (HudOverlayLine line : lines) {
+			drawLine(context, font, theme, line, showIcons, shadow, x + PADDING_X, textX, valueX, rowY);
+			rowY += ROW_HEIGHT;
+		}
+		if (config.hudShowMemory()) {
+			int barY = y + PADDING_Y + (mainLines.size() + 1) * ROW_HEIGHT + MEMORY_BAR_GAP;
+			drawMemoryBar(context, theme, x + PADDING_X, barY, panelWidth - PADDING_X * 2, data.memoryPercent());
 		}
 	}
 
@@ -177,13 +167,23 @@ public final class HudOverlayRenderer {
 		}
 
 		context.pose().pushMatrix();
+		UiRasterScale.set(layout.scaleFactor());
 		try {
 			context.pose().translate(layout.position().x(), layout.position().y());
 			context.pose().scale(layout.scaleFactor(), layout.scaleFactor());
 			renderPanel(context, client, config, 0, 0, panelWidth, panelHeight, layout.opacityPercent());
 		} finally {
+			UiRasterScale.reset();
 			context.pose().popMatrix();
 		}
+	}
+
+	private static List<HudOverlayLine> allLines(EMUtilsConfig config) {
+		List<HudOverlayLine> lines = mainLines(config);
+		if (config.hudShowMemory()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_MEMORY, data.memory(), HudOverlayLine.icon("memory")));
+		}
+		return lines;
 	}
 
 	private static List<HudOverlayLine> mainLines(EMUtilsConfig config) {
@@ -191,14 +191,14 @@ public final class HudOverlayRenderer {
 		if (config.hudShowCoordinates()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_COORDS, data.coordinates(), HudOverlayLine.icon("coords")));
 			if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive()) {
-				lines.add(new HudOverlayLine(EMUtilsTexts.HUD_FREE_CAMERA_COORDS, data.freeCameraCoordinates(), HudOverlayLine.icon("coords")));
+				lines.add(new HudOverlayLine(EMUtilsTexts.HUD_FREE_CAMERA_COORDS, data.freeCameraCoordinates(), HudOverlayLine.icon("free_camera")));
 			}
 		}
 		Minecraft client = Minecraft.getInstance();
 		if (config.hudShowNetherCoordinates()
 			&& client.level != null
 			&& client.level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
-			lines.add(new HudOverlayLine("emutils.hud.nether_coords", data.portalCoordinates(), HudOverlayLine.icon("coords")));
+			lines.add(new HudOverlayLine("emutils.hud.nether_coords", data.portalCoordinates(), HudOverlayLine.icon("nether")));
 		}
 		if (config.hudShowChunkRegion()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_CHUNK_REGION, data.chunkRegion(), HudOverlayLine.icon("chunk")));
@@ -225,65 +225,76 @@ public final class HudOverlayRenderer {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_REAL_TIME, data.realTime(), HudOverlayLine.icon("real_time")));
 		}
 		if (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().lockedYPlacement().active()) {
-			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOCKED_Y, data.lockedYPlacement(), HudOverlayLine.icon("coords")));
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOCKED_Y, data.lockedYPlacement(), HudOverlayLine.icon("locked_y")));
 		}
 		return lines;
 	}
 
-	private static void drawPanelBackground(GuiGraphicsExtractor context, int x, int y, int width, int height, int opacityPercent) {
-		context.fill(x + 2, y + 2, x + width + 2, y + height + 2, withOpacity(SHADOW_COLOR, opacityPercent));
-		context.fill(x, y, x + width, y + height, withOpacity(BORDER_COLOR, opacityPercent));
-		context.fill(x + 1, y + 1, x + width - 1, y + height - 1, withOpacity(BACKGROUND_COLOR, opacityPercent));
-	}
-
-	private static int withOpacity(int color, int opacityPercent) {
-		int alpha = color >>> 24;
-		int scaledAlpha = Math.round(alpha * Math.min(100, Math.max(0, opacityPercent)) / 100.0F);
-		return (scaledAlpha << 24) | (color & 0x00FFFFFF);
-	}
-
-	private static void drawMemoryBar(GuiGraphicsExtractor context, int x, int y, int width, int memoryPercent) {
-		int fillWidth = Math.max(1, (int) Math.round(width * Math.min(100, Math.max(0, memoryPercent)) / 100.0));
-		context.fill(x, y, x + width, y + MEMORY_BAR_HEIGHT, MEMORY_TRACK_COLOR);
-		context.fill(x, y, x + fillWidth, y + MEMORY_BAR_HEIGHT, ACCENT_COLOR);
-	}
-
-	private static void drawLines(
-		GuiGraphicsExtractor context,
-		Font textRenderer,
-		List<HudOverlayLine> lines,
-		boolean showIcons,
-		int x,
-		int y
-	) {
-		for (int index = 0; index < lines.size(); index++) {
-			drawLine(context, textRenderer, lines.get(index), showIcons, x, y + index * ROW_HEIGHT);
+	private static int labelColumnWidth(Font font, List<HudOverlayLine> lines) {
+		int width = 0;
+		for (HudOverlayLine line : lines) {
+			width = Math.max(width, UiText.width(font, Component.translatable(line.labelKey()), LABEL_SIZE));
 		}
+		return width;
+	}
+
+	private static void drawCard(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int height, int opacityPercent) {
+		float opacity = Math.clamp(opacityPercent / 100.0F, 0.0F, 1.0F);
+		if (opacity <= 0.0F) {
+			return;
+		}
+		UiShapes.shadow(context, x, y, width, height, RADIUS, SHADOW_BLUR, UiTheme.fade(theme.shadow(), opacity));
+		UiShapes.borderedRect(context, x, y, width, height, RADIUS, UiTheme.fade(theme.panel(), opacity), UiTheme.fade(theme.border(), opacity));
 	}
 
 	private static void drawLine(
 		GuiGraphicsExtractor context,
-		Font textRenderer,
+		Font font,
+		UiTheme theme,
 		HudOverlayLine line,
 		boolean showIcons,
-		int x,
+		boolean shadow,
+		int iconX,
+		int textX,
+		int valueX,
 		int rowY
 	) {
-		int textX = x;
+		int centerY = rowY + ROW_HEIGHT / 2;
 		if (showIcons) {
-			context.blit(RenderPipelines.GUI_TEXTURED, line.icon(), x, rowY + 1, 0.0F, 0.0F, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
-			textX += ICON_SIZE + ICON_GAP;
+			if (shadow) {
+				UiIcons.draw(context, line.icon(), iconX, centerY - ICON_SIZE / 2 + 1, ICON_SIZE, shadowColor(theme));
+			}
+			UiIcons.draw(context, line.icon(), iconX, centerY - ICON_SIZE / 2, ICON_SIZE, theme.muted());
 		}
 
 		Component label = Component.translatable(line.labelKey());
-		Component value = Component.literal(line.value());
-		context.text(textRenderer, label, textX, rowY, CommonColors.WHITE);
-		context.text(
-			textRenderer,
-			value,
-			textX + textRenderer.width(label) + LABEL_VALUE_GAP,
-			rowY,
-			VALUE_COLOR
-		);
+		int labelTop = centerY - UiText.lineHeight(font, LABEL_SIZE) / 2;
+		int valueTop = centerY - UiText.lineHeight(font, VALUE_SIZE) / 2;
+		if (shadow) {
+			float offset = shadowOffset();
+			int color = shadowColor(theme);
+			UiText.drawExact(context, font, label, LABEL_SIZE, textX + offset, labelTop + offset, color);
+			UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX + offset, valueTop + offset, color);
+		}
+		UiText.draw(context, font, label, LABEL_SIZE, textX, labelTop, theme.textSecondary());
+		UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX, valueTop, theme.text());
+	}
+
+	/** A dark shadow under light text and a light one under dark text. */
+	private static int shadowColor(UiTheme theme) {
+		return UiTheme.current() == UiTheme.LIGHT ? 0x99FFFFFF : 0x99000000;
+	}
+
+	/** One physical pixel, however the GUI and the element are scaled. */
+	private static float shadowOffset() {
+		return 1.0F / (float) (Minecraft.getInstance().getWindow().getGuiScale() * UiRasterScale.get());
+	}
+
+	private static void drawMemoryBar(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int memoryPercent) {
+		UiShapes.pill(context, x, y, width, MEMORY_BAR_HEIGHT, theme.line());
+		int fill = Math.round(width * Math.clamp(memoryPercent, 0, 100) / 100.0F);
+		if (fill > 0) {
+			UiShapes.pill(context, x, y, Math.max(MEMORY_BAR_HEIGHT, fill), MEMORY_BAR_HEIGHT, theme.accent());
+		}
 	}
 }

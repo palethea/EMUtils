@@ -15,6 +15,8 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.ui.UiFontRenderer;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
 import net.emutils.client.emutils.hud.editor.HudEditorScreen;
 import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
@@ -61,6 +63,7 @@ public final class UiSnapshotter {
 	private static int step = Integer.getInteger("emutils.uiSnapshotFrom", 0);
 	private static int stepTicks;
 	private static boolean spotifyWasPlaying;
+	private static int hudTextures;
 
 	private UiSnapshotter() {
 	}
@@ -891,6 +894,67 @@ public final class UiSnapshotter {
 			case 184 -> {
 				EMUtilsClient.config().setSpotifyHudScrollTitles(true);
 				EMUtilsClient.spotify().setStateForSnapshot(null);
+				next();
+			}
+			// The HUD Overlay (#93) with every line on.
+			case 185 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				config.setSpotifyHudOverlay(false);
+				config.setHudOverlay(true);
+				config.setHudShowIcons(true);
+				config.setHudShowCoordinates(true);
+				config.setHudShowNetherCoordinates(true);
+				config.setHudShowChunkRegion(true);
+				config.setHudShowBiome(true);
+				config.setHudShowPing(true);
+				config.setHudShowFps(true);
+				config.setHudShowFacing(true);
+				config.setHudShowSpeed(true);
+				config.setHudShowServerTime(true);
+				config.setHudShowRealTime(true);
+				config.setHudShowMemory(true);
+				config.setSettingsUiDark(true);
+				setGuiScale(client, 2);
+				next();
+			}
+			case 186 -> captureAfter(client, 20, "hud overlay, gui scale 2, dark");
+			// Values change every tick; they come from cached glyphs, so no new text textures appear.
+			case 187 -> {
+				if (stepTicks == 1) {
+					hudTextures = UiFontRenderer.texturesMade();
+				}
+				if (stepTicks >= 60) {
+					int made = UiFontRenderer.texturesMade() - hudTextures;
+					check(made <= 2, "the HUD overlay's changing values make no new text textures: " + made + " in 3 s");
+					next();
+				}
+			}
+			case 188 -> {
+				EMUtilsClient.config().setSettingsUiDark(false);
+				setGuiScale(client, 3);
+				next();
+			}
+			case 189 -> captureAfter(client, 15, "hud overlay, gui scale 3, light");
+			case 190 -> {
+				EMUtilsClient.config().setSettingsUiDark(true);
+				setGuiScale(client, 4);
+				next();
+			}
+			case 191 -> captureAfter(client, 15, "hud overlay, gui scale 4, dark");
+			case 192 -> {
+				setGuiScale(client, 2);
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					HudLayoutManager.setDraftLayout(EMUtilsHudElements.INFO_OVERLAY, 20, 20, 200, 20);
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 193 -> captureAfter(client, 20, "hud overlay at 200% with a 20% background, hud editor");
+			case 194 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
 				next();
 			}
 			default -> {
