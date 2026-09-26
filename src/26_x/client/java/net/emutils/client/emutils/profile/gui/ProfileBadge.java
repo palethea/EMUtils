@@ -30,7 +30,7 @@ public final class ProfileBadge {
 	public static Component describe(Profile profile) {
 		List<String> servers = profile.servers();
 		if (!profile.singleplayer() && servers.isEmpty()) {
-			return Component.translatable(EMUtilsTexts.UI_PROFILE_MANUAL);
+			return Component.translatable(profile.isDefault() ? EMUtilsTexts.UI_PROFILE_FALLBACK : EMUtilsTexts.UI_PROFILE_MANUAL);
 		}
 		String serverList = String.join(", ", servers);
 		if (profile.singleplayer() && servers.isEmpty()) {

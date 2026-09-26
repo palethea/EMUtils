@@ -236,7 +236,7 @@ public final class ProfileManager {
 
 	/** Adds a copy of {@code source}, settings included, right after it. */
 	public Profile duplicate(Profile source) {
-		String name = Component.translatable(EMUtilsTexts.UI_PROFILE_COPY_NAME, source.name()).getString();
+		String name = uniqueName(Component.translatable(EMUtilsTexts.UI_PROFILE_COPY_NAME, source.name()).getString());
 		Profile copy = new Profile(newId(), name, source.icon(), source.color());
 		// Auto-switching stays with the original; two profiles for one server would fight over it.
 		copy.set(name, source.icon(), source.color(), List.of(), false);
@@ -339,6 +339,51 @@ public final class ProfileManager {
 		save();
 	}
 
+	/**
+	 * Puts every setting of {@code profile} back to its default; its name, look and servers stay.
+	 * Returns false if the active profile's settings couldn't be saved.
+	 */
+	public boolean resetToDefaults(Profile profile) {
+		EMUtilsConfig current = EMUtilsClient.config();
+		EMUtilsConfig defaults = EMUtilsConfig.defaults(file(profile));
+		if (!profile.id().equals(active) || current == null) {
+			return defaults.flush();
+		}
+		defaults.setSettingsUiDark(current.settingsUiDark());
+		if (!defaults.flush()) {
+			return false;
+		}
+		EMUtilsClient.replaceConfig(defaults);
+		return true;
+	}
+
+	/** Whether another profile already goes by {@code name}, ignoring case and surrounding spaces. */
+	public boolean nameTaken(String name, @Nullable Profile except) {
+		String wanted = name.strip();
+		for (Profile profile : profiles) {
+			if (profile != except && profile.name().getString().strip().equalsIgnoreCase(wanted)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** {@code name}, or "name 2", "name 3"... when it's taken, so the command can tell profiles apart. */
+	private String uniqueName(String name) {
+		String base = name.strip();
+		if (base.length() > Profile.MAX_NAME_LENGTH - 3) {
+			base = base.substring(0, Profile.MAX_NAME_LENGTH - 3).strip();
+		}
+		if (!nameTaken(name, null)) {
+			return name.strip();
+		}
+		int number = 2;
+		while (nameTaken(base + " " + number, null)) {
+			number++;
+		}
+		return base + " " + number;
+	}
+
 	/** The live settings for the active profile, or the saved ones for any other. */
 	private EMUtilsConfig settingsOf(Profile profile) {
 		EMUtilsConfig current = EMUtilsClient.config();
@@ -408,6 +453,7 @@ public final class ProfileManager {
 		} catch (JsonParseException | IllegalStateException | UnsupportedOperationException exception) {
 			return null;
 		}
+		name = uniqueName(name);
 		Profile profile = new Profile(newId(), name, icon, color);
 		EMUtilsConfig settings = EMUtilsConfig.fromJson(settingsJson, file(profile));
 		if (settings == null) {

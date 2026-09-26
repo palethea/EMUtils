@@ -124,6 +124,24 @@ public final class ProfilesScreen extends UiPanelScreen {
 		);
 	}
 
+	private void confirmReset(Profile profile) {
+		menu = null;
+		dialog = new UiConfirmDialog(
+			font,
+			anim,
+			Component.translatable(EMUtilsTexts.UI_PROFILE_RESET_TITLE, profile.name()),
+			Component.translatable(EMUtilsTexts.UI_PROFILE_RESET_MESSAGE),
+			Component.translatable(EMUtilsTexts.UI_PROFILE_RESET),
+			() -> {
+				if (manager().resetToDefaults(profile)) {
+					showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_RESET_DONE, profile.name()), false);
+				} else {
+					showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_RESET_FAILED), true);
+				}
+			}
+		);
+	}
+
 	private void export(Profile profile) {
 		minecraft.keyboardHandler.setClipboard(manager().export(profile));
 		showStatus(Component.translatable(EMUtilsTexts.UI_PROFILE_EXPORTED, profile.name()), false);
@@ -152,6 +170,7 @@ public final class ProfilesScreen extends UiPanelScreen {
 			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_PROFILE_EDIT_ACTION), () -> openSheet(profile)),
 			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_PROFILE_DUPLICATE), () -> duplicate(profile)),
 			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_PROFILE_EXPORT), () -> export(profile)),
+			UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.UI_PROFILE_RESET), () -> confirmReset(profile)),
 			new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_PROFILE_MOVE_UP), index > 1, false, () -> manager().move(profile, -1)),
 			new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_PROFILE_MOVE_DOWN), index > 0 && index < profiles.size() - 1, false, () -> manager().move(profile, 1)),
 			new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_DELETE), !profile.isDefault(), true, () -> confirmDelete(profile))
@@ -390,6 +409,10 @@ public final class ProfilesScreen extends UiPanelScreen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
+		if (sheet != null) {
+			sheet.mouseDragged(click.y());
+			return true;
+		}
 		if (!overlayOpen() && scroll.mouseDragged(click.y())) {
 			return true;
 		}
@@ -398,6 +421,9 @@ public final class ProfilesScreen extends UiPanelScreen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
+		if (sheet != null) {
+			sheet.mouseReleased();
+		}
 		if (scroll.mouseReleased()) {
 			return true;
 		}
@@ -406,7 +432,11 @@ public final class ProfilesScreen extends UiPanelScreen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		if (closing() || sheet != null || dialog != null) {
+		if (sheet != null) {
+			sheet.mouseScrolled(mouseX, mouseY, verticalAmount);
+			return true;
+		}
+		if (closing() || dialog != null) {
 			return true;
 		}
 		menu = null;
@@ -468,6 +498,24 @@ public final class ProfilesScreen extends UiPanelScreen {
 		if (fillName != null && sheet != null) {
 			sheet.fillForSnapshot(fillName, servers, singleplayer);
 		}
+	}
+
+	/** Picks the first server in the open sheet's server list; used by UI snapshots. */
+	public @Nullable String pickFirstServerForSnapshot() {
+		return sheet == null ? null : sheet.pickFirstServerForSnapshot();
+	}
+
+	/** Whether the open sheet refuses its name, uses two columns, and where it ends; used by UI snapshots. */
+	public boolean sheetNameTakenForSnapshot() {
+		return sheet != null && sheet.nameTakenForSnapshot();
+	}
+
+	public boolean sheetWideForSnapshot() {
+		return sheet != null && sheet.wideForSnapshot();
+	}
+
+	public int sheetBottomForSnapshot() {
+		return sheet == null ? 0 : sheet.bottomForSnapshot();
 	}
 
 	/** Saves the open sheet; used by UI snapshots. */

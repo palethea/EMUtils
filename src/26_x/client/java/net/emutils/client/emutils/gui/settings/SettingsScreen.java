@@ -470,8 +470,9 @@ public final class SettingsScreen extends UiPanelScreen {
 		double mouseX = click.x();
 		double mouseY = click.y();
 		if (profileMenu != null) {
-			profileMenu.mouseClicked(mouseX, mouseY);
-			profileMenu = null;
+			if (!profileMenu.mouseClicked(mouseX, mouseY)) {
+				profileMenu = null;
+			}
 			return true;
 		}
 		if (sheet != null) {
@@ -583,6 +584,11 @@ public final class SettingsScreen extends UiPanelScreen {
 		openProfileMenu();
 	}
 
+	/** Scrolls the profile switcher's list to its end; used by UI snapshots. Returns whether it scrolls. */
+	public boolean scrollProfileMenuForSnapshot() {
+		return profileMenu != null && profileMenu.scrollToEndForSnapshot();
+	}
+
 	/** Whether a settings sheet is open; used by UI snapshots. */
 	public boolean sheetOpen() {
 		return sheet != null;
@@ -616,6 +622,10 @@ public final class SettingsScreen extends UiPanelScreen {
 		if (closing()) {
 			return true;
 		}
+		if (profileMenu != null) {
+			profileMenu.mouseDragged(click.y());
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseDragged(click.x(), click.y());
 		}
@@ -627,6 +637,10 @@ public final class SettingsScreen extends UiPanelScreen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
+		if (profileMenu != null) {
+			profileMenu.mouseReleased();
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseReleased();
 		}
@@ -641,7 +655,12 @@ public final class SettingsScreen extends UiPanelScreen {
 		if (closing()) {
 			return true;
 		}
-		profileMenu = null;
+		if (profileMenu != null) {
+			if (!profileMenu.mouseScrolled(mouseX, mouseY, verticalAmount)) {
+				profileMenu = null;
+			}
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseScrolled(mouseX, mouseY, verticalAmount);
 		}

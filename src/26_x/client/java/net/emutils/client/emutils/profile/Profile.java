@@ -106,7 +106,7 @@ public final class Profile {
 	}
 
 	/** Makes addresses comparable: lower case, no spaces, and without the default port or a trailing dot. */
-	static String normalizeAddress(String address) {
+	public static String normalizeAddress(String address) {
 		String normalized = address == null ? "" : address.strip().toLowerCase(Locale.ROOT).replace(" ", "");
 		if (normalized.endsWith(":25565")) {
 			normalized = normalized.substring(0, normalized.length() - ":25565".length());

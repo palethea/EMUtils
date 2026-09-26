@@ -1064,7 +1064,6 @@ public final class EMUtilsTexts {
     public static final String UI_PROFILE_START_CURRENT = "emutils.ui.profile.start_current";
     public static final String UI_PROFILE_START_DEFAULTS = "emutils.ui.profile.start_defaults";
     public static final String UI_PROFILE_AUTO = "emutils.ui.profile.auto";
-    public static final String UI_PROFILE_ADD_SERVER = "emutils.ui.profile.add_server";
     public static final String UI_PROFILE_SINGLEPLAYER = "emutils.ui.profile.singleplayer";
     public static final String UI_PROFILE_SERVERS_PLACEHOLDER = "emutils.ui.profile.servers_placeholder";
     public static final String UI_PROFILE_SERVERS_HINT = "emutils.ui.profile.servers_hint";
@@ -1078,6 +1077,16 @@ public final class EMUtilsTexts {
     public static final String PROFILE_SWITCH_FAILED = "emutils.profile.switch_failed";
     public static final String COMMAND_FEEDBACK_PROFILES = "emutils.command.feedback.profiles";
     public static final String COMMAND_FEEDBACK_UNKNOWN_PROFILE = "emutils.command.feedback.unknown_profile";
+
+    public static final String UI_PROFILE_FALLBACK = "emutils.ui.profile.fallback";
+    public static final String UI_PROFILE_NAME_TAKEN = "emutils.ui.profile.name_taken";
+    public static final String UI_PROFILE_THIS_SERVER = "emutils.ui.profile.this_server";
+    public static final String UI_PROFILE_NO_SERVERS = "emutils.ui.profile.no_servers";
+    public static final String UI_PROFILE_RESET = "emutils.ui.profile.reset";
+    public static final String UI_PROFILE_RESET_TITLE = "emutils.ui.profile.reset_title";
+    public static final String UI_PROFILE_RESET_MESSAGE = "emutils.ui.profile.reset_message";
+    public static final String UI_PROFILE_RESET_DONE = "emutils.ui.profile.reset_done";
+    public static final String UI_PROFILE_RESET_FAILED = "emutils.ui.profile.reset_failed";
 
     private EMUtilsTexts() {}
 

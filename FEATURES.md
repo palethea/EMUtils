@@ -195,8 +195,8 @@ Keep several sets of EMUtils settings, such as one for a PvP server and one for 
 
 - Profile Switcher: pick a profile from the button next to the theme switch in the settings header, with the `/emutils profile <name>` command, or cycle through them with a keybind (unbound by default).
 - Profile Icons: each profile is shown by an icon and color of your choice.
-- Auto-Switch: link a profile to servers (a domain also covers its subdomains, such as `hypixel.net` for `mc.hypixel.net`) or to singleplayer worlds, and it loads when you join. Joining anywhere else goes back to the profile you last picked yourself.
-- Profile Management: create profiles from the current settings or the defaults, rename, duplicate, reorder, and delete them. The Default profile always stays.
+- Auto-Switch: link a profile to servers, typed or picked from your multiplayer server list (a domain also covers its subdomains, such as `hypixel.net` for `mc.hypixel.net`), or to singleplayer worlds, and it loads when you join. Joining anywhere else goes back to the profile you last picked yourself.
+- Profile Management: create profiles from the current settings or the defaults, rename, duplicate, reorder, reset to defaults, and delete them. Names are unique, and the Default profile always stays.
 - Import and Export: copy a profile to the clipboard to share it, and add one from the clipboard, including a config copied with `/emutils export`.
 
 ## QoL

@@ -44,6 +44,8 @@ import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
@@ -1072,7 +1074,73 @@ public final class UiSnapshotter {
 				next();
 			}
 			case 207 -> captureAfter(client, 15, "profiles, delete dialog");
+			// The server list picker, a refused duplicate name, the two-column sheet, and a long profile list.
 			case 208 -> {
+				seedServerList(client);
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot("Singleplayer", null, "", false);
+				}
+				next();
+			}
+			case 209 -> {
+				if (stepTicks == 2 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					String picked = screen.pickFirstServerForSnapshot();
+					check("mc.hypixel.net".equals(picked), "the server picker lists the multiplayer servers (" + picked + ")");
+				}
+				captureAfter(client, 15, "profiles, edit sheet with the server list open");
+			}
+			case 210 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot(null, "hypixel ", "", false);
+					check(screen.sheetNameTakenForSnapshot(), "a name another profile has is refused, ignoring case");
+				}
+				next();
+			}
+			case 211 -> captureAfter(client, 15, "profiles, new profile sheet with a taken name");
+			case 212 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					setGuiScale(client, 4);
+					screen.openSheetForSnapshot(null, "Building", "", false);
+				}
+				next();
+			}
+			case 213 -> {
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.sheetWideForSnapshot() && screen.sheetBottomForSnapshot() <= screen.height, "the sheet fits a short window in two columns (bottom " + screen.sheetBottomForSnapshot() + " of " + screen.height + ")");
+				}
+				captureAfter(client, 15, "profiles, new profile sheet at gui scale 4");
+			}
+			case 214 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				ProfileManager profiles = EMUtilsClient.profiles();
+				for (int i = 1; profiles.profiles().size() < 14; i++) {
+					profiles.create("Test " + i, ProfileIcon.values()[i % ProfileIcon.values().length], ProfileColor.values()[i % ProfileColor.values().length], List.of(), false, false);
+				}
+				setGuiScale(client, 3);
+				SettingsScreen settings = new SettingsScreen(null);
+				client.gui.setScreen(settings);
+				settings.openProfileMenuForSnapshot();
+				next();
+			}
+			case 215 -> {
+				if (stepTicks == 3 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					check(screen.scrollProfileMenuForSnapshot(), "a profile list taller than the window scrolls");
+				}
+				captureAfter(client, 25, "settings, profile menu with 14 profiles, scrolled to the end");
+			}
+			case 216 -> {
+				checkProfileReset();
+				next();
+			}
+			case 217 -> {
 				ProfileManager profiles = EMUtilsClient.profiles();
 				profiles.pick(profiles.profiles().getFirst());
 				for (Profile profile : profiles.profiles()) {
@@ -1085,13 +1153,13 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 209 -> {
+			case 218 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 210 -> {
+			case 219 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1100,7 +1168,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 211 -> {
+			case 220 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1181,6 +1249,31 @@ public final class UiSnapshotter {
 		next();
 	}
 
+	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */
+	private static void checkProfileReset() {
+		ProfileManager profiles = EMUtilsClient.profiles();
+		Profile hypixel = profiles.byName("Hypixel");
+		if (hypixel == null) {
+			check(false, "the Hypixel profile exists for the reset check");
+			return;
+		}
+		profiles.pick(hypixel);
+		EMUtilsClient.config().setTweakFullbright(true);
+		boolean reset = profiles.resetToDefaults(hypixel);
+		check(reset && profiles.active() == hypixel && !EMUtilsClient.config().tweakFullbright(), "resetting the active profile puts its settings back to the defaults");
+	}
+
+	/** Saves two servers to the multiplayer list when it's empty, for the server picker. */
+	private static void seedServerList(Minecraft client) {
+		ServerList list = new ServerList(client);
+		list.load();
+		if (list.size() == 0) {
+			list.add(new ServerData("Hypixel", "mc.hypixel.net", ServerData.Type.OTHER), false);
+			list.add(new ServerData("Wynncraft", "play.wynncraft.com", ServerData.Type.OTHER), false);
+			list.save();
+		}
+	}
+
 	/**
 	 * Switching profiles swaps every setting, keeps the settings UI's look, and loads profiles by
 	 * themselves on joining a world (#89). Leaves the Singleplayer profile active.
@@ -1221,7 +1314,7 @@ public final class UiSnapshotter {
 
 		// Export and import round trip, and text that isn't a profile.
 		Profile imported = profiles.importProfile(profiles.export(hypixel));
-		check(imported != null && imported.name().getString().equals("Hypixel") && imported.icon() == ProfileIcon.SWORDS, "an exported profile imports with its name and icon");
+		check(imported != null && imported.name().getString().equals("Hypixel 2") && imported.icon() == ProfileIcon.SWORDS, "an exported profile imports with its icon, and a number since its name is taken");
 		if (imported != null) {
 			profiles.delete(imported);
 		}
