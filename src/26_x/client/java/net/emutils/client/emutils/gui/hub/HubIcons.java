@@ -13,10 +13,12 @@ public final class HubIcons {
 	public static final Identifier CHEVRON_LEFT = icon("chevron-left");
 	public static final Identifier CHEVRON_RIGHT = icon("chevron-right");
 	public static final Identifier CHEVRON_UP = icon("chevron-up");
+	public static final Identifier CLIPBOARD_PASTE = icon("clipboard-paste");
 	public static final Identifier CLOUD_OFF = icon("cloud-off");
 	public static final Identifier CLOUD_SUN = icon("cloud-sun");
 	public static final Identifier COPY = icon("copy");
 	public static final Identifier CROSSHAIR = icon("crosshair");
+	public static final Identifier CROWN = icon("crown");
 	public static final Identifier DROPLETS = icon("droplets");
 	public static final Identifier EXTERNAL_LINK = icon("external-link");
 	public static final Identifier EYE = icon("eye");
@@ -26,6 +28,12 @@ public final class HubIcons {
 	public static final Identifier FOLDER = icon("folder");
 	public static final Identifier FOLDER_COG = icon("folder-cog");
 	public static final Identifier FOLDER_PLUS = icon("folder-plus");
+	public static final Identifier GAMEPAD = icon("gamepad");
+	public static final Identifier GEM = icon("gem");
+	public static final Identifier GLOBE = icon("globe");
+	public static final Identifier HAMMER = icon("hammer");
+	public static final Identifier HEART = icon("heart");
+	public static final Identifier HOUSE = icon("house");
 	public static final Identifier IMAGE = icon("image");
 	public static final Identifier KEYBOARD = icon("keyboard");
 	public static final Identifier MAP_PIN = icon("map-pin");
@@ -37,21 +45,29 @@ public final class HubIcons {
 	public static final Identifier PACKAGE = icon("package");
 	public static final Identifier PACKAGE_OPEN = icon("package-open");
 	public static final Identifier PENCIL = icon("pencil");
+	public static final Identifier PICKAXE = icon("pickaxe");
 	public static final Identifier PLAY = icon("play");
 	public static final Identifier PLUS = icon("plus");
 	public static final Identifier REFRESH_CW = icon("refresh-cw");
+	public static final Identifier ROCKET = icon("rocket");
 	public static final Identifier SAVE = icon("save");
 	public static final Identifier SEARCH = icon("search");
 	public static final Identifier SHIELD = icon("shield");
 	public static final Identifier SHIRT = icon("shirt");
 	public static final Identifier SPARKLES = icon("sparkles");
 	public static final Identifier SQUARE = icon("square");
+	public static final Identifier STAR = icon("star");
 	public static final Identifier SUN = icon("sun");
+	public static final Identifier SWORDS = icon("swords");
 	public static final Identifier TAG = icon("tag");
 	public static final Identifier TERMINAL = icon("terminal");
 	public static final Identifier TRASH = icon("trash");
+	public static final Identifier TREE_PINE = icon("tree-pine");
+	public static final Identifier TROPHY = icon("trophy");
+	public static final Identifier USERS = icon("users");
 	public static final Identifier WRENCH = icon("wrench");
 	public static final Identifier X = icon("x");
+	public static final Identifier ZAP = icon("zap");
 	public static final Identifier ZOOM_IN = icon("zoom-in");
 
 	private HubIcons() {

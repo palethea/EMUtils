@@ -15,6 +15,16 @@ public final class EMUtilsPaths {
 		return configDir().resolve("config.json");
 	}
 
+	/** The list of config profiles (#89); the Default profile's settings stay in {@link #configFile()}. */
+	public static Path profilesFile() {
+		return configDir().resolve("profiles.json");
+	}
+
+	/** Where every profile but Default keeps its settings. */
+	public static Path profilesDir() {
+		return configDir().resolve("profiles");
+	}
+
 	public static Path deathWaypointFile() {
 		return configDir().resolve("last-death.json");
 	}

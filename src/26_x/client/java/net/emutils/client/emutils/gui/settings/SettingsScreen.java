@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.hub.HubIcons;
@@ -17,6 +18,9 @@ import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
+import net.emutils.client.emutils.profile.gui.ProfileBadge;
+import net.emutils.client.emutils.profile.gui.ProfileMenu;
+import net.emutils.client.emutils.profile.gui.ProfilesScreen;
 import net.emutils.client.emutils.util.EMUtilsBuild;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -38,6 +42,8 @@ public final class SettingsScreen extends UiPanelScreen {
 	private static final int CATEGORY_ROW = 20;
 	private static final int CATEGORY_BUTTON_HEIGHT = 15;
 	private static final int ROUND_BUTTON = 20;
+	private static final int PROFILE_BUTTON_WIDTH = 34;
+	private static final int PROFILE_BADGE = 14;
 	private static final int MAX_COLUMNS = 3;
 	/** Cards narrower than this drop to fewer columns, so names are not cut off. */
 	private static final int MIN_CARD_WIDTH = 160;
@@ -53,7 +59,13 @@ public final class SettingsScreen extends UiPanelScreen {
 	private static final float CATEGORY_SECONDS = 0.2F;
 	private static final float LIST_SECONDS = 0.2F;
 
-	private final List<HubFeature> features;
+	/** Built for {@link #featuresConfig}; switching profiles swaps the config, and the features with it. */
+	private List<HubFeature> features;
+	private EMUtilsConfig featuresConfig;
+	private @Nullable ProfileMenu profileMenu;
+	private int profileButtonX;
+	/** Until when the profile button says a switch was refused, because the settings couldn't be saved. */
+	private long switchFailedUntil;
 	private final UiTextField search = new UiTextField(this, 64);
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final KeybindCapture capture = new KeybindCapture();
@@ -73,6 +85,7 @@ public final class SettingsScreen extends UiPanelScreen {
 	public SettingsScreen(Screen parent) {
 		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE), parent);
 		this.features = HubFeatureCatalog.all();
+		this.featuresConfig = EMUtilsClient.config();
 	}
 
 	@Override
@@ -91,7 +104,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		buttonsWidth += (categoryButtons.size() - 1) * 2;
 		controlWidth = Math.min(panelWidth - PADDING * 2, Math.max(300, buttonsWidth + 8));
 
-		int rightButtonsWidth = ROUND_BUTTON;
+		int rightButtonsWidth = ROUND_BUTTON + 6 + PROFILE_BUTTON_WIDTH;
 		int titleBlockWidth = titleBlockWidth();
 		int centeredX = panelX + (panelWidth - controlWidth) / 2;
 		stackedHeader = centeredX < panelX + PADDING + titleBlockWidth + 12
@@ -102,6 +115,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
 		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
+		profileButtonX = themeButtonX - 6 - PROFILE_BUTTON_WIDTH;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
@@ -136,13 +150,20 @@ public final class SettingsScreen extends UiPanelScreen {
 	@Override
 	protected void beforeFrame() {
 		capture.frame();
+		// The features' switches and sheets point at the settings of the profile they were built for.
+		if (EMUtilsClient.config() != featuresConfig) {
+			features = HubFeatureCatalog.all();
+			featuresConfig = EMUtilsClient.config();
+			sheet = null;
+		}
 	}
 
 	@Override
 	protected void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
-		// While a sheet is open, nothing underneath reacts to the mouse.
-		int backX = sheet == null ? mouseX : Integer.MIN_VALUE / 2;
-		int backY = sheet == null ? mouseY : Integer.MIN_VALUE / 2;
+		// While a sheet or the profile list is open, nothing underneath reacts to the mouse.
+		boolean interactive = sheet == null && profileMenu == null;
+		int backX = interactive ? mouseX : Integer.MIN_VALUE / 2;
+		int backY = interactive ? mouseY : Integer.MIN_VALUE / 2;
 		drawTitle(context, theme);
 		drawControl(context, theme, backX, backY);
 		drawRightButtons(context, theme, backX, backY);
@@ -151,6 +172,18 @@ public final class SettingsScreen extends UiPanelScreen {
 
 	@Override
 	protected void drawOverlay(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		if (profileMenu != null) {
+			profileMenu.render(context, theme, mouseX, mouseY, width, height);
+			if (profileMenu.isClosed()) {
+				profileMenu = null;
+			}
+		} else if (sheet == null && System.currentTimeMillis() < switchFailedUntil) {
+			Component failed = Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED);
+			UiWidgets.tooltip(context, font, theme, failed, profileButtonX + PROFILE_BUTTON_WIDTH / 2, rightButtonsY + ROUND_BUTTON + 2, width, height);
+		} else if (sheet == null && !closing() && contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
+			Component tip = Component.translatable(EMUtilsTexts.UI_PROFILE_BUTTON, EMUtilsClient.profiles().active().name());
+			UiWidgets.tooltip(context, font, theme, tip, mouseX, mouseY, width, height);
+		}
 		if (sheet != null) {
 			sheet.render(context, theme, mouseX, mouseY, panelX, panelY, panelWidth, panelHeight, width, height);
 			if (sheet.isClosed()) {
@@ -262,6 +295,14 @@ public final class SettingsScreen extends UiPanelScreen {
 	}
 
 	private void drawRightButtons(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		// The profile switcher: the active profile's icon and a chevron, like the mockup.
+		boolean menuOpen = profileMenu != null;
+		float profileHover = anim.towards("profile-button", menuOpen || contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON), 16.0F);
+		UiShapes.roundedRect(context, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON, ROUND_BUTTON / 2, UiTheme.mix(theme.surface(), theme.surfaceHover(), profileHover));
+		int badgeOffset = (ROUND_BUTTON - PROFILE_BADGE) / 2;
+		ProfileBadge.draw(context, EMUtilsClient.profiles().active(), profileButtonX + badgeOffset, rightButtonsY + badgeOffset, PROFILE_BADGE);
+		UiIcons.draw(context, HubIcons.CHEVRON_DOWN, profileButtonX + PROFILE_BUTTON_WIDTH - 13, rightButtonsY + (ROUND_BUTTON - 8) / 2, 8, theme.muted());
+
 		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
 		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
 		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness(), themeHover);
@@ -433,6 +474,12 @@ public final class SettingsScreen extends UiPanelScreen {
 		}
 		double mouseX = click.x();
 		double mouseY = click.y();
+		if (profileMenu != null) {
+			if (!profileMenu.mouseClicked(mouseX, mouseY)) {
+				profileMenu = null;
+			}
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseClicked(mouseX, mouseY, click.button());
 		}
@@ -461,6 +508,10 @@ public final class SettingsScreen extends UiPanelScreen {
 			}
 			return true;
 		}
+		if (contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
+			openProfileMenu();
+			return true;
+		}
 		if (contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
 			EMUtilsClient.config().setSettingsUiDark(UiTheme.current() != UiTheme.DARK);
 			return true;
@@ -477,6 +528,22 @@ public final class SettingsScreen extends UiPanelScreen {
 			}
 		}
 		return super.mouseClicked(click, doubled);
+	}
+
+	private void openProfileMenu() {
+		search.setFocused(false);
+		profileMenu = new ProfileMenu(
+			font,
+			anim,
+			profileButtonX + PROFILE_BUTTON_WIDTH,
+			rightButtonsY + ROUND_BUTTON + 4,
+			profile -> {
+				if (!EMUtilsClient.profiles().pick(profile)) {
+					switchFailedUntil = System.currentTimeMillis() + 3000L;
+				}
+			},
+			() -> minecraft.gui.setScreen(new ProfilesScreen(this))
+		);
 	}
 
 	/**
@@ -521,6 +588,16 @@ public final class SettingsScreen extends UiPanelScreen {
 		return switched;
 	}
 
+	/** Opens the profile switcher's list; used by UI snapshots. */
+	public void openProfileMenuForSnapshot() {
+		openProfileMenu();
+	}
+
+	/** Scrolls the profile switcher's list to its end; used by UI snapshots. Returns whether it scrolls. */
+	public boolean scrollProfileMenuForSnapshot() {
+		return profileMenu != null && profileMenu.scrollToEndForSnapshot();
+	}
+
 	/** Whether a settings sheet is open; used by UI snapshots. */
 	public boolean sheetOpen() {
 		return sheet != null;
@@ -554,6 +631,10 @@ public final class SettingsScreen extends UiPanelScreen {
 		if (closing()) {
 			return true;
 		}
+		if (profileMenu != null) {
+			profileMenu.mouseDragged(click.y());
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseDragged(click.x(), click.y());
 		}
@@ -565,6 +646,10 @@ public final class SettingsScreen extends UiPanelScreen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
+		if (profileMenu != null) {
+			profileMenu.mouseReleased();
+			return true;
+		}
 		if (sheet != null) {
 			return sheet.mouseReleased();
 		}
@@ -577,6 +662,12 @@ public final class SettingsScreen extends UiPanelScreen {
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (closing()) {
+			return true;
+		}
+		if (profileMenu != null) {
+			if (!profileMenu.mouseScrolled(mouseX, mouseY, verticalAmount)) {
+				profileMenu = null;
+			}
 			return true;
 		}
 		if (sheet != null) {
@@ -594,6 +685,12 @@ public final class SettingsScreen extends UiPanelScreen {
 			return true;
 		}
 		if (capture.keyPressed(input)) {
+			return true;
+		}
+		if (profileMenu != null) {
+			if (input.isEscape()) {
+				profileMenu = null;
+			}
 			return true;
 		}
 		if (sheet != null) {

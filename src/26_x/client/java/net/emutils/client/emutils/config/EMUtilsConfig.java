@@ -2,7 +2,9 @@ package net.emutils.client.emutils.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapePreferredProvider;
@@ -22,11 +24,17 @@ import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import org.jspecify.annotations.Nullable;
 
@@ -68,13 +76,23 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int HOTBAR_SLOT_MAX = 9;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	/** The names settings are saved under, to recognise an EMUtils config among other JSON. */
+	private static final Set<String> SETTING_NAMES = Arrays.stream(EMUtilsConfig.class.getDeclaredFields())
+		.filter(field -> !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()))
+		.map(Field::getName)
+		.collect(Collectors.toUnmodifiableSet());
 	private static final long SAVE_DELAY_MILLIS = 1000L;
 	/** Unsaved changes; transient, so they're not part of the saved config. */
 	private transient boolean dirty;
 	private transient long lastChangeMillis;
+	/** The file this config is saved to: {@code config.json} for the Default profile, or another profile's file (#89). */
+	private transient @Nullable Path file;
 	private static final int DEFAULT_DEATH_WAYPOINT_SIZE = 50;
 	private static final float LEGACY_SIZE_REFERENCE_PERCENT = 15.0F;
 
+	// Settings are saved under their field names. Never change a setting's type under the same name
+	// (a Boolean becoming an object, say): configs and profiles written before would then fail to load
+	// as a whole. Give the new type a new name and migrate the old value in applyDefaults instead.
 	private Boolean autoReconnect = Boolean.TRUE;
 	private Boolean autoReconnectUnlimitedTries = Boolean.FALSE;
 	private Boolean screenshotHelper = Boolean.TRUE;
@@ -241,26 +259,35 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer zoomOutSpeedMultiplier = 18;
 	private Integer packManagerSearchLimit = 20;
 
-	/** Keeps an unreadable config as {@code config.json.broken} before the defaults replace it. */
-	private static void keepBrokenCopy() {
+	/** Keeps an unreadable config as {@code <name>.broken} before the defaults replace it. */
+	private static void keepBrokenCopy(Path file) {
 		try {
-			Files.copy(EMUtilsPaths.configFile(), EMUtilsPaths.configFile().resolveSibling("config.json.broken"), StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(file, file.resolveSibling(file.getFileName() + ".broken"), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException exception) {
-			EMUtilsClient.LOGGER.warn("Could not keep a copy of the unreadable EMUtils config.", exception);
+			EMUtilsClient.LOGGER.warn("Could not keep a copy of the unreadable EMUtils config {}.", file, exception);
 		}
 	}
 
 	public static EMUtilsConfig load() {
+		return load(EMUtilsPaths.configFile());
+	}
+
+	/**
+	 * Reads the config saved in {@code file}, or starts from the defaults when there is none. Settings
+	 * added since the file was written get their defaults, and ones that were removed are dropped, so
+	 * every profile is brought up to date the same way the main config is.
+	 */
+	public static EMUtilsConfig load(Path file) {
 		EMUtilsConfig config = null;
 
-		if (Files.exists(EMUtilsPaths.configFile())) {
-			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.configFile())) {
+		if (Files.exists(file)) {
+			try (Reader reader = Files.newBufferedReader(file)) {
 				config = GSON.fromJson(reader, EMUtilsConfig.class);
 			} catch (IOException | JsonParseException | IllegalStateException exception) {
-				EMUtilsClient.LOGGER.warn("Could not read the EMUtils config; starting from defaults.", exception);
+				EMUtilsClient.LOGGER.warn("Could not read the EMUtils config {}; starting from defaults.", file, exception);
 			}
 			if (config == null) {
-				keepBrokenCopy();
+				keepBrokenCopy(file);
 			}
 		}
 
@@ -268,10 +295,59 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			config = new EMUtilsConfig();
 		}
 
+		config.file = file;
 		config.applyDefaults();
 		config.save();
 		config.flush();
 		return config;
+	}
+
+	/**
+	 * Reads the config saved in {@code file} without writing anything back, for looking at a profile
+	 * that isn't active. A missing file means the defaults, as in {@link #load(Path)}; null only when
+	 * the file can't be read.
+	 */
+	public static @Nullable EMUtilsConfig read(Path file) {
+		if (!Files.exists(file)) {
+			EMUtilsConfig config = new EMUtilsConfig();
+			config.file = file;
+			config.applyDefaults();
+			return config;
+		}
+		try (Reader reader = Files.newBufferedReader(file)) {
+			EMUtilsConfig config = GSON.fromJson(reader, EMUtilsConfig.class);
+			if (config == null) {
+				return null;
+			}
+			config.file = file;
+			config.applyDefaults();
+			return config;
+		} catch (IOException | JsonParseException | IllegalStateException exception) {
+			EMUtilsClient.LOGGER.warn("Could not read the EMUtils config {}.", file, exception);
+			return null;
+		}
+	}
+
+	/** A config with every setting at its default, saved to {@code file}. */
+	public static EMUtilsConfig defaults(Path file) {
+		EMUtilsConfig config = new EMUtilsConfig();
+		config.file = file;
+		config.applyDefaults();
+		config.save();
+		return config;
+	}
+
+	/** A copy of this config's settings that saves to {@code file}. */
+	public EMUtilsConfig copyTo(Path file) {
+		EMUtilsConfig copy = GSON.fromJson(GSON.toJson(this), EMUtilsConfig.class);
+		copy.file = file;
+		copy.applyDefaults();
+		copy.save();
+		return copy;
+	}
+
+	public Path file() {
+		return file == null ? EMUtilsPaths.configFile() : file;
 	}
 
 	public boolean autoReconnect() {
@@ -2053,18 +2129,20 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 	}
 
-	/** Writes the config now if it changed. */
-	public void flush() {
+	/** Writes the config now if it changed; returns false if that failed. */
+	public boolean flush() {
 		if (!dirty) {
-			return;
+			return true;
 		}
 		try {
-			AtomicFiles.writeString(EMUtilsPaths.configFile(), GSON.toJson(this));
+			AtomicFiles.writeString(file(), GSON.toJson(this));
 			dirty = false;
+			return true;
 		} catch (IOException exception) {
 			// Stays pending and is tried again after the save delay, for example if the file was locked.
 			lastChangeMillis = System.currentTimeMillis();
-			EMUtilsClient.LOGGER.warn("Failed to save the EMUtils config; trying again shortly.", exception);
+			EMUtilsClient.LOGGER.warn("Failed to save the EMUtils config {}; trying again shortly.", file(), exception);
+			return false;
 		}
 	}
 
@@ -2072,18 +2150,25 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return GSON.toJson(this);
 	}
 
+	/** Settings from exported text, to be saved to {@code file}; null if the text isn't an EMUtils config. */
 	@Nullable
-	public static EMUtilsConfig fromJson(String json) {
+	public static EMUtilsConfig fromJson(String json, Path file) {
 		if (json == null || json.isBlank()) {
 			return null;
 		}
 
 		try {
-			EMUtilsConfig config = GSON.fromJson(json, EMUtilsConfig.class);
+			// Any JSON object would parse as a config of defaults; only accept one with EMUtils settings in it.
+			JsonElement parsed = JsonParser.parseString(json);
+			if (!parsed.isJsonObject() || parsed.getAsJsonObject().keySet().stream().noneMatch(SETTING_NAMES::contains)) {
+				return null;
+			}
+			EMUtilsConfig config = GSON.fromJson(parsed, EMUtilsConfig.class);
 			if (config == null) {
 				return null;
 			}
 
+			config.file = file;
 			config.applyDefaults();
 			config.save();
 			return config;

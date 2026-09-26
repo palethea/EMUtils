@@ -12,6 +12,7 @@ import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
+import net.emutils.client.emutils.profile.gui.ProfilesScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -149,6 +150,18 @@ public final class HubFeatureCatalog {
 				true,
 				config::resetCommandShortcutsDefaults
 			),
+			actionFeature(
+				"profiles",
+				null,
+				HubFeature.Group.MANAGEMENT,
+				EMUtilsTexts.SCREEN_PROFILES,
+				EMUtilsTexts.HUB_FEATURE_PROFILES_DESC,
+				HubFeature.Icon.USERS,
+				null,
+				openScreenAction(ProfilesScreen::new),
+				true,
+				null
+			).keys("key.emutils.next_profile"),
 			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::chatFeaturesEnabled, config::setChatFeaturesEnabled)),
 			categoryFeature("inventory", HubCategory.INVENTORY, HubFeature.Group.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, HubFeature.Icon.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)).keys("key.emutils.slot_lock", "key.emutils.slot_bind", "key.emutils.quick_stack", "key.emutils.mass_drop"),
 			categoryFeature("auto_tool", HubCategory.AUTO_TOOL, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, HubFeature.Icon.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),

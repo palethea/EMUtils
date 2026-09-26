@@ -59,7 +59,8 @@ public final class HubFeature {
 		PACKAGE(HubIcons.PACKAGE),
 		PACKAGE_OPEN(HubIcons.PACKAGE_OPEN),
 		SPARKLES(HubIcons.SPARKLES),
-		SCRIPT(HubIcons.PACKAGE_OPEN);
+		SCRIPT(HubIcons.PACKAGE_OPEN),
+		USERS(HubIcons.USERS);
 
 		private final Identifier texture;
 

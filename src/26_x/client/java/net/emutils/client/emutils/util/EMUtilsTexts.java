@@ -1028,6 +1028,74 @@ public final class EMUtilsTexts {
     public static final String COMMAND_FEEDBACK_IMPORT_FAILED =
         "emutils.command.feedback.import_failed";
 
+    public static final String UI_PROFILE_DEFAULT_NAME = "emutils.ui.profile.default_name";
+    public static final String UI_PROFILE_BUTTON = "emutils.ui.profile.button";
+    public static final String UI_PROFILE_MANAGE = "emutils.ui.profile.manage";
+    public static final String UI_PROFILE_MANUAL = "emutils.ui.profile.manual";
+    public static final String UI_PROFILE_AUTO_SINGLEPLAYER = "emutils.ui.profile.auto_singleplayer";
+    public static final String UI_PROFILE_AUTO_SERVERS = "emutils.ui.profile.auto_servers";
+    public static final String UI_PROFILE_AUTO_BOTH = "emutils.ui.profile.auto_both";
+    public static final String UI_PROFILE_NEW = "emutils.ui.profile.new";
+    public static final String UI_PROFILE_EDIT = "emutils.ui.profile.edit";
+    public static final String UI_PROFILE_EDIT_ACTION = "emutils.ui.profile.edit_action";
+    public static final String UI_PROFILE_DUPLICATE = "emutils.ui.profile.duplicate";
+    public static final String UI_PROFILE_EXPORT = "emutils.ui.profile.export";
+    public static final String UI_PROFILE_IMPORT = "emutils.ui.profile.import";
+    public static final String UI_PROFILE_IMPORT_TOOLTIP = "emutils.ui.profile.import_tooltip";
+    public static final String UI_PROFILE_EXPORTED = "emutils.ui.profile.exported";
+    public static final String UI_PROFILE_IMPORTED = "emutils.ui.profile.imported";
+    public static final String UI_PROFILE_IMPORT_FAILED = "emutils.ui.profile.import_failed";
+    public static final String UI_PROFILE_USE = "emutils.ui.profile.use";
+    public static final String UI_PROFILE_ACTIVE = "emutils.ui.profile.active";
+    public static final String UI_PROFILE_MOVE_UP = "emutils.ui.profile.move_up";
+    public static final String UI_PROFILE_MOVE_DOWN = "emutils.ui.profile.move_down";
+    public static final String UI_PROFILE_DEFAULT_CANT_DELETE = "emutils.ui.profile.default_cant_delete";
+    public static final String UI_PROFILE_DELETE_TITLE = "emutils.ui.profile.delete_title";
+    public static final String UI_PROFILE_DELETE_MESSAGE = "emutils.ui.profile.delete_message";
+    public static final String UI_PROFILE_DELETE_ACTIVE_MESSAGE = "emutils.ui.profile.delete_active_message";
+    public static final String UI_PROFILE_COUNT = "emutils.ui.profile.count";
+    public static final String UI_PROFILE_COUNT_ONE = "emutils.ui.profile.count_one";
+    public static final String UI_PROFILE_COPY_NAME = "emutils.ui.profile.copy_name";
+    public static final String UI_PROFILE_IMPORTED_NAME = "emutils.ui.profile.imported_name";
+    public static final String UI_PROFILE_NAME = "emutils.ui.profile.name";
+    public static final String UI_PROFILE_NAME_PLACEHOLDER = "emutils.ui.profile.name_placeholder";
+    public static final String UI_PROFILE_LOOK = "emutils.ui.profile.look";
+    public static final String UI_PROFILE_START_FROM = "emutils.ui.profile.start_from";
+    public static final String UI_PROFILE_START_CURRENT = "emutils.ui.profile.start_current";
+    public static final String UI_PROFILE_START_DEFAULTS = "emutils.ui.profile.start_defaults";
+    public static final String UI_PROFILE_AUTO = "emutils.ui.profile.auto";
+    public static final String UI_PROFILE_SINGLEPLAYER = "emutils.ui.profile.singleplayer";
+    public static final String UI_PROFILE_SERVERS_PLACEHOLDER = "emutils.ui.profile.servers_placeholder";
+    public static final String UI_PROFILE_SERVERS_HINT = "emutils.ui.profile.servers_hint";
+    public static final String UI_PROFILE_TAKES_SERVER = "emutils.ui.profile.takes_server";
+    public static final String UI_PROFILE_TAKES_SINGLEPLAYER = "emutils.ui.profile.takes_singleplayer";
+    public static final String SCREEN_PROFILES = "emutils.screen.profiles";
+    public static final String HUB_FEATURE_PROFILES_DESC = "emutils.hub.feature.profiles.desc";
+    public static final String PROFILE_SWITCHED = "emutils.profile.switched";
+    public static final String PROFILE_AUTO_SWITCHED = "emutils.profile.auto_switched";
+    public static final String PROFILE_SWITCHED_BACK = "emutils.profile.switched_back";
+    public static final String PROFILE_SWITCH_FAILED = "emutils.profile.switch_failed";
+    public static final String COMMAND_FEEDBACK_PROFILES = "emutils.command.feedback.profiles";
+    public static final String COMMAND_FEEDBACK_UNKNOWN_PROFILE = "emutils.command.feedback.unknown_profile";
+
+    public static final String UI_PROFILE_FALLBACK = "emutils.ui.profile.fallback";
+    public static final String UI_PROFILE_NAME_TAKEN = "emutils.ui.profile.name_taken";
+    public static final String UI_PROFILE_THIS_SERVER = "emutils.ui.profile.this_server";
+    public static final String UI_PROFILE_NO_SERVERS = "emutils.ui.profile.no_servers";
+    public static final String UI_PROFILE_RESET = "emutils.ui.profile.reset";
+    public static final String UI_PROFILE_RESET_TITLE = "emutils.ui.profile.reset_title";
+    public static final String UI_PROFILE_RESET_MESSAGE = "emutils.ui.profile.reset_message";
+    public static final String UI_PROFILE_RESET_DONE = "emutils.ui.profile.reset_done";
+    public static final String UI_PROFILE_RESET_FAILED = "emutils.ui.profile.reset_failed";
+
+    public static final String UI_PROFILE_FILTER_SERVERS = "emutils.ui.profile.filter_servers";
+    public static final String UI_PROFILE_NO_MATCHING_SERVERS = "emutils.ui.profile.no_matching_servers";
+
+    public static final String UI_PROFILE_UNREADABLE = "emutils.ui.profile.unreadable";
+
+    public static final String UI_PROFILE_SAVE_FAILED = "emutils.ui.profile.save_failed";
+    public static final String UI_PROFILE_DUPLICATE_FAILED = "emutils.ui.profile.duplicate_failed";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

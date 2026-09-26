@@ -9,13 +9,17 @@ import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
+import net.emutils.client.emutils.profile.Profile;
+import net.emutils.client.emutils.profile.ProfileManager;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
@@ -25,6 +29,8 @@ public final class EMUtilsCommand {
 		(context, builder) -> SharedSuggestionProvider.suggest(HubFeatureCatalog.toggleableIds(), builder);
 	private static final SuggestionProvider<FabricClientCommandSource> RESET_SUGGESTIONS =
 		(context, builder) -> SharedSuggestionProvider.suggest(HubFeatureCatalog.resettableIds(), builder);
+	private static final SuggestionProvider<FabricClientCommandSource> PROFILE_SUGGESTIONS =
+		(context, builder) -> SharedSuggestionProvider.suggest(EMUtilsClient.profiles().profiles().stream().map(profile -> profile.name().getString()), builder);
 
 	private EMUtilsCommand() {
 	}
@@ -50,6 +56,15 @@ public final class EMUtilsCommand {
 					)
 					.then(literal("export").executes(EMUtilsCommand::export))
 					.then(literal("import").executes(EMUtilsCommand::importConfig))
+					.then(
+						literal("profile")
+							.executes(EMUtilsCommand::listProfiles)
+							.then(
+								argument("name", StringArgumentType.greedyString())
+									.suggests(PROFILE_SUGGESTIONS)
+									.executes(EMUtilsCommand::switchProfile)
+							)
+					)
 			);
 		});
 	}
@@ -123,14 +138,46 @@ public final class EMUtilsCommand {
 			return 0;
 		}
 
-		EMUtilsConfig imported = EMUtilsConfig.fromJson(client.keyboardHandler.getClipboard());
+		// Replaces the active profile's settings.
+		EMUtilsConfig current = EMUtilsClient.config();
+		EMUtilsConfig imported = current == null ? null : EMUtilsConfig.fromJson(client.keyboardHandler.getClipboard(), current.file());
 		if (imported == null) {
 			feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_IMPORT_FAILED));
 			return 0;
 		}
 
+		// The settings UI's look belongs to the player, as when switching profiles.
+		imported.setSettingsUiDark(current.settingsUiDark());
 		EMUtilsClient.replaceConfig(imported);
 		feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_IMPORTED));
+		return 1;
+	}
+
+	private static int listProfiles(CommandContext<FabricClientCommandSource> context) {
+		ProfileManager profiles = EMUtilsClient.profiles();
+		MutableComponent names = Component.empty();
+		for (Profile profile : profiles.profiles()) {
+			if (!names.getSiblings().isEmpty()) {
+				names.append(", ");
+			}
+			names.append(profile == profiles.active() ? profile.name().copy().withStyle(ChatFormatting.GREEN) : profile.name());
+		}
+		feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_PROFILES, profiles.active().name(), names));
+		return 1;
+	}
+
+	private static int switchProfile(CommandContext<FabricClientCommandSource> context) {
+		String name = StringArgumentType.getString(context, "name");
+		Profile profile = EMUtilsClient.profiles().byName(name);
+		if (profile == null) {
+			feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_UNKNOWN_PROFILE, name));
+			return 0;
+		}
+		if (!EMUtilsClient.profiles().pick(profile)) {
+			feedback(context, Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED));
+			return 0;
+		}
+		feedback(context, Component.translatable(EMUtilsTexts.PROFILE_SWITCHED, profile.name()));
 		return 1;
 	}
 

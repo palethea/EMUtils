@@ -10,6 +10,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.profile.Profile;
+import net.emutils.client.emutils.profile.ProfileColor;
+import net.emutils.client.emutils.profile.ProfileIcon;
+import net.emutils.client.emutils.profile.ProfileManager;
+import net.emutils.client.emutils.profile.gui.ProfilesScreen;
 import net.emutils.client.EMUtilsHudElements;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
@@ -39,6 +44,8 @@ import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
@@ -1010,14 +1017,185 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Profiles (#89): the switcher, the list and its sheets, then switching by hand and automatically.
 			case 195 -> {
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				ProfileManager profiles = EMUtilsClient.profiles();
+				if (profiles.byName("Hypixel") == null) {
+					profiles.create("Hypixel", ProfileIcon.SWORDS, ProfileColor.ORANGE, List.of("hypixel.net"), false, true);
+				}
+				if (profiles.byName("Singleplayer") == null) {
+					profiles.create("Singleplayer", ProfileIcon.HOUSE, ProfileColor.GREEN, List.of(), true, false);
+				}
+				SettingsScreen settings = new SettingsScreen(null);
+				client.gui.setScreen(settings);
+				settings.openProfileMenuForSnapshot();
+				next();
+			}
+			case 196 -> captureAfter(client, 15, "settings, profile menu");
+			case 197 -> {
+				client.gui.setScreen(new ProfilesScreen(MinecraftClientCompat.screen(client)));
+				next();
+			}
+			case 198 -> captureAfter(client, 15, "profiles, dark");
+			case 199 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					screen.openSheetForSnapshot(null, "Building", "play.example.net, hypixel.net", false);
+				}
+				next();
+			}
+			case 200 -> captureAfter(client, 15, "profiles, new profile sheet taking a server from another profile");
+			case 201 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot("Hypixel", null, "", false);
+				}
+				next();
+			}
+			case 202 -> captureAfter(client, 15, "profiles, edit sheet");
+			case 203 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				checkProfileSwitching(client);
+				next();
+			}
+			case 204 -> {
+				setGuiScale(client, 3);
+				EMUtilsClient.config().setSettingsUiDark(false);
+				next();
+			}
+			case 205 -> captureAfter(client, 20, "profiles, gui scale 3, light, singleplayer profile active");
+			case 206 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					screen.confirmDeleteForSnapshot("Hypixel");
+				}
+				next();
+			}
+			case 207 -> captureAfter(client, 15, "profiles, delete dialog");
+			// The server list picker, a refused duplicate name, the two-column sheet, and a long profile list.
+			case 208 -> {
+				seedServerList(client);
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot("Singleplayer", null, "", false);
+				}
+				next();
+			}
+			case 209 -> {
+				if (stepTicks == 2 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					String picked = screen.pickFirstServerForSnapshot();
+					check("mc.hypixel.net".equals(picked), "the server picker lists the multiplayer servers (" + picked + ")");
+				}
+				captureAfter(client, 15, "profiles, edit sheet with the server list open");
+			}
+			// A long server list: typing filters it, it scrolls, and it stays on a short screen.
+			case 210 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					type(screen, "wynn");
+					check(screen.pickerCountForSnapshot() == 1 && "play.wynncraft.com".equals(screen.pickerFirstForSnapshot()), "typing filters the server list (" + screen.pickerCountForSnapshot() + " shown)");
+				}
+				next();
+			}
+			case 211 -> captureAfter(client, 10, "profiles, server list filtered");
+			case 212 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					check(screen.pickerCountForSnapshot() == 27, "Esc clears the filter and keeps the list open (" + screen.pickerCountForSnapshot() + " shown)");
+				}
+				next();
+			}
+			case 213 -> {
+				if (stepTicks == 3 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.pickerScrollToEndForSnapshot(), "a long server list scrolls");
+				}
+				captureAfter(client, 25, "profiles, server list with 27 servers, scrolled to the end");
+			}
+			case 214 -> {
+				setGuiScale(client, 4);
+				next();
+			}
+			case 215 -> {
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.pickerFitsForSnapshot(), "the server list stays on screen at gui scale 4");
+				}
+				captureAfter(client, 15, "profiles, server list at gui scale 4");
+			}
+			case 216 -> {
+				setGuiScale(client, 2);
+				next();
+			}
+			case 217 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot(null, "hypixel ", "", false);
+					check(screen.sheetNameTakenForSnapshot(), "a name another profile has is refused, ignoring case");
+				}
+				next();
+			}
+			case 218 -> captureAfter(client, 15, "profiles, new profile sheet with a taken name");
+			case 219 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					setGuiScale(client, 4);
+					screen.openSheetForSnapshot(null, "Building", "", false);
+				}
+				next();
+			}
+			case 220 -> {
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					check(screen.sheetWideForSnapshot() && screen.sheetBottomForSnapshot() <= screen.height, "the sheet fits a short window in two columns (bottom " + screen.sheetBottomForSnapshot() + " of " + screen.height + ")");
+				}
+				captureAfter(client, 15, "profiles, new profile sheet at gui scale 4");
+			}
+			case 221 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				ProfileManager profiles = EMUtilsClient.profiles();
+				for (int i = 1; profiles.profiles().size() < 14; i++) {
+					profiles.create("Test " + i, ProfileIcon.values()[i % ProfileIcon.values().length], ProfileColor.values()[i % ProfileColor.values().length], List.of(), false, false);
+				}
+				setGuiScale(client, 3);
+				SettingsScreen settings = new SettingsScreen(null);
+				client.gui.setScreen(settings);
+				settings.openProfileMenuForSnapshot();
+				next();
+			}
+			case 222 -> {
+				if (stepTicks == 3 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					check(screen.scrollProfileMenuForSnapshot(), "a profile list taller than the window scrolls");
+				}
+				captureAfter(client, 25, "settings, profile menu with 14 profiles, scrolled to the end");
+			}
+			case 223 -> {
+				checkProfileReset();
+				next();
+			}
+			case 224 -> {
+				ProfileManager profiles = EMUtilsClient.profiles();
+				profiles.pick(profiles.profiles().getFirst());
+				for (Profile profile : profiles.profiles()) {
+					profiles.delete(profile);
+				}
+				check(profiles.profiles().size() == 1 && profiles.active().isDefault(), "profiles deleted, back on Default");
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				client.gui.setScreen(null);
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 225 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 196 -> {
+			case 226 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1026,7 +1204,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 197 -> {
+			case 227 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1105,6 +1283,131 @@ public final class UiSnapshotter {
 			before, escKeepsBound, backspaceUnbinds, escKeepsUnbound, keyBinds
 		);
 		next();
+	}
+
+	/** The cases from the PR review of profiles (#89): long names, overlapping domains, other JSON, damaged files. */
+	private static void checkProfileReviewFixes(ProfileManager profiles, Profile hypixel) {
+		Profile longName = profiles.create("Survival Hardcore Friends Server", ProfileIcon.STAR, ProfileColor.BLUE, List.of(), false, false);
+		Profile copy = profiles.duplicate(longName);
+		check(copy != null && !copy.name().getString().equalsIgnoreCase(longName.name().getString()), "a copy of a profile with a 32-character name gets a name of its own (" + (copy == null ? null : copy.name().getString()) + ")");
+		profiles.delete(longName);
+		if (copy != null) {
+			profiles.delete(copy);
+		}
+
+		// Hypixel has hypixel.net and is higher in the list; the more specific rule still wins.
+		Profile minigames = profiles.create("Minigames", ProfileIcon.GAMEPAD, ProfileColor.PURPLE, List.of("mc.hypixel.net"), false, false);
+		check(profiles.profileForServer("mc.hypixel.net") == minigames && profiles.profileForServer("MC.Hypixel.net:25565") == minigames, "the most specific server rule wins over a domain higher in the list");
+		check(profiles.profileForServer("play.hypixel.net") == hypixel && profiles.profileForServer("example.org") == null, "a domain still covers its other subdomains");
+		profiles.delete(minigames);
+
+		check(profiles.importProfile("{}") == null && profiles.importProfile("{\"someOtherMod\": true}") == null, "JSON that isn't an EMUtils config doesn't import");
+		Profile plain = profiles.importProfile(EMUtilsClient.config().toJson());
+		check(plain != null, "a plain /emutils export still imports");
+		if (plain != null) {
+			profiles.delete(plain);
+		}
+
+		// A damaged profile file is reported, not overwritten with the defaults.
+		Profile damaged = profiles.create("Damaged", ProfileIcon.FLAME, ProfileColor.RED, List.of(), false, false);
+		Path file = EMUtilsPaths.profilesDir().resolve(damaged.id() + ".json");
+		try {
+			Files.writeString(file, "not json");
+			boolean reported = profiles.export(damaged) == null && profiles.duplicate(damaged) == null;
+			check(reported && Files.readString(file).equals("not json"), "a damaged profile file is reported and left alone by export and duplicate");
+		} catch (IOException exception) {
+			check(false, "a damaged profile file can be written for the check: " + exception);
+		}
+		// A profile whose file is missing reads as the defaults, the way switching to it would load it.
+		try {
+			Files.deleteIfExists(file);
+			check(profiles.export(damaged) != null, "a profile without a settings file exports as the defaults");
+		} catch (IOException exception) {
+			check(false, "a profile file can be removed for the check: " + exception);
+		}
+		profiles.delete(damaged);
+	}
+
+	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */
+	private static void checkProfileReset() {
+		ProfileManager profiles = EMUtilsClient.profiles();
+		Profile hypixel = profiles.byName("Hypixel");
+		if (hypixel == null) {
+			check(false, "the Hypixel profile exists for the reset check");
+			return;
+		}
+		profiles.pick(hypixel);
+		EMUtilsClient.config().setTweakFullbright(true);
+		boolean reset = profiles.resetToDefaults(hypixel);
+		check(reset && profiles.active() == hypixel && !EMUtilsClient.config().tweakFullbright(), "resetting the active profile puts its settings back to the defaults");
+	}
+
+	/** Fills the multiplayer list up to 27 servers, Hypixel and Wynncraft first, for the server picker. */
+	private static void seedServerList(Minecraft client) {
+		ServerList list = new ServerList(client);
+		list.load();
+		if (list.size() == 0) {
+			list.add(new ServerData("Hypixel", "mc.hypixel.net", ServerData.Type.OTHER), false);
+			list.add(new ServerData("Wynncraft", "play.wynncraft.com", ServerData.Type.OTHER), false);
+		}
+		// Enough servers that the picker has to scroll and filtering matters.
+		for (int i = list.size() + 1; list.size() < 27; i++) {
+			list.add(new ServerData("Survival server " + i, "play-" + i + ".example.net", ServerData.Type.OTHER), false);
+		}
+		list.save();
+	}
+
+	/**
+	 * Switching profiles swaps every setting, keeps the settings UI's look, and loads profiles by
+	 * themselves on joining a world (#89). Leaves the Singleplayer profile active.
+	 */
+	private static void checkProfileSwitching(Minecraft client) {
+		ProfileManager profiles = EMUtilsClient.profiles();
+		Profile defaults = profiles.profiles().getFirst();
+		Profile singleplayer = profiles.byName("Singleplayer");
+		Profile hypixel = profiles.byName("Hypixel");
+		if (singleplayer == null || hypixel == null) {
+			check(false, "snapshot profiles exist");
+			return;
+		}
+		profiles.pick(defaults);
+		boolean fullbrightBefore = EMUtilsClient.config().tweakFullbright();
+		EMUtilsClient.config().setTweakFullbright(true);
+		EMUtilsClient.config().setSettingsUiDark(true);
+		profiles.pick(singleplayer);
+		check(profiles.active() == singleplayer && !EMUtilsClient.config().tweakFullbright(), "a profile started from the defaults has its own settings");
+		check(EMUtilsClient.config().settingsUiDark(), "the settings UI keeps its look across profiles");
+		profiles.pick(defaults);
+		check(EMUtilsClient.config().tweakFullbright(), "switching back restores the Default profile's settings");
+		EMUtilsClient.config().setTweakFullbright(fullbrightBefore);
+
+		// Joining this singleplayer world loads the Singleplayer profile; without the link, it goes back.
+		profiles.onJoin(client);
+		check(profiles.active() == singleplayer, "joining a singleplayer world loads the singleplayer profile");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), false);
+		profiles.onJoin(client);
+		check(profiles.active() == defaults, "joining a place no profile is linked to goes back to the picked profile");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), true);
+
+		// Giving a server to one profile takes it from another.
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of("hypixel.net"), true);
+		check(hypixel.servers().isEmpty() && singleplayer.servers().equals(List.of("hypixel.net")), "a server loads only the profile it was last given to");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), true);
+		profiles.update(hypixel, "Hypixel", hypixel.icon(), hypixel.color(), List.of("hypixel.net"), false);
+
+		// Export and import round trip, and text that isn't a profile.
+		Profile imported = profiles.importProfile(profiles.export(hypixel));
+		check(imported != null && imported.name().getString().equals("Hypixel 2") && imported.icon() == ProfileIcon.SWORDS, "an exported profile imports with its icon, and a number since its name is taken");
+		if (imported != null) {
+			profiles.delete(imported);
+		}
+		check(profiles.importProfile("not a profile") == null, "text that isn't a profile doesn't import");
+		check(ProfileManager.parseServers(" Play.Example.net:25565 ,hypixel.net  mc.x.org.").equals(List.of("play.example.net", "hypixel.net", "mc.x.org")), "typed servers are split and normalized");
+
+		checkProfileReviewFixes(profiles, hypixel);
+
+		profiles.onJoin(client);
+		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");
 	}
 
 	/** Adds a few waypoints around the player, one hidden and one with its beacon on, to show the list. */
