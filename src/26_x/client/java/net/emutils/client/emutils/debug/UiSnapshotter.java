@@ -10,6 +10,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.profile.Profile;
+import net.emutils.client.emutils.profile.ProfileColor;
+import net.emutils.client.emutils.profile.ProfileIcon;
+import net.emutils.client.emutils.profile.ProfileManager;
+import net.emutils.client.emutils.profile.gui.ProfilesScreen;
 import net.emutils.client.EMUtilsHudElements;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
@@ -1010,14 +1015,83 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Profiles (#89): the switcher, the list and its sheets, then switching by hand and automatically.
 			case 195 -> {
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				ProfileManager profiles = EMUtilsClient.profiles();
+				if (profiles.byName("Hypixel") == null) {
+					profiles.create("Hypixel", ProfileIcon.SWORDS, ProfileColor.ORANGE, List.of("hypixel.net"), false, true);
+				}
+				if (profiles.byName("Singleplayer") == null) {
+					profiles.create("Singleplayer", ProfileIcon.HOUSE, ProfileColor.GREEN, List.of(), true, false);
+				}
+				SettingsScreen settings = new SettingsScreen(null);
+				client.gui.setScreen(settings);
+				settings.openProfileMenuForSnapshot();
+				next();
+			}
+			case 196 -> captureAfter(client, 15, "settings, profile menu");
+			case 197 -> {
+				client.gui.setScreen(new ProfilesScreen(MinecraftClientCompat.screen(client)));
+				next();
+			}
+			case 198 -> captureAfter(client, 15, "profiles, dark");
+			case 199 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					screen.openSheetForSnapshot(null, "Building", "play.example.net, hypixel.net", false);
+				}
+				next();
+			}
+			case 200 -> captureAfter(client, 15, "profiles, new profile sheet taking a server from another profile");
+			case 201 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+					screen.openSheetForSnapshot("Hypixel", null, "", false);
+				}
+				next();
+			}
+			case 202 -> captureAfter(client, 15, "profiles, edit sheet");
+			case 203 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				checkProfileSwitching(client);
+				next();
+			}
+			case 204 -> {
+				setGuiScale(client, 3);
+				EMUtilsClient.config().setSettingsUiDark(false);
+				next();
+			}
+			case 205 -> captureAfter(client, 20, "profiles, gui scale 3, light, singleplayer profile active");
+			case 206 -> {
+				if (MinecraftClientCompat.screen(client) instanceof ProfilesScreen screen) {
+					screen.confirmDeleteForSnapshot("Hypixel");
+				}
+				next();
+			}
+			case 207 -> captureAfter(client, 15, "profiles, delete dialog");
+			case 208 -> {
+				ProfileManager profiles = EMUtilsClient.profiles();
+				profiles.pick(profiles.profiles().getFirst());
+				for (Profile profile : profiles.profiles()) {
+					profiles.delete(profile);
+				}
+				check(profiles.profiles().size() == 1 && profiles.active().isDefault(), "profiles deleted, back on Default");
+				setGuiScale(client, 2);
+				EMUtilsClient.config().setSettingsUiDark(true);
+				client.gui.setScreen(null);
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 209 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 196 -> {
+			case 210 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1026,7 +1100,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 197 -> {
+			case 211 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1105,6 +1179,57 @@ public final class UiSnapshotter {
 			before, escKeepsBound, backspaceUnbinds, escKeepsUnbound, keyBinds
 		);
 		next();
+	}
+
+	/**
+	 * Switching profiles swaps every setting, keeps the settings UI's look, and loads profiles by
+	 * themselves on joining a world (#89). Leaves the Singleplayer profile active.
+	 */
+	private static void checkProfileSwitching(Minecraft client) {
+		ProfileManager profiles = EMUtilsClient.profiles();
+		Profile defaults = profiles.profiles().getFirst();
+		Profile singleplayer = profiles.byName("Singleplayer");
+		Profile hypixel = profiles.byName("Hypixel");
+		if (singleplayer == null || hypixel == null) {
+			check(false, "snapshot profiles exist");
+			return;
+		}
+		profiles.pick(defaults);
+		boolean fullbrightBefore = EMUtilsClient.config().tweakFullbright();
+		EMUtilsClient.config().setTweakFullbright(true);
+		EMUtilsClient.config().setSettingsUiDark(true);
+		profiles.pick(singleplayer);
+		check(profiles.active() == singleplayer && !EMUtilsClient.config().tweakFullbright(), "a profile started from the defaults has its own settings");
+		check(EMUtilsClient.config().settingsUiDark(), "the settings UI keeps its look across profiles");
+		profiles.pick(defaults);
+		check(EMUtilsClient.config().tweakFullbright(), "switching back restores the Default profile's settings");
+		EMUtilsClient.config().setTweakFullbright(fullbrightBefore);
+
+		// Joining this singleplayer world loads the Singleplayer profile; without the link, it goes back.
+		profiles.onJoin(client);
+		check(profiles.active() == singleplayer, "joining a singleplayer world loads the singleplayer profile");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), false);
+		profiles.onJoin(client);
+		check(profiles.active() == defaults, "joining a place no profile is linked to goes back to the picked profile");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), true);
+
+		// Giving a server to one profile takes it from another.
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of("hypixel.net"), true);
+		check(hypixel.servers().isEmpty() && singleplayer.servers().equals(List.of("hypixel.net")), "a server loads only the profile it was last given to");
+		profiles.update(singleplayer, "Singleplayer", singleplayer.icon(), singleplayer.color(), List.of(), true);
+		profiles.update(hypixel, "Hypixel", hypixel.icon(), hypixel.color(), List.of("hypixel.net"), false);
+
+		// Export and import round trip, and text that isn't a profile.
+		Profile imported = profiles.importProfile(profiles.export(hypixel));
+		check(imported != null && imported.name().getString().equals("Hypixel") && imported.icon() == ProfileIcon.SWORDS, "an exported profile imports with its name and icon");
+		if (imported != null) {
+			profiles.delete(imported);
+		}
+		check(profiles.importProfile("not a profile") == null, "text that isn't a profile doesn't import");
+		check(ProfileManager.parseServers(" Play.Example.net:25565 ,hypixel.net  mc.x.org.").equals(List.of("play.example.net", "hypixel.net", "mc.x.org")), "typed servers are split and normalized");
+
+		profiles.onJoin(client);
+		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");
 	}
 
 	/** Adds a few waypoints around the player, one hidden and one with its beacon on, to show the list. */

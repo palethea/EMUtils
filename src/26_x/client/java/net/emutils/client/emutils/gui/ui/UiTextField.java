@@ -190,7 +190,8 @@ public final class UiTextField {
 		scrollX = Math.max(0, Math.min(scrollX, Math.max(0, widthOf(font, text) - width + 2)));
 
 		context.enableScissor(x - 1, centerY - capHeight - 3, x + width + 1, centerY + capHeight + 3);
-		if (hasSelection()) {
+		// A field that isn't focused shows no selection, like text set before another field took focus.
+		if (focused && hasSelection()) {
 			int start = x - scrollX + widthOf(font, text.substring(0, Math.min(cursor, anchor)));
 			int end = x - scrollX + widthOf(font, text.substring(0, Math.max(cursor, anchor)));
 			context.fill(start, centerY - capHeight / 2 - 2, end, centerY + capHeight / 2 + 3, UiOpacity.apply(UiTheme.fade(theme.accent(), 0.45F)));

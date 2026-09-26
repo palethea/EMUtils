@@ -143,7 +143,7 @@ Save death and custom waypoints per world or server.
 Open the EMUtils settings from the pause menu, the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command. Every feature is a card with a short description, grouped by category, with search and a dark or light theme. A card's switch turns the feature on or off, Open opens its screen, and the rest of the card opens a sheet with its settings and keybinds. All EMUtils screens share this look.
 
 - Mod Menu Integration: open the EMUtils settings from Mod Menu's config button when Mod Menu is installed.
-- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, and export or import the config through the clipboard.
+- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the config through the clipboard.
 
 ### Screenshot Gallery
 
@@ -188,6 +188,16 @@ Create and manage saved quick commands.
 
 - Saved Commands: keep reusable commands (starting with /) or chat messages, each sent by its own key combination while playing.
 - Shortcut Management: add and edit shortcuts in a form with a key field that captures the combination (keys another shortcut uses are refused), run one right away, delete one, or clear them all.
+
+### Profiles
+
+Keep several sets of EMUtils settings, such as one for a PvP server and one for singleplayer, and switch between them. Each profile holds every EMUtils setting, including the HUD layout; keybinds, waypoints, shortcuts and other saved lists stay the same for every profile. Changes save to the active profile as you make them.
+
+- Profile Switcher: pick a profile from the button next to the theme switch in the settings header, with the `/emutils profile <name>` command, or cycle through them with a keybind (unbound by default).
+- Profile Icons: each profile is shown by an icon and color of your choice.
+- Auto-Switch: link a profile to servers (a domain also covers its subdomains, such as `hypixel.net` for `mc.hypixel.net`) or to singleplayer worlds, and it loads when you join. Joining anywhere else goes back to the profile you last picked yourself.
+- Profile Management: create profiles from the current settings or the defaults, rename, duplicate, reorder, and delete them. The Default profile always stays.
+- Import and Export: copy a profile to the clipboard to share it, and add one from the clipboard, including a config copied with `/emutils export`.
 
 ## QoL
 

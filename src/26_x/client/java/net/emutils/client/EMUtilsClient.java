@@ -5,6 +5,11 @@ import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcutsManager;
 import net.emutils.client.emutils.command.EMUtilsCommand;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.profile.Profile;
+import net.emutils.client.emutils.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.minecraft.network.chat.Component;
+import net.emutils.client.emutils.profile.ProfileManager;
 import net.emutils.client.emutils.debug.DebugGuiDumpTrigger;
 import net.emutils.client.emutils.debug.DebugGuiDumper;
 import net.emutils.client.emutils.debug.BackgroundLaunch;
@@ -67,6 +72,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static EMUtilsConfig config;
+	private static ProfileManager profileManager;
 	private static AutoReconnectManager autoReconnectManager;
 	private static WaypointManager waypointManager;
 	private static ZoomManager zoomManager;
@@ -84,11 +90,13 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping addWaypointKeyMapping;
 	private static KeyMapping massDropKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
+	private static KeyMapping nextProfileKeyMapping;
 
 	@Override
 	public void onInitializeClient() {
 		EMHelpers.registerTranslationPrefix(MOD_ID);
-		config = EMUtilsConfig.load();
+		profileManager = ProfileManager.load();
+		config = profileManager.loadActive();
 		EMHelpers.configure(MOD_ID, EMUtilsClient::config, () -> zoomManager != null && zoomManager.shouldHideHud());
 		HudLayoutMigration.migrateIfNeeded(config);
 		autoReconnectManager = new AutoReconnectManager();
@@ -119,6 +127,7 @@ public class EMUtilsClient implements ClientModInitializer {
 				CustomCapeManager.onLoadTexture(client.player.getGameProfile());
 			}
 			inventoryToolsManager.onWorldJoin(client);
+			profileManager.onJoin(client);
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
@@ -301,6 +310,13 @@ public class EMUtilsClient implements ClientModInitializer {
 			category
 		));
 
+		nextProfileKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.next_profile",
+			VersionedInput.keyboardType(),
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+
 		KeyMapping.Category debugCategory = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "debug"));
 		debugDumpGuiKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.debug_dump_gui",
@@ -316,6 +332,12 @@ public class EMUtilsClient implements ClientModInitializer {
 	}
 
 	private static void handleKeyMappings(Minecraft client) {
+		while (nextProfileKeyMapping != null && nextProfileKeyMapping.consumeClick()) {
+			Profile next = profileManager.pickNext();
+			if (next != null && client.player != null) {
+				client.player.sendSystemMessage(EmUtilsChatPrefix.chat(Component.translatable(EMUtilsTexts.PROFILE_SWITCHED, next.name())));
+			}
+		}
 		while (openGalleryKeyMapping != null && openGalleryKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 			if (!(current instanceof GalleryScreen)) {
@@ -392,6 +414,10 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	public static EMUtilsConfig config() {
 		return config;
+	}
+
+	public static ProfileManager profiles() {
+		return profileManager;
 	}
 
 	public static AutoReconnectManager autoReconnect() {
