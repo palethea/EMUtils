@@ -14,6 +14,7 @@ import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiPanelScreen;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.gui.ui.UiStyle;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.gui.ui.UiTheme;
@@ -45,9 +46,12 @@ public final class SettingsScreen extends UiPanelScreen {
 	private static final int PROFILE_BUTTON_WIDTH = 34;
 	private static final int PROFILE_BADGE = 14;
 	private static final int MAX_COLUMNS = 3;
+	private static final int COMPACT_MAX_COLUMNS = 4;
 	/** Cards narrower than this drop to fewer columns, so names are not cut off. */
 	private static final int MIN_CARD_WIDTH = 160;
+	private static final int COMPACT_MIN_CARD_WIDTH = 120;
 	private static final int CARD_HEIGHT = 44;
+	private static final int COMPACT_CARD_HEIGHT = 28;
 	private static final int CARD_GAP = 8;
 	private static final int CARD_RADIUS = 9;
 	private static final int CARD_PADDING = 10;
@@ -76,7 +80,7 @@ public final class SettingsScreen extends UiPanelScreen {
 	private int controlX;
 	private int controlY;
 	private int controlWidth;
-	private int themeButtonX;
+	private int menusButtonX;
 	private int rightButtonsY;
 	private int titleY;
 	private boolean stackedHeader;
@@ -114,8 +118,8 @@ public final class SettingsScreen extends UiPanelScreen {
 		// When the header stacks, the tagline goes too, to leave room for the cards.
 		showTagline = !stackedHeader && centeredX >= panelX + PADDING + taglineWidth + 14;
 
-		themeButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
-		profileButtonX = themeButtonX - 6 - PROFILE_BUTTON_WIDTH;
+		menusButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
+		profileButtonX = menusButtonX - 6 - PROFILE_BUTTON_WIDTH;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
@@ -180,6 +184,8 @@ public final class SettingsScreen extends UiPanelScreen {
 		} else if (sheet == null && System.currentTimeMillis() < switchFailedUntil) {
 			Component failed = Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED);
 			UiWidgets.tooltip(context, font, theme, failed, profileButtonX + PROFILE_BUTTON_WIDTH / 2, rightButtonsY + ROUND_BUTTON + 2, width, height);
+		} else if (sheet == null && !closing() && contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_MENUS_BUTTON), mouseX, mouseY, width, height);
 		} else if (sheet == null && !closing() && contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
 			Component tip = Component.translatable(EMUtilsTexts.UI_PROFILE_BUTTON, EMUtilsClient.profiles().active().name());
 			UiWidgets.tooltip(context, font, theme, tip, mouseX, mouseY, width, height);
@@ -303,17 +309,18 @@ public final class SettingsScreen extends UiPanelScreen {
 		ProfileBadge.draw(context, EMUtilsClient.profiles().active(), profileButtonX + badgeOffset, rightButtonsY + badgeOffset, PROFILE_BADGE);
 		UiIcons.draw(context, HubIcons.CHEVRON_DOWN, profileButtonX + PROFILE_BUTTON_WIDTH - 13, rightButtonsY + (ROUND_BUTTON - 8) / 2, 8, theme.muted());
 
-		// The sun (switch to light) crossfades into the moon (switch to dark) along with the theme.
-		float themeHover = anim.towards("theme-button", contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
-		UiWidgets.iconButton(context, theme, themeButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.SUN, HubIcons.MOON, lightness(), themeHover);
+		// The menu settings (#120): theme, accent and fonts.
+		float menusHover = anim.towards("menus-button", contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
+		UiWidgets.iconButton(context, theme, menusButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.PALETTE, menusHover);
 	}
 
 	private void drawCards(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
 		List<Group> groups = visibleGroups();
 		boolean headings = selectedGroup == null;
 		int innerWidth = scroll.contentWidth();
-		int columns = MAX_COLUMNS;
-		while (columns > 1 && (innerWidth - CARD_GAP * (columns - 1)) / columns < MIN_CARD_WIDTH) {
+		int columns = UiStyle.compactCards() ? COMPACT_MAX_COLUMNS : MAX_COLUMNS;
+		int minCardWidth = UiStyle.compactCards() ? COMPACT_MIN_CARD_WIDTH : MIN_CARD_WIDTH;
+		while (columns > 1 && (innerWidth - CARD_GAP * (columns - 1)) / columns < minCardWidth) {
 			columns--;
 		}
 		int cardWidth = (innerWidth - CARD_GAP * (columns - 1)) / columns;
@@ -321,7 +328,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		int contentHeight = 0;
 		for (Group group : groups) {
 			int rows = (group.features().size() + columns - 1) / columns;
-			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
+			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * cardHeight() + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		scroll.setContentHeight(Math.max(0, contentHeight - GROUP_GAP + FADE_HEIGHT));
 		scroll.animate(anim, "scroll", mouseX, mouseY);
@@ -351,11 +358,11 @@ public final class SettingsScreen extends UiPanelScreen {
 				int column = i % columns;
 				int row = i / columns;
 				int cardX = scroll.x() + column * (cardWidth + CARD_GAP);
-				int cardY = y + row * (CARD_HEIGHT + CARD_GAP);
+				int cardY = y + row * (cardHeight() + CARD_GAP);
 				cards.add(drawCard(context, theme, group.features().get(i), cardX, cardY, cardWidth, mouseInList, mouseX, mouseY));
 			}
 			int rows = (group.features().size() + columns - 1) / columns;
-			y += rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
+			y += rows * cardHeight() + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		context.pose().popMatrix();
 		if (groups.isEmpty()) {
@@ -369,15 +376,17 @@ public final class SettingsScreen extends UiPanelScreen {
 
 	/** Draws one feature card and returns where it and its control are, for clicks. */
 	private CardBox drawCard(GuiGraphicsExtractor context, UiTheme theme, HubFeature feature, int x, int y, int width, boolean mouseInList, int mouseX, int mouseY) {
-		boolean hovered = mouseInList && contains(mouseX, mouseY, x, y, width, CARD_HEIGHT);
+		boolean hovered = mouseInList && contains(mouseX, mouseY, x, y, width, cardHeight());
 		float hover = anim.towards("card:" + feature.id(), hovered, 16.0F);
 		// Hovered cards rise a little onto a soft shadow, like the mockup. Clicks keep using the resting position.
 		context.pose().pushMatrix();
 		context.pose().translate(0.0F, -hover);
-		UiShapes.shadow(context, x, y + 2, width, CARD_HEIGHT, CARD_RADIUS, 8, UiTheme.fade(theme.shadow(), hover * 0.9F));
-		UiShapes.borderedRect(context, x, y, width, CARD_HEIGHT, CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
+		UiShapes.shadow(context, x, y + 2, width, cardHeight(), CARD_RADIUS, 8, UiTheme.fade(theme.shadow(), hover * 0.9F));
+		UiShapes.borderedRect(context, x, y, width, cardHeight(), CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
 
-		int rowCenter = y + CARD_PADDING + 6;
+		// Compact cards (#149) have only the top row, centered.
+		boolean compact = UiStyle.compactCards();
+		int rowCenter = compact ? y + cardHeight() / 2 : y + CARD_PADDING + 6;
 		UiIcons.draw(context, feature.icon().texture(), x + CARD_PADDING, rowCenter - CARD_ICON / 2, CARD_ICON, theme.text());
 
 		// Top row: the name, then the Open button and the switch on the right.
@@ -412,19 +421,26 @@ public final class SettingsScreen extends UiPanelScreen {
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter, theme.text());
 
 		// Bottom row: the description, with a needs-another-mod badge on the right.
-		int bottomCenter = y + CARD_HEIGHT - CARD_PADDING - 3;
-		int descriptionRight = x + width - CARD_PADDING;
-		if (feature.missingMod() != null) {
-			Component badge = Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, feature.missingMod());
-			int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
-			int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
-			UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
-			descriptionRight -= badgeWidth + 6;
+		if (!compact) {
+			int bottomCenter = y + cardHeight() - CARD_PADDING - 3;
+			int descriptionRight = x + width - CARD_PADDING;
+			if (feature.missingMod() != null) {
+				Component badge = Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, feature.missingMod());
+				int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
+				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
+				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
+				descriptionRight -= badgeWidth + 6;
+			}
+			Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
+			UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		}
-		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
-		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		context.pose().popMatrix();
-		return new CardBox(feature, x, y, width, CARD_HEIGHT, switchBox, openBox);
+		return new CardBox(feature, x, y, width, cardHeight(), switchBox, openBox);
+	}
+
+	/** How tall a card is: shorter without the description, with Compact cards on (#149). */
+	private static int cardHeight() {
+		return UiStyle.compactCards() ? COMPACT_CARD_HEIGHT : CARD_HEIGHT;
 	}
 
 	/** Whether the feature's sheet has anything to show: settings or keybinds. */
@@ -512,8 +528,8 @@ public final class SettingsScreen extends UiPanelScreen {
 			openProfileMenu();
 			return true;
 		}
-		if (contains(mouseX, mouseY, themeButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
-			EMUtilsClient.config().setSettingsUiDark(UiTheme.current() != UiTheme.DARK);
+		if (contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			openMenuSettings();
 			return true;
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
@@ -574,18 +590,24 @@ public final class SettingsScreen extends UiPanelScreen {
 		scroll.reset();
 	}
 
+	/** Opens the menu settings (#120) in a sheet, as the palette button does. */
+	private void openMenuSettings() {
+		search.setFocused(false);
+		openSheet("menus");
+	}
+
 	/**
-	 * Left-clicks the dark/light button through {@link #mouseClicked}, with this version's left button
-	 * number; used by UI snapshots to catch clicks being dropped. Returns whether the theme switched.
+	 * Left-clicks the palette button through {@link #mouseClicked}, with this version's left button
+	 * number; used by UI snapshots to catch clicks being dropped. Returns whether the menu settings
+	 * opened, and closes them again.
 	 */
-	public boolean clickThemeButton() {
-		boolean dark = EMUtilsClient.config().settingsUiDark();
+	public boolean clickMenusButton() {
 		MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
-		mouseClicked(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left), false);
-		mouseReleased(new MouseButtonEvent(themeButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left));
-		boolean switched = EMUtilsClient.config().settingsUiDark() != dark;
-		EMUtilsClient.config().setSettingsUiDark(dark);
-		return switched;
+		mouseClicked(new MouseButtonEvent(menusButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left), false);
+		mouseReleased(new MouseButtonEvent(menusButtonX + ROUND_BUTTON / 2.0, rightButtonsY + ROUND_BUTTON / 2.0, left));
+		boolean opened = sheet != null;
+		sheet = null;
+		return opened;
 	}
 
 	/** Opens the profile switcher's list; used by UI snapshots. */
@@ -616,6 +638,13 @@ public final class SettingsScreen extends UiPanelScreen {
 			if (feature.id().equals(featureId)) {
 				sheet = new SettingsSheet(font, anim, feature, capture);
 			}
+		}
+	}
+
+	/** Opens tab {@code index} of the open sheet; used by UI snapshots. */
+	public void selectSheetSectionForSnapshot(int index) {
+		if (sheet != null) {
+			sheet.selectSection(index);
 		}
 	}
 

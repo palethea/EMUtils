@@ -164,8 +164,8 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 		addX = panelX + panelWidth - PADDING - addWidth;
 		float addHover = contains(mouseX, mouseY, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT) ? 1.0F : 0.0F;
 		UiShapes.roundedRect(context, addX, headerButtonsY, addWidth, HEADER_BUTTON_HEIGHT, 8, UiTheme.mix(theme.accent(), theme.accentHover(), addHover));
-		UiIcons.draw(context, HubIcons.PLUS, addX + 10, headerButtonsY + (HEADER_BUTTON_HEIGHT - iconSize) / 2, iconSize, 0xFFFFFFFF);
-		UiText.drawCentered(context, font, add, UiText.Size.LABEL, addX + 10 + iconSize + 4, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, 0xFFFFFFFF);
+		UiIcons.draw(context, HubIcons.PLUS, addX + 10, headerButtonsY + (HEADER_BUTTON_HEIGHT - iconSize) / 2, iconSize, theme.onAccent());
+		UiText.drawCentered(context, font, add, UiText.Size.LABEL, addX + 10 + iconSize + 4, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, theme.onAccent());
 
 		Component clear = Component.translatable(EMUtilsTexts.UI_CLEAR_ALL);
 		clearWidth = UiWidgets.buttonWidth(font, clear) + 4;
@@ -201,7 +201,7 @@ public final class CommandShortcutsScreen extends UiPanelScreen {
 			List<Component> lines = UiText.wrap(font, Component.translatable(EMUtilsTexts.UI_SHORTCUT_EMPTY), UiText.Size.BODY, Math.min(width - 40, 300));
 			for (int i = 0; i < lines.size(); i++) {
 				Component line = lines.get(i);
-				UiText.draw(context, font, line, UiText.Size.BODY, centerX - UiText.width(font, line, UiText.Size.BODY) / 2, top + iconSize + 10 + i * 11, theme.muted());
+				UiText.draw(context, font, line, UiText.Size.BODY, centerX - UiText.width(font, line, UiText.Size.BODY) / 2, top + iconSize + 10 + i * UiText.lineSpacing(), theme.muted());
 			}
 		}
 		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));

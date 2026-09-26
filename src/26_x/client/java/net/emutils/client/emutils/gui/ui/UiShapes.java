@@ -23,7 +23,18 @@ public final class UiShapes {
 	private UiShapes() {
 	}
 
+	/** A rounded rect; its radius follows the Corner roundness menu setting (#149). */
 	public static void roundedRect(GuiGraphicsExtractor context, int x, int y, int width, int height, int radius, int color) {
+		fillRounded(context, x, y, width, height, rounded(radius), color);
+	}
+
+	/** {@code radius} scaled by the Corner roundness menu setting, so 0% makes every corner square. */
+	private static int rounded(int radius) {
+		float roundness = UiStyle.roundness();
+		return roundness >= 1.0F ? radius : Math.round(radius * roundness);
+	}
+
+	private static void fillRounded(GuiGraphicsExtractor context, int x, int y, int width, int height, int radius, int color) {
 		if (width <= 0 || height <= 0 || (color >>> 24) == 0) {
 			return;
 		}
@@ -36,8 +47,9 @@ public final class UiShapes {
 		drawNineSlice(context, patch(Kind.RECT, clamped, 0), x, y, width, height, color);
 	}
 
+	/** A fully rounded bar, such as a switch track; it stays round whatever the corner roundness. */
 	public static void pill(GuiGraphicsExtractor context, int x, int y, int width, int height, int color) {
-		roundedRect(context, x, y, width, height, Math.min(width, height) / 2, color);
+		fillRounded(context, x, y, width, height, Math.min(width, height) / 2, color);
 	}
 
 	/**
@@ -54,12 +66,13 @@ public final class UiShapes {
 
 	/** A rounded rect with a 1px border; the fill is drawn inside the border. */
 	public static void borderedRect(GuiGraphicsExtractor context, int x, int y, int width, int height, int radius, int fill, int border) {
+		int outer = rounded(radius);
 		if ((border >>> 24) == 0) {
-			roundedRect(context, x, y, width, height, radius, fill);
+			fillRounded(context, x, y, width, height, outer, fill);
 			return;
 		}
-		roundedRect(context, x, y, width, height, radius, border);
-		roundedRect(context, x + 1, y + 1, width - 2, height - 2, Math.max(0, radius - 1), fill);
+		fillRounded(context, x, y, width, height, outer, border);
+		fillRounded(context, x + 1, y + 1, width - 2, height - 2, Math.max(0, outer - 1), fill);
 	}
 
 	/** A soft shadow around the rect {@code x, y, width, height}, spreading {@code blur} pixels outwards. */
@@ -68,7 +81,7 @@ public final class UiShapes {
 			return;
 		}
 
-		int clamped = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
+		int clamped = Math.max(0, Math.min(rounded(radius), Math.min(width, height) / 2));
 		drawNineSlice(context, patch(Kind.SHADOW, clamped, blur), x - blur, y - blur, width + blur * 2, height + blur * 2, color);
 	}
 

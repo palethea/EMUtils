@@ -29,7 +29,6 @@ final class ScriptKeybindDialog {
 	private static final int PADDING = 16;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int KEY_HEIGHT = 30;
-	private static final int LINE_HEIGHT = 11;
 
 	private final Font font;
 	private final String command;
@@ -94,7 +93,7 @@ final class ScriptKeybindDialog {
 			: Component.translatable(EMUtilsTexts.SCRIPT_MANAGER_KEYBIND_HINT);
 		List<Component> noteLines = UiText.wrap(font, note, UiText.Size.BODY, WIDTH - PADDING * 2);
 		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
-		height = PADDING + titleHeight + 8 + LINE_HEIGHT + 14 + KEY_HEIGHT + 12 + noteLines.size() * LINE_HEIGHT + 16 + BUTTON_HEIGHT + PADDING;
+		height = PADDING + titleHeight + 8 + UiText.lineSpacing() + 14 + KEY_HEIGHT + 12 + noteLines.size() * UiText.lineSpacing() + 16 + BUTTON_HEIGHT + PADDING;
 		x = (screenWidth - WIDTH) / 2;
 		y = (screenHeight - height) / 2;
 		if (frame.firstFrame()) {
@@ -109,7 +108,7 @@ final class ScriptKeybindDialog {
 		UiText.draw(context, font, UiText.ellipsize(font, subtitle, UiText.Size.BODY, WIDTH - PADDING * 2), UiText.Size.BODY, x + PADDING, subtitleTop, theme.muted());
 
 		// The combination, in a field that shows it's waiting for keys.
-		int keyY = subtitleTop + LINE_HEIGHT + 14;
+		int keyY = subtitleTop + UiText.lineSpacing() + 14;
 		int keyWidth = WIDTH - PADDING * 2;
 		// An opaque tint: the border is drawn under the fill, so a see-through fill would show it.
 		UiShapes.borderedRect(context, x + PADDING, keyY, keyWidth, KEY_HEIGHT, 8, UiTheme.mix(theme.surface(), theme.accent(), 0.1F), duplicate.isPresent() ? theme.warning() : theme.accent());
@@ -120,7 +119,7 @@ final class ScriptKeybindDialog {
 
 		int noteTop = keyY + KEY_HEIGHT + 12;
 		for (int i = 0; i < noteLines.size(); i++) {
-			UiText.draw(context, font, noteLines.get(i), UiText.Size.BODY, x + PADDING, noteTop + i * LINE_HEIGHT, duplicate.isPresent() ? theme.warning() : theme.textSecondary());
+			UiText.draw(context, font, noteLines.get(i), UiText.Size.BODY, x + PADDING, noteTop + i * UiText.lineSpacing(), duplicate.isPresent() ? theme.warning() : theme.textSecondary());
 		}
 
 		buttonsY = y + height - PADDING - BUTTON_HEIGHT;

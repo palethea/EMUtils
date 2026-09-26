@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
-public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider {
+public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Swatches, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider, HubSettingRow.Section {
 	record Toggle(String labelKey, BooleanSupplier getter, Consumer<Boolean> setter) implements HubSettingRow {
 	}
 
@@ -74,6 +74,13 @@ public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRo
 	record Rgb(String labelKey, IntSupplier getter, IntConsumer setter) implements HubSettingRow {
 	}
 
+	/**
+	 * A color picked from a row of preset dots, plus one last dot that opens the color picker for any
+	 * other color (#120). While {@code enabled} is false the dots are dimmed and can't be clicked.
+	 */
+	record Swatches(String labelKey, List<Integer> presets, IntSupplier getter, IntConsumer setter, BooleanSupplier enabled) implements HubSettingRow {
+	}
+
 	record Action(Component label, Runnable action, boolean enabled) implements HubSettingRow {
 	}
 
@@ -81,5 +88,12 @@ public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRo
 	}
 
 	record Divider() implements HubSettingRow {
+	}
+
+	/**
+	 * Starts a section: the rows after it, up to the next section, are one tab of the settings sheet.
+	 * A sheet whose rows start with sections shows tabs instead of one long list (#149).
+	 */
+	record Section(String labelKey) implements HubSettingRow {
 	}
 }

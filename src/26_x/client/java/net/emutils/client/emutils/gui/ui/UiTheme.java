@@ -37,7 +37,9 @@ public record UiTheme(
 	int management,
 	int qol,
 	int overlay,
-	int warning
+	int warning,
+	/** Text and icons drawn on the accent color, such as a primary button's label. */
+	int onAccent
 ) {
 	public static final UiTheme DARK = new UiTheme(
 		0x8C060908,
@@ -68,7 +70,8 @@ public record UiTheme(
 		0xFFC9AEFF,
 		0xFFFFA3BC,
 		0x80000000,
-		0xFFFF9B85
+		0xFFFF9B85,
+		0xFFFFFFFF
 	);
 
 	public static final UiTheme LIGHT = new UiTheme(
@@ -100,7 +103,8 @@ public record UiTheme(
 		0xFF6B45B8,
 		0xFFA8345A,
 		0x521B2320,
-		0xFFC2412D
+		0xFFC2412D,
+		0xFFFFFFFF
 	);
 
 	private static final RecordComponent[] COMPONENTS = UiTheme.class.getRecordComponents();
@@ -114,8 +118,74 @@ public record UiTheme(
 		}
 	}
 
+	/** The theme picked in the menu settings, with its accent color. */
 	public static UiTheme current() {
-		return EMUtilsClient.config() == null || EMUtilsClient.config().settingsUiDark() ? DARK : LIGHT;
+		boolean dark = EMUtilsClient.config() == null || EMUtilsClient.config().settingsUiDark();
+		return (dark ? DARK : LIGHT).withAccent(accentColor(), dark ? 0.0F : 1.0F).withStyle();
+	}
+
+	/** Whether the menus are in the dark theme, without the accent applied. */
+	public static boolean dark() {
+		return EMUtilsClient.config() == null || EMUtilsClient.config().settingsUiDark();
+	}
+
+	/**
+	 * The accent picked in the menu settings (#120), or the active profile's color when the menus follow
+	 * the profile.
+	 */
+	public static int accentColor() {
+		if (EMUtilsClient.config() == null) {
+			return DARK.accent;
+		}
+		if (EMUtilsClient.config().uiAccentFromProfile() && EMUtilsClient.profiles() != null) {
+			return EMUtilsClient.profiles().active().color().argb();
+		}
+		return EMUtilsClient.config().uiAccent();
+	}
+
+	/**
+	 * This theme with another accent color. {@code lightness} (0 dark, 1 light, between while the theme
+	 * crossfades) decides whether hovering lightens the accent, on dark panels, or darkens it, on light
+	 * ones. Text on the accent turns dark when the accent is light, so it stays readable.
+	 */
+	public UiTheme withAccent(int color, float lightness) {
+		int newAccent = color | 0xFF000000;
+		int newAccentHover = mix(mix(newAccent, 0xFFFFFFFF, 0.12F), mix(newAccent, 0xFF000000, 0.14F), lightness);
+		int newOnAccent = luminance(newAccent) > 0.6F ? 0xFF141817 : 0xFFFFFFFF;
+		if (newAccent == accent && newAccentHover == accentHover && newOnAccent == onAccent) {
+			return this;
+		}
+		return new UiTheme(
+			dim, panel, surface, surfaceHover, surfaceAlt, border, segmentBackground, segmentSelected, text, textSecondary, muted,
+			placeholder, line, switchOff, hover, selectedBackground, selectedText, shadow, newAccent, newAccentHover, devBackground, devText,
+			render, hud, utility, management, qol, overlay, warning, newOnAccent
+		);
+	}
+
+	/**
+	 * This theme with the High contrast menu setting (#149) applied: secondary text, borders and
+	 * dividers moved towards the main text color, so they stand out more.
+	 */
+	public UiTheme withStyle() {
+		if (!UiStyle.highContrast()) {
+			return this;
+		}
+		return new UiTheme(
+			dim, panel, surface, surfaceHover, surfaceAlt, fade(text, 0.3F), segmentBackground, segmentSelected, text,
+			mix(textSecondary, text, 0.6F), mix(muted, text, 0.45F), mix(placeholder, text, 0.35F), mix(line, text, 0.3F),
+			mix(switchOff, text, 0.2F), hover, selectedBackground, selectedText, shadow, accent, accentHover, devBackground, devText,
+			render, hud, utility, management, qol, overlay, warning, onAccent
+		);
+	}
+
+	/** Relative luminance from 0 (black) to 1 (white), as WCAG defines it. */
+	public static float luminance(int color) {
+		return 0.2126F * channel(color >>> 16) + 0.7152F * channel(color >>> 8) + 0.0722F * channel(color);
+	}
+
+	private static float channel(int value) {
+		float c = (value & 0xFF) / 255.0F;
+		return c <= 0.03928F ? c / 12.92F : (float) Math.pow((c + 0.055F) / 1.055F, 2.4F);
 	}
 
 	/**
@@ -141,7 +211,11 @@ public record UiTheme(
 		}
 	}
 
+	/** A category's color, or the muted text color with Category colors turned off (#149). */
 	public int groupColor(HubFeature.Group group) {
+		if (!UiStyle.categoryColors()) {
+			return muted;
+		}
 		return switch (group) {
 			case RENDER -> render;
 			case HUD -> hud;

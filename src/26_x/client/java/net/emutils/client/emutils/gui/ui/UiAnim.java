@@ -5,7 +5,8 @@ import java.util.Map;
 
 /**
  * Smoothly animated values keyed by name, such as hover highlights and switch positions. Call
- * {@link #frame()} once per rendered frame, then {@link #towards} for each value.
+ * {@link #frame()} once per rendered frame, then {@link #towards} for each value. Everything follows
+ * the Animations menu setting (#149): twice as fast, or no motion at all.
  */
 public final class UiAnim {
 	private final Map<String, Float> values = new HashMap<>();
@@ -24,8 +25,14 @@ public final class UiAnim {
 	 * settles; around 14 feels snappy, 8 relaxed. A new key starts at its target.
 	 */
 	public float towards(String key, float target, float speed) {
+		UiMotion motion = UiStyle.motion();
+		if (motion == UiMotion.OFF) {
+			values.put(key, target);
+			return target;
+		}
 		float current = values.getOrDefault(key, target);
-		float next = current + (target - current) * (1.0F - (float) Math.exp(-speed * frameSeconds));
+		float scaledSpeed = motion == UiMotion.FAST ? speed * 2.0F : speed;
+		float next = current + (target - current) * (1.0F - (float) Math.exp(-scaledSpeed * frameSeconds));
 		if (Math.abs(target - next) < 0.001F) {
 			next = target;
 		}
@@ -56,6 +63,14 @@ public final class UiAnim {
 	 * it starts at full speed and settles gently, the usual curve for panels opening and closing.
 	 */
 	public float transition(String key, float target, float seconds, boolean easeOut) {
+		UiMotion motion = UiStyle.motion();
+		if (motion == UiMotion.OFF) {
+			tweens.put(key, new Tween(target, target, 0L, easeOut));
+			return target;
+		}
+		if (motion == UiMotion.FAST) {
+			seconds *= 0.5F;
+		}
 		long now = System.nanoTime();
 		Tween tween = tweens.get(key);
 		if (tween == null) {

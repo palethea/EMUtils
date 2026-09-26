@@ -15,14 +15,18 @@ import net.emutils.client.versioned.VersionedTextures;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
+import org.lwjgl.CLongBuffer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.freetype.FT_Bitmap;
 import org.lwjgl.util.freetype.FT_Face;
 import org.lwjgl.util.freetype.FT_GlyphSlot;
+import org.lwjgl.util.freetype.FT_MM_Var;
+import org.lwjgl.util.freetype.FT_Var_Axis;
 import org.lwjgl.util.freetype.FT_Vector;
 import org.lwjgl.util.freetype.FreeType;
+import org.lwjgl.util.freetype.TT_OS2;
 
 /**
  * Renders settings UI text with FreeType into textures, one per string, at the physical pixel size.
@@ -48,7 +52,17 @@ public final class UiFontRenderer {
 	private static boolean initialized;
 	private static boolean available;
 	private static long library;
+	/** OpenType tag of the weight axis in variable fonts. */
+	private static final long WEIGHT_AXIS = ('w' << 24) | ('g' << 16) | ('h' << 8) | 't';
+	private static final float DEFAULT_CAP_HEIGHT = 0.7F;
 	private static final Map<Weight, FT_Face> FACES = new EnumMap<>(Weight.class);
+	/** The font data of each face, which FreeType reads from for as long as the face lives. */
+	private static final Map<Weight, ByteBuffer> FACE_DATA = new EnumMap<>(Weight.class);
+	private static final Map<Weight, Float> CAP_HEIGHTS = new EnumMap<>(Weight.class);
+	private static @Nullable UiFontFamily loadedFamily;
+	private static @Nullable UiCodeFont loadedCodeFont;
+	/** Counts font changes, so screens know to lay out their text again. */
+	private static int generation;
 	private static final Map<String, Float> WIDTHS = new HashMap<>();
 	private static final LinkedHashMap<String, Rendered> STRINGS = new LinkedHashMap<>(64, 0.75F, true) {
 		@Override
@@ -77,24 +91,27 @@ public final class UiFontRenderer {
 	private UiFontRenderer() {
 	}
 
+	/**
+	 * The weights the UI uses, with their design weight for variable fonts. Which file each comes from
+	 * depends on the chosen font ({@link UiFontFamily}, {@link UiCodeFont}).
+	 */
 	public enum Weight {
-		SEMIBOLD("nunito_semibold.ttf", 0.705F),
-		EXTRABOLD("nunito_extrabold.ttf", 0.705F),
-		BLACK("nunito_black.ttf", 0.705F),
-		/** JetBrains Mono, for code such as the script editor's (#118). */
-		MONO("jetbrains_mono_regular.ttf", 0.73F);
+		SEMIBOLD(600),
+		EXTRABOLD(800),
+		BLACK(900),
+		/** The code font, such as the script editor's (#118). */
+		MONO(400);
 
-		private final String file;
-		private final float capHeight;
+		private final int designWeight;
 
-		Weight(String file, float capHeight) {
-			this.file = file;
-			this.capHeight = capHeight;
+		Weight(int designWeight) {
+			this.designWeight = designWeight;
 		}
 
 		/** The font's cap height as a fraction of its em size. */
 		public float capHeight() {
-			return capHeight;
+			Float capHeight = CAP_HEIGHTS.get(this);
+			return capHeight == null ? DEFAULT_CAP_HEIGHT : capHeight;
 		}
 	}
 
@@ -121,35 +138,151 @@ public final class UiFontRenderer {
 				return false;
 			}
 			library = pointer.get(0);
-			for (Weight weight : Weight.values()) {
-				FT_Face face = loadFace(weight, stack);
-				if (face == null) {
-					return false;
-				}
-				FACES.put(weight, face);
-			}
-			return true;
+			return loadFaces(chosenFamily(), chosenCodeFont());
 		} catch (IOException | LinkageError exception) {
 			EMUtilsClient.LOGGER.warn("EMUtils UI font renderer unavailable; using Minecraft's text rendering", exception);
 			return false;
 		}
 	}
 
-	private static @Nullable FT_Face loadFace(Weight weight, MemoryStack stack) throws IOException {
-		Identifier location = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "font/" + weight.file);
+	private static UiFontFamily chosenFamily() {
+		return EMUtilsClient.config() == null ? UiFontFamily.NUNITO : EMUtilsClient.config().uiFont();
+	}
+
+	private static UiCodeFont chosenCodeFont() {
+		return EMUtilsClient.config() == null ? UiCodeFont.JETBRAINS_MONO : EMUtilsClient.config().uiCodeFont();
+	}
+
+	/**
+	 * Loads the fonts picked in the menu settings, when they changed since the last call (#120), and
+	 * drops every cached string and glyph rendered in the old ones. With Minecraft's font picked, the UI
+	 * weights stay in Nunito; they're only used for the code font's neighbours then.
+	 */
+	public static void syncFonts() {
+		if (!available()) {
+			return;
+		}
+		UiFontFamily family = chosenFamily();
+		UiCodeFont codeFont = chosenCodeFont();
+		if (family == loadedFamily && codeFont == loadedCodeFont) {
+			return;
+		}
+		try {
+			if (!loadFaces(family, codeFont)) {
+				EMUtilsClient.LOGGER.warn("Could not load the {} and {} fonts; keeping the previous ones.", family.displayName(), codeFont.displayName());
+			}
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not load the {} and {} fonts; keeping the previous ones.", family.displayName(), codeFont.displayName(), exception);
+		}
+	}
+
+	/** Replaces every face with the chosen fonts; keeps the old ones when a new one can't be loaded. */
+	private static boolean loadFaces(UiFontFamily family, UiCodeFont codeFont) throws IOException {
+		UiFontFamily files = family.minecraft() ? UiFontFamily.NUNITO : family;
+		Map<Weight, FT_Face> faces = new EnumMap<>(Weight.class);
+		Map<Weight, ByteBuffer> data = new EnumMap<>(Weight.class);
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			for (Weight weight : Weight.values()) {
+				boolean mono = weight == Weight.MONO;
+				String file = mono ? codeFont.file() : files.file(weight);
+				boolean variable = mono ? codeFont.variable() : files.variable();
+				ByteBuffer buffer;
+				try {
+					buffer = read(file);
+				} catch (IOException exception) {
+					release(faces, data);
+					throw exception;
+				}
+				FT_Face face = file == null ? null : openFace(buffer, variable ? weight.designWeight : 0, stack);
+				if (face == null) {
+					MemoryUtil.memFree(buffer);
+					release(faces, data);
+					return false;
+				}
+				faces.put(weight, face);
+				data.put(weight, buffer);
+			}
+		}
+		release(FACES, FACE_DATA);
+		FACES.clear();
+		FACE_DATA.clear();
+		FACES.putAll(faces);
+		FACE_DATA.putAll(data);
+		CAP_HEIGHTS.clear();
+		faces.forEach((weight, face) -> CAP_HEIGHTS.put(weight, capHeightOf(face)));
+		loadedFamily = family;
+		loadedCodeFont = codeFont;
+		generation++;
+		clearCache();
+		return true;
+	}
+
+	/** Closes faces before freeing the data FreeType reads them from. */
+	private static void release(Map<Weight, FT_Face> faces, Map<Weight, ByteBuffer> data) {
+		faces.values().forEach(FreeType::FT_Done_Face);
+		data.values().forEach(MemoryUtil::memFree);
+	}
+
+	private static ByteBuffer read(@Nullable String file) throws IOException {
+		if (file == null) {
+			return MemoryUtil.memAlloc(0);
+		}
+		Identifier location = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "font/" + file);
 		byte[] bytes;
 		try (InputStream stream = Minecraft.getInstance().getResourceManager().open(location)) {
 			bytes = stream.readAllBytes();
 		}
-		// FreeType reads the font from this buffer for as long as the face lives, which is the whole game.
-		ByteBuffer data = MemoryUtil.memAlloc(bytes.length);
-		data.put(bytes).flip();
+		ByteBuffer buffer = MemoryUtil.memAlloc(bytes.length);
+		buffer.put(bytes).flip();
+		return buffer;
+	}
+
+	/** Opens a face on {@code data}; for a variable font, at {@code designWeight} (0 keeps the default). */
+	private static @Nullable FT_Face openFace(ByteBuffer data, int designWeight, MemoryStack stack) {
 		PointerBuffer facePointer = stack.mallocPointer(1);
 		if (FreeType.FT_New_Memory_Face(library, data, 0L, facePointer) != 0) {
-			MemoryUtil.memFree(data);
 			return null;
 		}
-		return FT_Face.create(facePointer.get(0));
+		FT_Face face = FT_Face.create(facePointer.get(0));
+		if (designWeight > 0) {
+			setDesignWeight(face, designWeight, stack);
+		}
+		return face;
+	}
+
+	/** Picks a weight in a variable font: every axis at its default, and the weight axis at {@code designWeight}. */
+	private static void setDesignWeight(FT_Face face, int designWeight, MemoryStack stack) {
+		PointerBuffer pointer = stack.mallocPointer(1);
+		if (FreeType.FT_Get_MM_Var(face, pointer) != 0) {
+			return;
+		}
+		FT_MM_Var variations = FT_MM_Var.create(pointer.get(0));
+		try {
+			int axes = variations.num_axis();
+			CLongBuffer coordinates = stack.mallocCLong(axes);
+			for (int i = 0; i < axes; i++) {
+				FT_Var_Axis axis = variations.axis().get(i);
+				long value = axis.def();
+				if (axis.tag() == WEIGHT_AXIS) {
+					value = Math.clamp((long) designWeight << 16, axis.minimum(), axis.maximum());
+				}
+				coordinates.put(i, value);
+			}
+			FreeType.FT_Set_Var_Design_Coordinates(face, coordinates);
+		} finally {
+			FreeType.FT_Done_MM_Var(library, variations);
+		}
+	}
+
+	/** Cap height from the font's OS/2 table, as a fraction of the em. */
+	private static float capHeightOf(FT_Face face) {
+		long table = FreeType.FT_Get_Sfnt_Table(face, FreeType.FT_SFNT_OS2);
+		int unitsPerEm = face.units_per_EM() & 0xFFFF;
+		if (table == 0L || unitsPerEm == 0) {
+			return DEFAULT_CAP_HEIGHT;
+		}
+		int capHeight = TT_OS2.create(table).sCapHeight();
+		return capHeight > 0 ? capHeight / (float) unitsPerEm : DEFAULT_CAP_HEIGHT;
 	}
 
 	/** Width of {@code text} in physical pixels at {@code pixelSize} pixels per em. */
@@ -296,6 +429,11 @@ public final class UiFontRenderer {
 			Minecraft.getInstance().getTextureManager().release(texture);
 		}
 		RELEASED.clear();
+	}
+
+	/** Changes whenever the fonts are reloaded. */
+	public static int generation() {
+		return generation;
 	}
 
 	public static int texturesMade() {

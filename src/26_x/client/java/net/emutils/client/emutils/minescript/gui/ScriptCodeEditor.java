@@ -3,6 +3,7 @@ package net.emutils.client.emutils.minescript.gui;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
@@ -23,7 +24,8 @@ import net.minecraft.util.Util;
  * smooth scrolling and a blinking caret. The screen owns it, places it and passes it input.
  */
 final class ScriptCodeEditor {
-	static final int LINE_HEIGHT = 13;
+	/** Line height at the normal code size; it grows and shrinks with the size in the menu settings (#120). */
+	private static final int BASE_LINE_HEIGHT = 13;
 	private static final int PAD_TOP = 8;
 	private static final int GUTTER_PAD = 10;
 	private static final int CODE_GAP = 12;
@@ -221,6 +223,11 @@ final class ScriptCodeEditor {
 
 	// ---- geometry -------------------------------------------------------------------------------
 
+	private static int lineHeight() {
+		int percent = EMUtilsClient.config() == null ? 100 : EMUtilsClient.config().uiCodeSize();
+		return Math.max(BASE_LINE_HEIGHT * 3 / 4, Math.round(BASE_LINE_HEIGHT * percent / 100.0F));
+	}
+
 	private float advance() {
 		return UiText.advance(font, UiText.Size.CODE);
 	}
@@ -281,7 +288,7 @@ final class ScriptCodeEditor {
 	}
 
 	private void updateContentHeight() {
-		scroll.setContentHeight(PAD_TOP * 2 + buffer.lineCount() * LINE_HEIGHT);
+		scroll.setContentHeight(PAD_TOP * 2 + buffer.lineCount() * lineHeight());
 	}
 
 	private float maxHorizontal() {
@@ -297,12 +304,12 @@ final class ScriptCodeEditor {
 	private void caretMoved() {
 		caretMovedAt = Util.getMillis();
 		updateContentHeight();
-		int top = PAD_TOP + buffer.caretLine() * LINE_HEIGHT;
+		int top = PAD_TOP + buffer.caretLine() * lineHeight();
 		double target = scroll.target();
 		if (top - 4 < target) {
 			scroll.scrollTo(top - 4);
-		} else if (top + LINE_HEIGHT + 4 > target + height) {
-			scroll.scrollTo(top + LINE_HEIGHT + 4 - height);
+		} else if (top + lineHeight() + 4 > target + height) {
+			scroll.scrollTo(top + lineHeight() + 4 - height);
 		}
 		float caretX = visualColumn(buffer.line(buffer.caretLine()), buffer.caretColumn()) * advance();
 		int room = codeWidth();
@@ -315,7 +322,7 @@ final class ScriptCodeEditor {
 	}
 
 	private int lineAt(double mouseY) {
-		return Mth.clamp((int) Math.floor((mouseY - y - PAD_TOP + scroll.exactOffset()) / LINE_HEIGHT), 0, buffer.lineCount() - 1);
+		return Mth.clamp((int) Math.floor((mouseY - y - PAD_TOP + scroll.exactOffset()) / lineHeight()), 0, buffer.lineCount() - 1);
 	}
 
 	private int columnAtMouse(int line, double mouseX) {
@@ -333,7 +340,7 @@ final class ScriptCodeEditor {
 		horizontal = anim.towards("code-h", horizontalTarget, 18.0F);
 		float advance = advance();
 		int capHeight = UiText.lineHeight(font, UiText.Size.CODE);
-		float textInset = (LINE_HEIGHT - capHeight) / 2.0F;
+		float textInset = (lineHeight() - capHeight) / 2.0F;
 		int gutterRight = codeX() - CODE_GAP;
 		int codeX = codeX();
 		int codeRight = codeX + codeWidth();
@@ -342,19 +349,19 @@ final class ScriptCodeEditor {
 		ScriptTextBuffer.Position selectionEnd = buffer.selectionEnd();
 		boolean selection = buffer.hasSelection();
 
-		int first = Math.max(0, (scroll.offset() - PAD_TOP) / LINE_HEIGHT);
-		int last = Math.min(buffer.lineCount() - 1, (scroll.offset() + height - PAD_TOP) / LINE_HEIGHT + 1);
+		int first = Math.max(0, (scroll.offset() - PAD_TOP) / lineHeight());
+		int last = Math.min(buffer.lineCount() - 1, (scroll.offset() + height - PAD_TOP) / lineHeight() + 1);
 		float offset = scroll.exactOffset();
 
 		scroll.begin(context);
 		for (int line = first; line <= last; line++) {
-			float top = y + PAD_TOP + line * LINE_HEIGHT - offset;
+			float top = y + PAD_TOP + line * lineHeight() - offset;
 			if (line == errorLine) {
 				// The line the last run failed on: a warning tint across it and a bar at the gutter's edge.
-				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + LINE_HEIGHT, UiTheme.fade(theme.warning(), 0.14F));
-				fill(context, x, top, x + 2, top + LINE_HEIGHT, theme.warning());
+				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + lineHeight(), UiTheme.fade(theme.warning(), 0.14F));
+				fill(context, x, top, x + 2, top + lineHeight(), theme.warning());
 			} else if (focused && !selection && line == caretLine) {
-				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + LINE_HEIGHT, UiTheme.fade(theme.text(), 0.05F));
+				fill(context, x, top, x + width - UiScrollArea.GUTTER, top + lineHeight(), UiTheme.fade(theme.text(), 0.05F));
 			}
 			String number = String.valueOf(line + 1);
 			int numberColor = line == errorLine
@@ -373,14 +380,14 @@ final class ScriptCodeEditor {
 				continue;
 			}
 			String text = buffer.line(match.line());
-			float top = y + PAD_TOP + match.line() * LINE_HEIGHT - offset;
+			float top = y + PAD_TOP + match.line() * lineHeight() - offset;
 			float startX = codeX - horizontal + visualColumn(text, match.start()) * advance;
 			float endX = codeX - horizontal + visualColumn(text, match.end()) * advance;
-			fill(context, startX, top + 1.0F, endX, top + LINE_HEIGHT - 1.0F, UiTheme.fade(FIND_COLOR, i == current ? 0.55F : 0.25F));
+			fill(context, startX, top + 1.0F, endX, top + lineHeight() - 1.0F, UiTheme.fade(FIND_COLOR, i == current ? 0.55F : 0.25F));
 		}
 		for (int line = first; line <= last; line++) {
 			String text = buffer.line(line);
-			float top = y + PAD_TOP + line * LINE_HEIGHT - offset;
+			float top = y + PAD_TOP + line * lineHeight() - offset;
 			float left = codeX - horizontal;
 			if (selection && line >= selectionStart.line() && line <= selectionEnd.line()) {
 				int startColumn = line == selectionStart.line() ? selectionStart.column() : 0;
@@ -388,7 +395,7 @@ final class ScriptCodeEditor {
 				float startX = left + visualColumn(text, startColumn) * advance;
 				// A selected line break shows as a little extra width past the line's end.
 				float endX = left + visualColumn(text, endColumn) * advance + (line < selectionEnd.line() ? advance * 0.6F : 0.0F);
-				fill(context, startX, top, Math.max(startX + 1.0F, endX), top + LINE_HEIGHT, selectionColor);
+				fill(context, startX, top, Math.max(startX + 1.0F, endX), top + lineHeight(), selectionColor);
 			}
 			for (PythonTokens.Token token : PythonTokens.tokenize(text)) {
 				int start = visualColumn(text, token.start());
@@ -407,8 +414,8 @@ final class ScriptCodeEditor {
 		if (focused && (sinceMove < BLINK_MILLIS || (sinceMove / BLINK_MILLIS) % 2L == 0L)) {
 			String text = buffer.line(caretLine);
 			float caretX = codeX - horizontal + visualColumn(text, buffer.caretColumn()) * advance;
-			float top = y + PAD_TOP + caretLine * LINE_HEIGHT - offset;
-			fill(context, caretX - 0.5F, top + 1.0F, caretX + 0.5F, top + LINE_HEIGHT - 1.0F, theme.accent());
+			float top = y + PAD_TOP + caretLine * lineHeight() - offset;
+			fill(context, caretX - 0.5F, top + 1.0F, caretX + 0.5F, top + lineHeight() - 1.0F, theme.accent());
 		}
 		context.disableScissor();
 		scroll.end(context, background, FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
@@ -502,7 +509,7 @@ final class ScriptCodeEditor {
 		if (readOnly && !allowedWhenReadOnly(input)) {
 			return true;
 		}
-		return buffer.keyPressed(input, Math.max(1, height / LINE_HEIGHT - 1));
+		return buffer.keyPressed(input, Math.max(1, height / lineHeight() - 1));
 	}
 
 	boolean charTyped(CharacterEvent input) {

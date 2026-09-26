@@ -39,6 +39,6 @@ final class SpotifyControlButton extends Button {
 			iconSize++;
 		}
 		int offset = (width - iconSize) / 2;
-		UiIcons.draw(context, icon, getX() + offset, getY() + offset, iconSize, primary ? 0xFFFFFFFF : theme.text());
+		UiIcons.draw(context, icon, getX() + offset, getY() + offset, iconSize, primary ? theme.onAccent() : theme.text());
 	}
 }

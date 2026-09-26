@@ -10,6 +10,7 @@ import net.emutils.client.emutils.gui.hub.HubSettingsRegistry;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiColorPicker;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiSheetFrame;
@@ -40,9 +41,11 @@ final class SettingsSheet {
 	private static final int ROW_GAP = 6;
 	private static final int ROW_PADDING = 10;
 	private static final int ROW_RADIUS = 10;
-	private static final int LINE_HEIGHT = 11;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int SWATCH = 16;
+	/** The dots of a {@link HubSettingRow.Swatches} row and the gap between them. */
+	private static final int DOT = 14;
+	private static final int DOT_GAP = 8;
 	private static final int DROPDOWN_ROW = 16;
 	private static final int FADE_HEIGHT = 10;
 	/** Choices use a segmented control when they have at most this many options and fit on one line. */
@@ -60,6 +63,10 @@ final class SettingsSheet {
 	private final UiSheetFrame frame;
 	private @Nullable Dropdown dropdown;
 	private HubSettingRow.@Nullable Slider draggingSlider;
+	/** The open tab, for rows split into sections (#149). */
+	private int section;
+	private int @Nullable [] sectionEdges;
+	private int sectionsY;
 	private int draggingX;
 	private int draggingWidth;
 	private float draggingFraction;
@@ -103,6 +110,15 @@ final class SettingsSheet {
 		return frame.isClosed();
 	}
 
+	/** Opens the tab of section {@code index}, at its top. */
+	void selectSection(int index) {
+		if (index != section) {
+			section = index;
+			scroll.reset();
+			dropdown = null;
+		}
+	}
+
 	void close() {
 		frame.close();
 		dropdown = null;
@@ -140,21 +156,37 @@ final class SettingsSheet {
 	private void layout(int panelX, int panelY, int panelWidth, int panelHeight) {
 		width = Math.min(MAX_WIDTH, panelWidth - 32);
 		int contentWidth = width - PADDING * 2;
-		measureRows(contentWidth);
-		int contentHeight = 0;
-		for (RowBox box : boxes) {
-			contentHeight = Math.max(contentHeight, box.top + box.height);
+		// With tabs, the sheet is as tall as its tallest tab, so it doesn't jump when switching them.
+		int tallest = 0;
+		int open = section;
+		int sections = Math.max(1, sectionLabels().size());
+		for (int i = 0; i < sections; i++) {
+			section = sections > 1 ? i : open;
+			measureRows(contentWidth);
+			tallest = Math.max(tallest, measuredHeight());
 		}
+		section = open;
+		measureRows(contentWidth);
+		int contentHeight = measuredHeight();
 		int headerHeight = headerHeight(contentWidth);
 		int footerHeight = BUTTON_HEIGHT + PADDING;
 		int maxHeight = panelHeight - 24;
-		height = Math.min(maxHeight, PADDING + headerHeight + 10 + Math.max(contentHeight, 18) + FADE_HEIGHT + 8 + footerHeight);
+		height = Math.min(maxHeight, PADDING + headerHeight + 10 + Math.max(tallest, 18) + FADE_HEIGHT + 8 + footerHeight);
 		x = panelX + (panelWidth - width) / 2;
 		y = panelY + (panelHeight - height) / 2;
 		footerY = y + height - PADDING - BUTTON_HEIGHT;
 		int listTop = y + PADDING + headerHeight + 10 - FADE_HEIGHT / 2;
 		scroll.setBounds(x + PADDING, listTop, contentWidth + UiScrollArea.GUTTER, footerY - 8 - listTop);
 		scroll.setContentHeight(contentHeight + FADE_HEIGHT);
+	}
+
+	/** How tall the rows measured last are. */
+	private int measuredHeight() {
+		int height = 0;
+		for (RowBox box : boxes) {
+			height = Math.max(height, box.top + box.height);
+		}
+		return height;
 	}
 
 	private void prepareText() {
@@ -185,7 +217,8 @@ final class SettingsSheet {
 	private int headerHeight(int contentWidth) {
 		int titleBlock = UiText.lineHeight(font, UiText.Size.HEADING) + 5 + UiText.lineHeight(font, UiText.Size.BODY);
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, contentWidth);
-		return titleBlock + 12 + description.size() * LINE_HEIGHT;
+		int tabs = sectionLabels().isEmpty() ? 0 : 8 + UiWidgets.SEGMENT_HEIGHT;
+		return titleBlock + 12 + description.size() * UiText.lineSpacing() + tabs;
 	}
 
 	private void drawHeader(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -207,17 +240,60 @@ final class SettingsSheet {
 		int descriptionTop = top + headingHeight + 5 + UiText.lineHeight(font, UiText.Size.BODY) + 12;
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - PADDING * 2);
 		for (int i = 0; i < description.size(); i++) {
-			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * LINE_HEIGHT, theme.textSecondary());
+			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * UiText.lineSpacing(), theme.textSecondary());
+		}
+
+		// Tabs for rows split into sections, such as the menu settings (#149).
+		List<Component> sections = sectionLabels();
+		if (!sections.isEmpty()) {
+			sectionsY = descriptionTop + description.size() * UiText.lineSpacing() + 8;
+			int hovered = -1;
+			int[] edges = UiWidgets.segmentEdges(font, left, sections);
+			for (int i = 0; i < sections.size(); i++) {
+				if (contains(mouseX, mouseY, edges[i], sectionsY, edges[i + 1] - edges[i], UiWidgets.SEGMENT_HEIGHT)) {
+					hovered = i;
+				}
+			}
+			float selection = anim.transition("sheet-section:" + feature.id(), section, 0.18F);
+			sectionEdges = UiWidgets.segmented(context, font, theme, left, sectionsY, sections, selection, hovered);
 		}
 	}
 
 	// ---- rows -----------------------------------------------------------------------------------
 
+	/** The section names, or an empty list when the rows aren't split into sections. */
+	private List<Component> sectionLabels() {
+		List<Component> labels = new ArrayList<>();
+		for (HubSettingRow row : rows) {
+			if (row instanceof HubSettingRow.Section header) {
+				labels.add(Component.translatable(header.labelKey()));
+			}
+		}
+		return labels;
+	}
+
+	/** The rows of the open section, or every row without sections. */
+	private List<HubSettingRow> visibleRows() {
+		if (sectionLabels().isEmpty()) {
+			return rows;
+		}
+		List<HubSettingRow> visible = new ArrayList<>();
+		int index = -1;
+		for (HubSettingRow row : rows) {
+			if (row instanceof HubSettingRow.Section) {
+				index++;
+			} else if (index == section) {
+				visible.add(row);
+			}
+		}
+		return visible;
+	}
+
 	private void measureRows(int contentWidth) {
 		boxes.clear();
 		rowContentWidth = contentWidth - ROW_PADDING * 2;
 		int top = FADE_HEIGHT / 2;
-		for (HubSettingRow row : rows) {
+		for (HubSettingRow row : visibleRows()) {
 			if (row instanceof HubSettingRow.Divider) {
 				top += 8;
 				continue;
@@ -236,11 +312,13 @@ final class SettingsSheet {
 			if (row instanceof HubSettingRow.Action) {
 				content = BUTTON_HEIGHT;
 			} else {
-				content = 12 + (box.description.isEmpty() ? 0 : 3 + box.description.size() * LINE_HEIGHT - 2);
+				content = 12 + (box.description.isEmpty() ? 0 : 3 + box.description.size() * UiText.lineSpacing() - 2);
 				if (row instanceof HubSettingRow.Slider) {
 					content += 7 + UiWidgets.SLIDER_HEIGHT;
 				} else if (row instanceof HubSettingRow.Cycle<?> cycle && usesSegments(cycle)) {
 					content += 7 + UiWidgets.SEGMENT_HEIGHT;
+				} else if (row instanceof HubSettingRow.Swatches) {
+					content += 7 + DOT + 2;
 				}
 			}
 			box.height = content + ROW_PADDING * 2;
@@ -335,6 +413,9 @@ final class SettingsSheet {
 		if (row instanceof HubSettingRow.Rgb rgb) {
 			return rgb.labelKey();
 		}
+		if (row instanceof HubSettingRow.Swatches swatches) {
+			return swatches.labelKey();
+		}
 		return null;
 	}
 
@@ -397,9 +478,9 @@ final class SettingsSheet {
 		UiText.drawCentered(context, font, UiText.ellipsize(font, label, UiText.Size.BOLD, right - left - inlineControlWidth(row)), UiText.Size.BOLD, left, labelCenter, theme.text());
 		int textTop = labelCenter + 6 + 3;
 		for (int i = 0; i < box.description.size(); i++) {
-			UiText.draw(context, font, box.description.get(i), UiText.Size.BODY, left, textTop + i * LINE_HEIGHT, theme.muted());
+			UiText.draw(context, font, box.description.get(i), UiText.Size.BODY, left, textTop + i * UiText.lineSpacing(), theme.muted());
 		}
-		int below = box.description.isEmpty() ? labelCenter + 6 + 7 : textTop + box.description.size() * LINE_HEIGHT + 3;
+		int below = box.description.isEmpty() ? labelCenter + 6 + 7 : textTop + box.description.size() * UiText.lineSpacing() + 3;
 
 		if (row instanceof HubSettingRow.Toggle toggle) {
 			int toggleX = right - UiWidgets.SWITCH_WIDTH;
@@ -420,6 +501,8 @@ final class SettingsSheet {
 			UiWidgets.slider(context, theme, left, below, right - left, fraction, sliderHover ? 1.0F : 0.0F);
 		} else if (row instanceof HubSettingRow.Cycle<?> cycle) {
 			drawCycle(context, theme, box, cycle, left, right, labelCenter, below, mouseX, mouseY);
+		} else if (row instanceof HubSettingRow.Swatches swatches) {
+			drawSwatches(context, theme, box, swatches, left, below + 1, mouseX, mouseY);
 		} else if (row instanceof HubSettingRow.Rgb rgb) {
 			int swatchX = right - SWATCH;
 			int swatchY = labelCenter - SWATCH / 2;
@@ -429,6 +512,44 @@ final class SettingsSheet {
 			UiShapes.roundedRect(context, swatchX - 1, swatchY - 1, SWATCH + 2, SWATCH + 2, 5, theme.line());
 			UiShapes.roundedRect(context, swatchX, swatchY, SWATCH, SWATCH, 4, 0xFF000000 | rgb.getter().getAsInt());
 		}
+	}
+
+	/**
+	 * The preset dots, then one more for any other color: it shows that color, or a plus while a preset
+	 * is picked. The picked dot gets a ring in its own color.
+	 */
+	private void drawSwatches(GuiGraphicsExtractor context, UiTheme theme, RowBox box, HubSettingRow.Swatches swatches, int left, int top, int mouseX, int mouseY) {
+		boolean enabled = swatches.enabled().getAsBoolean();
+		float shown = anim.towards("swatches:" + swatches.labelKey(), enabled, 16.0F);
+		int current = swatches.getter().getAsInt() | 0xFF000000;
+		boolean custom = !swatches.presets().contains(current);
+		int count = swatches.presets().size() + 1;
+		box.swatchX = left + 2;
+		box.swatchY = top;
+		box.setControl(left, top - 3, count * (DOT + DOT_GAP), DOT + 6);
+		float opacity = UiOpacity.get();
+		UiOpacity.set(opacity * (0.35F + 0.65F * shown));
+		for (int i = 0; i < count; i++) {
+			int dotX = box.swatchX + i * (DOT + DOT_GAP);
+			boolean isCustom = i == count - 1;
+			int color = isCustom ? (custom ? current : theme.segmentBackground()) : swatches.presets().get(i);
+			boolean selected = isCustom ? custom : color == current;
+			boolean hovered = enabled && contains(mouseX, mouseY, dotX - 3, top - 3, DOT + 6, DOT + 6);
+			if (selected || hovered) {
+				// A ring around the dot, with the row's color between it and the dot.
+				UiShapes.circle(context, dotX - 2, top - 2, DOT + 4, selected ? color : theme.line());
+				UiShapes.circle(context, dotX - 1, top - 1, DOT + 2, theme.surfaceAlt());
+			}
+			UiShapes.circle(context, dotX, top, DOT, color);
+			if (isCustom && !custom) {
+				UiIcons.draw(context, HubIcons.PLUS, dotX + 3, top + 3, DOT - 6, theme.textSecondary());
+			}
+			if (isCustom) {
+				box.anchorX = dotX;
+				box.anchorY = top + DOT / 2;
+			}
+		}
+		UiOpacity.set(opacity);
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
@@ -557,6 +678,14 @@ final class SettingsSheet {
 			rowsDirty = true;
 			return true;
 		}
+		if (sectionEdges != null) {
+			for (int i = 0; i + 1 < sectionEdges.length; i++) {
+				if (contains(mouseX, mouseY, sectionEdges[i], sectionsY, sectionEdges[i + 1] - sectionEdges[i], UiWidgets.SEGMENT_HEIGHT)) {
+					selectSection(i);
+					return true;
+				}
+			}
+		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
 			return true;
 		}
@@ -602,6 +731,23 @@ final class SettingsSheet {
 				dropdown = new Dropdown(box, cycle, box.controlX, box.controlY, box.controlWidth);
 			} else if (cycle.options() == null && contains(mouseX, mouseY, box.controlX, box.controlY, box.controlWidth, box.controlHeight)) {
 				cycle.setter().accept(cycle.next().get());
+			}
+		} else if (row instanceof HubSettingRow.Swatches swatches) {
+			if (!swatches.enabled().getAsBoolean()) {
+				return;
+			}
+			int count = swatches.presets().size() + 1;
+			for (int i = 0; i < count; i++) {
+				int dotX = box.swatchX + i * (DOT + DOT_GAP);
+				if (!contains(mouseX, mouseY, dotX - DOT_GAP / 2, box.swatchY - 4, DOT + DOT_GAP, DOT + 8)) {
+					continue;
+				}
+				if (i < swatches.presets().size()) {
+					swatches.setter().accept(swatches.presets().get(i));
+				} else {
+					colorPicker = new UiColorPicker(swatches.getter(), swatches.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
+				}
+				return;
 			}
 		} else if (row instanceof HubSettingRow.Rgb rgb) {
 			colorPicker = new UiColorPicker(rgb.getter(), rgb.setter(), box.anchorX, box.anchorY, screenWidth(), screenHeight());
@@ -742,6 +888,9 @@ final class SettingsSheet {
 		private int anchorX;
 		private int anchorY;
 		private int @Nullable [] segmentEdges;
+		/** Where the first dot of a swatches row is. */
+		private int swatchX;
+		private int swatchY;
 
 		private RowBox(@Nullable HubSettingRow row, int top) {
 			this.row = row;

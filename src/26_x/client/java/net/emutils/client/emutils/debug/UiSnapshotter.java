@@ -10,6 +10,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.gui.ui.UiCodeFont;
+import net.emutils.client.emutils.gui.ui.UiFontFamily;
+import net.emutils.client.emutils.gui.ui.UiText;
+import net.emutils.client.emutils.gui.ui.UiTheme;
+import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiMotion;
+import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.profile.Profile;
 import net.emutils.client.emutils.profile.ProfileColor;
 import net.emutils.client.emutils.profile.ProfileIcon;
@@ -155,7 +162,7 @@ public final class UiSnapshotter {
 			case 40 -> {
 				if (MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
 					screen.searchFor("");
-					EMUtilsClient.LOGGER.info("EMUtils UI snapshot: a left click on the theme button switches it: {}", screen.clickThemeButton());
+					check(screen.clickMenusButton(), "a left click on the palette button opens the menu settings");
 				}
 				next();
 			}
@@ -1228,14 +1235,202 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Menu settings (#120): theme, accent (picked, custom, or the profile's color) and fonts.
 			case 232 -> {
+				setGuiScale(client, 2);
+				EMUtilsClient.config().resetMenuSettings();
+				SettingsScreen settings = new SettingsScreen(null);
+				client.gui.setScreen(settings);
+				settings.openSheet("menus");
+				next();
+			}
+			case 233 -> captureAfter(client, 15, "menu settings, dark");
+			case 234 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiAccent(0xFF2F6FD6);
+					check(UiTheme.current().accent() == 0xFF2F6FD6, "the picked accent colors the menus");
+				}
+				captureAfter(client, 20, "menu settings, blue accent");
+			}
+			case 235 -> {
+				if (stepTicks == 1) {
+					ProfileManager profiles = EMUtilsClient.profiles();
+					Profile orange = profiles.create("Accent test", ProfileIcon.SWORDS, ProfileColor.ORANGE, List.of(), false, true);
+					if (orange != null) {
+						profiles.pick(orange);
+					}
+					EMUtilsClient.config().setUiAccentFromProfile(true);
+					check(UiTheme.accentColor() == ProfileColor.ORANGE.argb() && EMUtilsClient.config().uiAccent() == 0xFF2F6FD6, "the accent follows the profile, and the picked one is kept (and carried over to the new profile)");
+				}
+				captureAfter(client, 20, "menu settings, accent from the orange profile");
+			}
+			case 236 -> {
+				if (stepTicks == 1) {
+					ProfileManager profiles = EMUtilsClient.profiles();
+					Profile test = profiles.byName("Accent test");
+					profiles.pick(profiles.profiles().getFirst());
+					if (test != null) {
+						profiles.delete(test);
+					}
+					check(EMUtilsClient.config().uiAccentFromProfile(), "menu settings carry over when switching back to Default");
+					EMUtilsClient.config().setUiAccentFromProfile(false);
+					EMUtilsClient.config().setUiAccent(0xFFFFD84D);
+					EMUtilsClient.config().setSettingsUiDark(false);
+					check(UiTheme.current().onAccent() == 0xFF141817, "text on a light accent turns dark");
+				}
+				captureAfter(client, 25, "menu settings, light theme, yellow custom accent");
+			}
+			case 237 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					EMUtilsClient.config().resetMenuSettings();
+					screen.searchFor("");
+					Component sample = Component.literal("Every little job");
+					int nunito = UiText.width(client.font, sample, UiText.Size.BODY);
+					EMUtilsClient.config().setUiFont(UiFontFamily.INTER);
+					int inter = UiText.width(client.font, sample, UiText.Size.BODY);
+					check(nunito != inter, "switching the font changes how text measures (" + nunito + " to " + inter + ")");
+				}
+				captureAfter(client, 15, "settings, Inter");
+			}
+			case 238 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiFont(UiFontFamily.RUBIK);
+				}
+				captureAfter(client, 15, "settings, Rubik");
+			}
+			case 239 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiFont(UiFontFamily.FIGTREE);
+				}
+				captureAfter(client, 15, "settings, Figtree");
+			}
+			case 240 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiFont(UiFontFamily.MINECRAFT);
+				}
+				captureAfter(client, 15, "settings, Minecraft font");
+			}
+			case 241 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.openSheet("menus");
+				}
+				captureAfter(client, 15, "menu settings, Minecraft font");
+			}
+			case 242 -> {
+				EMUtilsClient.config().setUiFont(UiFontFamily.NUNITO);
+				EMUtilsClient.config().setUiCodeFont(UiCodeFont.FIRA_CODE);
+				EMUtilsClient.config().setUiCodeSize(130);
+				writeTestScripts();
+				client.gui.setScreen(new ScriptsScreen(null));
+				next();
+			}
+			case 243 -> {
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof ScriptsScreen screen) {
+					screen.openForSnapshot(TEST_SCRIPT_FOLDER + "/hello.py");
+				}
+				captureAfter(client, 40, "scripts, Fira Code at 130%");
+			}
+			case 244 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiCodeFont(UiCodeFont.CASCADIA_CODE);
+					EMUtilsClient.config().setUiCodeSize(100);
+				}
+				captureAfter(client, 20, "scripts, Cascadia Code");
+			}
+			// More menu settings (#149): text size, compact cards, corners, contrast, background and motion.
+			case 245 -> {
+				EMUtilsClient.config().resetMenuSettings();
+				EMUtilsClient.config().setUiTextSize(125);
+				client.gui.setScreen(new SettingsScreen(null));
+				next();
+			}
+			case 246 -> captureAfter(client, 15, "settings, text at 125%");
+			case 247 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiTextSize(100);
+					EMUtilsClient.config().setUiCompactCards(true);
+				}
+				captureAfter(client, 15, "settings, compact cards");
+			}
+			case 248 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiCompactCards(false);
+					EMUtilsClient.config().setUiCornerRoundness(0);
+					EMUtilsClient.config().setUiHighContrast(true);
+					EMUtilsClient.config().setUiCategoryColors(false);
+					check(UiTheme.current().groupColor(HubFeature.Group.RENDER) == UiTheme.current().muted(), "category colors can be turned off");
+					check(UiTheme.current().muted() != UiTheme.DARK.muted(), "high contrast strengthens secondary text");
+				}
+				captureAfter(client, 15, "settings, square corners, high contrast, no category colors");
+			}
+			case 249 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.openSheet("menus");
+				}
+				captureAfter(client, 15, "menu settings, square corners, high contrast");
+			}
+			case 250 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					EMUtilsClient.config().resetMenuSettings();
+					EMUtilsClient.config().setUiBackgroundBlur(0);
+					EMUtilsClient.config().setUiBackgroundDim(30);
+					EMUtilsClient.config().setUiPanelOpacity(70);
+					screen.searchFor("");
+				}
+				captureAfter(client, 20, "settings, no blur, 30% dimming, 70% panel");
+			}
+			case 251 -> {
+				EMUtilsClient.config().resetMenuSettings();
+				EMUtilsClient.config().setUiMotion(UiMotion.OFF);
+				UiAnim motion = new UiAnim();
+				motion.transition("check", 0.0F, 0.2F, true);
+				boolean instant = motion.transition("check", 1.0F, 0.2F, true) == 1.0F && motion.towards("hover", 0.0F, 16.0F) == 0.0F && motion.towards("hover", 1.0F, 16.0F) == 1.0F;
+				EMUtilsClient.config().setUiMotion(UiMotion.FAST);
+				UiAnim fast = new UiAnim();
+				fast.transition("check", 0.0F, 10.0F);
+				fast.transition("check", 1.0F, 10.0F);
+				boolean moving = fast.transition("check", 1.0F, 10.0F) < 1.0F;
+				check(instant && moving, "Animations Off jumps straight to the end, Fast still animates");
+				EMUtilsClient.config().setUiMotion(UiMotion.NORMAL);
+				next();
+			}
+			// The menu settings' tabs (#149).
+			case 252 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetMenuSettings();
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("menus");
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 20, "menu settings, Fonts tab");
+			}
+			case 253 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 15, "menu settings, Layout tab");
+			}
+			case 254 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.selectSheetSectionForSnapshot(3);
+				}
+				captureAfter(client, 15, "menu settings, Effects tab");
+			}
+			case 255 -> {
+				deleteTestScripts();
+				EMUtilsClient.config().resetMenuSettings();
+				client.gui.setScreen(null);
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 256 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 233 -> {
+			case 257 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1244,7 +1439,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 234 -> {
+			case 258 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

@@ -173,8 +173,8 @@ public final class ProfileManager {
 		}
 		EMUtilsConfig next = EMUtilsConfig.load(file(profile));
 		if (current != null) {
-			// The settings UI's look belongs to the player, not the profile.
-			next.setSettingsUiDark(current.settingsUiDark());
+			// How the menus look belongs to the player, not the profile.
+			next.copyMenuSettingsFrom(current);
 		}
 		active = profile.id();
 		EMUtilsClient.replaceConfig(next);
@@ -390,7 +390,7 @@ public final class ProfileManager {
 		if (!profile.id().equals(active) || current == null) {
 			return defaults.flush();
 		}
-		defaults.setSettingsUiDark(current.settingsUiDark());
+		defaults.copyMenuSettingsFrom(current);
 		if (!defaults.flush()) {
 			return false;
 		}

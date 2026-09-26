@@ -756,7 +756,7 @@ public final class ScriptsScreen extends UiPanelScreen {
 			List<Component> lines = UiText.wrap(font, text, UiText.Size.BODY, width - 20);
 			for (int i = 0; i < lines.size(); i++) {
 				Component line = lines.get(i);
-				UiText.draw(context, font, line, UiText.Size.BODY, listScroll.x() + (width - UiText.width(font, line, UiText.Size.BODY)) / 2, top + iconSize + 10 + i * 11, theme.muted());
+				UiText.draw(context, font, line, UiText.Size.BODY, listScroll.x() + (width - UiText.width(font, line, UiText.Size.BODY)) / 2, top + iconSize + 10 + i * UiText.lineSpacing(), theme.muted());
 			}
 		}
 		listScroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));

@@ -15,7 +15,6 @@ public final class UiConfirmDialog {
 	private static final int WIDTH = 260;
 	private static final int PADDING = 16;
 	private static final int BUTTON_HEIGHT = 20;
-	private static final int LINE_HEIGHT = 11;
 
 	private final Font font;
 	private final Component title;
@@ -53,7 +52,7 @@ public final class UiConfirmDialog {
 	public void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
 		List<Component> lines = UiText.wrap(font, message, UiText.Size.BODY, WIDTH - PADDING * 2);
 		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
-		height = PADDING + titleHeight + 10 + lines.size() * LINE_HEIGHT + 14 + BUTTON_HEIGHT + PADDING;
+		height = PADDING + titleHeight + 10 + lines.size() * UiText.lineSpacing() + 14 + BUTTON_HEIGHT + PADDING;
 		x = (screenWidth - WIDTH) / 2;
 		y = (screenHeight - height) / 2;
 		if (frame.firstFrame()) {
@@ -68,7 +67,7 @@ public final class UiConfirmDialog {
 		UiText.draw(context, font, title, UiText.Size.BOLD, x + PADDING, y + PADDING, theme.text());
 		int textTop = y + PADDING + titleHeight + 10;
 		for (int i = 0; i < lines.size(); i++) {
-			UiText.draw(context, font, lines.get(i), UiText.Size.BODY, x + PADDING, textTop + i * LINE_HEIGHT, theme.textSecondary());
+			UiText.draw(context, font, lines.get(i), UiText.Size.BODY, x + PADDING, textTop + i * UiText.lineSpacing(), theme.textSecondary());
 		}
 		buttonsY = y + height - PADDING - BUTTON_HEIGHT;
 		confirmWidth = UiWidgets.buttonWidth(font, confirmLabel) + 8;

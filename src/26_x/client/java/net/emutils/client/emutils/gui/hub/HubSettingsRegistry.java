@@ -3,6 +3,7 @@ package net.emutils.client.emutils.gui.hub;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
@@ -12,6 +13,9 @@ import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.ui.UiCodeFont;
+import net.emutils.client.emutils.gui.ui.UiFontFamily;
+import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -42,7 +46,13 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.CAPES, HubSettingsRegistry::capesRows);
 		ROWS.put(HubCategory.INVENTORY, HubSettingsRegistry::inventoryRows);
 		ROWS.put(HubCategory.SPOTIFY, HubSettingsRegistry::spotifyRows);
+		ROWS.put(HubCategory.MENUS, HubSettingsRegistry::menuRows);
 	}
+
+	/** Accent presets for the menus: saturated and dark enough for white text in both themes. */
+	private static final List<Integer> ACCENT_PRESETS = List.of(
+		0xFF16A058, 0xFF12877F, 0xFF2F6FD6, 0xFF5B5BD6, 0xFF7B4FD0, 0xFFC23D7A, 0xFFD0453A, 0xFFC77700
+	);
 
 	private HubSettingsRegistry() {
 	}
@@ -76,6 +86,7 @@ public final class HubSettingsRegistry {
 			case CAPES -> config::resetCapesDefaults;
 			case INVENTORY -> config::resetInventoryToolsDefaults;
 			case SPOTIFY -> config::resetSpotifyPlayerDefaults;
+			case MENUS -> config::resetMenuSettings;
 		};
 
 		return () -> {
@@ -95,6 +106,47 @@ public final class HubSettingsRegistry {
 
 	private static EMUtilsConfig config() {
 		return EMUtilsClient.config();
+	}
+
+	/**
+	 * How the menus look (#120): theme, accent and fonts. Shared by every profile; the accent can follow
+	 * the active profile's color instead.
+	 */
+	private static List<HubSettingRow> menuRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		List<Boolean> themes = List.of(Boolean.TRUE, Boolean.FALSE);
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MENUS_SECTION_COLORS));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.UI_MENUS_THEME,
+			config::settingsUiDark,
+			config::setSettingsUiDark,
+			() -> !config.settingsUiDark(),
+			() -> Component.translatable(config.settingsUiDark() ? EMUtilsTexts.UI_MENUS_THEME_DARK : EMUtilsTexts.UI_MENUS_THEME_LIGHT),
+			themes,
+			dark -> Component.translatable(dark ? EMUtilsTexts.UI_MENUS_THEME_DARK : EMUtilsTexts.UI_MENUS_THEME_LIGHT)
+		));
+		rows.add(new HubSettingRow.Swatches(EMUtilsTexts.UI_MENUS_ACCENT, ACCENT_PRESETS, config::uiAccent, config::setUiAccent, () -> !config.uiAccentFromProfile()));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_ACCENT_FROM_PROFILE, config::uiAccentFromProfile, config::setUiAccentFromProfile));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_HIGH_CONTRAST, config::uiHighContrast, config::setUiHighContrast));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_CATEGORY_COLORS, config::uiCategoryColors, config::setUiCategoryColors));
+
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MENUS_SECTION_FONTS));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.UI_MENUS_FONT, config::uiFont, config::setUiFont, UiFontFamily.class, family -> Component.literal(family.displayName())));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_TEXT_SIZE, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.UI_TEXT_SIZE_MIN, EMUtilsConfig.UI_TEXT_SIZE_MAX, config::uiTextSize, config::setUiTextSize));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.UI_MENUS_CODE_FONT, config::uiCodeFont, config::setUiCodeFont, UiCodeFont.class, font -> Component.literal(font.displayName())));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_CODE_SIZE, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.UI_CODE_SIZE_MIN, EMUtilsConfig.UI_CODE_SIZE_MAX, config::uiCodeSize, config::setUiCodeSize));
+
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MENUS_SECTION_LAYOUT));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_COMPACT_CARDS, config::uiCompactCards, config::setUiCompactCards));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_ROUNDNESS, EMUtilsTexts.SUFFIX_PERCENT, 0, 100, config::uiCornerRoundness, config::setUiCornerRoundness));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_PANEL_OPACITY, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.UI_PANEL_OPACITY_MIN, 100, config::uiPanelOpacity, config::setUiPanelOpacity));
+
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MENUS_SECTION_EFFECTS));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.UI_MENUS_MOTION, config::uiMotion, config::setUiMotion, UiMotion.class, motion -> Component.translatable(EMUtilsTexts.UI_MENUS_MOTION + "." + motion.name().toLowerCase(Locale.ROOT))));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_BLUR, EMUtilsTexts.SUFFIX_PERCENT, 0, 100, config::uiBackgroundBlur, config::setUiBackgroundBlur));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_DIM, EMUtilsTexts.SUFFIX_PERCENT, 0, 100, config::uiBackgroundDim, config::setUiBackgroundDim));
+		return rows;
 	}
 
 	private static List<HubSettingRow> chatRows(Runnable refresh) {
