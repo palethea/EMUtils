@@ -125,6 +125,17 @@ public final class FreeCameraManager {
 		camera.setPos(camera.position().add(new Vec3(x, verticalRamped * speed, z)));
 	}
 
+	/** Puts the free camera at a position and angle, without easing; used by UI snapshots. */
+	public void placeForSnapshot(double x, double y, double z, float yaw, float pitch) {
+		if (camera == null) {
+			return;
+		}
+		camera.setPos(x, y, z);
+		camera.setYRot(yaw);
+		camera.setXRot(pitch);
+		camera.setOldPosAndRot();
+	}
+
 	private static float axis(boolean positive, boolean negative) {
 		return (positive ? 1.0F : 0.0F) - (negative ? 1.0F : 0.0F);
 	}

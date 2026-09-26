@@ -1188,14 +1188,54 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Free Camera: the world keeps rendering around the camera, not just around the player.
 			case 225 -> {
+				EMUtilsClient.config().setTweakFreeCamera(true);
+				next();
+			}
+			case 226 -> {
+				if (stepTicks == 5 && client.player != null) {
+					check(EMUtilsClient.tweaks().freeCamera().isActive() && client.getCameraEntity() != client.player, "free camera takes over the view");
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(client.player.getX(), client.player.getY() + 30, client.player.getZ(), client.player.getYRot(), 35.0F);
+				}
+				captureAfter(client, 60, "free camera, 30 blocks above the player");
+			}
+			case 227 -> {
+				if (stepTicks == 1 && client.player != null) {
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(client.player.getX() + 64, client.player.getY() + 20, client.player.getZ() + 64, 135.0F, 20.0F);
+				}
+				captureAfter(client, 80, "free camera, 90 blocks from the player, looking back");
+			}
+			case 228 -> {
+				if (stepTicks == 1 && client.player != null) {
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(client.player.getX() - 48, client.player.getY() + 12, client.player.getZ(), -90.0F, 10.0F);
+				}
+				captureAfter(client, 80, "free camera, 48 blocks west, looking east");
+			}
+			case 229 -> {
+				if (stepTicks == 1 && client.player != null) {
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(client.player.getX(), client.player.getY() - 6, client.player.getZ(), 0.0F, 0.0F);
+				}
+				captureAfter(client, 60, "free camera, inside the ground");
+			}
+			case 230 -> {
+				EMUtilsClient.config().setTweakFreeCamera(false);
+				next();
+			}
+			case 231 -> {
+				if (stepTicks == 5) {
+					check(!EMUtilsClient.tweaks().freeCamera().isActive() && client.getCameraEntity() == client.player, "turning free camera off gives the view back to the player");
+					next();
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 232 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 226 -> {
+			case 233 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1204,7 +1244,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 227 -> {
+			case 234 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

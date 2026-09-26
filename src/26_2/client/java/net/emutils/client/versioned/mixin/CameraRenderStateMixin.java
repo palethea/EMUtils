@@ -9,7 +9,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Free Camera: turns off smart culling while the free camera is inside a solid block. */
+/**
+ * Free Camera: turns off smart culling while the free camera is inside a solid block, like vanilla
+ * does for spectators, so the caves around it stay visible. Sodium reads the same flag as its "use
+ * occlusion culling" setting, so this covers Sodium too (#146).
+ */
 @Mixin(Camera.class)
 public abstract class CameraRenderStateMixin {
 	@Inject(method = "extractRenderState", at = @At("TAIL"))
