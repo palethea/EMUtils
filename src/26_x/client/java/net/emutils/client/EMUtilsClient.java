@@ -21,6 +21,7 @@ import net.emutils.client.emutils.gui.settings.SettingsWarmup;
 import net.emutils.client.emutils.gui.ui.UiClosingScreens;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
+import net.emutils.client.emutils.screenshot.gui.GalleryThumbnails;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
@@ -121,6 +122,7 @@ public class EMUtilsClient implements ClientModInitializer {
 			inventoryToolsManager.onWorldLeave(client);
 			tweaksManager.resetSession();
 			autoReconnectManager.onDisconnected();
+			GalleryThumbnails.freeShared();
 		});
 
 		String version = FabricLoader.getInstance()
