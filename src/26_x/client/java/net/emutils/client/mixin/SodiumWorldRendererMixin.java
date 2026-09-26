@@ -10,19 +10,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+/**
+ * Sodium's terrain setup. Free Camera needs nothing here: Sodium passes the camera's {@code smartCull}
+ * to {@code setupTerrain} as "use occlusion culling", and {@code CameraRenderStateMixin} already turns
+ * that off while the free camera is inside a solid block (#146).
+ */
 @Mixin(value = SodiumWorldRenderer.class, remap = false)
 public abstract class SodiumWorldRendererMixin {
-	@ModifyVariable(
-		method = "setupTerrain",
-		at = @At("HEAD"),
-		argsOnly = true,
-		ordinal = 0
-	)
-	private boolean emutils$treatFreeCameraAsSpectator(boolean spectator) {
-		return spectator
-			|| (EMUtilsClient.tweaks() != null && EMUtilsClient.tweaks().freeCamera().isActive());
-	}
-
 	@ModifyVariable(
 		method = "setupTerrain",
 		at = @At("HEAD"),
