@@ -11,9 +11,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Sodium's terrain setup. Free Camera needs nothing here: Sodium passes the camera's {@code smartCull}
- * to {@code setupTerrain} as "use occlusion culling", and {@code CameraRenderStateMixin} already turns
- * that off while the free camera is inside a solid block (#146).
+ * Removes world fog from Sodium's terrain setup. Free Camera needs no hook here: Sodium passes the
+ * camera's {@code smartCull} to {@code setupTerrain} as "use occlusion culling", and
+ * {@code CameraRenderStateMixin} already turns that off while the free camera is inside a solid
+ * block (#146).
  */
 @Mixin(value = SodiumWorldRenderer.class, remap = false)
 public abstract class SodiumWorldRendererMixin {
