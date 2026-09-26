@@ -14,6 +14,9 @@ import net.emutils.client.emutils.gui.ui.UiCodeFont;
 import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTheme;
+import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiMotion;
+import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.profile.Profile;
 import net.emutils.client.emutils.profile.ProfileColor;
 import net.emutils.client.emutils.profile.ProfileIcon;
@@ -1334,20 +1337,77 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 20, "scripts, Cascadia Code");
 			}
+			// More menu settings (#149): text size, compact cards, corners, contrast, background and motion.
 			case 245 -> {
+				EMUtilsClient.config().resetMenuSettings();
+				EMUtilsClient.config().setUiTextSize(125);
+				client.gui.setScreen(new SettingsScreen(null));
+				next();
+			}
+			case 246 -> captureAfter(client, 15, "settings, text at 125%");
+			case 247 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiTextSize(100);
+					EMUtilsClient.config().setUiCompactCards(true);
+				}
+				captureAfter(client, 15, "settings, compact cards");
+			}
+			case 248 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setUiCompactCards(false);
+					EMUtilsClient.config().setUiCornerRoundness(0);
+					EMUtilsClient.config().setUiHighContrast(true);
+					EMUtilsClient.config().setUiCategoryColors(false);
+					check(UiTheme.current().groupColor(HubFeature.Group.RENDER) == UiTheme.current().muted(), "category colors can be turned off");
+					check(UiTheme.current().muted() != UiTheme.DARK.muted(), "high contrast strengthens secondary text");
+				}
+				captureAfter(client, 15, "settings, square corners, high contrast, no category colors");
+			}
+			case 249 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					screen.openSheet("menus");
+				}
+				captureAfter(client, 15, "menu settings, square corners, high contrast");
+			}
+			case 250 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen screen) {
+					EMUtilsClient.config().resetMenuSettings();
+					EMUtilsClient.config().setUiBackgroundBlur(0);
+					EMUtilsClient.config().setUiBackgroundDim(30);
+					EMUtilsClient.config().setUiPanelOpacity(70);
+					screen.searchFor("");
+				}
+				captureAfter(client, 20, "settings, no blur, 30% dimming, 70% panel");
+			}
+			case 251 -> {
+				EMUtilsClient.config().resetMenuSettings();
+				EMUtilsClient.config().setUiMotion(UiMotion.OFF);
+				UiAnim motion = new UiAnim();
+				motion.transition("check", 0.0F, 0.2F, true);
+				boolean instant = motion.transition("check", 1.0F, 0.2F, true) == 1.0F && motion.towards("hover", 0.0F, 16.0F) == 0.0F && motion.towards("hover", 1.0F, 16.0F) == 1.0F;
+				EMUtilsClient.config().setUiMotion(UiMotion.FAST);
+				UiAnim fast = new UiAnim();
+				fast.transition("check", 0.0F, 10.0F);
+				fast.transition("check", 1.0F, 10.0F);
+				boolean moving = fast.transition("check", 1.0F, 10.0F) < 1.0F;
+				check(instant && moving, "Animations Off jumps straight to the end, Fast still animates");
+				EMUtilsClient.config().setUiMotion(UiMotion.NORMAL);
+				next();
+			}
+			case 252 -> {
 				deleteTestScripts();
 				EMUtilsClient.config().resetMenuSettings();
 				client.gui.setScreen(null);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 246 -> {
+			case 253 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 247 -> {
+			case 254 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1356,7 +1416,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 248 -> {
+			case 255 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

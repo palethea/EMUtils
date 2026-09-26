@@ -14,6 +14,7 @@ import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiPanelScreen;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.gui.ui.UiStyle;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.gui.ui.UiTheme;
@@ -45,9 +46,12 @@ public final class SettingsScreen extends UiPanelScreen {
 	private static final int PROFILE_BUTTON_WIDTH = 34;
 	private static final int PROFILE_BADGE = 14;
 	private static final int MAX_COLUMNS = 3;
+	private static final int COMPACT_MAX_COLUMNS = 4;
 	/** Cards narrower than this drop to fewer columns, so names are not cut off. */
 	private static final int MIN_CARD_WIDTH = 160;
+	private static final int COMPACT_MIN_CARD_WIDTH = 120;
 	private static final int CARD_HEIGHT = 44;
+	private static final int COMPACT_CARD_HEIGHT = 28;
 	private static final int CARD_GAP = 8;
 	private static final int CARD_RADIUS = 9;
 	private static final int CARD_PADDING = 10;
@@ -314,8 +318,9 @@ public final class SettingsScreen extends UiPanelScreen {
 		List<Group> groups = visibleGroups();
 		boolean headings = selectedGroup == null;
 		int innerWidth = scroll.contentWidth();
-		int columns = MAX_COLUMNS;
-		while (columns > 1 && (innerWidth - CARD_GAP * (columns - 1)) / columns < MIN_CARD_WIDTH) {
+		int columns = UiStyle.compactCards() ? COMPACT_MAX_COLUMNS : MAX_COLUMNS;
+		int minCardWidth = UiStyle.compactCards() ? COMPACT_MIN_CARD_WIDTH : MIN_CARD_WIDTH;
+		while (columns > 1 && (innerWidth - CARD_GAP * (columns - 1)) / columns < minCardWidth) {
 			columns--;
 		}
 		int cardWidth = (innerWidth - CARD_GAP * (columns - 1)) / columns;
@@ -323,7 +328,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		int contentHeight = 0;
 		for (Group group : groups) {
 			int rows = (group.features().size() + columns - 1) / columns;
-			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
+			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * cardHeight() + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		scroll.setContentHeight(Math.max(0, contentHeight - GROUP_GAP + FADE_HEIGHT));
 		scroll.animate(anim, "scroll", mouseX, mouseY);
@@ -353,11 +358,11 @@ public final class SettingsScreen extends UiPanelScreen {
 				int column = i % columns;
 				int row = i / columns;
 				int cardX = scroll.x() + column * (cardWidth + CARD_GAP);
-				int cardY = y + row * (CARD_HEIGHT + CARD_GAP);
+				int cardY = y + row * (cardHeight() + CARD_GAP);
 				cards.add(drawCard(context, theme, group.features().get(i), cardX, cardY, cardWidth, mouseInList, mouseX, mouseY));
 			}
 			int rows = (group.features().size() + columns - 1) / columns;
-			y += rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + GROUP_GAP;
+			y += rows * cardHeight() + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		context.pose().popMatrix();
 		if (groups.isEmpty()) {
@@ -371,15 +376,17 @@ public final class SettingsScreen extends UiPanelScreen {
 
 	/** Draws one feature card and returns where it and its control are, for clicks. */
 	private CardBox drawCard(GuiGraphicsExtractor context, UiTheme theme, HubFeature feature, int x, int y, int width, boolean mouseInList, int mouseX, int mouseY) {
-		boolean hovered = mouseInList && contains(mouseX, mouseY, x, y, width, CARD_HEIGHT);
+		boolean hovered = mouseInList && contains(mouseX, mouseY, x, y, width, cardHeight());
 		float hover = anim.towards("card:" + feature.id(), hovered, 16.0F);
 		// Hovered cards rise a little onto a soft shadow, like the mockup. Clicks keep using the resting position.
 		context.pose().pushMatrix();
 		context.pose().translate(0.0F, -hover);
-		UiShapes.shadow(context, x, y + 2, width, CARD_HEIGHT, CARD_RADIUS, 8, UiTheme.fade(theme.shadow(), hover * 0.9F));
-		UiShapes.borderedRect(context, x, y, width, CARD_HEIGHT, CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
+		UiShapes.shadow(context, x, y + 2, width, cardHeight(), CARD_RADIUS, 8, UiTheme.fade(theme.shadow(), hover * 0.9F));
+		UiShapes.borderedRect(context, x, y, width, cardHeight(), CARD_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
 
-		int rowCenter = y + CARD_PADDING + 6;
+		// Compact cards (#149) have only the top row, centered.
+		boolean compact = UiStyle.compactCards();
+		int rowCenter = compact ? y + cardHeight() / 2 : y + CARD_PADDING + 6;
 		UiIcons.draw(context, feature.icon().texture(), x + CARD_PADDING, rowCenter - CARD_ICON / 2, CARD_ICON, theme.text());
 
 		// Top row: the name, then the Open button and the switch on the right.
@@ -414,19 +421,26 @@ public final class SettingsScreen extends UiPanelScreen {
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, rowCenter, theme.text());
 
 		// Bottom row: the description, with a needs-another-mod badge on the right.
-		int bottomCenter = y + CARD_HEIGHT - CARD_PADDING - 3;
-		int descriptionRight = x + width - CARD_PADDING;
-		if (feature.missingMod() != null) {
-			Component badge = Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, feature.missingMod());
-			int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
-			int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
-			UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
-			descriptionRight -= badgeWidth + 6;
+		if (!compact) {
+			int bottomCenter = y + cardHeight() - CARD_PADDING - 3;
+			int descriptionRight = x + width - CARD_PADDING;
+			if (feature.missingMod() != null) {
+				Component badge = Component.translatable(EMUtilsTexts.UI_NEEDS_MOD, feature.missingMod());
+				int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
+				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
+				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
+				descriptionRight -= badgeWidth + 6;
+			}
+			Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
+			UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		}
-		Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
-		UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		context.pose().popMatrix();
-		return new CardBox(feature, x, y, width, CARD_HEIGHT, switchBox, openBox);
+		return new CardBox(feature, x, y, width, cardHeight(), switchBox, openBox);
+	}
+
+	/** How tall a card is: shorter without the description, with Compact cards on (#149). */
+	private static int cardHeight() {
+		return UiStyle.compactCards() ? COMPACT_CARD_HEIGHT : CARD_HEIGHT;
 	}
 
 	/** Whether the feature's sheet has anything to show: settings or keybinds. */

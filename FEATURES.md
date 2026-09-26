@@ -149,6 +149,14 @@ Open the EMUtils settings from the pause menu, the vanilla Options screen, a key
   - Use the Profile's Color: the accent follows the active profile's color, so you can see which profile you're on.
   - Font: Nunito, Inter, Rubik, Figtree, or Minecraft's own font.
   - Code Font: JetBrains Mono, Fira Code or Cascadia Code for scripts and shortcut commands, with a size from 80% to 150%.
+  - Text Size: menu text from 90% to 125%, separate from Minecraft's GUI scale.
+  - Animations: Normal, Fast, or Off for no motion at all.
+  - Background Blur and Dimming: how strongly the world behind menus is blurred and darkened, down to none.
+  - Panel Opacity: let a little of the world show through the panel.
+  - Corner Roundness: from square corners to round ones.
+  - Compact Cards: smaller cards without descriptions, four to a row.
+  - Category Colors: turn the colored category dots off.
+  - High Contrast: stronger secondary text, borders and dividers.
 - `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the config through the clipboard.
 
 ### Screenshot Gallery

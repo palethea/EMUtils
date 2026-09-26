@@ -41,7 +41,6 @@ final class SettingsSheet {
 	private static final int ROW_GAP = 6;
 	private static final int ROW_PADDING = 10;
 	private static final int ROW_RADIUS = 10;
-	private static final int LINE_HEIGHT = 11;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int SWATCH = 16;
 	/** The dots of a {@link HubSettingRow.Swatches} row and the gap between them. */
@@ -189,7 +188,7 @@ final class SettingsSheet {
 	private int headerHeight(int contentWidth) {
 		int titleBlock = UiText.lineHeight(font, UiText.Size.HEADING) + 5 + UiText.lineHeight(font, UiText.Size.BODY);
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, contentWidth);
-		return titleBlock + 12 + description.size() * LINE_HEIGHT;
+		return titleBlock + 12 + description.size() * UiText.lineSpacing();
 	}
 
 	private void drawHeader(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
@@ -211,7 +210,7 @@ final class SettingsSheet {
 		int descriptionTop = top + headingHeight + 5 + UiText.lineHeight(font, UiText.Size.BODY) + 12;
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - PADDING * 2);
 		for (int i = 0; i < description.size(); i++) {
-			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * LINE_HEIGHT, theme.textSecondary());
+			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * UiText.lineSpacing(), theme.textSecondary());
 		}
 	}
 
@@ -240,7 +239,7 @@ final class SettingsSheet {
 			if (row instanceof HubSettingRow.Action) {
 				content = BUTTON_HEIGHT;
 			} else {
-				content = 12 + (box.description.isEmpty() ? 0 : 3 + box.description.size() * LINE_HEIGHT - 2);
+				content = 12 + (box.description.isEmpty() ? 0 : 3 + box.description.size() * UiText.lineSpacing() - 2);
 				if (row instanceof HubSettingRow.Slider) {
 					content += 7 + UiWidgets.SLIDER_HEIGHT;
 				} else if (row instanceof HubSettingRow.Cycle<?> cycle && usesSegments(cycle)) {
@@ -406,9 +405,9 @@ final class SettingsSheet {
 		UiText.drawCentered(context, font, UiText.ellipsize(font, label, UiText.Size.BOLD, right - left - inlineControlWidth(row)), UiText.Size.BOLD, left, labelCenter, theme.text());
 		int textTop = labelCenter + 6 + 3;
 		for (int i = 0; i < box.description.size(); i++) {
-			UiText.draw(context, font, box.description.get(i), UiText.Size.BODY, left, textTop + i * LINE_HEIGHT, theme.muted());
+			UiText.draw(context, font, box.description.get(i), UiText.Size.BODY, left, textTop + i * UiText.lineSpacing(), theme.muted());
 		}
-		int below = box.description.isEmpty() ? labelCenter + 6 + 7 : textTop + box.description.size() * LINE_HEIGHT + 3;
+		int below = box.description.isEmpty() ? labelCenter + 6 + 7 : textTop + box.description.size() * UiText.lineSpacing() + 3;
 
 		if (row instanceof HubSettingRow.Toggle toggle) {
 			int toggleX = right - UiWidgets.SWITCH_WIDTH;

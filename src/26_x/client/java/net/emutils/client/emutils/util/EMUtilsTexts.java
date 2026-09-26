@@ -1109,6 +1109,16 @@ public final class EMUtilsTexts {
     public static final String UI_MENUS_CODE_FONT = "emutils.ui.menus.code_font";
     public static final String UI_MENUS_CODE_SIZE = "emutils.ui.menus.code_size";
 
+    public static final String UI_MENUS_TEXT_SIZE = "emutils.ui.menus.text_size";
+    public static final String UI_MENUS_MOTION = "emutils.ui.menus.motion";
+    public static final String UI_MENUS_BLUR = "emutils.ui.menus.blur";
+    public static final String UI_MENUS_DIM = "emutils.ui.menus.dim";
+    public static final String UI_MENUS_PANEL_OPACITY = "emutils.ui.menus.panel_opacity";
+    public static final String UI_MENUS_ROUNDNESS = "emutils.ui.menus.roundness";
+    public static final String UI_MENUS_COMPACT_CARDS = "emutils.ui.menus.compact_cards";
+    public static final String UI_MENUS_CATEGORY_COLORS = "emutils.ui.menus.category_colors";
+    public static final String UI_MENUS_HIGH_CONTRAST = "emutils.ui.menus.high_contrast";
+
     private EMUtilsTexts() {}
 
     public static MutableComponent greenPrefix() {

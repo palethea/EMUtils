@@ -34,7 +34,6 @@ final class CommandShortcutSheet {
 	private static final int FIELD_HEIGHT = 20;
 	private static final int KEY_HEIGHT = 26;
 	private static final int BUTTON_HEIGHT = 20;
-	private static final int LINE_HEIGHT = 11;
 
 	private final Font font;
 	private final @Nullable CommandShortcut existing;
@@ -128,8 +127,8 @@ final class CommandShortcutSheet {
 		int headerHeight = UiText.lineHeight(font, UiText.Size.HEADING);
 		nameY = PADDING + headerHeight + 16 + labelBlock;
 		textY = nameY + FIELD_HEIGHT + 12 + labelBlock;
-		keyY = textY + FIELD_HEIGHT + 6 + LINE_HEIGHT + 12 + labelBlock;
-		footerY = keyY + KEY_HEIGHT + 8 + LINE_HEIGHT + 14;
+		keyY = textY + FIELD_HEIGHT + 6 + UiText.lineSpacing() + 12 + labelBlock;
+		footerY = keyY + KEY_HEIGHT + 8 + UiText.lineSpacing() + 14;
 		height = footerY + BUTTON_HEIGHT + PADDING;
 		x = (screenWidth - WIDTH) / 2;
 		y = (screenHeight - height) / 2;

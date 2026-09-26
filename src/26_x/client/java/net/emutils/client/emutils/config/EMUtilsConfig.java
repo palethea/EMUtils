@@ -24,6 +24,7 @@ import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
 import net.emutils.client.emutils.gui.ui.UiFontFamily;
+import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.lang.reflect.Field;
@@ -79,6 +80,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
 	public static final int UI_CODE_SIZE_MIN = 80;
 	public static final int UI_CODE_SIZE_MAX = 150;
+	public static final int UI_TEXT_SIZE_MIN = 90;
+	public static final int UI_TEXT_SIZE_MAX = 125;
+	public static final int UI_PANEL_OPACITY_MIN = 50;
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	/** The names settings are saved under, to recognise an EMUtils config among other JSON. */
@@ -229,6 +233,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String uiFont = UiFontFamily.NUNITO.name();
 	private String uiCodeFont = UiCodeFont.JETBRAINS_MONO.name();
 	private Integer uiCodeSize = 100;
+	private Integer uiTextSize = 100;
+	private String uiMotion = UiMotion.NORMAL.name();
+	private Integer uiBackgroundBlur = 100;
+	private Integer uiBackgroundDim = 100;
+	private Integer uiPanelOpacity = 100;
+	private Integer uiCornerRoundness = 100;
+	private Boolean uiCompactCards = Boolean.FALSE;
+	private Boolean uiCategoryColors = Boolean.TRUE;
+	private Boolean uiHighContrast = Boolean.FALSE;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
 	private Boolean packManagerReplaceResourcePacksButton = Boolean.FALSE;
 	private Boolean customCapes = Boolean.TRUE;
@@ -1476,6 +1489,91 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Menu text size in percent; code has {@link #uiCodeSize()}. */
+	public int uiTextSize() {
+		return clamp(uiTextSize == null ? 100 : uiTextSize, UI_TEXT_SIZE_MIN, UI_TEXT_SIZE_MAX);
+	}
+
+	public void setUiTextSize(int percent) {
+		uiTextSize = clamp(percent, UI_TEXT_SIZE_MIN, UI_TEXT_SIZE_MAX);
+		save();
+	}
+
+	public UiMotion uiMotion() {
+		return UiMotion.byName(uiMotion);
+	}
+
+	public void setUiMotion(UiMotion motion) {
+		uiMotion = motion.name();
+		save();
+	}
+
+	/** How strongly the world behind menus is blurred, in percent. */
+	public int uiBackgroundBlur() {
+		return clamp(uiBackgroundBlur == null ? 100 : uiBackgroundBlur, 0, 100);
+	}
+
+	public void setUiBackgroundBlur(int percent) {
+		uiBackgroundBlur = clamp(percent, 0, 100);
+		save();
+	}
+
+	/** How strongly the world behind menus is darkened, in percent. */
+	public int uiBackgroundDim() {
+		return clamp(uiBackgroundDim == null ? 100 : uiBackgroundDim, 0, 100);
+	}
+
+	public void setUiBackgroundDim(int percent) {
+		uiBackgroundDim = clamp(percent, 0, 100);
+		save();
+	}
+
+	public int uiPanelOpacity() {
+		return clamp(uiPanelOpacity == null ? 100 : uiPanelOpacity, UI_PANEL_OPACITY_MIN, 100);
+	}
+
+	public void setUiPanelOpacity(int percent) {
+		uiPanelOpacity = clamp(percent, UI_PANEL_OPACITY_MIN, 100);
+		save();
+	}
+
+	/** Corner radii in percent of the designed ones; 0 is square. */
+	public int uiCornerRoundness() {
+		return clamp(uiCornerRoundness == null ? 100 : uiCornerRoundness, 0, 100);
+	}
+
+	public void setUiCornerRoundness(int percent) {
+		uiCornerRoundness = clamp(percent, 0, 100);
+		save();
+	}
+
+	public boolean uiCompactCards() {
+		return uiCompactCards != null && uiCompactCards;
+	}
+
+	public void setUiCompactCards(boolean compact) {
+		uiCompactCards = compact;
+		save();
+	}
+
+	public boolean uiCategoryColors() {
+		return uiCategoryColors == null || uiCategoryColors;
+	}
+
+	public void setUiCategoryColors(boolean colors) {
+		uiCategoryColors = colors;
+		save();
+	}
+
+	public boolean uiHighContrast() {
+		return uiHighContrast != null && uiHighContrast;
+	}
+
+	public void setUiHighContrast(boolean highContrast) {
+		uiHighContrast = highContrast;
+		save();
+	}
+
 	public void resetMenuSettings() {
 		settingsUiDark = Boolean.TRUE;
 		uiAccent = UI_ACCENT_DEFAULT;
@@ -1483,6 +1581,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		uiFont = UiFontFamily.NUNITO.name();
 		uiCodeFont = UiCodeFont.JETBRAINS_MONO.name();
 		uiCodeSize = 100;
+		uiTextSize = 100;
+		uiMotion = UiMotion.NORMAL.name();
+		uiBackgroundBlur = 100;
+		uiBackgroundDim = 100;
+		uiPanelOpacity = 100;
+		uiCornerRoundness = 100;
+		uiCompactCards = Boolean.FALSE;
+		uiCategoryColors = Boolean.TRUE;
+		uiHighContrast = Boolean.FALSE;
 		save();
 	}
 
@@ -1497,6 +1604,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		uiFont = other.uiFont().name();
 		uiCodeFont = other.uiCodeFont().name();
 		uiCodeSize = other.uiCodeSize();
+		uiTextSize = other.uiTextSize();
+		uiMotion = other.uiMotion().name();
+		uiBackgroundBlur = other.uiBackgroundBlur();
+		uiBackgroundDim = other.uiBackgroundDim();
+		uiPanelOpacity = other.uiPanelOpacity();
+		uiCornerRoundness = other.uiCornerRoundness();
+		uiCompactCards = other.uiCompactCards();
+		uiCategoryColors = other.uiCategoryColors();
+		uiHighContrast = other.uiHighContrast();
 		save();
 	}
 
@@ -2580,6 +2696,33 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (uiCodeSize == null) {
 			uiCodeSize = 100;
+		}
+		if (uiTextSize == null) {
+			uiTextSize = 100;
+		}
+		if (uiMotion == null) {
+			uiMotion = UiMotion.NORMAL.name();
+		}
+		if (uiBackgroundBlur == null) {
+			uiBackgroundBlur = 100;
+		}
+		if (uiBackgroundDim == null) {
+			uiBackgroundDim = 100;
+		}
+		if (uiPanelOpacity == null) {
+			uiPanelOpacity = 100;
+		}
+		if (uiCornerRoundness == null) {
+			uiCornerRoundness = 100;
+		}
+		if (uiCompactCards == null) {
+			uiCompactCards = Boolean.FALSE;
+		}
+		if (uiCategoryColors == null) {
+			uiCategoryColors = Boolean.TRUE;
+		}
+		if (uiHighContrast == null) {
+			uiHighContrast = Boolean.FALSE;
 		}
 		if (packManagerShowShadersWithoutIris == null) {
 			packManagerShowShadersWithoutIris = Boolean.TRUE;

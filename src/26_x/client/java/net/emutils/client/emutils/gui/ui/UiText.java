@@ -109,15 +109,21 @@ public final class UiText {
 		}
 		boolean minecraft = EMUtilsClient.config() != null && EMUtilsClient.config().uiFont().minecraft();
 		int codeSize = EMUtilsClient.config() == null ? 100 : EMUtilsClient.config().uiCodeSize();
-		return (UiFontRenderer.generation() * 31 + (minecraft ? 1 : 0)) * 1009 + codeSize;
+		int textSize = EMUtilsClient.config() == null ? 100 : EMUtilsClient.config().uiTextSize();
+		return ((UiFontRenderer.generation() * 31 + (minecraft ? 1 : 0)) * 1009 + codeSize) * 1013 + textSize;
 	}
 
-	/** The size's em in GUI pixels; code follows the size picked in the menu settings. */
+	/** The size's em in GUI pixels, at the text or code size picked in the menu settings. */
 	private static float em(Size size) {
-		if (size == Size.CODE && EMUtilsClient.config() != null) {
-			return size.em * EMUtilsClient.config().uiCodeSize() / 100.0F;
+		if (size == Size.CODE) {
+			return EMUtilsClient.config() == null ? size.em : size.em * EMUtilsClient.config().uiCodeSize() / 100.0F;
 		}
-		return size.em;
+		return size.em * UiStyle.textScale();
+	}
+
+	/** The distance between wrapped lines of body text, which grows with the text size (#149). */
+	public static int lineSpacing() {
+		return Math.round(11.0F * UiStyle.textScale());
 	}
 
 	private static Identifier fontFor(Size size) {
@@ -126,12 +132,13 @@ public final class UiText {
 	}
 
 	private static float fallbackScale(Size size) {
-		return bundledFont(size) ? 1.0F : size.fallbackScale;
+		float textScale = size == Size.CODE ? 1.0F : UiStyle.textScale();
+		return (bundledFont(size) ? 1.0F : size.fallbackScale) * textScale;
 	}
 
 	/** Height of capital letters, used to center text and size things around it. */
 	private static float capHeight(Size size) {
-		return bundledFont(size) ? em(size) * size.weight.capHeight() : BASELINE * size.fallbackScale;
+		return bundledFont(size) ? em(size) * size.weight.capHeight() : BASELINE * fallbackScale(size);
 	}
 
 	/** Distance from the text's y to the top of its capital letters. */

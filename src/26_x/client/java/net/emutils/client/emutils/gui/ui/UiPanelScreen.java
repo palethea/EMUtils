@@ -88,7 +88,7 @@ public abstract class UiPanelScreen extends Screen {
 	 */
 	protected UiTheme theme() {
 		lightness = anim.transition("theme", !UiTheme.dark(), THEME_SECONDS);
-		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness).withAccent(shownAccent(), lightness);
+		return UiTheme.blend(UiTheme.DARK, UiTheme.LIGHT, lightness).withAccent(shownAccent(), lightness).withStyle();
 	}
 
 	private int shownAccent() {
@@ -146,7 +146,7 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	protected final void init() {
 		if (!prepared) {
-			UiBlur.set(fadesBlur() ? backgroundProgress() : 1.0F);
+			UiBlur.set((fadesBlur() ? backgroundProgress() : 1.0F) * UiStyle.blur());
 		}
 		UiText.refreshFonts();
 		relayout();
@@ -164,7 +164,7 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		super.extractBackground(context, mouseX, mouseY, delta);
-		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), backgroundProgress()));
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), backgroundProgress() * UiStyle.dim()));
 	}
 
 	/**
@@ -173,11 +173,13 @@ public abstract class UiPanelScreen extends Screen {
 	 */
 	@Override
 	protected void extractMenuBackground(GuiGraphicsExtractor context) {
-		if (!fadesBlur()) {
+		// In a world, the darkening also follows the Background dimming menu setting (#149).
+		float dim = minecraft.level == null ? 1.0F : UiStyle.dim();
+		if (!fadesBlur() && dim >= 1.0F) {
 			super.extractMenuBackground(context);
 			return;
 		}
-		float background = backgroundProgress();
+		float background = (fadesBlur() ? backgroundProgress() : 1.0F) * dim;
 		if (background > 0.0F) {
 			context.blit(RenderPipelines.GUI_TEXTURED, INWORLD_MENU_BACKGROUND, 0, 0, 0.0F, 0.0F, width, height, width, height, 32, 32, UiTheme.fade(0xFFFFFFFF, background));
 		}
@@ -195,14 +197,15 @@ public abstract class UiPanelScreen extends Screen {
 		// animation's clock starts and the animation can't hitch.
 		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
 		UiOpacity.set(openProgress);
-		UiBlur.set(fadesBlur() ? backgroundProgress() : 1.0F);
+		UiBlur.set((fadesBlur() ? backgroundProgress() : 1.0F) * UiStyle.blur());
 		float scale = 0.97F + 0.03F * openProgress;
 		context.pose().pushMatrix();
 		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
 		context.pose().scale(scale, scale);
 		context.pose().translate(-(panelX + panelWidth / 2.0F), -(panelY + panelHeight / 2.0F));
 		UiShapes.shadow(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, 18, theme.shadow());
-		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, theme.panel());
+		// The Panel opacity menu setting (#149) lets a little of the world show through.
+		UiShapes.roundedRect(context, panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS, UiTheme.fade(theme.panel(), UiStyle.panelOpacity()));
 		drawPanel(context, theme, mouseX, mouseY);
 		context.pose().popMatrix();
 		UiOpacity.reset();
@@ -294,12 +297,12 @@ public abstract class UiPanelScreen extends Screen {
 	 */
 	boolean extractClosingFrame(GuiGraphicsExtractor context) {
 		float background = backgroundProgress();
-		UiBlur.set(fadesBlur() ? background : 1.0F);
+		UiBlur.set((fadesBlur() ? background : 1.0F) * UiStyle.blur());
 		if (minecraft.options.getMenuBackgroundBlurriness() >= 1) {
 			context.blurBeforeThisStratum();
 		}
 		extractMenuBackground(context);
-		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), background));
+		context.fill(0, 0, width, height, UiTheme.fade(theme().dim(), background * UiStyle.dim()));
 		// The mouse is back in the game, so nothing in the panel is hovered.
 		extractRenderState(context, Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2, 0.0F);
 		return openProgress > 0.0F;

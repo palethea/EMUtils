@@ -20,7 +20,6 @@ public final class UiPromptDialog {
 	private static final int PADDING = 16;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int FIELD_HEIGHT = 22;
-	private static final int LINE_HEIGHT = 11;
 
 	private final Font font;
 	private final Component title;
@@ -81,8 +80,8 @@ public final class UiPromptDialog {
 	public void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
 		List<Component> lines = UiText.wrap(font, message, UiText.Size.BODY, WIDTH - PADDING * 2);
 		int titleHeight = UiText.lineHeight(font, UiText.Size.BOLD);
-		int errorHeight = error == null ? 0 : 8 + LINE_HEIGHT;
-		height = PADDING + titleHeight + 10 + lines.size() * LINE_HEIGHT + 10 + FIELD_HEIGHT + errorHeight + 16 + BUTTON_HEIGHT + PADDING;
+		int errorHeight = error == null ? 0 : 8 + UiText.lineSpacing();
+		height = PADDING + titleHeight + 10 + lines.size() * UiText.lineSpacing() + 10 + FIELD_HEIGHT + errorHeight + 16 + BUTTON_HEIGHT + PADDING;
 		x = (screenWidth - WIDTH) / 2;
 		y = (screenHeight - height) / 2;
 		if (frame.firstFrame()) {
@@ -97,9 +96,9 @@ public final class UiPromptDialog {
 		UiText.draw(context, font, title, UiText.Size.BOLD, x + PADDING, y + PADDING, theme.text());
 		int textTop = y + PADDING + titleHeight + 10;
 		for (int i = 0; i < lines.size(); i++) {
-			UiText.draw(context, font, lines.get(i), UiText.Size.BODY, x + PADDING, textTop + i * LINE_HEIGHT, theme.textSecondary());
+			UiText.draw(context, font, lines.get(i), UiText.Size.BODY, x + PADDING, textTop + i * UiText.lineSpacing(), theme.textSecondary());
 		}
-		fieldY = textTop + lines.size() * LINE_HEIGHT + 10;
+		fieldY = textTop + lines.size() * UiText.lineSpacing() + 10;
 		int fieldWidth = WIDTH - PADDING * 2;
 		UiShapes.borderedRect(context, x + PADDING, fieldY, fieldWidth, FIELD_HEIGHT, 8, theme.surface(), error != null ? theme.warning() : field.focused() ? theme.accent() : theme.line());
 		field.draw(context, font, theme, x + PADDING + 8, fieldY + FIELD_HEIGHT / 2, fieldWidth - 16, placeholder);

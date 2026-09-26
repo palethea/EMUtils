@@ -121,7 +121,7 @@ public record UiTheme(
 	/** The theme picked in the menu settings, with its accent color. */
 	public static UiTheme current() {
 		boolean dark = EMUtilsClient.config() == null || EMUtilsClient.config().settingsUiDark();
-		return (dark ? DARK : LIGHT).withAccent(accentColor(), dark ? 0.0F : 1.0F);
+		return (dark ? DARK : LIGHT).withAccent(accentColor(), dark ? 0.0F : 1.0F).withStyle();
 	}
 
 	/** Whether the menus are in the dark theme, without the accent applied. */
@@ -162,6 +162,22 @@ public record UiTheme(
 		);
 	}
 
+	/**
+	 * This theme with the High contrast menu setting (#149) applied: secondary text, borders and
+	 * dividers moved towards the main text color, so they stand out more.
+	 */
+	public UiTheme withStyle() {
+		if (!UiStyle.highContrast()) {
+			return this;
+		}
+		return new UiTheme(
+			dim, panel, surface, surfaceHover, surfaceAlt, fade(text, 0.3F), segmentBackground, segmentSelected, text,
+			mix(textSecondary, text, 0.6F), mix(muted, text, 0.45F), mix(placeholder, text, 0.35F), mix(line, text, 0.3F),
+			mix(switchOff, text, 0.2F), hover, selectedBackground, selectedText, shadow, accent, accentHover, devBackground, devText,
+			render, hud, utility, management, qol, overlay, warning, onAccent
+		);
+	}
+
 	/** Relative luminance from 0 (black) to 1 (white), as WCAG defines it. */
 	public static float luminance(int color) {
 		return 0.2126F * channel(color >>> 16) + 0.7152F * channel(color >>> 8) + 0.0722F * channel(color);
@@ -195,7 +211,11 @@ public record UiTheme(
 		}
 	}
 
+	/** A category's color, or the muted text color with Category colors turned off (#149). */
 	public int groupColor(HubFeature.Group group) {
+		if (!UiStyle.categoryColors()) {
+			return muted;
+		}
 		return switch (group) {
 			case RENDER -> render;
 			case HUD -> hud;

@@ -40,7 +40,6 @@ final class ProfileSheet {
 	private static final int COLUMN_GAP = 20;
 	private static final int FIELD_HEIGHT = 20;
 	private static final int BUTTON_HEIGHT = 20;
-	private static final int LINE_HEIGHT = 11;
 	private static final int PREVIEW = 20;
 	private static final int ICON_CELL = 18;
 	private static final int ICON_ROW_GAP = 4;
@@ -252,7 +251,7 @@ final class ProfileSheet {
 		autoY = top + labelBlock();
 		serversY = autoY + UiWidgets.SWITCH_HEIGHT + 8;
 		noteY = serversY + FIELD_HEIGHT + 6;
-		return noteY + noteLines * LINE_HEIGHT;
+		return noteY + noteLines * UiText.lineSpacing();
 	}
 
 	private void layout(int screenWidth, int screenHeight) {
@@ -442,7 +441,7 @@ final class ProfileSheet {
 			if (i == noteLines - 1 && lines.size() > noteLines) {
 				line = UiText.ellipsize(font, Component.literal(line.getString() + " " + lines.get(i + 1).getString()), UiText.Size.BODY, autoWidth - 2);
 			}
-			UiText.draw(context, font, line, UiText.Size.BODY, autoX + 1, noteY + i * LINE_HEIGHT, noteColor);
+			UiText.draw(context, font, line, UiText.Size.BODY, autoX + 1, noteY + i * UiText.lineSpacing(), noteColor);
 		}
 	}
 
