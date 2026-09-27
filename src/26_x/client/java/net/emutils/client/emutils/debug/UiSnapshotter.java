@@ -32,6 +32,7 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.config.ConfigTransfer;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.ui.UiFontRenderer;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
@@ -1780,6 +1781,24 @@ public final class UiSnapshotter {
 					MouseButtonInfo right = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, 0);
 					screen.mouseClicked(new MouseButtonEvent(0, 0, right), false);
 					check(zoom.isDefault(), "a right click while waiting for a key resets it to its default");
+
+					// /emutils export and import (#157) carry the keybinds along with the settings.
+					EMUtilsConfig config = EMUtilsClient.config();
+					boolean fullbright = config.tweakFullbright();
+					zoom.setKey(InputConstants.getKey(new KeyEvent(InputConstants.KEY_G, 0, 0)));
+					KeyMapping.resetMapping();
+					String exported = ConfigTransfer.export();
+					zoom.setKey(zoom.getDefaultKey());
+					KeyMapping.resetMapping();
+					config.setTweakFullbright(!fullbright);
+					boolean imported = ConfigTransfer.importFrom(exported);
+					EMUtilsConfig saved = EMUtilsConfig.read(EMUtilsClient.config().file());
+					check(imported && zoom.saveString().equals("key.keyboard.g"), "/emutils import binds the exported keys (zoom is " + zoom.saveString() + ")");
+					check(EMUtilsClient.config().tweakFullbright() == fullbright && saved != null && saved.tweakFullbright() == fullbright, "/emutils import restores the settings and writes them to disk");
+					check(!ConfigTransfer.importFrom("{\"keybinds\": {\"key.emutils.zoom\": \"key.keyboard.h\"}}") && zoom.saveString().equals("key.keyboard.g"), "text without EMUtils settings is refused and binds nothing");
+					zoom.setKey(zoom.getDefaultKey());
+					KeyMapping.resetMapping();
+					client.options.save();
 				}
 				next();
 			}

@@ -167,7 +167,7 @@ Open the EMUtils settings from the pause menu, the vanilla Options screen, a key
   - Compact Cards: smaller cards without descriptions, four to a row.
   - Category Colors: turn the colored category dots off.
   - High Contrast: stronger secondary text, borders and dividers.
-- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the config through the clipboard.
+- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the active profile's settings together with the EMUtils keybinds through the clipboard.
 
 ### Screenshot Gallery
 
