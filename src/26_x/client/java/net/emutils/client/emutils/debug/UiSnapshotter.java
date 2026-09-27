@@ -1864,6 +1864,9 @@ public final class UiSnapshotter {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
+					// Vanilla caps menus outside a world at 60 FPS; EMUtils menus use the Max Framerate (#162).
+					int limit = client.getFramerateLimitTracker().getFramerateLimit();
+					check(limit == client.options.framerateLimit().get(), "an EMUtils menu outside a world uses the Max Framerate (" + limit + " FPS)");
 				}
 				capture(client, "waypoints, not in a world");
 			}
