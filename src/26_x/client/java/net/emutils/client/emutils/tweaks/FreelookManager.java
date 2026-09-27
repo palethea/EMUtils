@@ -33,9 +33,12 @@ public final class FreelookManager {
 			playerPitch = client.player.getXRot();
 			yawOffset = 0.0F;
 			pitchOffset = 0.0F;
-			previousCameraType = client.options.getCameraType();
-			if (previousCameraType.isFirstPerson()) {
-				client.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+			// Keep Perspective (#171) looks around in whatever perspective the player is in, first person too.
+			if (!EMUtilsClient.config().freelookKeepPerspective()) {
+				previousCameraType = client.options.getCameraType();
+				if (previousCameraType.isFirstPerson()) {
+					client.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+				}
 			}
 		}
 

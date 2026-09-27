@@ -443,6 +443,8 @@
   "emutils.option.tweak_no_hurt_cam.desc": "Stop the camera shaking when you take damage.",
   "emutils.option.tweak_freelook": "Freelook",
   "emutils.option.tweak_freelook.desc": "Look around while holding the key without changing where you walk.",
+  "emutils.option.freelook_keep_perspective": "Keep Perspective",
+  "emutils.option.freelook_keep_perspective.desc": "Look around in the perspective you are in, first person too, instead of switching to third person.",
   "emutils.option.beacon_radius_outline": "Beacon Radius Outline",
   "emutils.option.light_level_overlay": "Light Level Overlay",
   "emutils.hub.feature.light_level_overlay.desc": "Show cached MiniHUD-style block light numbers and spawn-risk markers on nearby floors.",

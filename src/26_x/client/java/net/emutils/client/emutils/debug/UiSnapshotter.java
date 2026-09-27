@@ -68,6 +68,7 @@ import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
@@ -1936,6 +1937,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					EMUtilsClient.config().setTweakFreelook(true);
+					client.options.setCameraType(CameraType.FIRST_PERSON);
 					client.player.setYRot(0.0F);
 					client.player.setXRot(0.0F);
 					freelookKey.setDown(true);
@@ -1954,10 +1956,28 @@ public final class UiSnapshotter {
 					float turned = freelook.cameraYaw() - yawBefore;
 					check(freelook.isActive() && Math.abs(turned - 360.0F) < 1.0F, "Freelook turns the camera a full 360 degrees (" + turned + ")");
 					check(client.player.getYRot() == yawBefore, "the player keeps facing the same way while Freelook turns the camera");
+					check(client.options.getCameraType() == CameraType.THIRD_PERSON_BACK, "by default Freelook switches from first to third person");
 					freelookKey.setDown(false);
-					EMUtilsClient.config().setTweakFreelook(false);
 				}
+				// Keep Perspective (#171): Freelook stays in first person.
 				if (stepTicks == 8) {
+					check(client.options.getCameraType() == CameraType.FIRST_PERSON, "letting go of Freelook goes back to first person");
+					EMUtilsClient.config().setFreelookKeepPerspective(true);
+					freelookKey.setDown(true);
+				}
+				if (stepTicks == 12) {
+					FreelookManager freelook = EMUtilsClient.tweaks().freelook();
+					MouseAccess mouse = (MouseAccess) client.mouseHandler;
+					float yawBefore = freelook.cameraYaw();
+					mouse.emutils$setAccumulatedDX(600.0 / (Math.pow(client.options.sensitivity().get() * 0.6 + 0.2, 3.0) * 8.0));
+					mouse.emutils$turnPlayer(0.0);
+					mouse.emutils$setAccumulatedDX(0.0);
+					check(freelook.isActive() && client.options.getCameraType() == CameraType.FIRST_PERSON, "with Keep Perspective, Freelook stays in first person");
+					check(Math.abs(freelook.cameraYaw() - yawBefore - 90.0F) < 1.0F, "and still turns the camera in first person");
+					freelookKey.setDown(false);
+				}
+				if (stepTicks == 15) {
+					EMUtilsClient.config().resetFreelookDefaults();
 					next();
 				}
 			}

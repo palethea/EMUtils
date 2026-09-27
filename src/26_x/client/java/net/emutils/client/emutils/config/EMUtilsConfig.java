@@ -218,6 +218,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearFluidOverlay;
 	private Boolean tweakNoHurtCam = Boolean.FALSE;
 	private Boolean tweakFreelook = Boolean.FALSE;
+	private Boolean freelookKeepPerspective = Boolean.FALSE;
 	private Boolean beaconRadiusOutline = Boolean.FALSE;
 	private Integer beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 	private Boolean beaconRadiusActiveOnly = Boolean.FALSE;
@@ -1198,6 +1199,22 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setTweakFreelook(boolean enabled) {
 		tweakFreelook = enabled;
+		save();
+	}
+
+	/** Whether Freelook stays in the current perspective instead of switching from first to third person (#171). */
+	public boolean freelookKeepPerspective() {
+		return freelookKeepPerspective != null && freelookKeepPerspective;
+	}
+
+	public void setFreelookKeepPerspective(boolean enabled) {
+		freelookKeepPerspective = enabled;
+		save();
+	}
+
+	public void resetFreelookDefaults() {
+		tweakFreelook = Boolean.FALSE;
+		freelookKeepPerspective = Boolean.FALSE;
 		save();
 	}
 
@@ -2482,6 +2499,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoFallingLeafParticles = Boolean.FALSE;
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
+		freelookKeepPerspective = Boolean.FALSE;
 		beaconRadiusOutline = Boolean.FALSE;
 		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 		beaconRadiusActiveOnly = Boolean.FALSE;

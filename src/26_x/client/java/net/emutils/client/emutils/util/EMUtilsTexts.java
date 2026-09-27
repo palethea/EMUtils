@@ -508,6 +508,7 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_hurt_cam";
     public static final String OPTION_TWEAK_FREELOOK =
         "emutils.option.tweak_freelook";
+    public static final String OPTION_FREELOOK_KEEP_PERSPECTIVE = "emutils.option.freelook_keep_perspective";
     public static final String OPTION_BEACON_RADIUS_OUTLINE =
         "emutils.option.beacon_radius_outline";
     public static final String OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW =
