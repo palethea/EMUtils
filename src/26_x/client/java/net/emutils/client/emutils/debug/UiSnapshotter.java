@@ -1906,8 +1906,10 @@ public final class UiSnapshotter {
 					Screen settings = MinecraftClientCompat.screen(client);
 					settings.onClose();
 					check(settings instanceof SettingsScreen && MinecraftClientCompat.screen(client) instanceof TitleScreen, "closing the settings goes back to the title screen right away");
+					// A resize re-initializes the title screen, and with it its Fabric events; the fade goes on.
+					client.resizeGui();
 				}
-				captureAfter(client, 16, "settings closing back to the title screen, mid-fade");
+				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
 			default -> finish(client);
 		}

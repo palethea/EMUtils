@@ -1,6 +1,5 @@
 package net.emutils.client.emutils.gui.ui;
 
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -289,23 +288,19 @@ public abstract class UiPanelScreen extends Screen {
 			fadingOut = true;
 			Screen previous = parent;
 			minecraft.gui.setScreen(previous);
-			ScreenEvents.afterExtract(previous).register((screen, context, mouseX, mouseY, delta) -> extractFadeOver(context));
+			UiClosingScreens.addOver(this, previous);
 		}
 	}
 
 	/**
 	 * Draws one frame of the fade-out over the vanilla screen it went back to. That screen has drawn its
-	 * own background and blur already, so only the panel is drawn, and the blur is left alone.
+	 * own background and blur already, so only the panel is drawn, and the blur is left alone. Returns
+	 * false once the fade-out has finished.
 	 */
-	private void extractFadeOver(GuiGraphicsExtractor context) {
-		if (!fadingOut) {
-			return;
-		}
+	boolean extractFadeOver(GuiGraphicsExtractor context) {
 		// The mouse belongs to the screen underneath now, so nothing in the panel is hovered.
 		extractPanel(context, Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2);
-		if (openProgress <= 0.0F) {
-			finishFadingOut();
-		}
+		return openProgress > 0.0F;
 	}
 
 	/**
