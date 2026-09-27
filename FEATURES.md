@@ -71,7 +71,7 @@ Show third-party player capes from supported providers.
 - OptiFine: enable OptiFine capes.
 - LabyMod: enable LabyMod capes.
 - MinecraftCapes: enable MinecraftCapes capes.
-- Cosmetica: enable Cosmetica capes.
+- Cosmetica: enable Cosmetica capes: the cape of the outfit a Cosmetica 2 user wears, animated when the cape is.
 - Cloaks+: enable Cloaks+ capes.
 
 ## HUD

@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.ClientAsset;
 import org.jspecify.annotations.Nullable;
 
@@ -63,6 +64,17 @@ public final class CustomCapeManager {
 
 	public static void clear() {
 		HANDLERS.clear();
+		Minecraft.getInstance().execute(CapeAnimations::clear);
+	}
+
+	/**
+	 * Resolves {@code profile}'s cape right away, on this thread, and returns the provider it came from, or
+	 * null without one; used by UI snapshots.
+	 */
+	public static @Nullable String resolveForSnapshot(GameProfile profile) {
+		CapePlayerHandler handler = new CapePlayerHandler(profile);
+		handler.resolveCape();
+		return handler.hasCape() ? handler.provider().displayName() : null;
 	}
 
 	private static boolean isValidProfile(GameProfile profile) {

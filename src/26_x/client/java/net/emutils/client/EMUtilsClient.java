@@ -1,6 +1,7 @@
 package net.emutils.client;
 
 import net.emutils.client.emutils.compat.MinescriptCompat;
+import net.emutils.client.emutils.capes.CapeAnimations;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.commandshortcuts.CommandShortcutsManager;
 import net.emutils.client.emutils.command.EMUtilsCommand;
@@ -164,6 +165,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		tickSpotify(client);
 		BackgroundLaunch.tick(client);
 		UiFontRenderer.freeReleased();
+		CapeAnimations.tick();
 		if (config != null) {
 			config.flushIfDue();
 		}
