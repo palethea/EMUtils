@@ -47,7 +47,9 @@ public final class HubFeatureCatalog {
 			leaf("freelook", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, HubFeature.Icon.EYE, toggle(config::tweakFreelook, config::setTweakFreelook), () -> config.setTweakFreelook(false)).keys("key.emutils.freelook"),
 			leaf("beacon_radius_outline", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, HubFeature.Icon.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline), List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_RANGE, EMUtilsTexts.SUFFIX_CHUNKS, EMUtilsConfig.BEACON_RADIUS_RANGE_MIN, EMUtilsConfig.BEACON_RADIUS_RANGE_MAX, config::beaconRadiusRange, config::setBeaconRadiusRange),
-				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BEACON_RADIUS_ACTIVE_ONLY, config::beaconRadiusActiveOnly, config::setBeaconRadiusActiveOnly)
+				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BEACON_RADIUS_ACTIVE_ONLY, config::beaconRadiusActiveOnly, config::setBeaconRadiusActiveOnly),
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_GRID_SPACING, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.BEACON_RADIUS_GRID_SPACING_MIN, EMUtilsConfig.BEACON_RADIUS_GRID_SPACING_MAX, config::beaconRadiusGridSpacing, config::setBeaconRadiusGridSpacing),
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_LINE_WIDTH, EMUtilsTexts.SUFFIX_PIXELS, EMUtilsConfig.BEACON_RADIUS_LINE_WIDTH_MIN, EMUtilsConfig.BEACON_RADIUS_LINE_WIDTH_MAX, config::beaconRadiusLineWidth, config::setBeaconRadiusLineWidth)
 			), config::resetBeaconRadiusDefaults).keys("key.emutils.beacon_radius_outline"),
 			leaf("light_level_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, HubFeature.Icon.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay), List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_LIGHT_LEVEL_RANGE, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.LIGHT_LEVEL_RANGE_MIN, EMUtilsConfig.LIGHT_LEVEL_RANGE_MAX, config::lightLevelRange, config::setLightLevelRange),

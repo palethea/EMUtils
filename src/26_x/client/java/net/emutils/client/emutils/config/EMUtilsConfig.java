@@ -82,6 +82,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int ANTI_DURABILITY_WARN_AT_DEFAULT = 20;
 	public static final int BEACON_RADIUS_RANGE_MIN = 2;
 	public static final int BEACON_RADIUS_RANGE_MAX = 32;
+	public static final int BEACON_RADIUS_GRID_SPACING_MIN = 4;
+	public static final int BEACON_RADIUS_GRID_SPACING_MAX = 32;
+	public static final int BEACON_RADIUS_GRID_SPACING_DEFAULT = 16;
+	public static final int BEACON_RADIUS_LINE_WIDTH_MIN = 1;
+	public static final int BEACON_RADIUS_LINE_WIDTH_MAX = 5;
 	public static final int LIGHT_LEVEL_RANGE_MIN = 8;
 	public static final int LIGHT_LEVEL_RANGE_MAX = 32;
 	public static final int LIGHT_LEVEL_RANGE_DEFAULT = 24;
@@ -206,6 +211,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean beaconRadiusOutline = Boolean.FALSE;
 	private Integer beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 	private Boolean beaconRadiusActiveOnly = Boolean.FALSE;
+	private Integer beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
+	private Integer beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
 	private Boolean lightLevelOverlay = Boolean.FALSE;
 	private Integer lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
 	private Boolean lightLevelSpawnableOnly = Boolean.FALSE;
@@ -1141,10 +1148,32 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** How many blocks apart the Beacon Radius Outline's grid lines are. */
+	public int beaconRadiusGridSpacing() {
+		return clamp(beaconRadiusGridSpacing == null ? BEACON_RADIUS_GRID_SPACING_DEFAULT : beaconRadiusGridSpacing, BEACON_RADIUS_GRID_SPACING_MIN, BEACON_RADIUS_GRID_SPACING_MAX);
+	}
+
+	public void setBeaconRadiusGridSpacing(int blocks) {
+		beaconRadiusGridSpacing = clamp(blocks, BEACON_RADIUS_GRID_SPACING_MIN, BEACON_RADIUS_GRID_SPACING_MAX);
+		save();
+	}
+
+	/** How wide the Beacon Radius Outline's grid lines are, in pixels; the cage's edges are half as wide again. */
+	public int beaconRadiusLineWidth() {
+		return clamp(beaconRadiusLineWidth == null ? BEACON_RADIUS_LINE_WIDTH_MIN : beaconRadiusLineWidth, BEACON_RADIUS_LINE_WIDTH_MIN, BEACON_RADIUS_LINE_WIDTH_MAX);
+	}
+
+	public void setBeaconRadiusLineWidth(int pixels) {
+		beaconRadiusLineWidth = clamp(pixels, BEACON_RADIUS_LINE_WIDTH_MIN, BEACON_RADIUS_LINE_WIDTH_MAX);
+		save();
+	}
+
 	public void resetBeaconRadiusDefaults() {
 		beaconRadiusOutline = Boolean.FALSE;
 		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 		beaconRadiusActiveOnly = Boolean.FALSE;
+		beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
+		beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
 		save();
 	}
 
@@ -2356,6 +2385,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		beaconRadiusOutline = Boolean.FALSE;
 		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 		beaconRadiusActiveOnly = Boolean.FALSE;
+		beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
+		beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
 		lightLevelOverlay = Boolean.FALSE;
 		lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
 		lightLevelSpawnableOnly = Boolean.FALSE;
@@ -2768,6 +2799,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (beaconRadiusActiveOnly == null) {
 			beaconRadiusActiveOnly = Boolean.FALSE;
 		}
+		beaconRadiusGridSpacing = beaconRadiusGridSpacing();
+		beaconRadiusLineWidth = beaconRadiusLineWidth();
 		lightLevelRange = lightLevelRange();
 		if (lightLevelSpawnableOnly == null) {
 			lightLevelSpawnableOnly = Boolean.FALSE;

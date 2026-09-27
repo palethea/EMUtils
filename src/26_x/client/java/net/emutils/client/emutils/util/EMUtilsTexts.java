@@ -832,6 +832,11 @@ public final class EMUtilsTexts {
         "emutils.option.beacon_radius_range";
     public static final String OPTION_BEACON_RADIUS_ACTIVE_ONLY =
         "emutils.option.beacon_radius_active_only";
+    public static final String OPTION_BEACON_RADIUS_GRID_SPACING =
+        "emutils.option.beacon_radius_grid_spacing";
+    public static final String OPTION_BEACON_RADIUS_LINE_WIDTH =
+        "emutils.option.beacon_radius_line_width";
+    public static final String SUFFIX_PIXELS = "emutils.suffix.pixels";
     public static final String OPTION_LIGHT_LEVEL_RANGE =
         "emutils.option.light_level_range";
     public static final String OPTION_LIGHT_LEVEL_SPAWNABLE_ONLY =

@@ -125,6 +125,7 @@ public final class UiSnapshotter {
 	private static int warningsBefore;
 	private static int lightLevelSpotsBefore;
 	private static int lightningSeenAt = -1;
+	private static int beaconLinesBefore;
 
 	private UiSnapshotter() {
 	}
@@ -1673,7 +1674,24 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 278 -> openSheetAndCapture(client, "beacon_radius_outline", "beacon radius sheet");
+			case 278 -> {
+				if (stepTicks == 1) {
+					beaconLinesBefore = BeaconRadiusRenderer.lineCountForSnapshot();
+					EMUtilsClient.config().setBeaconRadiusGridSpacing(4);
+					EMUtilsClient.config().setBeaconRadiusLineWidth(3);
+				}
+				if (stepTicks == 3) {
+					int lines = BeaconRadiusRenderer.lineCountForSnapshot();
+					check(lines > beaconLinesBefore * 3, "a 4-block Grid Spacing draws a much tighter grid (" + lines + " lines instead of " + beaconLinesBefore + ")");
+				}
+				if (stepTicks == 10) {
+					grab(client, "beacon radius outline, 4-block grid, 3 px lines");
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("beacon_radius_outline");
+				}
+				captureAfter(client, 35, "beacon radius sheet");
+			}
 			case 279 -> {
 				command(client, "fill " + at(2, 2, -1) + " " + at(4, 3, 5) + " minecraft:air");
 				EMUtilsClient.config().resetBeaconRadiusDefaults();

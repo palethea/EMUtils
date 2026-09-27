@@ -32,8 +32,8 @@ import org.jspecify.annotations.Nullable;
 
 public final class BeaconRadiusRenderer {
 	private static final int SCAN_INTERVAL_TICKS = 40;
-	private static final int HORIZONTAL_GRID_STEP = 16;
-	private static final int VERTICAL_GRID_STEP = 16;
+	/** The cage's edges are drawn this much wider than its grid lines. */
+	private static final float EDGE_WIDTH_SCALE = 1.5F;
 	private static final double MAP_POINT_SPACING = 0.5D;
 	private static final boolean XAERO_MINIMAP_LOADED = FabricLoader.getInstance().isModLoaded("xaerominimap");
 
@@ -51,9 +51,11 @@ public final class BeaconRadiusRenderer {
 	private static int nextScanTick;
 	private static int beaconCount;
 	private static List<Integer> outlineColors = List.of();
-	/** The Max Distance and Active Only settings the cache was built with; changing either rescans right away. */
+	/** The settings the cache was built with; changing any of them rescans right away. */
 	private static int cachedRange = -1;
 	private static boolean cachedActiveOnly;
+	private static int cachedGridSpacing;
+	private static int cachedLineWidth;
 	/** The beacon last right-clicked, so an effect picked in its screen can be applied to the client's copy. */
 	@Nullable
 	private static BlockPos openBeacon;
@@ -88,7 +90,10 @@ public final class BeaconRadiusRenderer {
 			nextScanTick = 0;
 			return;
 		}
-		if (cachedRange != EMUtilsClient.config().beaconRadiusRange() || cachedActiveOnly != EMUtilsClient.config().beaconRadiusActiveOnly()) {
+		if (cachedRange != EMUtilsClient.config().beaconRadiusRange()
+			|| cachedActiveOnly != EMUtilsClient.config().beaconRadiusActiveOnly()
+			|| cachedGridSpacing != EMUtilsClient.config().beaconRadiusGridSpacing()
+			|| cachedLineWidth != EMUtilsClient.config().beaconRadiusLineWidth()) {
 			nextScanTick = 0;
 		}
 		if (cachedLevel != client.level || cachedLines.isEmpty() || client.player.tickCount >= nextScanTick) {
@@ -106,6 +111,8 @@ public final class BeaconRadiusRenderer {
 		int cameraChunkZ = cameraPos.getZ() >> 4;
 		int range = EMUtilsClient.config().beaconRadiusRange();
 		boolean activeOnly = EMUtilsClient.config().beaconRadiusActiveOnly();
+		int gridSpacing = EMUtilsClient.config().beaconRadiusGridSpacing();
+		int lineWidth = EMUtilsClient.config().beaconRadiusLineWidth();
 		int chunkRadius = Math.min(client.options.getEffectiveRenderDistance(), range);
 		List<Outline> outlines = new ArrayList<>();
 		for (int chunkX = cameraChunkX - chunkRadius; chunkX <= cameraChunkX + chunkRadius; chunkX++) {
@@ -130,7 +137,7 @@ public final class BeaconRadiusRenderer {
 		int[] colors = colors(outlines);
 		for (int i = 0; i < outlines.size(); i++) {
 			AABB bounds = outlines.get(i).bounds();
-			addGridOutline(lines, bounds, colors[i]);
+			addGridOutline(lines, bounds, colors[i], gridSpacing, lineWidth);
 			addMapPoints(mapPoints, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, outlines.get(i).pos().getY(), 0xCC000000 | (colors[i] & 0x00FFFFFF));
 		}
 		cachedLines = List.copyOf(lines);
@@ -140,6 +147,8 @@ public final class BeaconRadiusRenderer {
 		beaconCount = outlines.size();
 		outlineColors = java.util.Arrays.stream(colors).boxed().toList();
 		cachedActiveOnly = activeOnly;
+		cachedGridSpacing = gridSpacing;
+		cachedLineWidth = lineWidth;
 		nextScanTick = (client.player == null ? 0 : client.player.tickCount) + SCAN_INTERVAL_TICKS;
 	}
 
@@ -170,6 +179,11 @@ public final class BeaconRadiusRenderer {
 
 	public static List<BeaconMapPoint> mapPoints() {
 		return cachedMapPoints;
+	}
+
+	/** How many lines the outline currently draws, for UI snapshot checks. */
+	public static int lineCountForSnapshot() {
+		return cachedLines.size();
 	}
 
 	/** The colors the cages are drawn in, for UI snapshot checks. */
@@ -284,27 +298,30 @@ public final class BeaconRadiusRenderer {
 	private static void addGridOutline(
 		List<WorldLines.Line> lines,
 		AABB box,
-		int color
+		int color,
+		int spacing,
+		float width
 	) {
-		for (double y = box.minY + HORIZONTAL_GRID_STEP; y < box.maxY; y += HORIZONTAL_GRID_STEP) {
-			addHorizontalOutline(lines, box, y, color, 1.0F);
+		float edge = width * EDGE_WIDTH_SCALE;
+		for (double y = box.minY + spacing; y < box.maxY; y += spacing) {
+			addHorizontalOutline(lines, box, y, color, width);
 		}
-		addHorizontalOutline(lines, box, box.minY, color, 1.5F);
-		addHorizontalOutline(lines, box, box.maxY, color, 1.5F);
+		addHorizontalOutline(lines, box, box.minY, color, edge);
+		addHorizontalOutline(lines, box, box.maxY, color, edge);
 
-		for (double x = box.minX + VERTICAL_GRID_STEP; x < box.maxX; x += VERTICAL_GRID_STEP) {
-			addLine(lines, x, box.minY, box.minZ, x, box.maxY, box.minZ, color, 1.0F);
-			addLine(lines, x, box.minY, box.maxZ, x, box.maxY, box.maxZ, color, 1.0F);
+		for (double x = box.minX + spacing; x < box.maxX; x += spacing) {
+			addLine(lines, x, box.minY, box.minZ, x, box.maxY, box.minZ, color, width);
+			addLine(lines, x, box.minY, box.maxZ, x, box.maxY, box.maxZ, color, width);
 		}
-		for (double z = box.minZ + VERTICAL_GRID_STEP; z < box.maxZ; z += VERTICAL_GRID_STEP) {
-			addLine(lines, box.minX, box.minY, z, box.minX, box.maxY, z, color, 1.0F);
-			addLine(lines, box.maxX, box.minY, z, box.maxX, box.maxY, z, color, 1.0F);
+		for (double z = box.minZ + spacing; z < box.maxZ; z += spacing) {
+			addLine(lines, box.minX, box.minY, z, box.minX, box.maxY, z, color, width);
+			addLine(lines, box.maxX, box.minY, z, box.maxX, box.maxY, z, color, width);
 		}
 
-		addLine(lines, box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ, color, 1.5F);
-		addLine(lines, box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ, color, 1.5F);
-		addLine(lines, box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ, color, 1.5F);
-		addLine(lines, box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ, color, 1.5F);
+		addLine(lines, box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ, color, edge);
+		addLine(lines, box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ, color, edge);
+		addLine(lines, box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ, color, edge);
+		addLine(lines, box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ, color, edge);
 	}
 
 	private static void addHorizontalOutline(
