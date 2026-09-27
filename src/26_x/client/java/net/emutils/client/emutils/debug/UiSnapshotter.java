@@ -1807,8 +1807,10 @@ public final class UiSnapshotter {
 					screen.setConflictsOnlyForSnapshot(true);
 				}
 				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					// Only Freelook on Q clashes (with Drop Item): Zoom's C is shared with Save Hotbar Activator
+					// and F3+C only as key combos, which don't count (#158).
 					int conflicts = screen.conflictCountForSnapshot();
-					check(conflicts >= 1 && screen.visibleRowsForSnapshot() == conflicts, "Conflicts only shows just the clashing keys (" + screen.visibleRowsForSnapshot() + " rows, " + conflicts + " conflicts)");
+					check(conflicts == 1 && screen.visibleRowsForSnapshot() == 1, "Conflicts only shows just the clashing key, not vanilla key combos (" + screen.visibleRowsForSnapshot() + " rows, " + conflicts + " conflicts)");
 				}
 				captureAfter(client, 15, "keybinds page, conflicts only");
 			}

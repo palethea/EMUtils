@@ -118,17 +118,31 @@ final class KeybindCapture {
 		return !clashesWith(mapping).isEmpty();
 	}
 
-	/** The other key mappings that use the same key. */
+	/** The other key mappings that use the same key, leaving out vanilla's key combos (see {@link #comboOnly}). */
 	static List<KeyMapping> clashesWith(KeyMapping mapping) {
 		List<KeyMapping> others = new ArrayList<>();
 		if (mapping.isUnbound()) {
 			return others;
 		}
 		for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
-			if (other != mapping && other.same(mapping)) {
+			if (other != mapping && other.same(mapping) && !comboOnly(other)) {
 				others.add(other);
 			}
 		}
 		return others;
+	}
+
+	/**
+	 * Whether a vanilla key only does something together with another key, so pressing it alone can't
+	 * clash (#158): the hotbar activators work with a number key, and the debug keys (key mappings in
+	 * 26.x) with F3 held, such as F3+C. F3 itself ({@code key.debug.overlay} and {@code key.debug.modifier})
+	 * still counts.
+	 */
+	private static boolean comboOnly(KeyMapping mapping) {
+		String name = mapping.getName();
+		if (name.equals("key.saveToolbarActivator") || name.equals("key.loadToolbarActivator")) {
+			return true;
+		}
+		return name.startsWith("key.debug.") && !name.equals("key.debug.overlay") && !name.equals("key.debug.modifier");
 	}
 }
