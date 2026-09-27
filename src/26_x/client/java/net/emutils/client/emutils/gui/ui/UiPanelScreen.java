@@ -32,8 +32,11 @@ public abstract class UiPanelScreen extends Screen {
 	private boolean returning;
 	/** Closing straight into the game, past the screen it was opened from ({@link #closeToGame}). */
 	private boolean closingToGame;
-	/** Closed into the game while the HUD still draws the fade-out, so it keeps its textures until then. */
-	private boolean fadingOnHud;
+	/**
+	 * Closed while its fade-out is still drawn elsewhere, on the HUD or over the vanilla screen it was
+	 * opened from, so it keeps its textures until then.
+	 */
+	private boolean fadingOut;
 	private float openProgress;
 	/** 0 in dark mode, 1 in light mode, in between while crossfading. */
 	private float lightness;
@@ -190,6 +193,12 @@ public abstract class UiPanelScreen extends Screen {
 		if (UiText.layoutVersion() != textLayout) {
 			relayout();
 		}
+		UiBlur.set((fadesBlur() ? backgroundProgress() : 1.0F) * UiStyle.blur());
+		extractPanel(context, mouseX, mouseY);
+	}
+
+	/** Draws the panel and what floats above it, with the open or close animation applied. */
+	private void extractPanel(GuiGraphicsExtractor context, int mouseX, int mouseY) {
 		anim.frame();
 		beforeFrame();
 		UiTheme theme = theme();
@@ -197,7 +206,6 @@ public abstract class UiPanelScreen extends Screen {
 		// animation's clock starts and the animation can't hitch.
 		openProgress = prepared ? anim.transition("open", closing ? 0.0F : 1.0F, OPEN_SECONDS, true) : 0.0F;
 		UiOpacity.set(openProgress);
-		UiBlur.set((fadesBlur() ? backgroundProgress() : 1.0F) * UiStyle.blur());
 		float scale = 0.97F + 0.03F * openProgress;
 		context.pose().pushMatrix();
 		context.pose().translate(panelX + panelWidth / 2.0F, panelY + panelHeight / 2.0F);
@@ -235,7 +243,7 @@ public abstract class UiPanelScreen extends Screen {
 	@Override
 	public void removed() {
 		UiBlur.reset();
-		if (!fadingOnHud) {
+		if (!fadingOut) {
 			dispose();
 		}
 		super.removed();
@@ -248,16 +256,18 @@ public abstract class UiPanelScreen extends Screen {
 	protected void dispose() {
 	}
 
-	/** Called once the fade-out on the HUD has finished. */
-	void finishFadingOnHud() {
-		fadingOnHud = false;
-		dispose();
+	/** Called once the fade-out on the HUD or over the previous screen has finished. */
+	void finishFadingOut() {
+		if (fadingOut) {
+			fadingOut = false;
+			dispose();
+		}
 	}
 
 	/**
-	 * Fades and scales the panel out, then returns to the previous screen. Going back to another screen
-	 * of the EMUtils UI, it switches right away instead, and that screen's panel fades and scales in, the
-	 * same way opening this one looked.
+	 * Fades and scales the panel out and returns to the previous screen. Going back to another screen of
+	 * the EMUtils UI, it switches right away instead, and that screen's panel fades and scales in, the same
+	 * way opening this one looked.
 	 */
 	@Override
 	public void onClose() {
@@ -269,10 +279,28 @@ public abstract class UiPanelScreen extends Screen {
 		if (parent == null && minecraft.level != null) {
 			// Back to the game: hand control back right away, so the player can look around and move
 			// while the panel is still fading; the HUD draws its last frames.
-			fadingOnHud = true;
+			fadingOut = true;
 			minecraft.gui.setScreen(null);
 			UiClosingScreens.add(this);
+		} else if (parent != null) {
+			// Back to a vanilla screen, such as the pause menu: show it right away and fade the panel out
+			// over it, rather than fading to an empty background first and only then switching (#164).
+			fadingOut = true;
+			Screen previous = parent;
+			minecraft.gui.setScreen(previous);
+			UiClosingScreens.addOver(this, previous);
 		}
+	}
+
+	/**
+	 * Draws one frame of the fade-out over the vanilla screen it went back to. That screen has drawn its
+	 * own background and blur already, so only the panel is drawn, and the blur is left alone. Returns
+	 * false once the fade-out has finished.
+	 */
+	boolean extractFadeOver(GuiGraphicsExtractor context) {
+		// The mouse belongs to the screen underneath now, so nothing in the panel is hovered.
+		extractPanel(context, Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2);
+		return openProgress > 0.0F;
 	}
 
 	/**
@@ -286,7 +314,7 @@ public abstract class UiPanelScreen extends Screen {
 		}
 		closingToGame = true;
 		closing = true;
-		fadingOnHud = true;
+		fadingOut = true;
 		minecraft.gui.setScreen(null);
 		UiClosingScreens.add(this);
 	}

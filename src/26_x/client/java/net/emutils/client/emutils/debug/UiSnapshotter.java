@@ -75,6 +75,7 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -1892,6 +1893,23 @@ public final class UiSnapshotter {
 					checkIconRow(title, "title screen");
 				}
 				captureAfter(client, 20, "title screen, EMUtils icon");
+			}
+			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
+			case 298 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					TitleScreen title = new TitleScreen();
+					client.gui.setScreen(title);
+					client.gui.setScreen(new SettingsScreen(title));
+				}
+				if (stepTicks == 15) {
+					Screen settings = MinecraftClientCompat.screen(client);
+					settings.onClose();
+					check(settings instanceof SettingsScreen && MinecraftClientCompat.screen(client) instanceof TitleScreen, "closing the settings goes back to the title screen right away");
+					// A resize re-initializes the title screen, and with it its Fabric events; the fade goes on.
+					client.resizeGui();
+				}
+				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
 			default -> finish(client);
 		}
