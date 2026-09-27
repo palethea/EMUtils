@@ -18,6 +18,7 @@ import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -321,6 +322,8 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_OVERLAY, config::hudOverlay, config::setHudOverlay));
+		// Tabs, since the overlay has grown many lines (#48).
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_HUD_SECTION_GENERAL));
 		rows.add(new HubSettingRow.Action(
 			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
 			() -> {
@@ -333,20 +336,30 @@ public final class HubSettingsRegistry {
 		));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SHOW_ICONS, config::hudShowIcons, config::setHudShowIcons));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::hudTextShadow, config::setHudTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG, config::hudHideWithDebug, config::setHudHideWithDebug));
-		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_IN_CONTAINERS, config::hudHideInContainers, config::setHudHideInContainers));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_HUD_SECTION_WORLD));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_COORDINATES, config::hudShowCoordinates, config::setHudShowCoordinates));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_NETHER_COORDINATES, config::hudShowNetherCoordinates, config::setHudShowNetherCoordinates));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_TARGET_BLOCK, config::hudShowTargetBlock, config::setHudShowTargetBlock));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_DIMENSION, config::hudShowDimension, config::setHudShowDimension));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_CHUNK_REGION, config::hudShowChunkRegion, config::setHudShowChunkRegion));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SLIME_CHUNK, config::hudShowSlimeChunk, config::setHudShowSlimeChunk));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_BIOME, config::hudShowBiome, config::setHudShowBiome));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_FACING, config::hudShowFacing, config::setHudShowFacing));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SPEED, config::hudShowSpeed, config::setHudShowSpeed));
-		rows.add(divider());
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_HUD_SECTION_PERFORMANCE));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_PING, config::hudShowPing, config::setHudShowPing));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_FPS, config::hudShowFps, config::setHudShowFps));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_MEMORY, config::hudShowMemory, config::setHudShowMemory));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_TPS, config::hudShowTps, config::setHudShowTps));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_TPS_COLORS, config::hudTpsColors, config::setHudTpsColors));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_TPS_COMPACT, config::hudTpsCompact, config::setHudTpsCompact));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_HUD_SECTION_TIME));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SERVER_TIME, config::hudShowServerTime, config::setHudShowServerTime));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_DAY_NIGHT, config::hudShowDayNight, config::setHudShowDayNight));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_REAL_TIME, config::hudShowRealTime, config::setHudShowRealTime));
 		return rows;
 	}

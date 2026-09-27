@@ -11,6 +11,7 @@ import net.emutils.client.emutils.capes.CapePreferredProvider;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
+import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.layout.HudCustomLayoutEntry;
 import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
@@ -157,6 +158,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean hudHideWithDebug = Boolean.TRUE;
 	private Boolean hudShowFacing = Boolean.TRUE;
 	private Boolean hudShowSpeed = Boolean.FALSE;
+	private Boolean hudShowDimension = Boolean.FALSE;
+	private Boolean hudShowDayNight = Boolean.FALSE;
+	private Boolean hudShowSlimeChunk = Boolean.FALSE;
+	private Boolean hudShowTargetBlock = Boolean.FALSE;
+	private Boolean hudShowTps = Boolean.FALSE;
+	private Boolean hudTpsColors = Boolean.TRUE;
+	private Boolean hudTpsCompact = Boolean.FALSE;
+	private Boolean hudHideInContainers = Boolean.FALSE;
+	private String hudTextShadow = HudTextShadow.AUTO.name();
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -807,6 +817,87 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setHudShowSpeed(boolean enabled) {
 		hudShowSpeed = enabled;
+		save();
+	}
+
+	public boolean hudShowDimension() {
+		return hudShowDimension != null && hudShowDimension;
+	}
+
+	public void setHudShowDimension(boolean enabled) {
+		hudShowDimension = enabled;
+		save();
+	}
+
+	public boolean hudShowDayNight() {
+		return hudShowDayNight != null && hudShowDayNight;
+	}
+
+	public void setHudShowDayNight(boolean enabled) {
+		hudShowDayNight = enabled;
+		save();
+	}
+
+	public boolean hudShowSlimeChunk() {
+		return hudShowSlimeChunk != null && hudShowSlimeChunk;
+	}
+
+	public void setHudShowSlimeChunk(boolean enabled) {
+		hudShowSlimeChunk = enabled;
+		save();
+	}
+
+	public boolean hudShowTargetBlock() {
+		return hudShowTargetBlock != null && hudShowTargetBlock;
+	}
+
+	public void setHudShowTargetBlock(boolean enabled) {
+		hudShowTargetBlock = enabled;
+		save();
+	}
+
+	public boolean hudShowTps() {
+		return hudShowTps != null && hudShowTps;
+	}
+
+	public void setHudShowTps(boolean enabled) {
+		hudShowTps = enabled;
+		save();
+	}
+
+	public boolean hudTpsColors() {
+		return hudTpsColors == null || hudTpsColors;
+	}
+
+	public void setHudTpsColors(boolean enabled) {
+		hudTpsColors = enabled;
+		save();
+	}
+
+	public boolean hudTpsCompact() {
+		return hudTpsCompact != null && hudTpsCompact;
+	}
+
+	public void setHudTpsCompact(boolean enabled) {
+		hudTpsCompact = enabled;
+		save();
+	}
+
+	public boolean hudHideInContainers() {
+		return hudHideInContainers != null && hudHideInContainers;
+	}
+
+	public void setHudHideInContainers(boolean enabled) {
+		hudHideInContainers = enabled;
+		save();
+	}
+
+	public HudTextShadow hudTextShadow() {
+		return HudTextShadow.fromName(hudTextShadow);
+	}
+
+	public void setHudTextShadow(HudTextShadow mode) {
+		hudTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
 		save();
 	}
 
@@ -2343,6 +2434,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hudHideWithDebug = Boolean.TRUE;
 		hudShowFacing = Boolean.TRUE;
 		hudShowSpeed = Boolean.FALSE;
+		hudShowDimension = Boolean.FALSE;
+		hudShowDayNight = Boolean.FALSE;
+		hudShowSlimeChunk = Boolean.FALSE;
+		hudShowTargetBlock = Boolean.FALSE;
+		hudShowTps = Boolean.FALSE;
+		hudTpsColors = Boolean.TRUE;
+		hudTpsCompact = Boolean.FALSE;
+		hudHideInContainers = Boolean.FALSE;
+		hudTextShadow = HudTextShadow.AUTO.name();
 		hudBackgroundOpacity = 100;
 		hudScale = 100;
 		save();

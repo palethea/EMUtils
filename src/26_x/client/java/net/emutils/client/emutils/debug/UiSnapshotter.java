@@ -32,6 +32,10 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.hud.HudOverlayData;
+import net.emutils.client.emutils.hud.HudOverlayRenderer;
+import net.emutils.client.emutils.hud.HudTextShadow;
+import net.emutils.client.emutils.hud.HudTpsTracker;
 import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.ConfigTransfer;
@@ -75,6 +79,7 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.input.CharacterEvent;
@@ -1857,14 +1862,80 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// The HUD Overlay's new lines (#47, #48): targeted block, dimension, slime chunk, TPS and day/night,
+			// then the text shadow and hiding it in containers.
 			case 294 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetHudDefaults();
+					config.setHudOverlay(true);
+					config.setHudShowTargetBlock(true);
+					config.setHudShowDimension(true);
+					config.setHudShowSlimeChunk(true);
+					config.setHudShowTps(true);
+					config.setHudShowDayNight(true);
+					command(client, "time set 12000");
+					// Look down at the ground, so there's a block to target.
+					client.player.setXRot(60.0F);
+				}
+				if (stepTicks == 40) {
+					HudOverlayData data = HudOverlayRenderer.hudOverlayData();
+					check(data.targetBlock().matches("-?\\d+ -?\\d+ -?\\d+"), "the Looking At line shows the targeted block (" + data.targetBlock() + ")");
+					check(data.dimension().equals("Overworld"), "the Dimension line names the Overworld (" + data.dimension() + ")");
+					check(data.slimeChunk().equals("Yes") || data.slimeChunk().equals("No"), "singleplayer knows the seed, so the Slime Chunk line says yes or no (" + data.slimeChunk() + ")");
+					check(data.tps().value().matches("\\d+\\.\\d \u00b7 \\d+\\.\\d ms") && data.tps().health() == HudTpsTracker.Health.GOOD, "singleplayer TPS is exact, with milliseconds per tick (" + data.tps().value() + ")");
+					check(data.dayNight().startsWith("Night in "), "at time 12000 the Day/Night line counts down to night (" + data.dayNight() + ")");
+					// On a server TPS is estimated from the world time sent every 20 ticks.
+					long[][] steady = {{0, 0}, {20, 1000}, {40, 2000}, {60, 3000}};
+					long[][] halfSpeed = {{0, 0}, {20, 2000}, {40, 4000}};
+					HudTpsTracker.Reading full = HudTpsTracker.estimateForSnapshot(steady, 3100);
+					HudTpsTracker.Reading half = HudTpsTracker.estimateForSnapshot(halfSpeed, 4100);
+					HudTpsTracker.Reading stalled = HudTpsTracker.estimateForSnapshot(steady, 9000);
+					HudTpsTracker.Reading early = HudTpsTracker.estimateForSnapshot(new long[][] {{0, 0}, {20, 1000}}, 1100);
+					check(full.value().equals("~20.0") && full.health() == HudTpsTracker.Health.GOOD, "a steady server is estimated at ~20 TPS (" + full.value() + ")");
+					check(half.value().equals("~10.0") && half.health() == HudTpsTracker.Health.BAD, "a server at half speed is estimated at ~10 TPS, in red (" + half.value() + ")");
+					check(stalled.value().equals("~6.7"), "with no time update for 6 s the estimate drifts down (" + stalled.value() + ")");
+					check(early.value().equals("--"), "one second of updates is too little for an estimate (" + early.value() + ")");
+				}
+				captureAfter(client, 40, "hud overlay, new lines");
+			}
+			case 295 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setHudTextShadow(HudTextShadow.ON);
+					EMUtilsClient.config().setHudTpsCompact(true);
+					EMUtilsClient.config().setSettingsUiDark(false);
+				}
+				captureAfter(client, 10, "hud overlay, light, text shadow on, compact tps");
+			}
+			case 296 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setSettingsUiDark(true);
+					EMUtilsClient.config().setHudHideInContainers(true);
+					client.gui.setScreen(new InventoryScreen(client.player));
+				}
+				captureAfter(client, 15, "hud overlay hidden while the inventory is open");
+			}
+			case 297 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setHudHideInContainers(false);
+					setGuiScale(client, 2);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("hud_overlay");
+					settings.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 20, "hud overlay sheet, performance tab");
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 298 -> {
+				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 295 -> {
+			case 299 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1873,7 +1944,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 296 -> {
+			case 300 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1884,7 +1955,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 297 -> {
+			case 301 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -1895,7 +1966,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 298 -> {
+			case 302 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

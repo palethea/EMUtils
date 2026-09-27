@@ -4,13 +4,20 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.network.chat.Component;
 import net.minecraft.locale.Language;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.WorldgenRandom;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 public record HudOverlayData(
 	String coordinates,
@@ -26,12 +33,24 @@ public record HudOverlayData(
 	String speed,
 	String serverTime,
 	String realTime,
-	String lockedYPlacement
+	String lockedYPlacement,
+	String dimension,
+	String dayNight,
+	String slimeChunk,
+	String targetBlock,
+	HudTpsTracker.Reading tps
 ) {
 	private static final DateTimeFormatter TWENTY_FOUR_HOUR_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
 	private static final DateTimeFormatter TWELVE_HOUR_FORMAT = DateTimeFormatter.ofPattern("h:mm:ssa", Locale.ENGLISH);
 	private static final long MEMORY_UPDATE_INTERVAL_MS = 2_000L;
-	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--", "--:--", "--:--", "--");
+	/** Slime chunks come from the world seed and this salt, as in {@code Slime.checkSlimeSpawnRules}. */
+	private static final long SLIME_CHUNK_SALT = 987234911L;
+	/** Clock ticks, with 0 at sunrise: monsters start spawning at dusk (13000) and night ends at 23000. */
+	private static final long NIGHT_START = 13000L;
+	private static final long DAY_START = 23000L;
+	private static final HudOverlayData EMPTY = new HudOverlayData("-- -- --", "-- -- --", "-- -- --", "-- / --", "--", "-- ms", "--", "--/-- GB (--%)", 0, "--", "--", "--:--", "--:--", "--", "--", "--", "--", "--", HudTpsTracker.Reading.NONE);
+	private static long lastDayTime = Long.MIN_VALUE;
+	private static long dayTimeChangedMillis;
 	private static MemoryUsage cachedMemoryUsage = new MemoryUsage("--/-- GB (--%)", 0);
 	private static long lastMemoryUpdateMillis;
 
@@ -64,8 +83,66 @@ public record HudOverlayData(
 			HudSpeedTracker.collect(client),
 			serverTime(client.level.getOverworldClockTime()),
 			currentRealTime(),
-			lockedYPlacementValue()
+			lockedYPlacementValue(),
+			dimensionName(client),
+			dayNight(client),
+			slimeChunk(client, chunkPos),
+			targetBlock(client),
+			HudTpsTracker.read(client)
 		);
+	}
+
+	private static String dimensionName(Minecraft client) {
+		Identifier id = client.level.dimension().identifier();
+		String key = "emutils.hud.dimension." + id.getNamespace() + "." + id.getPath().replace('/', '.');
+		return Language.getInstance().has(key) ? Component.translatable(key).getString() : prettify(id.getPath());
+	}
+
+	/**
+	 * How long until night (dusk, when monsters start spawning) or until day, in real minutes and seconds
+	 * at the current tick rate; "Time stopped" while the clock doesn't move, such as with the daylight
+	 * cycle turned off.
+	 */
+	private static String dayNight(Minecraft client) {
+		long dayTime = Math.floorMod(client.level.getOverworldClockTime(), 24000L);
+		long now = System.currentTimeMillis();
+		// A paused singleplayer world doesn't count as the clock standing still.
+		if (dayTime != lastDayTime || client.isPaused()) {
+			lastDayTime = dayTime;
+			dayTimeChangedMillis = now;
+		} else if (now - dayTimeChangedMillis > 2_000L) {
+			return Component.translatable(EMUtilsTexts.HUD_DAY_NIGHT_STOPPED).getString();
+		}
+		boolean night = dayTime >= NIGHT_START && dayTime < DAY_START;
+		long ticksLeft = night ? DAY_START - dayTime : Math.floorMod(NIGHT_START - dayTime, 24000L);
+		float tickRate = client.level.tickRateManager().tickrate();
+		long seconds = (long) Math.ceil(ticksLeft / (double) (tickRate <= 0.0F ? 20.0F : tickRate));
+		String time = String.format(Locale.ENGLISH, "%d:%02d", seconds / 60L, seconds % 60L);
+		return Component.translatable(night ? EMUtilsTexts.HUD_DAY_IN : EMUtilsTexts.HUD_NIGHT_IN, time).getString();
+	}
+
+	/**
+	 * Whether the player stands in a slime chunk. That depends on the world seed, which only a
+	 * singleplayer world tells the client, and only the Overworld has slime chunks.
+	 */
+	private static String slimeChunk(Minecraft client, ChunkPos chunkPos) {
+		if (client.level.dimension() != Level.OVERWORLD) {
+			return "--";
+		}
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server == null) {
+			return Component.translatable(EMUtilsTexts.HUD_SLIME_CHUNK_UNKNOWN).getString();
+		}
+		boolean slime = WorldgenRandom.seedSlimeChunk(chunkPos.x(), chunkPos.z(), server.overworld().getSeed(), SLIME_CHUNK_SALT).nextInt(10) == 0;
+		return Component.translatable(slime ? EMUtilsTexts.HUD_YES : EMUtilsTexts.HUD_NO).getString();
+	}
+
+	private static String targetBlock(Minecraft client) {
+		if (client.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+			BlockPos pos = hit.getBlockPos();
+			return pos.getX() + " " + pos.getY() + " " + pos.getZ();
+		}
+		return "--";
 	}
 
 	private static String collectFreeCameraCoordinates() {
@@ -87,7 +164,7 @@ public record HudOverlayData(
 	}
 
 	private static String portalCoordinates(Minecraft client, BlockPos pos) {
-		if (client.level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+		if (client.level.dimension() == Level.OVERWORLD) {
 			return Math.floorDiv(pos.getX(), 8) + " " + pos.getY() + " " + Math.floorDiv(pos.getZ(), 8);
 		}
 		return "-- -- --";

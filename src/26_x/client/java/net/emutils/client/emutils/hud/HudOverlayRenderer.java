@@ -3,6 +3,7 @@ package net.emutils.client.emutils.hud;
 import java.util.ArrayList;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiRasterScale;
@@ -16,6 +17,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
@@ -114,7 +116,7 @@ public final class HudOverlayRenderer {
 		List<HudOverlayLine> lines = allLines(config);
 		Font font = client.font;
 		boolean showIcons = config.hudShowIcons();
-		boolean shadow = opacityPercent < TEXT_SHADOW_BELOW_OPACITY;
+		boolean shadow = config.hudTextShadow().shadow(opacityPercent, TEXT_SHADOW_BELOW_OPACITY);
 		int textX = x + PADDING_X + (showIcons ? ICON_SIZE + ICON_GAP : 0);
 		int valueX = textX + labelColumnWidth(font, lines) + LABEL_VALUE_GAP;
 		int rowY = y + PADDING_Y;
@@ -141,6 +143,9 @@ public final class HudOverlayRenderer {
 			return;
 		}
 		if (config.hudHideWithDebug() && client.getDebugOverlay().showDebugScreen()) {
+			return;
+		}
+		if (config.hudHideInContainers() && MinecraftClientCompat.screen(client) instanceof AbstractContainerScreen<?>) {
 			return;
 		}
 		if (HudLayoutManager.isEditing()) {
@@ -200,14 +205,28 @@ public final class HudOverlayRenderer {
 			&& client.level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
 			lines.add(new HudOverlayLine("emutils.hud.nether_coords", data.portalCoordinates(), HudOverlayLine.icon("nether")));
 		}
+		if (config.hudShowTargetBlock()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_TARGET_BLOCK, data.targetBlock(), HudOverlayLine.icon("target_block")));
+		}
+		if (config.hudShowDimension()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_DIMENSION, data.dimension(), HudOverlayLine.icon("dimension")));
+		}
 		if (config.hudShowChunkRegion()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_CHUNK_REGION, data.chunkRegion(), HudOverlayLine.icon("chunk")));
+		}
+		if (config.hudShowSlimeChunk()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_SLIME_CHUNK, data.slimeChunk(), HudOverlayLine.icon("slime_chunk")));
 		}
 		if (config.hudShowBiome()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_BIOME, data.biome(), HudOverlayLine.icon("biome")));
 		}
 		if (config.hudShowPing()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_PING, data.ping(), HudOverlayLine.icon("ping")));
+		}
+		if (config.hudShowTps()) {
+			HudTpsTracker.Reading tps = data.tps();
+			String value = config.hudTpsCompact() ? tps.compactValue() : tps.value();
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_TPS, value, HudOverlayLine.icon("tps"), config.hudTpsColors() ? tpsTone(tps.health()) : HudOverlayLine.Tone.NORMAL));
 		}
 		if (config.hudShowFps()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_FPS, data.fps(), HudOverlayLine.icon("fps")));
@@ -221,6 +240,9 @@ public final class HudOverlayRenderer {
 		if (config.hudShowServerTime()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_SERVER_TIME, data.serverTime(), HudOverlayLine.icon("server_time")));
 		}
+		if (config.hudShowDayNight()) {
+			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_DAY_NIGHT, data.dayNight(), HudOverlayLine.icon("day_night")));
+		}
 		if (config.hudShowRealTime()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_REAL_TIME, data.realTime(), HudOverlayLine.icon("real_time")));
 		}
@@ -228,6 +250,25 @@ public final class HudOverlayRenderer {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOCKED_Y, data.lockedYPlacement(), HudOverlayLine.icon("locked_y")));
 		}
 		return lines;
+	}
+
+	/** TPS health as a tone: green while the server keeps up, amber when it runs slow, red when it lags badly. */
+	private static HudOverlayLine.Tone tpsTone(HudTpsTracker.Health health) {
+		return switch (health) {
+			case GOOD -> HudOverlayLine.Tone.GOOD;
+			case SLOW -> HudOverlayLine.Tone.SLOW;
+			case BAD -> HudOverlayLine.Tone.BAD;
+			case UNKNOWN -> HudOverlayLine.Tone.NORMAL;
+		};
+	}
+
+	private static int valueColor(UiTheme theme, HudOverlayLine.Tone tone) {
+		return switch (tone) {
+			case NORMAL -> theme.text();
+			case GOOD -> theme.hud();
+			case SLOW -> theme.utility();
+			case BAD -> theme.warning();
+		};
 	}
 
 	private static int labelColumnWidth(Font font, List<HudOverlayLine> lines) {
@@ -281,7 +322,7 @@ public final class HudOverlayRenderer {
 			UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX + offset, valueTop + offset, color);
 		}
 		UiText.draw(context, font, label, LABEL_SIZE, textX, labelTop, theme.textSecondary());
-		UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX, valueTop, theme.text());
+		UiText.drawGlyphs(context, font, line.value(), VALUE_SIZE, valueX, valueTop, valueColor(theme, line.tone()));
 	}
 
 	/** A dark shadow under the dark theme's light text, and a light one under the light theme's dark text. */

@@ -1,6 +1,7 @@
 package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.hud.HudTpsTracker;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.versioned.VersionedPackets;
 import net.minecraft.client.Minecraft;
@@ -11,6 +12,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -49,5 +51,11 @@ public abstract class ClientPlayNetworkHandlerMixin {
 		ClientboundLevelChunkWithLightPacket packet, CallbackInfo ci
 	) {
 		LightLevelOverlayRenderer.onChunkChanged(VersionedPackets.chunkX(packet), VersionedPackets.chunkZ(packet));
+	}
+
+	/** The server sends the world time every 20 ticks; the HUD's TPS line estimates the tick rate from it (#47). */
+	@Inject(method = "handleSetTime", at = @At("TAIL"))
+	private void emutils$sampleServerTickRate(ClientboundSetTimePacket packet, CallbackInfo ci) {
+		HudTpsTracker.onTimeSync(packet.gameTime());
 	}
 }
