@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +32,7 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.ConfigTransfer;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -62,11 +64,14 @@ import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -923,7 +928,12 @@ public final class UiSnapshotter {
 				client.gui.setScreen(new PauseScreen(true));
 				next();
 			}
-			case 164 -> captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
+			case 164 -> {
+				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof PauseScreen pause) {
+					checkIconRow(pause, "pause menu");
+				}
+				captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
+			}
 			case 165 -> {
 				EMUtilsClient.config().setSettingsUiDark(false);
 				setGuiScale(client, 3);
@@ -1808,8 +1818,10 @@ public final class UiSnapshotter {
 					screen.setConflictsOnlyForSnapshot(true);
 				}
 				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					// Only Freelook on Q clashes (with Drop Item): Zoom's C is shared with Save Hotbar Activator
+					// and F3+C only as key combos, which don't count (#158).
 					int conflicts = screen.conflictCountForSnapshot();
-					check(conflicts >= 1 && screen.visibleRowsForSnapshot() == conflicts, "Conflicts only shows just the clashing keys (" + screen.visibleRowsForSnapshot() + " rows, " + conflicts + " conflicts)");
+					check(conflicts == 1 && screen.visibleRowsForSnapshot() == 1, "Conflicts only shows just the clashing key, not vanilla key combos (" + screen.visibleRowsForSnapshot() + " rows, " + conflicts + " conflicts)");
 				}
 				captureAfter(client, 15, "keybinds page, conflicts only");
 			}
@@ -1865,8 +1877,22 @@ public final class UiSnapshotter {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
+					// Vanilla caps menus outside a world at 60 FPS; EMUtils menus use the Max Framerate (#162).
+					int limit = client.getFramerateLimitTracker().getFramerateLimit();
+					check(limit == client.options.framerateLimit().get(), "an EMUtils menu outside a world uses the Max Framerate (" + limit + " FPS)");
 				}
 				capture(client, "waypoints, not in a world");
+			}
+			// The EMUtils icon on the title screen (#160), first in the row of small icons.
+			case 297 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					client.gui.setScreen(new TitleScreen());
+				}
+				if (stepTicks == 10 && MinecraftClientCompat.screen(client) instanceof TitleScreen title) {
+					checkIconRow(title, "title screen");
+				}
+				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
 			case 298 -> {
@@ -1885,6 +1911,30 @@ public final class UiSnapshotter {
 			}
 			default -> finish(client);
 		}
+	}
+
+	/**
+	 * The EMUtils icon is the first of the screen's small icon buttons, in the same row, the row's icons
+	 * don't overlap, and there's no EMUtils button in the top-left corner any more (#160).
+	 */
+	private static void checkIconRow(Screen screen, String where) {
+		AbstractWidget emutils = null;
+		List<AbstractWidget> others = new ArrayList<>();
+		boolean cornerButton = false;
+		for (GuiEventListener child : screen.children()) {
+			if (SettingsIconButton.is(child)) {
+				emutils = (AbstractWidget) child;
+			} else if (child instanceof SpriteIconButton icon) {
+				others.add(icon);
+			} else if (child instanceof AbstractWidget widget && widget.getX() < 20 && widget.getY() < 20) {
+				cornerButton = true;
+			}
+		}
+		AbstractWidget icon = emutils;
+		boolean first = icon != null && !others.isEmpty() && others.stream().allMatch(other -> other.getY() != icon.getY() || other.getX() >= icon.getX() + icon.getWidth());
+		boolean inRow = icon != null && others.stream().anyMatch(other -> other.getY() == icon.getY());
+		check(first && inRow, "the EMUtils icon is the first of the " + where + "'s icon buttons, without overlapping them");
+		check(!cornerButton, "no EMUtils button is left in the " + where + "'s top-left corner");
 	}
 
 	private static void setGuiScale(Minecraft client, int guiScale) {
