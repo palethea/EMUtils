@@ -12,7 +12,10 @@ public interface BeaconBlockEntityAccessor {
 	@Accessor("levels")
 	int emutils$getLevels();
 
-	/** The beacon's primary effect, synced to the client with the block entity; null until one is picked. */
+	/**
+	 * The beacon's primary effect, or null before one is picked. Clients get it when the chunk loads,
+	 * not when it changes, so {@code BeaconRadiusRenderer} also sets it when this player picks one.
+	 */
 	@Accessor("primaryPower")
 	@Nullable Holder<MobEffect> emutils$getPrimaryPower();
 

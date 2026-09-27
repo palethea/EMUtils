@@ -47,6 +47,7 @@ public final class LightLevelOverlayRenderer {
 
 	@Nullable
 	private static KeyMapping keyMapping;
+	private static final WorldLines.Batch LINES = new WorldLines.Batch();
 	private static List<WorldLines.Line> cachedLines = List.of();
 	private static List<NumberQuad> cachedNumbers = List.of();
 	@Nullable
@@ -233,7 +234,7 @@ public final class LightLevelOverlayRenderer {
 		Vec3 cameraPosition = context.levelState().cameraRenderState.pos;
 		PoseStack matrices = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
-		WorldLines.Prepared lines = WorldLines.prepare(cachedLines, context.levelState().cameraRenderState);
+		WorldLines.Batch lines = LINES.prepare(cachedLines, context.levelState().cameraRenderState);
 		if (!lines.isEmpty()) {
 			collector.submitCustomGeometry(matrices, RenderTypes.lines(), lines::render);
 		}

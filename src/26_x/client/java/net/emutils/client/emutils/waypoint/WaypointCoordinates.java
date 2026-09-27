@@ -4,10 +4,6 @@ public final class WaypointCoordinates {
 	private WaypointCoordinates() {
 	}
 
-	public static String plain(Waypoint waypoint) {
-		return waypoint.x() + " " + waypoint.y() + " " + waypoint.z();
-	}
-
 	public static String format(Waypoint waypoint, WaypointCoordinateFormat format) {
 		return format(waypoint.x(), waypoint.y(), waypoint.z(), format);
 	}

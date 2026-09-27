@@ -2,6 +2,7 @@ package net.emutils.client.emutils.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +44,8 @@ public final class BeaconRadiusRenderer {
 	private static final float NEIGHBOR_LIGHTEN = 0.45F;
 	/** A white (or nearly white) cage touching another of its color is drawn this light gray instead. */
 	private static final int WHITE_NEIGHBOR = 0xFFB4B4B4;
+
+	private static final WorldLines.Batch LINES = new WorldLines.Batch();
 
 	private static List<WorldLines.Line> cachedLines = List.of();
 	private static List<BeaconMapPoint> cachedMapPoints = List.of();
@@ -145,7 +148,7 @@ public final class BeaconRadiusRenderer {
 		cachedLevel = client.level;
 		cachedRange = range;
 		beaconCount = outlines.size();
-		outlineColors = java.util.Arrays.stream(colors).boxed().toList();
+		outlineColors = Arrays.stream(colors).boxed().toList();
 		cachedActiveOnly = activeOnly;
 		cachedGridSpacing = gridSpacing;
 		cachedLineWidth = lineWidth;
@@ -201,13 +204,13 @@ public final class BeaconRadiusRenderer {
 			return;
 		}
 
-		WorldLines.Prepared prepared = WorldLines.prepare(cachedLines, context.levelState().cameraRenderState);
-		if (prepared.isEmpty()) {
+		WorldLines.Batch batch = LINES.prepare(cachedLines, context.levelState().cameraRenderState);
+		if (batch.isEmpty()) {
 			return;
 		}
 		PoseStack matrices = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
-		collector.submitCustomGeometry(matrices, RenderTypes.lines(), prepared::render);
+		collector.submitCustomGeometry(matrices, RenderTypes.lines(), batch::render);
 	}
 
 	/** A beacon's effect area, if it has a pyramid and an unblocked beam. */
