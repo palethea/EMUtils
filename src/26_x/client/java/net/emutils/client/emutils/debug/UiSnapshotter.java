@@ -55,6 +55,7 @@ import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.tweaks.AntiDurabilityBreak;
 import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
@@ -66,7 +67,9 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -922,7 +925,12 @@ public final class UiSnapshotter {
 				client.gui.setScreen(new PauseScreen(true));
 				next();
 			}
-			case 164 -> captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
+			case 164 -> {
+				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof PauseScreen pause) {
+					checkPauseMenuIcon(pause);
+				}
+				captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
+			}
 			case 165 -> {
 				EMUtilsClient.config().setSettingsUiDark(false);
 				setGuiScale(client, 3);
@@ -1869,6 +1877,31 @@ public final class UiSnapshotter {
 			}
 			default -> finish(client);
 		}
+	}
+
+	/**
+	 * The EMUtils icon is the first of the pause menu's small icon buttons, left of the bug report one,
+	 * in the same row, and the old button in the top-left corner is gone (#160).
+	 */
+	private static void checkPauseMenuIcon(PauseScreen pause) {
+		SpriteIconButton emutils = null;
+		int othersLeft = Integer.MAX_VALUE;
+		int othersY = -1;
+		boolean cornerButton = false;
+		for (GuiEventListener child : pause.children()) {
+			if (child instanceof SpriteIconButton icon) {
+				if (icon.getMessage().getString().equals(Component.translatable(EMUtilsTexts.HUB_TITLE).getString())) {
+					emutils = icon;
+				} else {
+					othersLeft = Math.min(othersLeft, icon.getX());
+					othersY = icon.getY();
+				}
+			} else if (child instanceof AbstractWidget widget && widget.getX() < 20 && widget.getY() < 20) {
+				cornerButton = true;
+			}
+		}
+		check(emutils != null && emutils.getX() < othersLeft && emutils.getY() == othersY, "the EMUtils icon is the first of the pause menu's icon buttons");
+		check(!cornerButton, "no EMUtils button is left in the pause menu's top-left corner");
 	}
 
 	private static void setGuiScale(Minecraft client, int guiScale) {
