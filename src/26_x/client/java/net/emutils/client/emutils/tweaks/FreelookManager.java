@@ -15,8 +15,6 @@ public final class FreelookManager {
 	private float playerPitch;
 	private float yawOffset;
 	private float pitchOffset;
-	private double previousMouseX;
-	private double previousMouseY;
 
 	public void setKeyMapping(KeyMapping keyBinding) {
 		this.keyBinding = keyBinding;
@@ -35,8 +33,6 @@ public final class FreelookManager {
 			playerPitch = client.player.getXRot();
 			yawOffset = 0.0F;
 			pitchOffset = 0.0F;
-			previousMouseX = client.mouseHandler.xpos();
-			previousMouseY = client.mouseHandler.ypos();
 			previousCameraType = client.options.getCameraType();
 			if (previousCameraType.isFirstPerson()) {
 				client.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -55,37 +51,28 @@ public final class FreelookManager {
 		return active;
 	}
 
-	public void changeLookDirection(Player player, double cursorDeltaX, double cursorDeltaY) {
+	/**
+	 * Turns the camera instead of the player while Freelook is held, by the mouse movement vanilla would
+	 * turn the player with ({@code LocalPlayer.turn} in {@code MouseHandler.turnPlayer}), so it follows
+	 * sensitivity, inverted axes and the cinematic camera. Turning by the cursor position instead stopped
+	 * at the window edge on 26.3, whose SDL input reports that position clamped to the window (#167).
+	 * Returns whether it took the movement.
+	 */
+	public boolean handleMouseTurn(double yawDelta, double pitchDelta) {
 		if (!active) {
-			player.turn(cursorDeltaX, cursorDeltaY);
-			return;
+			return false;
 		}
-
-		yawOffset = (float) (yawOffset + cursorDeltaX * 0.15D);
-		pitchOffset = Mth.clamp((float) (pitchOffset + cursorDeltaY * 0.15D), -90.0F, 90.0F);
+		// The same scale as Entity.turn.
+		yawOffset += (float) (yawDelta * 0.15D);
+		pitchOffset = Mth.clamp(pitchOffset + (float) (pitchDelta * 0.15D), -90.0F - playerPitch, 90.0F - playerPitch);
+		return true;
 	}
 
+	/** Keeps the player facing where they were while the camera looks around; called every frame. */
 	public void updateCamera(Minecraft client) {
 		if (!active || client.player == null) {
 			return;
 		}
-
-		double mouseX = client.mouseHandler.xpos();
-		double mouseY = client.mouseHandler.ypos();
-		double sensitivity = sensitivity(client);
-		double deltaX = (previousMouseX - mouseX) * sensitivity * 0.15D;
-		double deltaY = (previousMouseY - mouseY) * sensitivity * 0.15D;
-		previousMouseX = mouseX;
-		previousMouseY = mouseY;
-
-		yawOffset -= (float) deltaX;
-		if (client.options.invertMouseY().get()) {
-			pitchOffset += (float) deltaY;
-		} else {
-			pitchOffset -= (float) deltaY;
-		}
-		pitchOffset = Mth.clamp(pitchOffset, -90.0F - playerPitch, 90.0F - playerPitch);
-
 		lockPlayerRotation(client.player);
 	}
 
@@ -95,10 +82,6 @@ public final class FreelookManager {
 
 	public float cameraPitch() {
 		return Mth.clamp(playerPitch + pitchOffset, -90.0F, 90.0F);
-	}
-
-	private static double sensitivity(Minecraft client) {
-		return Math.pow(client.options.sensitivity().get() * 0.6D + 0.2D, 3.0D) * 8.0D;
 	}
 
 	private void lockPlayerRotation(Player player) {

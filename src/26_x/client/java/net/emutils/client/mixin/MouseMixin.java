@@ -17,9 +17,10 @@ public abstract class MouseMixin {
 		method = "turnPlayer(D)V",
 		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V")
 	)
-	private void emutils$turnFreeCamera(LocalPlayer player, double yawDelta, double pitchDelta) {
+	private void emutils$turnFreeCameraOrFreelook(LocalPlayer player, double yawDelta, double pitchDelta) {
 		if (EMUtilsClient.tweaks() == null
-			|| !EMUtilsClient.tweaks().freeCamera().handleMouseTurn(yawDelta, pitchDelta)) {
+			|| !EMUtilsClient.tweaks().freeCamera().handleMouseTurn(yawDelta, pitchDelta)
+			&& !EMUtilsClient.tweaks().freelook().handleMouseTurn(yawDelta, pitchDelta)) {
 			player.turn(yawDelta, pitchDelta);
 		}
 	}

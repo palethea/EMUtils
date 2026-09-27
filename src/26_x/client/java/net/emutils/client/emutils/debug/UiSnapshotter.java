@@ -60,6 +60,7 @@ import net.emutils.client.emutils.render.BeaconRadiusRenderer;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.tweaks.AntiDurabilityBreak;
 import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
+import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
@@ -71,6 +72,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
+import net.emutils.client.mixin.MouseAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -1927,15 +1929,47 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 20, "hud overlay sheet, performance tab");
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Freelook turns all the way around (#167): a full circle of mouse movement, through vanilla's own
+			// turnPlayer, turns the camera 360 degrees while the player keeps facing the same way.
 			case 298 -> {
+				KeyMapping freelookKey = KeyMapping.get("key.emutils.freelook");
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					EMUtilsClient.config().setTweakFreelook(true);
+					client.player.setYRot(0.0F);
+					client.player.setXRot(0.0F);
+					freelookKey.setDown(true);
+				}
+				if (stepTicks == 5) {
+					FreelookManager freelook = EMUtilsClient.tweaks().freelook();
+					MouseAccess mouse = (MouseAccess) client.mouseHandler;
+					double sensitivity = Math.pow(client.options.sensitivity().get() * 0.6 + 0.2, 3.0) * 8.0;
+					float yawBefore = client.player.getYRot();
+					// 24 moves of 15 degrees each, 360 in all.
+					for (int i = 0; i < 24; i++) {
+						mouse.emutils$setAccumulatedDX(100.0 / sensitivity);
+						mouse.emutils$turnPlayer(0.0);
+					}
+					mouse.emutils$setAccumulatedDX(0.0);
+					float turned = freelook.cameraYaw() - yawBefore;
+					check(freelook.isActive() && Math.abs(turned - 360.0F) < 1.0F, "Freelook turns the camera a full 360 degrees (" + turned + ")");
+					check(client.player.getYRot() == yawBefore, "the player keeps facing the same way while Freelook turns the camera");
+					freelookKey.setDown(false);
+					EMUtilsClient.config().setTweakFreelook(false);
+				}
+				if (stepTicks == 8) {
+					next();
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 299 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 299 -> {
+			case 300 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1944,7 +1978,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 300 -> {
+			case 301 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1955,7 +1989,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 301 -> {
+			case 302 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -1966,7 +2000,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 302 -> {
+			case 303 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
