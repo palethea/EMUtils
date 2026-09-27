@@ -88,6 +88,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping openHudLayoutEditorKeyMapping;
 	private static KeyMapping openWaypointsKeyMapping;
 	private static KeyMapping addWaypointKeyMapping;
+	private static KeyMapping copyCoordinatesKeyMapping;
 	private static KeyMapping massDropKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
 	private static KeyMapping nextProfileKeyMapping;
@@ -237,6 +238,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		copyCoordinatesKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.copy_coordinates",
+			VersionedInput.keyboardType(),
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		openGalleryKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.open_gallery",
 			VersionedInput.keyboardType(),
@@ -371,6 +378,9 @@ public class EMUtilsClient implements ClientModInitializer {
 			if (!(current instanceof WaypointsScreen)) {
 				client.gui.setScreen(WaypointsScreen.addWaypoint(current));
 			}
+		}
+		while (copyCoordinatesKeyMapping != null && copyCoordinatesKeyMapping.consumeClick()) {
+			waypointManager.copyCurrentCoordinates(client);
 		}
 		while (openHudLayoutEditorKeyMapping != null && openHudLayoutEditorKeyMapping.consumeClick()) {
 			openHudLayoutEditor(client);

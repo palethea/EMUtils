@@ -9,6 +9,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
@@ -47,7 +48,14 @@ import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
+import net.emutils.client.emutils.render.BeaconRadiusRenderer;
+import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
+import net.emutils.client.emutils.tweaks.AntiDurabilityBreak;
+import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
+import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
@@ -60,12 +68,26 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.protocol.game.ServerboundSetBeaconPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -98,6 +120,12 @@ public final class UiSnapshotter {
 	private static boolean leftWorld;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
+	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
+	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
+	private static int warningsBefore;
+	private static int lightLevelSpotsBefore;
+	private static int lightningSeenAt = -1;
+	private static int beaconLinesBefore;
 
 	private UiSnapshotter() {
 	}
@@ -1433,20 +1461,296 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 15, "menu settings, Effects tab");
 			}
+			// Quick wins (#40, #41, #42, #51), checked in the world with commands (the test world allows them).
+			// Copy Coordinates (#42): the player's position in the Coord Format, or the free camera's.
 			case 255 -> {
+				client.gui.setScreen(null);
+				setGuiScale(client, 2);
+				// Start on the surface: the world is new every run and may spawn the player in a cave,
+				// where beacon beams can't reach the sky.
+				BlockPos spawn = client.player.blockPosition();
+				quickWinsOrigin = new BlockPos(spawn.getX(), client.level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, spawn.getX(), spawn.getZ()), spawn.getZ());
+				command(client, "difficulty peaceful");
+				command(client, "time set day");
+				command(client, "tp @s " + at(0, 0, 0) + " 0 0");
+				EMUtilsClient.config().setWaypointCoordinateFormat(WaypointCoordinateFormat.COMMA);
+				EMUtilsClient.config().setCopyCoordinatesFeedback(true);
+				next();
+			}
+			case 256 -> {
+				if (stepTicks == 10) {
+					EMUtilsClient.waypoint().copyCurrentCoordinates(client);
+					BlockPos pos = client.player.blockPosition();
+					check(pos.equals(quickWinsOrigin), "the player stands on the surface for the quick wins checks: " + pos);
+					String copied = client.keyboardHandler.getClipboard();
+					check((pos.getX() + ", " + pos.getY() + ", " + pos.getZ()).equals(copied), "Copy Coordinates copies the player's position in the Coord Format (" + copied + ")");
+				}
+				captureAfter(client, 20, "copy coordinates, chat feedback");
+			}
+			case 257 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setTweakFreeCamera(true);
+				}
+				if (stepTicks == 10) {
+					BlockPos camera = EMUtilsClient.tweaks().freeCamera().cameraBlockPosition();
+					EMUtilsClient.waypoint().copyCurrentCoordinates(client);
+					String copied = client.keyboardHandler.getClipboard();
+					check(camera != null && WaypointCoordinates.format(camera.getX(), camera.getY(), camera.getZ(), WaypointCoordinateFormat.COMMA).equals(copied), "with Free Camera on, Copy Coordinates copies the camera's position (" + copied + ")");
+					EMUtilsClient.config().setTweakFreeCamera(false);
+					EMUtilsClient.config().setWaypointCoordinateFormat(WaypointCoordinateFormat.PLAIN);
+					next();
+				}
+			}
+			case 258 -> openSheetAndCapture(client, "waypoints", "waypoints sheet, copy coords feedback");
+			// Anti Durability Break (#40): Protect At in durability and percent, and the low durability warning.
+			case 259 -> {
+				client.gui.setScreen(null);
+				EMUtilsConfig config = EMUtilsClient.config();
+				config.resetAntiDurabilityBreakDefaults();
+				config.setTweakAntiDurabilityBreak(true);
+				config.setAntiDurabilityWarning(true);
+				warningsBefore = AntiDurabilityBreak.warningsForSnapshot();
+				command(client, "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe[damage=240]");
+				next();
+			}
+			case 260 -> waitForCheck(client.player.getMainHandItem().is(Items.IRON_PICKAXE), 60, "the worn test pickaxe arrives in hand");
+			case 261 -> {
+				if (stepTicks == 1) {
+					// 10 of 250 durability left.
+					ItemStack pickaxe = client.player.getMainHandItem();
+					EMUtilsConfig config = EMUtilsClient.config();
+					check(AntiDurabilityBreak.warningsForSnapshot() > warningsBefore, "picking up a pickaxe below Warn At shows the low durability warning");
+					check(!AntiDurabilityBreak.protects(pickaxe), "at the default Protect At of 5, a pickaxe with 10 left can still be used");
+					config.setAntiDurabilityProtectAt(10);
+					check(AntiDurabilityBreak.protects(pickaxe), "Protect At 10 protects a pickaxe with 10 left");
+					config.setAntiDurabilityUnit(AntiDurabilityUnit.PERCENT);
+					config.setAntiDurabilityProtectAt(4);
+					boolean fourPercent = AntiDurabilityBreak.protects(pickaxe);
+					config.setAntiDurabilityProtectAt(3);
+					check(fourPercent && !AntiDurabilityBreak.protects(pickaxe), "in Percent, a pickaxe at 4% is protected at 4% but not at 3%");
+				}
+				captureAfter(client, 3, "anti durability, low durability warning");
+			}
+			case 262 -> openSheetAndCapture(client, "anti_durability_break", "anti durability sheet, percent");
+			case 263 -> {
+				EMUtilsClient.config().resetAntiDurabilityBreakDefaults();
+				command(client, "item replace entity @s weapon.mainhand with minecraft:air");
+				client.gui.setScreen(null);
+				next();
+			}
+			// Clear Weather's Hide Thunder Flash and Hide Lightning Bolts (#41), with real lightning at night.
+			case 264 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				config.setTweakClearWeather(true);
+				config.setTweakClearWeatherHideThunderFlash(true);
+				SkyFlashAccess sky = (SkyFlashAccess) client.level;
+				client.level.setSkyFlashTime(5);
+				boolean hidden = sky.emutils$visibleSkyFlashTime() == 0;
+				config.setTweakClearWeatherHideThunderFlash(false);
+				boolean shown = sky.emutils$visibleSkyFlashTime() == 5 || client.options.hideLightningFlash().get();
+				client.level.setSkyFlashTime(0);
+				check(hidden && shown, "Hide Thunder Flash keeps the sky from flashing, and turning it off brings the flash back");
+				config.resetClearWeatherDefaults();
+				command(client, "time set midnight");
+				command(client, "tp @s ~ ~ ~ 0 -15");
+				next();
+			}
+			case 265 -> {
+				if (stepTicks == 20) {
+					command(client, "execute at @s anchored eyes run summon minecraft:lightning_bolt ^ ^ ^16");
+				}
+				if (stepTicks > 20) {
+					captureLightning(client, "lightning, flash and bolt shown");
+				}
+			}
+			case 266 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setTweakClearWeather(true);
+					config.setTweakClearWeatherHideThunderFlash(true);
+					config.setTweakClearWeatherHideLightningBolts(true);
+				}
+				// Let the first bolt fade before striking again.
+				if (stepTicks == 60) {
+					command(client, "execute at @s anchored eyes run summon minecraft:lightning_bolt ^ ^ ^16");
+				}
+				if (stepTicks > 60) {
+					captureLightning(client, "lightning, flash and bolt hidden");
+				}
+			}
+			case 267 -> openSheetAndCapture(client, "clear_weather", "clear weather sheet");
+			case 268 -> {
+				EMUtilsClient.config().resetClearWeatherDefaults();
+				command(client, "time set day");
+				client.gui.setScreen(null);
+				next();
+			}
+			// Beacon Radius Outline and Light Level Overlay caps and filters (#51).
+			case 269 -> {
+				// Close enough to the player to open it: the pyramid floats two blocks up, beside them.
+				EMUtilsClient.config().resetBeaconRadiusDefaults();
+				EMUtilsClient.config().setBeaconRadiusOutline(true);
+				command(client, "fill " + at(2, 2, -1) + " " + at(4, 2, 1) + " minecraft:iron_block");
+				command(client, "setblock " + at(3, 3, 0) + " minecraft:beacon");
+				// A second beacon next to it, so the two cages overlap.
+				command(client, "fill " + at(2, 2, 3) + " " + at(4, 2, 5) + " minecraft:iron_block");
+				command(client, "setblock " + at(3, 3, 4) + " minecraft:beacon");
+				command(client, "tp @s ~ ~ ~ -90 -30");
+				next();
+			}
+			case 270 -> {
+				waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 2, 300, "beacons on iron pyramids get an outline");
+				if (step != 270) {
+					List<Integer> colors = BeaconRadiusRenderer.outlineColorsForSnapshot();
+					check(colors.contains(0xFFFFFFFF) && colors.contains(0xFFB4B4B4), "of two touching beacons without an effect, one cage is white and the other light gray: " + hexColors(colors));
+				}
+			}
+			case 271 -> {
+				// Turn the camera inside the cage, looking up, where lines run behind the camera: each
+				// frame should show the same still lines, not ones jumping across the screen.
+				if (stepTicks >= 10) {
+					client.player.setYRot(-90.0F + (stepTicks - 10) * 6.0F);
+					client.player.setXRot(-55.0F);
+				}
+				if (stepTicks >= 12 && stepTicks % 2 == 0) {
+					grab(client, "beacon radius outline, turning " + (stepTicks - 10) / 2);
+				}
+				if (stepTicks >= 20) {
+					next();
+				}
+			}
+			case 272 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setBeaconRadiusActiveOnly(true);
+				}
+				if (stepTicks == 3) {
+					check(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() == 0, "Only Active Beacons skips a beacon without an effect");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:iron_ingot");
+					next();
+				}
+			}
+			case 273 -> waitForCheck(client.player.getMainHandItem().is(Items.IRON_INGOT), 60, "an iron ingot to pay the beacon with arrives in hand");
+			// Pick the effect the way a player does: open the beacon, pay, and confirm. The server doesn't
+			// send the beacon's new effect back, so this is what the outline has to notice.
+			case 274 -> {
+				if (stepTicks == 1) {
+					BlockPos beacon = quickWinsOrigin.offset(3, 3, 0);
+					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(beacon), Direction.WEST, beacon, false));
+				}
+				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen, 40, "right-clicking the beacon opens it");
+			}
+			case 275 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof BeaconScreen screen) {
+					// Beacon menu slots: 0 is the payment, 28-36 the hotbar.
+					int hand = 28 + client.player.getInventory().getSelectedSlot();
+					client.gameMode.handleContainerInput(screen.getMenu().containerId, hand, 0, ContainerInput.PICKUP, client.player);
+					client.gameMode.handleContainerInput(screen.getMenu().containerId, 0, 0, ContainerInput.PICKUP, client.player);
+				}
+				if (stepTicks == 5) {
+					// What the beacon screen's Done button does.
+					client.getConnection().send(new ServerboundSetBeaconPacket(Optional.of(MobEffects.HASTE), Optional.empty()));
+					client.player.closeContainer();
+					next();
+				}
+			}
+			case 276 -> waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, 60, "Only Active Beacons outlines a beacon right after you pick its effect in the beacon screen");
+			case 277 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setBeaconRadiusActiveOnly(false);
+					client.player.setYRot(-60.0F);
+					client.player.setXRot(-45.0F);
+				}
+				if (stepTicks == 3) {
+					List<Integer> colors = BeaconRadiusRenderer.outlineColorsForSnapshot();
+					int haste = 0xFF000000 | MobEffects.HASTE.value().getColor();
+					check(colors.contains(haste) && colors.contains(0xFFFFFFFF), "the Haste beacon's cage is Haste's color and the other stays white: " + hexColors(colors));
+				}
+				if (stepTicks == 10) {
+					grab(client, "beacon radius outline, haste next to no effect");
+					EMUtilsClient.config().setBeaconRadiusRange(2);
+				}
+				if (stepTicks == 12) {
+					check(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, "a beacon in the player's chunk stays outlined at the smallest Max Distance");
+					next();
+				}
+			}
+			case 278 -> {
+				if (stepTicks == 1) {
+					beaconLinesBefore = BeaconRadiusRenderer.lineCountForSnapshot();
+					EMUtilsClient.config().setBeaconRadiusGridSpacing(4);
+					EMUtilsClient.config().setBeaconRadiusLineWidth(3);
+				}
+				if (stepTicks == 3) {
+					int lines = BeaconRadiusRenderer.lineCountForSnapshot();
+					check(lines > beaconLinesBefore * 3, "a 4-block Grid Spacing draws a much tighter grid (" + lines + " lines instead of " + beaconLinesBefore + ")");
+				}
+				if (stepTicks == 10) {
+					grab(client, "beacon radius outline, 4-block grid, 3 px lines");
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("beacon_radius_outline");
+				}
+				captureAfter(client, 35, "beacon radius sheet");
+			}
+			case 279 -> {
+				command(client, "fill " + at(2, 2, -1) + " " + at(4, 3, 5) + " minecraft:air");
+				EMUtilsClient.config().resetBeaconRadiusDefaults();
+				EMUtilsClient.config().resetLightLevelDefaults();
+				EMUtilsClient.config().setLightLevelOverlay(true);
+				// A torch where the player stands: lit numbers nearby, dark spots further out.
+				command(client, "setblock " + at(0, 0, 0) + " minecraft:torch");
+				command(client, "tp @s ~ ~ ~ -90 40");
+				client.gui.setScreen(null);
+				next();
+			}
+			case 280 -> waitForCheck(LightLevelOverlayRenderer.numberCountsForSnapshot()[0] > 0 && LightLevelOverlayRenderer.numberCountsForSnapshot()[1] > 0, 100, "the light level overlay numbers lit and dark spots");
+			case 281 -> captureAfter(client, 10, "light level overlay, all spots");
+			case 282 -> {
+				if (stepTicks == 1) {
+					lightLevelSpotsBefore = LightLevelOverlayRenderer.numberCountsForSnapshot()[0];
+					EMUtilsClient.config().setLightLevelSpawnableOnly(true);
+				}
+				if (stepTicks == 3) {
+					int[] counts = LightLevelOverlayRenderer.numberCountsForSnapshot();
+					check(counts[0] > 0 && counts[1] == 0 && counts[0] < lightLevelSpotsBefore, "Only Spawnable Spots leaves only the spots at block light 0 (" + counts[0] + " of " + lightLevelSpotsBefore + ")");
+					lightLevelSpotsBefore = counts[0];
+				}
+				captureAfter(client, 15, "light level overlay, only spawnable spots");
+			}
+			case 283 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setLightLevelRange(8);
+				}
+				if (stepTicks == 3) {
+					int spots = LightLevelOverlayRenderer.numberCountsForSnapshot()[0];
+					check(spots < lightLevelSpotsBefore, "a smaller Range scans fewer spots (" + spots + " instead of " + lightLevelSpotsBefore + ")");
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("light_level_overlay");
+				}
+				captureAfter(client, 25, "light level sheet, range 8");
+			}
+			case 284 -> {
+				command(client, "setblock " + at(0, 0, 0) + " minecraft:air");
+				command(client, "tp @s ~ ~ ~ 0 0");
+				EMUtilsClient.config().resetLightLevelDefaults();
+				client.gui.setScreen(null);
+				next();
+			}
+			case 285 -> {
 				deleteTestScripts();
 				EMUtilsClient.config().resetMenuSettings();
 				client.gui.setScreen(null);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 256 -> {
+			case 286 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 257 -> {
+			case 287 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1455,7 +1759,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 258 -> {
+			case 288 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -1857,6 +2161,54 @@ public final class UiSnapshotter {
 			return Files.getLastModifiedTime(EMUtilsPaths.configFile()).toMillis();
 		} catch (IOException exception) {
 			return -1L;
+		}
+	}
+
+	private static String hexColors(List<Integer> colors) {
+		return colors.stream().map(color -> String.format(Locale.ROOT, "#%08X", color)).toList().toString();
+	}
+
+	/** Runs a command as the player; the test world is created with commands allowed. */
+	private static void command(Minecraft client, String command) {
+		if (client.getConnection() != null) {
+			client.getConnection().sendCommand(command);
+		}
+	}
+
+	/** Absolute coordinates, as command text, of a block offset from where the quick wins section began. */
+	private static String at(int dx, int dy, int dz) {
+		return (quickWinsOrigin.getX() + dx) + " " + (quickWinsOrigin.getY() + dy) + " " + (quickWinsOrigin.getZ() + dz);
+	}
+
+	private static void openSheetAndCapture(Minecraft client, String featureId, String label) {
+		if (stepTicks == 1) {
+			SettingsScreen settings = new SettingsScreen(null);
+			client.gui.setScreen(settings);
+			settings.openSheet(featureId);
+		}
+		captureAfter(client, 20, label);
+	}
+
+	/** Takes a screenshot the frame after a lightning bolt shows up, while it still flashes. */
+	private static void captureLightning(Minecraft client, String label) {
+		boolean bolt = false;
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (entity instanceof LightningBolt) {
+				bolt = true;
+				break;
+			}
+		}
+		if (bolt && lightningSeenAt < 0) {
+			lightningSeenAt = stepTicks;
+		}
+		if (lightningSeenAt >= 0 && stepTicks > lightningSeenAt) {
+			lightningSeenAt = -1;
+			grab(client, label);
+			next();
+		} else if (stepTicks > 200) {
+			check(false, "a summoned lightning bolt showed up for: " + label);
+			lightningSeenAt = -1;
+			next();
 		}
 	}
 

@@ -522,6 +522,10 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_clear_weather_hide_snow";
     public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS =
         "emutils.option.tweak_clear_weather_hide_rain_effects";
+    public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_THUNDER_FLASH =
+        "emutils.option.tweak_clear_weather_hide_thunder_flash";
+    public static final String OPTION_TWEAK_CLEAR_WEATHER_HIDE_LIGHTNING_BOLTS =
+        "emutils.option.tweak_clear_weather_hide_lightning_bolts";
     public static final String OPTION_TWEAK_NO_FIRE_OVERLAY =
         "emutils.option.tweak_no_fire_overlay";
     public static final String OPTION_TWEAK_LOW_FIRE_OVERLAY =
@@ -823,6 +827,40 @@ public final class EMUtilsTexts {
         "emutils.waypoint.none_world";
     public static final String WAYPOINT_COORDS_COPIED =
         "emutils.waypoint.coords_copied";
+    public static final String COORDS_COPIED = "emutils.coords_copied";
+    public static final String OPTION_BEACON_RADIUS_RANGE =
+        "emutils.option.beacon_radius_range";
+    public static final String OPTION_BEACON_RADIUS_ACTIVE_ONLY =
+        "emutils.option.beacon_radius_active_only";
+    public static final String OPTION_BEACON_RADIUS_GRID_SPACING =
+        "emutils.option.beacon_radius_grid_spacing";
+    public static final String OPTION_BEACON_RADIUS_LINE_WIDTH =
+        "emutils.option.beacon_radius_line_width";
+    public static final String SUFFIX_PIXELS = "emutils.suffix.pixels";
+    public static final String OPTION_LIGHT_LEVEL_RANGE =
+        "emutils.option.light_level_range";
+    public static final String OPTION_LIGHT_LEVEL_SPAWNABLE_ONLY =
+        "emutils.option.light_level_spawnable_only";
+    public static final String SUFFIX_CHUNKS = "emutils.suffix.chunks";
+    public static final String SUFFIX_BLOCKS = "emutils.suffix.blocks";
+    public static final String OPTION_ANTI_DURABILITY_UNIT =
+        "emutils.option.anti_durability_unit";
+    public static final String OPTION_ANTI_DURABILITY_UNIT_DURABILITY =
+        "emutils.option.anti_durability_unit.durability";
+    public static final String OPTION_ANTI_DURABILITY_UNIT_PERCENT =
+        "emutils.option.anti_durability_unit.percent";
+    public static final String OPTION_ANTI_DURABILITY_PROTECT_AT =
+        "emutils.option.anti_durability_protect_at";
+    public static final String OPTION_ANTI_DURABILITY_WARNING =
+        "emutils.option.anti_durability_warning";
+    public static final String OPTION_ANTI_DURABILITY_WARN_AT =
+        "emutils.option.anti_durability_warn_at";
+    public static final String ANTI_DURABILITY_WARNING =
+        "emutils.anti_durability.warning";
+    public static final String COORDS_COPIED_CAMERA =
+        "emutils.coords_copied.camera";
+    public static final String OPTION_COPY_COORDINATES_FEEDBACK =
+        "emutils.option.copy_coordinates_feedback";
     public static final String WAYPOINT_COORD_FORMAT_PLAIN =
         "emutils.waypoint.coord_format.plain";
     public static final String WAYPOINT_COORD_FORMAT_COMMA =

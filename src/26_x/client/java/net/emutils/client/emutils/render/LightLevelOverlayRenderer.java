@@ -36,7 +36,6 @@ public final class LightLevelOverlayRenderer {
 	private static final Identifier NUMBER_TEXTURE =
 		Identifier.fromNamespaceAndPath("emutils", "textures/misc/light_level_numbers.png");
 	private static final RenderType NUMBER_RENDER_TYPE = VersionedRenderTypes.lightLevelNumbers(NUMBER_TEXTURE);
-	private static final int RANGE = 24;
 	private static final int SPAWN_LIGHT_LEVEL = 0;
 	private static final double MARKER_MIN = 0.08D;
 	private static final double MARKER_MAX = 0.92D;
@@ -48,12 +47,16 @@ public final class LightLevelOverlayRenderer {
 
 	@Nullable
 	private static KeyMapping keyMapping;
-	private static List<Line> cachedLines = List.of();
+	private static final WorldLines.Batch LINES = new WorldLines.Batch();
+	private static List<WorldLines.Line> cachedLines = List.of();
 	private static List<NumberQuad> cachedNumbers = List.of();
 	@Nullable
 	private static ClientLevel cachedLevel;
 	@Nullable
 	private static BlockPos lastUpdatePos;
+	/** The Range and Spawnable Only settings the cache was built with; changing either rebuilds it. */
+	private static int cachedRange = -1;
+	private static boolean cachedSpawnableOnly;
 
 	private LightLevelOverlayRenderer() {
 	}
@@ -94,6 +97,17 @@ public final class LightLevelOverlayRenderer {
 		lastUpdatePos = null;
 	}
 
+	/** How many spots the overlay currently numbers, and how many of them are lit, for UI snapshot checks. */
+	public static int[] numberCountsForSnapshot() {
+		int lit = 0;
+		for (NumberQuad number : cachedNumbers) {
+			if (number.lightLevel() > SPAWN_LIGHT_LEVEL) {
+				lit++;
+			}
+		}
+		return new int[] {cachedNumbers.size(), lit};
+	}
+
 	/** MiniHUD-style packet invalidation: only rebuild for chunk changes near the camera. */
 	public static void onChunkChanged(int chunkX, int chunkZ) {
 		Entity cameraEntity = Minecraft.getInstance().getCameraEntity();
@@ -111,20 +125,24 @@ public final class LightLevelOverlayRenderer {
 	private static boolean needsUpdate(ClientLevel level, BlockPos center) {
 		return cachedLevel != level
 			|| lastUpdatePos == null
+			|| cachedRange != EMUtilsClient.config().lightLevelRange()
+			|| cachedSpawnableOnly != EMUtilsClient.config().lightLevelSpawnableOnly()
 			|| Math.abs(center.getX() - lastUpdatePos.getX()) > 4
 			|| Math.abs(center.getY() - lastUpdatePos.getY()) > 4
 			|| Math.abs(center.getZ() - lastUpdatePos.getZ()) > 4;
 	}
 
 	private static void refreshCache(ClientLevel level, BlockPos center) {
-		List<Line> lines = new ArrayList<>();
+		List<WorldLines.Line> lines = new ArrayList<>();
 		List<NumberQuad> numbers = new ArrayList<>();
-		int minX = center.getX() - RANGE;
-		int maxX = center.getX() + RANGE;
-		int minZ = center.getZ() - RANGE;
-		int maxZ = center.getZ() + RANGE;
-		int minY = Math.max(level.getMinY() + 1, center.getY() - RANGE);
-		int maxY = Math.min(level.getMaxY() - 2, center.getY() + RANGE);
+		int range = EMUtilsClient.config().lightLevelRange();
+		boolean spawnableOnly = EMUtilsClient.config().lightLevelSpawnableOnly();
+		int minX = center.getX() - range;
+		int maxX = center.getX() + range;
+		int minZ = center.getZ() - range;
+		int maxZ = center.getZ() + range;
+		int minY = Math.max(level.getMinY() + 1, center.getY() - range);
+		int maxY = Math.min(level.getMaxY() - 2, center.getY() + range);
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos below = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos above = new BlockPos.MutableBlockPos();
@@ -154,6 +172,9 @@ public final class LightLevelOverlayRenderer {
 							}
 
 							int blockLight = level.getBrightness(LightLayer.BLOCK, pos);
+							if (spawnableOnly && blockLight > SPAWN_LIGHT_LEVEL) {
+								continue;
+							}
 							int skyLight = level.getBrightness(LightLayer.SKY, pos);
 							numbers.add(new NumberQuad(
 								x + 0.26D,
@@ -175,6 +196,8 @@ public final class LightLevelOverlayRenderer {
 		cachedLines = List.copyOf(lines);
 		cachedNumbers = List.copyOf(numbers);
 		cachedLevel = level;
+		cachedRange = range;
+		cachedSpawnableOnly = spawnableOnly;
 		lastUpdatePos = center.immutable();
 	}
 
@@ -190,7 +213,7 @@ public final class LightLevelOverlayRenderer {
 			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE);
 	}
 
-	private static void addSquare(List<Line> lines, double x, double y, double z, int color) {
+	private static void addSquare(List<WorldLines.Line> lines, double x, double y, double z, int color) {
 		addLine(lines, x + MARKER_MIN, y, z + MARKER_MIN, x + MARKER_MIN, y, z + MARKER_MAX, color, 1.5F);
 		addLine(lines, x + MARKER_MIN, y, z + MARKER_MAX, x + MARKER_MAX, y, z + MARKER_MAX, color, 1.5F);
 		addLine(lines, x + MARKER_MAX, y, z + MARKER_MAX, x + MARKER_MAX, y, z + MARKER_MIN, color, 1.5F);
@@ -198,10 +221,10 @@ public final class LightLevelOverlayRenderer {
 	}
 
 	private static void addLine(
-		List<Line> lines, double x1, double y1, double z1, double x2, double y2, double z2,
+		List<WorldLines.Line> lines, double x1, double y1, double z1, double x2, double y2, double z2,
 		int color, float width
 	) {
-		lines.add(new Line(x1, y1, z1, x2, y2, z2, color, width));
+		lines.add(new WorldLines.Line(x1, y1, z1, x2, y2, z2, color, width));
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -211,14 +234,13 @@ public final class LightLevelOverlayRenderer {
 		Vec3 cameraPosition = context.levelState().cameraRenderState.pos;
 		PoseStack matrices = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
+		WorldLines.Batch lines = LINES.prepare(cachedLines, context.levelState().cameraRenderState);
+		if (!lines.isEmpty()) {
+			collector.submitCustomGeometry(matrices, RenderTypes.lines(), lines::render);
+		}
 		matrices.pushPose();
 		try {
 			matrices.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-			collector.submitCustomGeometry(matrices, RenderTypes.lines(), (pose, buffer) -> {
-				for (Line line : cachedLines) {
-					line.render(buffer, pose);
-				}
-			});
 			collector.submitCustomGeometry(matrices, NUMBER_RENDER_TYPE, (pose, buffer) -> {
 				for (NumberQuad number : cachedNumbers) {
 					number.render(buffer, pose);
@@ -250,24 +272,6 @@ public final class LightLevelOverlayRenderer {
 				.setColor(color)
 				.setUv(u, v)
 				.setLight(LightCoordsUtil.FULL_BRIGHT);
-		}
-	}
-
-	private record Line(
-		double x1, double y1, double z1, double x2, double y2, double z2, int color, float width
-	) {
-		private void render(VertexConsumer buffer, PoseStack.Pose pose) {
-			float dx = (float) (x2 - x1);
-			float dy = (float) (y2 - y1);
-			float dz = (float) (z2 - z1);
-			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-			float nx = length == 0.0F ? 0.0F : dx / length;
-			float ny = length == 0.0F ? 1.0F : dy / length;
-			float nz = length == 0.0F ? 0.0F : dz / length;
-			buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
 		}
 	}
 }

@@ -204,6 +204,41 @@ public final class WaypointManager {
         }
     }
 
+    /**
+     * Copies where you are, in the waypoint coordinate format: the free camera's
+     * position while Free Camera is active, otherwise the player's.
+     */
+    public void copyCurrentCoordinates(Minecraft client) {
+        if (client == null || client.player == null || client.keyboardHandler == null) {
+            return;
+        }
+
+        BlockPos cameraPos = EMUtilsClient.tweaks() == null
+            ? null
+            : EMUtilsClient.tweaks().freeCamera().cameraBlockPosition();
+        BlockPos pos = cameraPos != null ? cameraPos : client.player.blockPosition();
+        String text = WaypointCoordinates.format(
+            pos.getX(),
+            pos.getY(),
+            pos.getZ(),
+            EMUtilsClient.config().waypointCoordinateFormat()
+        );
+        client.keyboardHandler.setClipboard(text);
+        if (EMUtilsClient.config().copyCoordinatesFeedback() && client.gui != null) {
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
+                .addClientSystemMessage(
+                    EmUtilsChatPrefix.chat(
+                        Component.translatable(
+                            cameraPos != null
+                                ? EMUtilsTexts.COORDS_COPIED_CAMERA
+                                : EMUtilsTexts.COORDS_COPIED,
+                            text
+                        ).withStyle(ChatFormatting.GREEN)
+                    )
+                );
+        }
+    }
+
     public void clear(Minecraft client, long timestamp) {
         clear(client, timestamp, WaypointMessage::cleared);
     }

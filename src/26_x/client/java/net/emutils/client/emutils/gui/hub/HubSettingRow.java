@@ -15,14 +15,18 @@ public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRo
 	record Toggle(String labelKey, BooleanSupplier getter, Consumer<Boolean> setter) implements HubSettingRow {
 	}
 
+	/** A number slider; {@code suffixKey} gives the unit shown after the value, and may change with other settings. */
 	record Slider(
 		String labelKey,
-		String suffixKey,
+		Supplier<String> suffixKey,
 		int min,
 		int max,
 		IntSupplier getter,
 		IntConsumer setter
 	) implements HubSettingRow {
+		public Slider(String labelKey, String suffixKey, int min, int max, IntSupplier getter, IntConsumer setter) {
+			this(labelKey, () -> suffixKey, min, max, getter, setter);
+		}
 	}
 
 	/**

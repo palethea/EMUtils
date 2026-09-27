@@ -98,6 +98,8 @@ public final class SmokeLaunchVerifier {
 			if (screen instanceof CreateWorldScreen createWorldScreen) {
 				clickedCreateWorld = true;
 				createWorldScreen.getUiState().setName(TEST_WORLD_NAME);
+				// UI snapshots set up their checks with commands, such as building a beacon.
+				createWorldScreen.getUiState().setAllowCommands(true);
 				invokeCreateWorld(createWorldScreen);
 			}
 		}
