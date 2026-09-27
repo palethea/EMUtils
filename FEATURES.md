@@ -67,12 +67,13 @@ Hold a configurable keybind for OptiFine-style zoom.
 
 Show third-party player capes from supported providers.
 
-- Preferred Provider: choose which provider to prefer when more than one cape is available.
-- OptiFine: enable OptiFine capes.
-- LabyMod: enable LabyMod capes.
-- MinecraftCapes: enable MinecraftCapes capes.
-- Cosmetica: enable Cosmetica capes: the cape of the outfit a Cosmetica 2 user wears, animated when the cape is.
-- Cloaks+: enable Cloaks+ capes.
+- Priority List: every provider and the official Minecraft cape in one list you order with the up and down arrows, each with its own switch. For each player the first source in the list that has a cape for them wins, so a provider without a cape for someone falls through to the next. By default the providers come first and Minecraft last, so a provider's cape replaces an official one.
+  - Minecraft: the official cape. Move it above a provider to let official capes win over that provider's, or switch it off to hide official capes.
+  - OptiFine: OptiFine capes.
+  - LabyMod: LabyMod capes.
+  - Cosmetica: the cape of the outfit a Cosmetica 2 user wears, animated when the cape is.
+  - MinecraftCapes: MinecraftCapes capes.
+  - Cloaks+: Cloaks+ capes.
 
 ## HUD
 

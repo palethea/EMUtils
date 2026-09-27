@@ -27,6 +27,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -51,6 +52,8 @@ final class SettingsSheet {
 	/** Choices use a segmented control when they have at most this many options and fit on one line. */
 	private static final int MAX_SEGMENTS = 4;
 	private static final int KEYS_HEADING = 16;
+	/** The move up and move down buttons of a {@link HubSettingRow.Ranked} row. */
+	private static final int RANK_BUTTON = 16;
 
 	private final Font font;
 	private final UiAnim anim;
@@ -368,6 +371,9 @@ final class SettingsSheet {
 		if (row instanceof HubSettingRow.Toggle) {
 			return UiWidgets.SWITCH_WIDTH + 10;
 		}
+		if (row instanceof HubSettingRow.Ranked) {
+			return UiWidgets.SWITCH_WIDTH + 10 + (RANK_BUTTON + 2) * 2 + 4;
+		}
 		if (row instanceof HubSettingRow.Rgb) {
 			return SWATCH + 10;
 		}
@@ -404,6 +410,9 @@ final class SettingsSheet {
 	private static @Nullable String labelKey(HubSettingRow row) {
 		if (row instanceof HubSettingRow.Toggle toggle) {
 			return toggle.labelKey();
+		}
+		if (row instanceof HubSettingRow.Ranked ranked) {
+			return ranked.labelKey();
 		}
 		if (row instanceof HubSettingRow.Slider slider) {
 			return slider.labelKey();
@@ -473,6 +482,12 @@ final class SettingsSheet {
 		}
 
 		Component label = Component.translatable(labelKey(row));
+		if (row instanceof HubSettingRow.Ranked ranked) {
+			// Its place in the list, before the name.
+			Component place = Component.literal(ranked.position() + ".");
+			UiText.drawCentered(context, font, place, UiText.Size.BOLD, left, labelCenter, theme.muted());
+			left += UiText.width(font, place, UiText.Size.BOLD) + 5;
+		}
 		UiText.drawCentered(context, font, UiText.ellipsize(font, label, UiText.Size.BOLD, right - left - inlineControlWidth(row)), UiText.Size.BOLD, left, labelCenter, theme.text());
 		int textTop = labelCenter + 6 + 3;
 		for (int i = 0; i < box.description.size(); i++) {
@@ -486,6 +501,17 @@ final class SettingsSheet {
 			box.setControl(box.x, box.y, box.width, box.height);
 			float on = anim.transition("row-switch:" + toggle.labelKey(), toggle.getter().getAsBoolean(), 0.18F);
 			UiWidgets.toggle(context, theme, toggleX, toggleY, on, contains(mouseX, mouseY, toggleX, toggleY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT) ? 1.0F : 0.0F);
+		} else if (row instanceof HubSettingRow.Ranked ranked) {
+			int toggleX = right - UiWidgets.SWITCH_WIDTH;
+			int toggleY = labelCenter - UiWidgets.SWITCH_HEIGHT / 2;
+			box.setControl(box.x, box.y, box.width, box.height);
+			float on = anim.transition("row-switch:" + ranked.labelKey(), ranked.getter().getAsBoolean(), 0.18F);
+			UiWidgets.toggle(context, theme, toggleX, toggleY, on, contains(mouseX, mouseY, toggleX, toggleY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT) ? 1.0F : 0.0F);
+			box.rankDownX = toggleX - 10 - RANK_BUTTON;
+			box.rankUpX = box.rankDownX - 2 - RANK_BUTTON;
+			box.rankY = labelCenter - RANK_BUTTON / 2;
+			drawRankButton(context, theme, box.rankUpX, box.rankY, HubIcons.CHEVRON_UP, ranked.moveUp() != null, mouseX, mouseY);
+			drawRankButton(context, theme, box.rankDownX, box.rankY, HubIcons.CHEVRON_DOWN, ranked.moveDown() != null, mouseX, mouseY);
 		} else if (row instanceof HubSettingRow.Slider slider) {
 			Component value = sliderValue(slider);
 			int valueWidth = UiText.width(font, value, UiText.Size.LABEL) + 10;
@@ -510,6 +536,13 @@ final class SettingsSheet {
 			UiShapes.roundedRect(context, swatchX - 1, swatchY - 1, SWATCH + 2, SWATCH + 2, 5, theme.line());
 			UiShapes.roundedRect(context, swatchX, swatchY, SWATCH, SWATCH, 4, 0xFF000000 | rgb.getter().getAsInt());
 		}
+	}
+
+	/** A move up or move down button of a ranked row; dimmed where the entry can't move that way. */
+	private void drawRankButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, Identifier icon, boolean enabled, int mouseX, int mouseY) {
+		boolean hovered = enabled && contains(mouseX, mouseY, x - 1, y - 2, RANK_BUTTON + 2, RANK_BUTTON + 4);
+		int color = !enabled ? UiTheme.fade(theme.muted(), 0.4F) : hovered ? theme.text() : theme.textSecondary();
+		UiWidgets.ghostIconButton(context, theme, x, y, RANK_BUTTON, icon, color, hovered ? 1.0F : 0.0F);
 	}
 
 	/**
@@ -716,6 +749,19 @@ final class SettingsSheet {
 		HubSettingRow row = box.row;
 		if (row instanceof HubSettingRow.Toggle toggle) {
 			toggle.setter().accept(!toggle.getter().getAsBoolean());
+		} else if (row instanceof HubSettingRow.Ranked ranked) {
+			// The arrows move it; anywhere else on the row flips its switch, like a toggle row.
+			if (contains(mouseX, mouseY, box.rankUpX - 1, box.rankY - 2, RANK_BUTTON + 2, RANK_BUTTON + 4)) {
+				if (ranked.moveUp() != null) {
+					ranked.moveUp().run();
+				}
+			} else if (contains(mouseX, mouseY, box.rankDownX - 1, box.rankY - 2, RANK_BUTTON + 2, RANK_BUTTON + 4)) {
+				if (ranked.moveDown() != null) {
+					ranked.moveDown().run();
+				}
+			} else {
+				ranked.setter().accept(!ranked.getter().getAsBoolean());
+			}
 		} else if (row instanceof HubSettingRow.Slider slider) {
 			if (contains(mouseX, mouseY, box.controlX, box.controlY - 4, box.controlWidth, box.controlHeight + 8)) {
 				draggingSlider = slider;
@@ -895,6 +941,10 @@ final class SettingsSheet {
 		/** Where the first dot of a swatches row is. */
 		private int swatchX;
 		private int swatchY;
+		/** Where a ranked row's move up and move down buttons are. */
+		private int rankUpX;
+		private int rankDownX;
+		private int rankY;
 
 		private RowBox(@Nullable HubSettingRow row, int top) {
 			this.row = row;

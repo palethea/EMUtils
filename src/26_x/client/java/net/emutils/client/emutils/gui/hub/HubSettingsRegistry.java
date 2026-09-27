@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.capes.CapePreferredProvider;
+import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
@@ -556,19 +556,27 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CUSTOM_CAPES, config::customCapes, config::setCustomCapes));
-		rows.add(HubSettingRow.Cycle.ofEnum(
-			EMUtilsTexts.OPTION_CAPE_PREFERRED_PROVIDER,
-			config::capePreferredProvider,
-			config::setCapePreferredProvider,
-			CapePreferredProvider.class,
-			value -> Component.translatable(value.labelKey())
-		));
 		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_OPTIFINE, config::capeOptifine, config::setCapeOptifine));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_LABYMOD, config::capeLabyMod, config::setCapeLabyMod));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_MINECRAFTCAPES, config::capeMinecraftCapes, config::setCapeMinecraftCapes));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_COSMETICA, config::capeCosmetica, config::setCapeCosmetica));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_CAPE_CLOAKSPLUS, config::capeCloaksPlus, config::setCapeCloaksPlus));
+		// The priority list (#52): the first entry with a cape for a player wins, Minecraft being the
+		// official cape. Moving an entry rebuilds the rows in the new order.
+		List<CapeSource> order = config.capeOrder();
+		for (int i = 0; i < order.size(); i++) {
+			CapeSource source = order.get(i);
+			rows.add(new HubSettingRow.Ranked(
+				source.labelKey(),
+				i + 1,
+				() -> source.enabled(config),
+				enabled -> source.setEnabled(config, enabled),
+				i == 0 ? null : () -> {
+					config.moveCapeSource(source, -1);
+					refresh.run();
+				},
+				i == order.size() - 1 ? null : () -> {
+					config.moveCapeSource(source, 1);
+					refresh.run();
+				}
+			));
+		}
 		return rows;
 	}
 

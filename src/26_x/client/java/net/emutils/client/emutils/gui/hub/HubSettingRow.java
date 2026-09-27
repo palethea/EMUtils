@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
-public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Swatches, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider, HubSettingRow.Section {
+public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRow.Slider, HubSettingRow.Cycle, HubSettingRow.Rgb, HubSettingRow.Swatches, HubSettingRow.Ranked, HubSettingRow.Action, HubSettingRow.Spacer, HubSettingRow.Divider, HubSettingRow.Section {
 	record Toggle(String labelKey, BooleanSupplier getter, Consumer<Boolean> setter) implements HubSettingRow {
 	}
 
@@ -83,6 +83,20 @@ public sealed interface HubSettingRow permits HubSettingRow.Toggle, HubSettingRo
 	 * other color (#120). While {@code enabled} is false the dots are dimmed and can't be clicked.
 	 */
 	record Swatches(String labelKey, List<Integer> presets, IntSupplier getter, IntConsumer setter, BooleanSupplier enabled) implements HubSettingRow {
+	}
+
+	/**
+	 * One entry of a list you order, such as the cape priority list (#52): its place in the list, a switch,
+	 * and buttons that move it up or down. {@code moveUp} and {@code moveDown} are null where it can't move.
+	 */
+	record Ranked(
+		String labelKey,
+		int position,
+		BooleanSupplier getter,
+		Consumer<Boolean> setter,
+		@Nullable Runnable moveUp,
+		@Nullable Runnable moveDown
+	) implements HubSettingRow {
 	}
 
 	record Action(Component label, Runnable action, boolean enabled) implements HubSettingRow {

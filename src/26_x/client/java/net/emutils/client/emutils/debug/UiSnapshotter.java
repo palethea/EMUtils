@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.capes.CapeAnimations;
+import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
 import net.emutils.client.emutils.gui.ui.UiFontFamily;
@@ -95,6 +96,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.ClientAsset;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -2003,10 +2005,42 @@ public final class UiSnapshotter {
 						String animated = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("cd19cb6e-c829-46b3-a6df-63bbe2c5a0dd"), "Lythogeor"));
 						String still = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("4f507640-5bc3-4e87-acdd-896a9cf0fe6c"), "Redjie"));
 						String notch = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), "Notch"));
+						// The priority list (#52), with a stand-in for an official cape: by default a provider's cape
+						// wins; with Minecraft first the official one does, and a provider's still shows for
+						// players without one; with Minecraft off official capes are hidden.
+						GameProfile user = new GameProfile(UUID.fromString("4f507640-5bc3-4e87-acdd-896a9cf0fe6c"), "Redjie");
+						GameProfile notchProfile = new GameProfile(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), "Notch");
+						Identifier standIn = Identifier.withDefaultNamespace("textures/entity/official_cape_stand_in.png");
+						ClientAsset.Texture official = new ClientAsset.Texture() {
+							@Override
+							public Identifier id() {
+								return standIn;
+							}
+
+							@Override
+							public Identifier texturePath() {
+								return standIn;
+							}
+						};
+						boolean providerWins = CustomCapeManager.capeTextureFor(user, official) != official;
+						EMUtilsClient.config().moveCapeSource(CapeSource.MINECRAFT, -10);
+						CustomCapeManager.resolveForSnapshot(user);
+						boolean officialWins = CustomCapeManager.capeTextureFor(user, official) == official;
+						boolean fallsBack = CustomCapeManager.capeTextureFor(user, null) != null;
+						EMUtilsClient.config().setCapeMinecraft(false);
+						CustomCapeManager.resolveForSnapshot(user);
+						CustomCapeManager.resolveForSnapshot(notchProfile);
+						boolean hidden = CustomCapeManager.capeTextureFor(notchProfile, official) == null;
+						boolean providerInstead = CustomCapeManager.capeTextureFor(user, official) != official && CustomCapeManager.capeTextureFor(user, official) != null;
+						EMUtilsConfig migrated = EMUtilsConfig.fromJson("{\"capePreferredProvider\": \"LABYMOD\"}", EMUtilsClient.config().file());
 						client.execute(() -> {
 							check("Cosmetica".equals(animated) && "Cosmetica".equals(still), "Cosmetica 2 users get their capes (" + animated + ", " + still + ")");
 							check(CapeAnimations.count() > animatedBefore, "an animated Cosmetica cape animates (" + CapeAnimations.count() + " animated)");
 							check(notch == null, "a player who isn't a Cosmetica user gets no Cosmetica cape, and no placeholder (" + notch + ")");
+							check(providerWins, "by default a provider's cape wins over the official one");
+							check(officialWins && fallsBack, "with Minecraft first the official cape wins, and players without one still get a provider's");
+							check(hidden && providerInstead, "with Minecraft off official capes are hidden, and a provider's shows instead");
+							check(migrated != null && migrated.capeOrder().getFirst() == CapeSource.LABYMOD && migrated.capeOrder().getLast() == CapeSource.MINECRAFT, "an old Preferred Provider becomes the top of the priority list");
 							EMUtilsClient.config().resetCapesDefaults();
 							next();
 						});
@@ -2018,15 +2052,27 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// The Capes sheet's priority list (#52), with Minecraft moved up one and Cosmetica switched off.
 			case 300 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					EMUtilsClient.config().moveCapeSource(CapeSource.MINECRAFT, -1);
+					EMUtilsClient.config().setCapeCosmetica(false);
+				}
+				openSheetAndCapture(client, "capes", "capes sheet, priority list");
+				if (step != 300) {
+					EMUtilsClient.config().resetCapesDefaults();
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 301 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 301 -> {
+			case 302 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2035,7 +2081,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 302 -> {
+			case 303 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2046,7 +2092,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 303 -> {
+			case 304 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2057,7 +2103,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 304 -> {
+			case 305 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
