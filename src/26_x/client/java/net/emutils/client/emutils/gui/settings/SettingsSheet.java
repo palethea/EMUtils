@@ -586,7 +586,8 @@ final class SettingsSheet {
 	}
 
 	private Component sliderValue(HubSettingRow.Slider slider) {
-		Component suffix = slider.suffixKey() == null || slider.suffixKey().isEmpty() ? Component.empty() : Component.translatable(slider.suffixKey());
+		String suffixKey = slider.suffixKey().get();
+		Component suffix = suffixKey == null || suffixKey.isEmpty() ? Component.empty() : Component.translatable(suffixKey);
 		return Component.literal(String.valueOf(slider.getter().getAsInt())).append(suffix);
 	}
 

@@ -14,6 +14,7 @@ import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.profile.gui.ProfilesScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
+import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
@@ -44,8 +45,14 @@ public final class HubFeatureCatalog {
 			leaf("no_falling_leaf_particles", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FALLING_LEAF_PARTICLES, EMUtilsTexts.HUB_FEATURE_NO_FALLING_LEAF_PARTICLES_DESC, HubFeature.Icon.SPARKLES, toggle(config::tweakNoFallingLeafParticles, config::setTweakNoFallingLeafParticles), () -> config.setTweakNoFallingLeafParticles(false)),
 			leaf("no_hurt_cam", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_HURT_CAM, EMUtilsTexts.HUB_FEATURE_NO_HURT_CAM_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakNoHurtCam, config::setTweakNoHurtCam), () -> config.setTweakNoHurtCam(false)),
 			leaf("freelook", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, HubFeature.Icon.EYE, toggle(config::tweakFreelook, config::setTweakFreelook), () -> config.setTweakFreelook(false)).keys("key.emutils.freelook"),
-			leaf("beacon_radius_outline", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, HubFeature.Icon.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline), () -> config.setBeaconRadiusOutline(false)).keys("key.emutils.beacon_radius_outline"),
-			leaf("light_level_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, HubFeature.Icon.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay), () -> config.setLightLevelOverlay(false)).keys("key.emutils.light_level_overlay"),
+			leaf("beacon_radius_outline", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, HubFeature.Icon.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline), List.of(
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_RANGE, EMUtilsTexts.SUFFIX_CHUNKS, EMUtilsConfig.BEACON_RADIUS_RANGE_MIN, EMUtilsConfig.BEACON_RADIUS_RANGE_MAX, config::beaconRadiusRange, config::setBeaconRadiusRange),
+				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BEACON_RADIUS_ACTIVE_ONLY, config::beaconRadiusActiveOnly, config::setBeaconRadiusActiveOnly)
+			), config::resetBeaconRadiusDefaults).keys("key.emutils.beacon_radius_outline"),
+			leaf("light_level_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, HubFeature.Icon.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay), List.of(
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_LIGHT_LEVEL_RANGE, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.LIGHT_LEVEL_RANGE_MIN, EMUtilsConfig.LIGHT_LEVEL_RANGE_MAX, config::lightLevelRange, config::setLightLevelRange),
+				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LIGHT_LEVEL_SPAWNABLE_ONLY, config::lightLevelSpawnableOnly, config::setLightLevelSpawnableOnly)
+			), config::resetLightLevelDefaults).keys("key.emutils.light_level_overlay"),
 			leaf("own_nametag", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_OWN_NAMETAG, EMUtilsTexts.HUB_FEATURE_OWN_NAMETAG_DESC, HubFeature.Icon.TAG, toggle(config::tweakOwnNametag, config::setTweakOwnNametag), () -> config.setTweakOwnNametag(false)),
 			leaf("shulker_preview", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_SHULKER_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_SHULKER_PREVIEW_DESC, HubFeature.Icon.BOX, toggle(config::tweakShulkerTooltipPreview, config::setTweakShulkerTooltipPreview), () -> config.setTweakShulkerTooltipPreview(true)),
 			leaf("bundle_preview", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_BUNDLE_TOOLTIP_PREVIEW, EMUtilsTexts.HUB_FEATURE_BUNDLE_PREVIEW_DESC, HubFeature.Icon.PACKAGE_OPEN, toggle(config::tweakBundleTooltipPreview, config::setTweakBundleTooltipPreview), () -> config.setTweakBundleTooltipPreview(true)),
@@ -56,7 +63,7 @@ public final class HubFeatureCatalog {
 			categoryFeature("spotify", HubCategory.SPOTIFY, HubFeature.Group.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, HubFeature.Icon.MUSIC, toggle(config::spotifyEnabled, config::setSpotifyEnabled)),
 			categoryFeature("auto_reconnect", HubCategory.AUTO_RECONNECT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, HubFeature.Icon.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			categoryFeature("screenshot_helper", HubCategory.SCREENSHOT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, HubFeature.Icon.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
-			categoryFeature("waypoints", HubCategory.DEATH_WAYPOINTS, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, HubFeature.Icon.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)).keys("key.emutils.add_waypoint"),
+			categoryFeature("waypoints", HubCategory.DEATH_WAYPOINTS, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, HubFeature.Icon.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)).keys("key.emutils.add_waypoint", "key.emutils.copy_coordinates"),
 			new HubFeature(
 				"free_camera",
 				null,
@@ -169,7 +176,12 @@ public final class HubFeatureCatalog {
 			categoryFeature("auto_flight_gear", HubCategory.AUTO_FLIGHT, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, HubFeature.Icon.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),
 			leaf("fast_place", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace), () -> config.setTweakFastPlace(false)),
 			leaf("fast_use", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_USE, EMUtilsTexts.HUB_FEATURE_FAST_USE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastUse, config::setTweakFastUse), () -> config.setTweakFastUse(false)),
-			leaf("anti_durability_break", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak), () -> config.setTweakAntiDurabilityBreak(false)),
+			leaf("anti_durability_break", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak), List.of(
+				HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_ANTI_DURABILITY_UNIT, config::antiDurabilityUnit, config::setAntiDurabilityUnit, AntiDurabilityUnit.class, unit -> Component.translatable(unit.labelKey())),
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_ANTI_DURABILITY_PROTECT_AT, () -> config.antiDurabilityUnit().suffixKey(), EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MIN, EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MAX, config::antiDurabilityProtectAt, config::setAntiDurabilityProtectAt),
+				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ANTI_DURABILITY_WARNING, config::antiDurabilityWarning, config::setAntiDurabilityWarning),
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_ANTI_DURABILITY_WARN_AT, () -> config.antiDurabilityUnit().suffixKey(), EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MIN, EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MAX, config::antiDurabilityWarnAt, config::setAntiDurabilityWarnAt)
+			), config::resetAntiDurabilityBreakDefaults),
 			leaf("safe_walk", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk), () -> config.setTweakSafeWalk(false)),
 			leaf("place_below", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow), () -> config.setTweakPlaceBelow(false)).keys("key.emutils.place_below"),
 			leaf("locked_y_placement", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement), () -> config.setTweakLockedYPlacement(false)).keys("key.emutils.locked_y_placement")
@@ -254,6 +266,20 @@ public final class HubFeatureCatalog {
 		Runnable resetAction
 	) {
 		return new HubFeature(id, null, group, titleKey, descriptionKey, icon, toggle, null, null, true, resetAction);
+	}
+
+	/** A feature with a card toggle and its own settings, but no category of its own. */
+	private static HubFeature leaf(
+		String id,
+		HubFeature.Group group,
+		String titleKey,
+		String descriptionKey,
+		HubFeature.Icon icon,
+		HubFeature.Toggle toggle,
+		List<HubSettingRow> rows,
+		Runnable resetAction
+	) {
+		return new HubFeature(id, null, group, titleKey, descriptionKey, icon, toggle, rows, null, true, resetAction);
 	}
 
 	private static HubFeature actionFeature(

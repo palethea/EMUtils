@@ -17,6 +17,8 @@ Hide distracting weather effects while keeping the world playable.
 - Hide Rain: remove visible rain.
 - Hide Snow: remove visible snow.
 - Hide Rain Particles and Sounds: remove rain particles and audio effects.
+- Hide Thunder Flash: stop the sky and world from flashing bright when lightning strikes; thunder still sounds.
+- Hide Lightning Bolts: don't draw lightning bolts; they still strike, set fires, and deal damage.
 
 ### Visual Tweaks
 
@@ -36,8 +38,12 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
 - Beacon Radius Outline: draw a stable chunk-border-style grid cage around each loaded active beacon's true effect boundary, colored from its beam and toggleable with a configurable keybind.
+  - Max Distance: only outline beacons within this many chunks (never past the render distance).
+  - Only Active Beacons: only outline beacons that give an effect, skipping ones where no effect has been picked.
   - Xaero Map Integration: show the same colored beacon boundary on Xaero's Minimap and World Map when those optional mods are installed.
 - Light Level Overlay: show fixed north-facing Minecraft-font block-light numbers on nearby spawnable floors, with yellow or red square markers only at block light level 0; the loaded-chunk scan and geometry are cached and the overlay is toggleable with a configurable keybind.
+  - Range: how many blocks around you are scanned (8 to 32, default 24).
+  - Only Spawnable Spots: only mark spots at block light 0, where hostile mobs can spawn.
 - Own Nametag: show your own nametag in third person.
 - Shulker Preview: preview shulker contents in item tooltips.
 - Bundle Preview: preview bundle contents in item tooltips.
@@ -131,6 +137,8 @@ Save death and custom waypoints per world or server.
 
 - Auto Copy Coords: copy coordinates when a waypoint is created.
 - Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
+- Copy Coordinates: a keybind that copies your current position in the Coord Format, or the camera's position while Free Camera is active.
+- Copy Coords Feedback: show a chat message with the copied coordinates.
 - Death Color: choose the default color for death waypoints.
 - Custom Waypoint Color: choose the default color for custom waypoints.
 - Waypoint Opacity: adjust in-world label opacity.
@@ -261,7 +269,12 @@ Remove the delay between non-placement uses, including doors, levers, buttons, s
 
 ### Anti Durability Break
 
-Prevent a held damageable item from attacking, breaking blocks, swinging, or performing item actions once it reaches 5 durability, keeping it safe until repaired or replaced.
+Prevent a held damageable item from attacking, breaking blocks, swinging, or performing item actions once it gets low on durability, keeping it safe until repaired or replaced.
+
+- Count In: count the thresholds in durability points left or in percent of the item's maximum durability.
+- Protect At: how low an item can get before it's protected (default 5 durability).
+- Low Durability Warning: show a message above the hotbar and play a sound when a held item drops to Warn At, or when you switch to one that's already that low.
+- Warn At: how low counts as low for the warning (default 20 durability).
 
 ### Auto Tool
 

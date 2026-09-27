@@ -214,6 +214,7 @@ public final class HubSettingsRegistry {
 			WaypointCoordinateFormat.class,
 			value -> Component.translatable(value.labelKey())
 		));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_COORDINATES_FEEDBACK, config::copyCoordinatesFeedback, config::setCopyCoordinatesFeedback));
 		rows.add(divider());
 		rows.add(new HubSettingRow.Rgb(
 			EMUtilsTexts.OPTION_WAYPOINT_DEFAULT_DEATH_COLOR,
@@ -480,6 +481,8 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN, config::tweakClearWeatherHideRain, config::setTweakClearWeatherHideRain));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_SNOW, config::tweakClearWeatherHideSnow, config::setTweakClearWeatherHideSnow));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_RAIN_EFFECTS, config::tweakClearWeatherHideRainEffects, config::setTweakClearWeatherHideRainEffects));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_THUNDER_FLASH, config::tweakClearWeatherHideThunderFlash, config::setTweakClearWeatherHideThunderFlash));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER_HIDE_LIGHTNING_BOLTS, config::tweakClearWeatherHideLightningBolts, config::setTweakClearWeatherHideLightningBolts));
 		return rows;
 	}
 

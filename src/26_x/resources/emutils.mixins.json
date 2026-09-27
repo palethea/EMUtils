@@ -36,6 +36,7 @@
 		"KeyBindingAccessorMixin",
 		"KeyboardInputFreeCameraMixin",
 		"LevelExtractorFreeCameraMixin",
+		"LightningBoltRendererMixin",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
 		"LoadingOverlayAccessor",

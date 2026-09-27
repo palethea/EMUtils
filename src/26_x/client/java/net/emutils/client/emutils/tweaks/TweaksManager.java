@@ -31,6 +31,7 @@ public final class TweaksManager {
 		autoRefill.tick(client);
 		lockedYPlacement.tick(client);
 		freeCamera.tick(client);
+		AntiDurabilityBreak.tick(client);
 	}
 
 	public void resetSession() {

@@ -36,7 +36,6 @@ public final class LightLevelOverlayRenderer {
 	private static final Identifier NUMBER_TEXTURE =
 		Identifier.fromNamespaceAndPath("emutils", "textures/misc/light_level_numbers.png");
 	private static final RenderType NUMBER_RENDER_TYPE = VersionedRenderTypes.lightLevelNumbers(NUMBER_TEXTURE);
-	private static final int RANGE = 24;
 	private static final int SPAWN_LIGHT_LEVEL = 0;
 	private static final double MARKER_MIN = 0.08D;
 	private static final double MARKER_MAX = 0.92D;
@@ -54,6 +53,9 @@ public final class LightLevelOverlayRenderer {
 	private static ClientLevel cachedLevel;
 	@Nullable
 	private static BlockPos lastUpdatePos;
+	/** The Range and Spawnable Only settings the cache was built with; changing either rebuilds it. */
+	private static int cachedRange = -1;
+	private static boolean cachedSpawnableOnly;
 
 	private LightLevelOverlayRenderer() {
 	}
@@ -94,6 +96,17 @@ public final class LightLevelOverlayRenderer {
 		lastUpdatePos = null;
 	}
 
+	/** How many spots the overlay currently numbers, and how many of them are lit, for UI snapshot checks. */
+	public static int[] numberCountsForSnapshot() {
+		int lit = 0;
+		for (NumberQuad number : cachedNumbers) {
+			if (number.lightLevel() > SPAWN_LIGHT_LEVEL) {
+				lit++;
+			}
+		}
+		return new int[] {cachedNumbers.size(), lit};
+	}
+
 	/** MiniHUD-style packet invalidation: only rebuild for chunk changes near the camera. */
 	public static void onChunkChanged(int chunkX, int chunkZ) {
 		Entity cameraEntity = Minecraft.getInstance().getCameraEntity();
@@ -111,6 +124,8 @@ public final class LightLevelOverlayRenderer {
 	private static boolean needsUpdate(ClientLevel level, BlockPos center) {
 		return cachedLevel != level
 			|| lastUpdatePos == null
+			|| cachedRange != EMUtilsClient.config().lightLevelRange()
+			|| cachedSpawnableOnly != EMUtilsClient.config().lightLevelSpawnableOnly()
 			|| Math.abs(center.getX() - lastUpdatePos.getX()) > 4
 			|| Math.abs(center.getY() - lastUpdatePos.getY()) > 4
 			|| Math.abs(center.getZ() - lastUpdatePos.getZ()) > 4;
@@ -119,12 +134,14 @@ public final class LightLevelOverlayRenderer {
 	private static void refreshCache(ClientLevel level, BlockPos center) {
 		List<Line> lines = new ArrayList<>();
 		List<NumberQuad> numbers = new ArrayList<>();
-		int minX = center.getX() - RANGE;
-		int maxX = center.getX() + RANGE;
-		int minZ = center.getZ() - RANGE;
-		int maxZ = center.getZ() + RANGE;
-		int minY = Math.max(level.getMinY() + 1, center.getY() - RANGE);
-		int maxY = Math.min(level.getMaxY() - 2, center.getY() + RANGE);
+		int range = EMUtilsClient.config().lightLevelRange();
+		boolean spawnableOnly = EMUtilsClient.config().lightLevelSpawnableOnly();
+		int minX = center.getX() - range;
+		int maxX = center.getX() + range;
+		int minZ = center.getZ() - range;
+		int maxZ = center.getZ() + range;
+		int minY = Math.max(level.getMinY() + 1, center.getY() - range);
+		int maxY = Math.min(level.getMaxY() - 2, center.getY() + range);
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos below = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos above = new BlockPos.MutableBlockPos();
@@ -154,6 +171,9 @@ public final class LightLevelOverlayRenderer {
 							}
 
 							int blockLight = level.getBrightness(LightLayer.BLOCK, pos);
+							if (spawnableOnly && blockLight > SPAWN_LIGHT_LEVEL) {
+								continue;
+							}
 							int skyLight = level.getBrightness(LightLayer.SKY, pos);
 							numbers.add(new NumberQuad(
 								x + 0.26D,
@@ -175,6 +195,8 @@ public final class LightLevelOverlayRenderer {
 		cachedLines = List.copyOf(lines);
 		cachedNumbers = List.copyOf(numbers);
 		cachedLevel = level;
+		cachedRange = range;
+		cachedSpawnableOnly = spawnableOnly;
 		lastUpdatePos = center.immutable();
 	}
 

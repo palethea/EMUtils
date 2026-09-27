@@ -38,6 +38,10 @@ public final class BeaconRadiusRenderer {
 	@Nullable
 	private static ClientLevel cachedLevel;
 	private static int nextScanTick;
+	private static int beaconCount;
+	/** The Max Distance and Active Only settings the cache was built with; changing either rescans right away. */
+	private static int cachedRange = -1;
+	private static boolean cachedActiveOnly;
 
 	private BeaconRadiusRenderer() {
 	}
@@ -64,9 +68,13 @@ public final class BeaconRadiusRenderer {
 		if (!EMUtilsClient.config().beaconRadiusOutline() || client.level == null || client.player == null) {
 			cachedLines = List.of();
 			cachedMapPoints = List.of();
+			beaconCount = 0;
 			cachedLevel = client.level;
 			nextScanTick = 0;
 			return;
+		}
+		if (cachedRange != EMUtilsClient.config().beaconRadiusRange() || cachedActiveOnly != EMUtilsClient.config().beaconRadiusActiveOnly()) {
+			nextScanTick = 0;
 		}
 		if (cachedLevel != client.level || cachedLines.isEmpty() || client.player.tickCount >= nextScanTick) {
 			refreshCache(client);
@@ -81,9 +89,12 @@ public final class BeaconRadiusRenderer {
 		BlockPos cameraPos = camera.blockPosition();
 		int cameraChunkX = cameraPos.getX() >> 4;
 		int cameraChunkZ = cameraPos.getZ() >> 4;
-		int chunkRadius = client.options.getEffectiveRenderDistance();
+		int range = EMUtilsClient.config().beaconRadiusRange();
+		boolean activeOnly = EMUtilsClient.config().beaconRadiusActiveOnly();
+		int chunkRadius = Math.min(client.options.getEffectiveRenderDistance(), range);
 		List<Line> lines = new ArrayList<>();
 		List<BeaconMapPoint> mapPoints = new ArrayList<>();
+		int outlined = 0;
 		for (int chunkX = cameraChunkX - chunkRadius; chunkX <= cameraChunkX + chunkRadius; chunkX++) {
 			for (int chunkZ = cameraChunkZ - chunkRadius; chunkZ <= cameraChunkZ + chunkRadius; chunkZ++) {
 				LevelChunk chunk = client.level.getChunkSource().getChunkNow(chunkX, chunkZ);
@@ -91,8 +102,11 @@ public final class BeaconRadiusRenderer {
 					continue;
 				}
 				for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-					if (blockEntity instanceof BeaconBlockEntity beacon) {
-						addBeaconGeometry(client.level, beacon, lines, mapPoints);
+					if (blockEntity instanceof BeaconBlockEntity beacon
+						&& (!activeOnly || ((BeaconBlockEntityAccessor) beacon).emutils$getPrimaryPower() != null)) {
+						if (addBeaconGeometry(client.level, beacon, lines, mapPoints)) {
+							outlined++;
+						}
 					}
 				}
 			}
@@ -100,11 +114,19 @@ public final class BeaconRadiusRenderer {
 		cachedLines = List.copyOf(lines);
 		cachedMapPoints = List.copyOf(mapPoints);
 		cachedLevel = client.level;
+		cachedRange = range;
+		beaconCount = outlined;
+		cachedActiveOnly = activeOnly;
 		nextScanTick = (client.player == null ? 0 : client.player.tickCount) + SCAN_INTERVAL_TICKS;
 	}
 
 	public static List<BeaconMapPoint> mapPoints() {
 		return cachedMapPoints;
+	}
+
+	/** How many beacons the outline currently draws, for UI snapshot checks. */
+	public static int outlinedBeaconsForSnapshot() {
+		return beaconCount;
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -131,7 +153,8 @@ public final class BeaconRadiusRenderer {
 		}
 	}
 
-	private static void addBeaconGeometry(
+	/** Adds the outline of a beacon that has a pyramid and an unblocked beam; returns whether it did. */
+	private static boolean addBeaconGeometry(
 		ClientLevel level,
 		BeaconBlockEntity beacon,
 		List<Line> lines,
@@ -140,7 +163,7 @@ public final class BeaconRadiusRenderer {
 		int levels = ((BeaconBlockEntityAccessor) beacon).emutils$getLevels();
 		List<BeaconBeamOwner.Section> sections = beacon.getBeamSections();
 		if (levels <= 0 || sections.isEmpty() || beacon.isRemoved()) {
-			return;
+			return false;
 		}
 
 		BlockPos pos = beacon.getBlockPos();
@@ -152,6 +175,7 @@ public final class BeaconRadiusRenderer {
 		int rgb = sections.getFirst().getColor() & 0x00FFFFFF;
 		addGridOutline(lines, bounds, 0xB3000000 | rgb);
 		addMapPoints(mapPoints, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, pos.getY(), 0xCC000000 | rgb);
+		return true;
 	}
 
 	private static void addMapPoints(

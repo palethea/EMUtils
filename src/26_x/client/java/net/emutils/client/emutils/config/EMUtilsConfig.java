@@ -20,6 +20,7 @@ import net.emutils.client.emutils.inventory.BoundSlotColor;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
+import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
@@ -75,6 +76,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int FULLBRIGHT_STRENGTH_MAX = 100;
 	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MIN = 1;
 	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MAX = 10;
+	public static final int ANTI_DURABILITY_THRESHOLD_MIN = 1;
+	public static final int ANTI_DURABILITY_THRESHOLD_MAX = 100;
+	public static final int ANTI_DURABILITY_PROTECT_AT_DEFAULT = 5;
+	public static final int ANTI_DURABILITY_WARN_AT_DEFAULT = 20;
+	public static final int BEACON_RADIUS_RANGE_MIN = 2;
+	public static final int BEACON_RADIUS_RANGE_MAX = 32;
+	public static final int LIGHT_LEVEL_RANGE_MIN = 8;
+	public static final int LIGHT_LEVEL_RANGE_MAX = 32;
+	public static final int LIGHT_LEVEL_RANGE_DEFAULT = 24;
 	public static final int HOTBAR_SLOT_MIN = 1;
 	public static final int HOTBAR_SLOT_MAX = 9;
 	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
@@ -153,6 +163,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean deathWaypoint = Boolean.TRUE;
 	private Boolean deathWaypointAutoCopyCoords = Boolean.FALSE;
 	private String deathWaypointCoordinateFormat = WaypointCoordinateFormat.PLAIN.name();
+	private Boolean copyCoordinatesFeedback = Boolean.TRUE;
 	private Integer reconnectDelaySeconds = 8;
 	private Integer autoReconnectMaxTries = 5;
 	private Integer screenshotGalleryMaxCount = 200;
@@ -193,13 +204,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakNoHurtCam = Boolean.FALSE;
 	private Boolean tweakFreelook = Boolean.FALSE;
 	private Boolean beaconRadiusOutline = Boolean.FALSE;
+	private Integer beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
+	private Boolean beaconRadiusActiveOnly = Boolean.FALSE;
 	private Boolean lightLevelOverlay = Boolean.FALSE;
+	private Integer lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
+	private Boolean lightLevelSpawnableOnly = Boolean.FALSE;
 	private Boolean tweakShulkerTooltipPreview = Boolean.TRUE;
 	private Boolean tweakBundleTooltipPreview = Boolean.TRUE;
 	private Boolean tweakClearWeather = Boolean.FALSE;
 	private Boolean tweakClearWeatherHideRain = Boolean.TRUE;
 	private Boolean tweakClearWeatherHideSnow = Boolean.TRUE;
 	private Boolean tweakClearWeatherHideRainEffects = Boolean.TRUE;
+	private Boolean tweakClearWeatherHideThunderFlash = Boolean.TRUE;
+	private Boolean tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 	private Boolean tweakNoFireOverlay = Boolean.FALSE;
 	private Boolean tweakLowFireOverlay = Boolean.FALSE;
 	private Boolean tweakNoNausea = Boolean.FALSE;
@@ -208,6 +225,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakFastUse = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
+	private String antiDurabilityUnit = AntiDurabilityUnit.DURABILITY.name();
+	private Integer antiDurabilityProtectAt = ANTI_DURABILITY_PROTECT_AT_DEFAULT;
+	private Boolean antiDurabilityWarning = Boolean.FALSE;
+	private Integer antiDurabilityWarnAt = ANTI_DURABILITY_WARN_AT_DEFAULT;
 	private Boolean tweakSafeWalk = Boolean.FALSE;
 	private Boolean tweakPlaceBelow = Boolean.FALSE;
 	private Boolean tweakLockedYPlacement = Boolean.FALSE;
@@ -1100,6 +1121,60 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** How far from the camera, in chunks, the Beacon Radius Outline looks for beacons; never past the render distance. */
+	public int beaconRadiusRange() {
+		return clamp(beaconRadiusRange == null ? BEACON_RADIUS_RANGE_MAX : beaconRadiusRange, BEACON_RADIUS_RANGE_MIN, BEACON_RADIUS_RANGE_MAX);
+	}
+
+	public void setBeaconRadiusRange(int chunks) {
+		beaconRadiusRange = clamp(chunks, BEACON_RADIUS_RANGE_MIN, BEACON_RADIUS_RANGE_MAX);
+		save();
+	}
+
+	/** Only outline beacons that give an effect, that is ones with a primary effect picked. */
+	public boolean beaconRadiusActiveOnly() {
+		return beaconRadiusActiveOnly != null && beaconRadiusActiveOnly;
+	}
+
+	public void setBeaconRadiusActiveOnly(boolean enabled) {
+		beaconRadiusActiveOnly = enabled;
+		save();
+	}
+
+	public void resetBeaconRadiusDefaults() {
+		beaconRadiusOutline = Boolean.FALSE;
+		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
+		beaconRadiusActiveOnly = Boolean.FALSE;
+		save();
+	}
+
+	/** How many blocks around the player the Light Level Overlay scans, in each direction. */
+	public int lightLevelRange() {
+		return clamp(lightLevelRange == null ? LIGHT_LEVEL_RANGE_DEFAULT : lightLevelRange, LIGHT_LEVEL_RANGE_MIN, LIGHT_LEVEL_RANGE_MAX);
+	}
+
+	public void setLightLevelRange(int blocks) {
+		lightLevelRange = clamp(blocks, LIGHT_LEVEL_RANGE_MIN, LIGHT_LEVEL_RANGE_MAX);
+		save();
+	}
+
+	/** Only mark spots at block light 0, where hostile mobs can spawn. */
+	public boolean lightLevelSpawnableOnly() {
+		return lightLevelSpawnableOnly != null && lightLevelSpawnableOnly;
+	}
+
+	public void setLightLevelSpawnableOnly(boolean enabled) {
+		lightLevelSpawnableOnly = enabled;
+		save();
+	}
+
+	public void resetLightLevelDefaults() {
+		lightLevelOverlay = Boolean.FALSE;
+		lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
+		lightLevelSpawnableOnly = Boolean.FALSE;
+		save();
+	}
+
 	public boolean tweakShulkerTooltipPreview() {
 		return tweakShulkerTooltipPreview == null || tweakShulkerTooltipPreview;
 	}
@@ -1152,6 +1227,32 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void setTweakClearWeatherHideRainEffects(boolean enabled) {
 		tweakClearWeatherHideRainEffects = enabled;
 		save();
+	}
+
+	public boolean tweakClearWeatherHideThunderFlash() {
+		return tweakClearWeatherHideThunderFlash == null || tweakClearWeatherHideThunderFlash;
+	}
+
+	public void setTweakClearWeatherHideThunderFlash(boolean enabled) {
+		tweakClearWeatherHideThunderFlash = enabled;
+		save();
+	}
+
+	public boolean tweakClearWeatherHideLightningBolts() {
+		return tweakClearWeatherHideLightningBolts != null && tweakClearWeatherHideLightningBolts;
+	}
+
+	public void setTweakClearWeatherHideLightningBolts(boolean enabled) {
+		tweakClearWeatherHideLightningBolts = enabled;
+		save();
+	}
+
+	public boolean shouldHideThunderFlash() {
+		return tweakClearWeather() && tweakClearWeatherHideThunderFlash();
+	}
+
+	public boolean shouldHideLightningBolts() {
+		return tweakClearWeather() && tweakClearWeatherHideLightningBolts();
 	}
 
 	public boolean shouldHideClearWeatherRain() {
@@ -1236,6 +1337,56 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public void setTweakAntiDurabilityBreak(boolean enabled) {
 		tweakAntiDurabilityBreak = enabled;
 		save();
+	}
+
+	public AntiDurabilityUnit antiDurabilityUnit() {
+		return AntiDurabilityUnit.fromName(antiDurabilityUnit);
+	}
+
+	public void setAntiDurabilityUnit(AntiDurabilityUnit unit) {
+		antiDurabilityUnit = (unit == null ? AntiDurabilityUnit.DURABILITY : unit).name();
+		save();
+	}
+
+	/** Protect At: items with this much durability left or less (in {@link #antiDurabilityUnit()}) are kept from breaking. */
+	public int antiDurabilityProtectAt() {
+		return clamp(antiDurabilityProtectAt == null ? ANTI_DURABILITY_PROTECT_AT_DEFAULT : antiDurabilityProtectAt, ANTI_DURABILITY_THRESHOLD_MIN, ANTI_DURABILITY_THRESHOLD_MAX);
+	}
+
+	public void setAntiDurabilityProtectAt(int value) {
+		antiDurabilityProtectAt = clamp(value, ANTI_DURABILITY_THRESHOLD_MIN, ANTI_DURABILITY_THRESHOLD_MAX);
+		save();
+	}
+
+	public boolean antiDurabilityWarning() {
+		return antiDurabilityWarning != null && antiDurabilityWarning;
+	}
+
+	public void setAntiDurabilityWarning(boolean enabled) {
+		antiDurabilityWarning = enabled;
+		save();
+	}
+
+	public int antiDurabilityWarnAt() {
+		return clamp(antiDurabilityWarnAt == null ? ANTI_DURABILITY_WARN_AT_DEFAULT : antiDurabilityWarnAt, ANTI_DURABILITY_THRESHOLD_MIN, ANTI_DURABILITY_THRESHOLD_MAX);
+	}
+
+	public void setAntiDurabilityWarnAt(int value) {
+		antiDurabilityWarnAt = clamp(value, ANTI_DURABILITY_THRESHOLD_MIN, ANTI_DURABILITY_THRESHOLD_MAX);
+		save();
+	}
+
+	public void resetAntiDurabilityBreakDefaults() {
+		setAntiDurabilityBreakDefaults();
+		save();
+	}
+
+	private void setAntiDurabilityBreakDefaults() {
+		tweakAntiDurabilityBreak = Boolean.FALSE;
+		antiDurabilityUnit = AntiDurabilityUnit.DURABILITY.name();
+		antiDurabilityProtectAt = ANTI_DURABILITY_PROTECT_AT_DEFAULT;
+		antiDurabilityWarning = Boolean.FALSE;
+		antiDurabilityWarnAt = ANTI_DURABILITY_WARN_AT_DEFAULT;
 	}
 
 	public boolean tweakSafeWalk() {
@@ -2008,6 +2159,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean copyCoordinatesFeedback() {
+		return copyCoordinatesFeedback == null || copyCoordinatesFeedback;
+	}
+
+	public void setCopyCoordinatesFeedback(boolean enabled) {
+		copyCoordinatesFeedback = enabled;
+		save();
+	}
+
 	public int waypointOpacity() {
 		return clampOpacity(deathWaypointOpacity == null ? 75 : deathWaypointOpacity);
 	}
@@ -2104,6 +2264,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		deathWaypoint = Boolean.TRUE;
 		deathWaypointAutoCopyCoords = Boolean.FALSE;
 		deathWaypointCoordinateFormat = WaypointCoordinateFormat.PLAIN.name();
+		copyCoordinatesFeedback = Boolean.TRUE;
 		deathWaypointOpacity = 75;
 		deathWaypointSize = DEFAULT_DEATH_WAYPOINT_SIZE;
 		waypointDefaultDeathColor = 0xFFFF5555;
@@ -2193,13 +2354,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoHurtCam = Boolean.FALSE;
 		tweakFreelook = Boolean.FALSE;
 		beaconRadiusOutline = Boolean.FALSE;
+		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
+		beaconRadiusActiveOnly = Boolean.FALSE;
 		lightLevelOverlay = Boolean.FALSE;
+		lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
+		lightLevelSpawnableOnly = Boolean.FALSE;
 		tweakShulkerTooltipPreview = Boolean.TRUE;
 		tweakBundleTooltipPreview = Boolean.TRUE;
 		tweakClearWeather = Boolean.FALSE;
 		tweakClearWeatherHideRain = Boolean.TRUE;
 		tweakClearWeatherHideSnow = Boolean.TRUE;
 		tweakClearWeatherHideRainEffects = Boolean.TRUE;
+		tweakClearWeatherHideThunderFlash = Boolean.TRUE;
+		tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 		tweakNoFireOverlay = Boolean.FALSE;
 		tweakLowFireOverlay = Boolean.FALSE;
 		tweakNoNausea = Boolean.FALSE;
@@ -2207,7 +2374,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoPumpkinOverlay = Boolean.FALSE;
 		tweakFastPlace = Boolean.FALSE;
 		tweakFastUse = Boolean.FALSE;
-		tweakAntiDurabilityBreak = Boolean.FALSE;
+		setAntiDurabilityBreakDefaults();
 		tweakSafeWalk = Boolean.FALSE;
 		tweakPlaceBelow = Boolean.FALSE;
 		tweakLockedYPlacement = Boolean.FALSE;
@@ -2255,6 +2422,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakClearWeatherHideRain = Boolean.TRUE;
 		tweakClearWeatherHideSnow = Boolean.TRUE;
 		tweakClearWeatherHideRainEffects = Boolean.TRUE;
+		tweakClearWeatherHideThunderFlash = Boolean.TRUE;
+		tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 		save();
 	}
 
@@ -2520,6 +2689,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			deathWaypointAutoCopyCoords = Boolean.FALSE;
 		}
 		deathWaypointCoordinateFormat = deathWaypointCoordinateFormat().name();
+		if (copyCoordinatesFeedback == null) {
+			copyCoordinatesFeedback = Boolean.TRUE;
+		}
 		reconnectDelaySeconds = reconnectDelaySeconds();
 		autoReconnectMaxTries = autoReconnectMaxTries();
 		screenshotGalleryMaxCount = screenshotGalleryMaxCount();
@@ -2592,6 +2764,14 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (lightLevelOverlay == null) {
 			lightLevelOverlay = Boolean.FALSE;
 		}
+		beaconRadiusRange = beaconRadiusRange();
+		if (beaconRadiusActiveOnly == null) {
+			beaconRadiusActiveOnly = Boolean.FALSE;
+		}
+		lightLevelRange = lightLevelRange();
+		if (lightLevelSpawnableOnly == null) {
+			lightLevelSpawnableOnly = Boolean.FALSE;
+		}
 		if (tweakShulkerTooltipPreview == null) {
 			tweakShulkerTooltipPreview = Boolean.TRUE;
 		}
@@ -2609,6 +2789,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakClearWeatherHideRainEffects == null) {
 			tweakClearWeatherHideRainEffects = Boolean.TRUE;
+		}
+		if (tweakClearWeatherHideThunderFlash == null) {
+			tweakClearWeatherHideThunderFlash = Boolean.TRUE;
+		}
+		if (tweakClearWeatherHideLightningBolts == null) {
+			tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 		}
 		if (tweakNoFireOverlay == null) {
 			tweakNoFireOverlay = Boolean.FALSE;
@@ -2634,6 +2820,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (tweakAntiDurabilityBreak == null) {
 			tweakAntiDurabilityBreak = Boolean.FALSE;
 		}
+		antiDurabilityUnit = antiDurabilityUnit().name();
+		antiDurabilityProtectAt = antiDurabilityProtectAt();
+		if (antiDurabilityWarning == null) {
+			antiDurabilityWarning = Boolean.FALSE;
+		}
+		antiDurabilityWarnAt = antiDurabilityWarnAt();
 		if (tweakSafeWalk == null) {
 			tweakSafeWalk = Boolean.FALSE;
 		}
