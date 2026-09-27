@@ -37,6 +37,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - No Pumpkin Overlay: hide the carved pumpkin blur while wearing one.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
+  - Keep Perspective: look around in the perspective you're in, first person too, instead of switching to third person. Off by default.
 - Beacon Radius Outline: draw a steady chunk-border-style grid cage around each loaded active beacon's true effect boundary, toggleable with a configurable keybind. Each cage takes its beacon's effect color (white before an effect is picked, or the beam's color if it's dyed), and where cages of the same color touch, every other one is drawn lighter.
   - Max Distance: only outline beacons within this many chunks (never past the render distance).
   - Grid Spacing: how many blocks apart the grid lines are (4 to 32, default 16).
