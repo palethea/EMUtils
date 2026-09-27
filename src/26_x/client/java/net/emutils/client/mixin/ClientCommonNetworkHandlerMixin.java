@@ -1,10 +1,12 @@
 package net.emutils.client.mixin;
 
+import net.emutils.client.emutils.render.BeaconRadiusRenderer;
 import net.emutils.client.emutils.waypoint.WaypointClickHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSetBeaconPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,6 +22,13 @@ public abstract class ClientCommonNetworkHandlerMixin {
 
 		if (WaypointClickHandler.tryHandle(clickPacket.id(), clickPacket.payload(), Minecraft.getInstance())) {
 			ci.cancel();
+		}
+	}
+
+	@Inject(method = "send", at = @At("HEAD"))
+	private void emutils$noteBeaconEffect(Packet<?> packet, CallbackInfo ci) {
+		if (packet instanceof ServerboundSetBeaconPacket beaconPacket) {
+			BeaconRadiusRenderer.onBeaconEffectPicked(beaconPacket.primary());
 		}
 	}
 }

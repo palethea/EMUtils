@@ -15,4 +15,7 @@ public interface BeaconBlockEntityAccessor {
 	/** The beacon's primary effect, synced to the client with the block entity; null until one is picked. */
 	@Accessor("primaryPower")
 	@Nullable Holder<MobEffect> emutils$getPrimaryPower();
+
+	@Accessor("primaryPower")
+	void emutils$setPrimaryPower(@Nullable Holder<MobEffect> effect);
 }

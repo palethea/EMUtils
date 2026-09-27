@@ -46,6 +46,7 @@
 		"MinecraftFreeCameraInputMixin",
 		"MinescriptJobMixin",
 		"MultiPlayerGameModeAntiDurabilityBreakMixin",
+		"MultiPlayerGameModeBeaconMixin",
 		"MultiPlayerGameModeFastPlaceMixin",
 		"MultiPlayerGameModePlaceBelowMixin",
 		"MouseAccess",

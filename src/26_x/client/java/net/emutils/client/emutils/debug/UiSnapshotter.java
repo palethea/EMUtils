@@ -9,6 +9,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
@@ -67,17 +68,25 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.protocol.game.ServerboundSetBeaconPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -1572,10 +1581,11 @@ public final class UiSnapshotter {
 			}
 			// Beacon Radius Outline and Light Level Overlay caps and filters (#51).
 			case 269 -> {
+				// Close enough to the player to open it: the pyramid floats two blocks up, beside them.
 				EMUtilsClient.config().resetBeaconRadiusDefaults();
 				EMUtilsClient.config().setBeaconRadiusOutline(true);
-				command(client, "fill " + at(5, 12, -1) + " " + at(7, 12, 1) + " minecraft:iron_block");
-				command(client, "setblock " + at(6, 13, 0) + " minecraft:beacon");
+				command(client, "fill " + at(2, 2, -1) + " " + at(4, 2, 1) + " minecraft:iron_block");
+				command(client, "setblock " + at(3, 3, 0) + " minecraft:beacon");
 				command(client, "tp @s ~ ~ ~ -90 -30");
 				next();
 			}
@@ -1587,12 +1597,36 @@ public final class UiSnapshotter {
 				}
 				if (stepTicks == 3) {
 					check(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() == 0, "Only Active Beacons skips a beacon without an effect");
-					command(client, "data merge block " + at(6, 13, 0) + " {primary_effect:\"minecraft:speed\"}");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:iron_ingot");
 					next();
 				}
 			}
-			case 273 -> waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, 120, "Only Active Beacons outlines the beacon once an effect is picked");
+			case 273 -> waitForCheck(client.player.getMainHandItem().is(Items.IRON_INGOT), 60, "an iron ingot to pay the beacon with arrives in hand");
+			// Pick the effect the way a player does: open the beacon, pay, and confirm. The server doesn't
+			// send the beacon's new effect back, so this is what the outline has to notice.
 			case 274 -> {
+				if (stepTicks == 1) {
+					BlockPos beacon = quickWinsOrigin.offset(3, 3, 0);
+					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(beacon), Direction.WEST, beacon, false));
+				}
+				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen, 40, "right-clicking the beacon opens it");
+			}
+			case 275 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof BeaconScreen screen) {
+					// Beacon menu slots: 0 is the payment, 28-36 the hotbar.
+					int hand = 28 + client.player.getInventory().getSelectedSlot();
+					client.gameMode.handleContainerInput(screen.getMenu().containerId, hand, 0, ContainerInput.PICKUP, client.player);
+					client.gameMode.handleContainerInput(screen.getMenu().containerId, 0, 0, ContainerInput.PICKUP, client.player);
+				}
+				if (stepTicks == 5) {
+					// What the beacon screen's Done button does.
+					client.getConnection().send(new ServerboundSetBeaconPacket(Optional.of(MobEffects.HASTE), Optional.empty()));
+					client.player.closeContainer();
+					next();
+				}
+			}
+			case 276 -> waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, 60, "Only Active Beacons outlines a beacon right after you pick its effect in the beacon screen");
+			case 277 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setBeaconRadiusRange(2);
 				}
@@ -1601,9 +1635,9 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 275 -> openSheetAndCapture(client, "beacon_radius_outline", "beacon radius sheet");
-			case 276 -> {
-				command(client, "fill " + at(5, 12, -1) + " " + at(7, 13, 1) + " minecraft:air");
+			case 278 -> openSheetAndCapture(client, "beacon_radius_outline", "beacon radius sheet");
+			case 279 -> {
+				command(client, "fill " + at(2, 2, -1) + " " + at(4, 3, 1) + " minecraft:air");
 				EMUtilsClient.config().resetBeaconRadiusDefaults();
 				EMUtilsClient.config().resetLightLevelDefaults();
 				EMUtilsClient.config().setLightLevelOverlay(true);
@@ -1613,9 +1647,9 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
-			case 277 -> waitForCheck(LightLevelOverlayRenderer.numberCountsForSnapshot()[0] > 0 && LightLevelOverlayRenderer.numberCountsForSnapshot()[1] > 0, 100, "the light level overlay numbers lit and dark spots");
-			case 278 -> captureAfter(client, 10, "light level overlay, all spots");
-			case 279 -> {
+			case 280 -> waitForCheck(LightLevelOverlayRenderer.numberCountsForSnapshot()[0] > 0 && LightLevelOverlayRenderer.numberCountsForSnapshot()[1] > 0, 100, "the light level overlay numbers lit and dark spots");
+			case 281 -> captureAfter(client, 10, "light level overlay, all spots");
+			case 282 -> {
 				if (stepTicks == 1) {
 					lightLevelSpotsBefore = LightLevelOverlayRenderer.numberCountsForSnapshot()[0];
 					EMUtilsClient.config().setLightLevelSpawnableOnly(true);
@@ -1627,7 +1661,7 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 15, "light level overlay, only spawnable spots");
 			}
-			case 280 -> {
+			case 283 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setLightLevelRange(8);
 				}
@@ -1640,27 +1674,27 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 25, "light level sheet, range 8");
 			}
-			case 281 -> {
+			case 284 -> {
 				command(client, "setblock " + at(0, 0, 0) + " minecraft:air");
 				command(client, "tp @s ~ ~ ~ 0 0");
 				EMUtilsClient.config().resetLightLevelDefaults();
 				client.gui.setScreen(null);
 				next();
 			}
-			case 282 -> {
+			case 285 -> {
 				deleteTestScripts();
 				EMUtilsClient.config().resetMenuSettings();
 				client.gui.setScreen(null);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 283 -> {
+			case 286 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 284 -> {
+			case 287 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1669,7 +1703,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 285 -> {
+			case 288 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

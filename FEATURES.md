@@ -39,7 +39,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - Freelook: look around without turning movement.
 - Beacon Radius Outline: draw a stable chunk-border-style grid cage around each loaded active beacon's true effect boundary, colored from its beam and toggleable with a configurable keybind.
   - Max Distance: only outline beacons within this many chunks (never past the render distance).
-  - Only Active Beacons: only outline beacons that give an effect, skipping ones where no effect has been picked.
+  - Only Active Beacons: only outline beacons that give an effect, skipping ones where no effect has been picked. A beacon you set up shows right away; the server doesn't tell clients when someone else picks an effect, so their newly set up beacons show once the chunk reloads.
   - Xaero Map Integration: show the same colored beacon boundary on Xaero's Minimap and World Map when those optional mods are installed.
 - Light Level Overlay: show fixed north-facing Minecraft-font block-light numbers on nearby spawnable floors, with yellow or red square markers only at block light level 0; the loaded-chunk scan and geometry are cached and the overlay is toggleable with a configurable keybind.
   - Range: how many blocks around you are scanned (8 to 32, default 24).

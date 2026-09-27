@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.XaeroMapIntegration;
 import net.emutils.client.mixin.BeaconBlockEntityAccessor;
@@ -13,10 +14,13 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.level.block.entity.BeaconBeamOwner;
 import net.minecraft.world.level.block.entity.BeaconBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -42,6 +46,9 @@ public final class BeaconRadiusRenderer {
 	/** The Max Distance and Active Only settings the cache was built with; changing either rescans right away. */
 	private static int cachedRange = -1;
 	private static boolean cachedActiveOnly;
+	/** The beacon last right-clicked, so an effect picked in its screen can be applied to the client's copy. */
+	@Nullable
+	private static BlockPos openBeacon;
 
 	private BeaconRadiusRenderer() {
 	}
@@ -118,6 +125,31 @@ public final class BeaconRadiusRenderer {
 		beaconCount = outlined;
 		cachedActiveOnly = activeOnly;
 		nextScanTick = (client.player == null ? 0 : client.player.tickCount) + SCAN_INTERVAL_TICKS;
+	}
+
+	/** Remembers a right-clicked beacon: the beacon screen that opens next belongs to it, but doesn't know its position. */
+	public static void onBlockUsed(BlockPos pos) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level != null && client.level.getBlockEntity(pos) instanceof BeaconBlockEntity) {
+			openBeacon = pos.immutable();
+		}
+	}
+
+	/**
+	 * Called when the beacon screen confirms an effect. The server saves it without telling clients,
+	 * which only learn a beacon's effect when its chunk loads, so without this Only Active Beacons
+	 * would skip a beacon you just set up until you relog.
+	 */
+	public static void onBeaconEffectPicked(Optional<Holder<MobEffect>> primary) {
+		Minecraft client = Minecraft.getInstance();
+		if (openBeacon == null || primary.isEmpty() || client.level == null
+			|| !(net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) instanceof BeaconScreen)) {
+			return;
+		}
+		if (client.level.getBlockEntity(openBeacon) instanceof BeaconBlockEntity beacon) {
+			((BeaconBlockEntityAccessor) beacon).emutils$setPrimaryPower(primary.get());
+			nextScanTick = 0;
+		}
 	}
 
 	public static List<BeaconMapPoint> mapPoints() {
