@@ -77,22 +77,31 @@ Show third-party player capes from supported providers.
 
 ### HUD Overlay
 
-Show a configurable info panel with icons and useful world or client stats, as a rounded card in the settings UI's dark or light theme with values lined up in a column. Below 50% background opacity the text gets a soft shadow, so it stays readable over the world.
+Show a configurable info panel with icons and useful world or client stats, as a rounded card in the settings UI's dark or light theme with values lined up in a column. Its settings are split into General, World, Performance and Time tabs.
 
 - HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
+- Hide in Containers: hide the overlay while a chest, your inventory or another container is open. Off by default.
+- Text Shadow: a soft shadow under the text and icons. Auto (the default) adds it below 50% background opacity, so it stays readable over the world; On and Off always or never show it.
 - Coordinates: show current XYZ coordinates.
 - Free Camera Coordinates: show the free camera XYZ as an extra line while Free Camera is active and Coordinates are enabled.
 - Nether Coordinates: show equivalent Nether XYZ while in the Overworld using the 8:1 portal scale; hidden in other dimensions.
+- Looking At: show the coordinates of the block you are looking at. Off by default.
+- Dimension: show which dimension you are in. Off by default.
 - Chunk / Region: show current chunk and region.
+- Slime Chunk: show whether you stand in a slime chunk. It needs the world seed, so it works in singleplayer and says Unknown seed on servers. Off by default.
 - Biome: show the current biome.
 - Facing: show the direction you are facing.
 - Speed: show movement speed in blocks per second, including climbing and falling, averaged over half a second; follows your vehicle while riding and works while flying with an elytra. Off by default.
 - Ping: show server ping.
+- Server TPS: show the server's ticks per second. In singleplayer it's exact and shows the milliseconds a tick takes; on servers it's estimated from the world time the server sends every second, marked with ~. Off by default.
+  - Color TPS: green while the server keeps up, amber when it runs slow, red when it lags badly.
+  - Compact TPS: show only the TPS, without the milliseconds.
 - FPS: show current frame rate.
 - Memory: show client memory use.
 - Server Time: show world time.
+- Day and Night: show the real time left until night (when monsters start spawning) or until day, or Time stopped when the daylight cycle is off. Off by default.
 - Real Time: show local time.
 
 ### Food HUD
