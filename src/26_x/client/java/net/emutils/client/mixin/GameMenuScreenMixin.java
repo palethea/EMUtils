@@ -2,20 +2,16 @@ package net.emutils.client.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
-import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,9 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(PauseScreen.class)
 public abstract class GameMenuScreenMixin extends Screen {
-	@Unique
-	private static final Identifier EMUTILS$ICON = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "pause_menu/emutils");
-
 	@Unique
 	private SpotifyPlayerOverlay emutils$spotifyOverlay;
 
@@ -52,11 +45,7 @@ public abstract class GameMenuScreenMixin extends Screen {
 		)
 	)
 	private void emutils$addSettingsIcon(CallbackInfo ci, @Local LinearLayout iconButtonRow) {
-		iconButtonRow.addChild(SpriteIconButton.builder(
-			Component.translatable(EMUtilsTexts.HUB_TITLE),
-			button -> Minecraft.getInstance().gui.setScreen(new SettingsScreen(this)),
-			true
-		).width(20).sprite(EMUTILS$ICON, 15, 15).withTootip().build());
+		iconButtonRow.addChild(SettingsIconButton.create(this));
 	}
 
 	@Inject(method = "tick", at = @At("TAIL"))

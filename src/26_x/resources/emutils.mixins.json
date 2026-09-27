@@ -59,6 +59,7 @@
 		"ScreenMixin",
 		"ScreenshotRecorderMixin",
 		"SodiumWorldRendererMixin",
+		"TitleScreenMixin",
 		"WeatherRenderingMixin"
 	],
 	"injectors": {

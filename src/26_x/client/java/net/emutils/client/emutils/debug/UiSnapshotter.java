@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +32,7 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.ConfigTransfer;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -55,7 +57,6 @@ import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.tweaks.AntiDurabilityBreak;
 import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
-import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
@@ -63,6 +64,7 @@ import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.Minecraft;
@@ -927,7 +929,7 @@ public final class UiSnapshotter {
 			}
 			case 164 -> {
 				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof PauseScreen pause) {
-					checkPauseMenuIcon(pause);
+					checkIconRow(pause, "pause menu");
 				}
 				captureAfter(client, 20, "spotify pause menu, gui scale 2, dark");
 			}
@@ -1875,33 +1877,43 @@ public final class UiSnapshotter {
 				}
 				capture(client, "waypoints, not in a world");
 			}
+			// The EMUtils icon on the title screen (#160), first in the row of small icons.
+			case 297 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					client.gui.setScreen(new TitleScreen());
+				}
+				if (stepTicks == 10 && MinecraftClientCompat.screen(client) instanceof TitleScreen title) {
+					checkIconRow(title, "title screen");
+				}
+				captureAfter(client, 20, "title screen, EMUtils icon");
+			}
 			default -> finish(client);
 		}
 	}
 
 	/**
-	 * The EMUtils icon is the first of the pause menu's small icon buttons, left of the bug report one,
-	 * in the same row, and the old button in the top-left corner is gone (#160).
+	 * The EMUtils icon is the first of the screen's small icon buttons, in the same row, the row's icons
+	 * don't overlap, and there's no EMUtils button in the top-left corner any more (#160).
 	 */
-	private static void checkPauseMenuIcon(PauseScreen pause) {
-		SpriteIconButton emutils = null;
-		int othersLeft = Integer.MAX_VALUE;
-		int othersY = -1;
+	private static void checkIconRow(Screen screen, String where) {
+		AbstractWidget emutils = null;
+		List<AbstractWidget> others = new ArrayList<>();
 		boolean cornerButton = false;
-		for (GuiEventListener child : pause.children()) {
-			if (child instanceof SpriteIconButton icon) {
-				if (icon.getMessage().getString().equals(Component.translatable(EMUtilsTexts.HUB_TITLE).getString())) {
-					emutils = icon;
-				} else {
-					othersLeft = Math.min(othersLeft, icon.getX());
-					othersY = icon.getY();
-				}
+		for (GuiEventListener child : screen.children()) {
+			if (SettingsIconButton.is(child)) {
+				emutils = (AbstractWidget) child;
+			} else if (child instanceof SpriteIconButton icon) {
+				others.add(icon);
 			} else if (child instanceof AbstractWidget widget && widget.getX() < 20 && widget.getY() < 20) {
 				cornerButton = true;
 			}
 		}
-		check(emutils != null && emutils.getX() < othersLeft && emutils.getY() == othersY, "the EMUtils icon is the first of the pause menu's icon buttons");
-		check(!cornerButton, "no EMUtils button is left in the pause menu's top-left corner");
+		AbstractWidget icon = emutils;
+		boolean first = icon != null && !others.isEmpty() && others.stream().allMatch(other -> other.getY() != icon.getY() || other.getX() >= icon.getX() + icon.getWidth());
+		boolean inRow = icon != null && others.stream().anyMatch(other -> other.getY() == icon.getY());
+		check(first && inRow, "the EMUtils icon is the first of the " + where + "'s icon buttons, without overlapping them");
+		check(!cornerButton, "no EMUtils button is left in the " + where + "'s top-left corner");
 	}
 
 	private static void setGuiScale(Minecraft client, int guiScale) {
