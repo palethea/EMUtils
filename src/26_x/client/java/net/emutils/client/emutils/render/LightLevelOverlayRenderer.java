@@ -47,7 +47,7 @@ public final class LightLevelOverlayRenderer {
 
 	@Nullable
 	private static KeyMapping keyMapping;
-	private static List<Line> cachedLines = List.of();
+	private static List<WorldLines.Line> cachedLines = List.of();
 	private static List<NumberQuad> cachedNumbers = List.of();
 	@Nullable
 	private static ClientLevel cachedLevel;
@@ -132,7 +132,7 @@ public final class LightLevelOverlayRenderer {
 	}
 
 	private static void refreshCache(ClientLevel level, BlockPos center) {
-		List<Line> lines = new ArrayList<>();
+		List<WorldLines.Line> lines = new ArrayList<>();
 		List<NumberQuad> numbers = new ArrayList<>();
 		int range = EMUtilsClient.config().lightLevelRange();
 		boolean spawnableOnly = EMUtilsClient.config().lightLevelSpawnableOnly();
@@ -212,7 +212,7 @@ public final class LightLevelOverlayRenderer {
 			&& NaturalSpawner.isValidEmptySpawnBlock(chunk, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE);
 	}
 
-	private static void addSquare(List<Line> lines, double x, double y, double z, int color) {
+	private static void addSquare(List<WorldLines.Line> lines, double x, double y, double z, int color) {
 		addLine(lines, x + MARKER_MIN, y, z + MARKER_MIN, x + MARKER_MIN, y, z + MARKER_MAX, color, 1.5F);
 		addLine(lines, x + MARKER_MIN, y, z + MARKER_MAX, x + MARKER_MAX, y, z + MARKER_MAX, color, 1.5F);
 		addLine(lines, x + MARKER_MAX, y, z + MARKER_MAX, x + MARKER_MAX, y, z + MARKER_MIN, color, 1.5F);
@@ -220,10 +220,10 @@ public final class LightLevelOverlayRenderer {
 	}
 
 	private static void addLine(
-		List<Line> lines, double x1, double y1, double z1, double x2, double y2, double z2,
+		List<WorldLines.Line> lines, double x1, double y1, double z1, double x2, double y2, double z2,
 		int color, float width
 	) {
-		lines.add(new Line(x1, y1, z1, x2, y2, z2, color, width));
+		lines.add(new WorldLines.Line(x1, y1, z1, x2, y2, z2, color, width));
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -233,14 +233,13 @@ public final class LightLevelOverlayRenderer {
 		Vec3 cameraPosition = context.levelState().cameraRenderState.pos;
 		PoseStack matrices = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
+		WorldLines.Prepared lines = WorldLines.prepare(cachedLines, context.levelState().cameraRenderState);
+		if (!lines.isEmpty()) {
+			collector.submitCustomGeometry(matrices, RenderTypes.lines(), lines::render);
+		}
 		matrices.pushPose();
 		try {
 			matrices.translate(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
-			collector.submitCustomGeometry(matrices, RenderTypes.lines(), (pose, buffer) -> {
-				for (Line line : cachedLines) {
-					line.render(buffer, pose);
-				}
-			});
 			collector.submitCustomGeometry(matrices, NUMBER_RENDER_TYPE, (pose, buffer) -> {
 				for (NumberQuad number : cachedNumbers) {
 					number.render(buffer, pose);
@@ -272,24 +271,6 @@ public final class LightLevelOverlayRenderer {
 				.setColor(color)
 				.setUv(u, v)
 				.setLight(LightCoordsUtil.FULL_BRIGHT);
-		}
-	}
-
-	private record Line(
-		double x1, double y1, double z1, double x2, double y2, double z2, int color, float width
-	) {
-		private void render(VertexConsumer buffer, PoseStack.Pose pose) {
-			float dx = (float) (x2 - x1);
-			float dy = (float) (y2 - y1);
-			float dz = (float) (z2 - z1);
-			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-			float nx = length == 0.0F ? 0.0F : dx / length;
-			float ny = length == 0.0F ? 1.0F : dy / length;
-			float nz = length == 0.0F ? 0.0F : dz / length;
-			buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
 		}
 	}
 }

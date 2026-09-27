@@ -1,8 +1,8 @@
 package net.emutils.client.emutils.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
@@ -20,7 +20,9 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.entity.BeaconBeamOwner;
 import net.minecraft.world.level.block.entity.BeaconBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -37,12 +39,18 @@ public final class BeaconRadiusRenderer {
 
 	@Nullable
 	private static KeyMapping keyMapping;
-	private static List<Line> cachedLines = List.of();
+	/** How much of the way to white a cage is drawn when it touches another cage of the same color. */
+	private static final float NEIGHBOR_LIGHTEN = 0.45F;
+	/** A white (or nearly white) cage touching another of its color is drawn this light gray instead. */
+	private static final int WHITE_NEIGHBOR = 0xFFB4B4B4;
+
+	private static List<WorldLines.Line> cachedLines = List.of();
 	private static List<BeaconMapPoint> cachedMapPoints = List.of();
 	@Nullable
 	private static ClientLevel cachedLevel;
 	private static int nextScanTick;
 	private static int beaconCount;
+	private static List<Integer> outlineColors = List.of();
 	/** The Max Distance and Active Only settings the cache was built with; changing either rescans right away. */
 	private static int cachedRange = -1;
 	private static boolean cachedActiveOnly;
@@ -99,9 +107,7 @@ public final class BeaconRadiusRenderer {
 		int range = EMUtilsClient.config().beaconRadiusRange();
 		boolean activeOnly = EMUtilsClient.config().beaconRadiusActiveOnly();
 		int chunkRadius = Math.min(client.options.getEffectiveRenderDistance(), range);
-		List<Line> lines = new ArrayList<>();
-		List<BeaconMapPoint> mapPoints = new ArrayList<>();
-		int outlined = 0;
+		List<Outline> outlines = new ArrayList<>();
 		for (int chunkX = cameraChunkX - chunkRadius; chunkX <= cameraChunkX + chunkRadius; chunkX++) {
 			for (int chunkZ = cameraChunkZ - chunkRadius; chunkZ <= cameraChunkZ + chunkRadius; chunkZ++) {
 				LevelChunk chunk = client.level.getChunkSource().getChunkNow(chunkX, chunkZ);
@@ -111,18 +117,28 @@ public final class BeaconRadiusRenderer {
 				for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
 					if (blockEntity instanceof BeaconBlockEntity beacon
 						&& (!activeOnly || ((BeaconBlockEntityAccessor) beacon).emutils$getPrimaryPower() != null)) {
-						if (addBeaconGeometry(client.level, beacon, lines, mapPoints)) {
-							outlined++;
+						Outline outline = outline(client.level, beacon);
+						if (outline != null) {
+							outlines.add(outline);
 						}
 					}
 				}
 			}
 		}
+		List<WorldLines.Line> lines = new ArrayList<>();
+		List<BeaconMapPoint> mapPoints = new ArrayList<>();
+		int[] colors = colors(outlines);
+		for (int i = 0; i < outlines.size(); i++) {
+			AABB bounds = outlines.get(i).bounds();
+			addGridOutline(lines, bounds, colors[i]);
+			addMapPoints(mapPoints, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, outlines.get(i).pos().getY(), 0xCC000000 | (colors[i] & 0x00FFFFFF));
+		}
 		cachedLines = List.copyOf(lines);
 		cachedMapPoints = List.copyOf(mapPoints);
 		cachedLevel = client.level;
 		cachedRange = range;
-		beaconCount = outlined;
+		beaconCount = outlines.size();
+		outlineColors = java.util.Arrays.stream(colors).boxed().toList();
 		cachedActiveOnly = activeOnly;
 		nextScanTick = (client.player == null ? 0 : client.player.tickCount) + SCAN_INTERVAL_TICKS;
 	}
@@ -156,6 +172,11 @@ public final class BeaconRadiusRenderer {
 		return cachedMapPoints;
 	}
 
+	/** The colors the cages are drawn in, for UI snapshot checks. */
+	public static List<Integer> outlineColorsForSnapshot() {
+		return outlineColors;
+	}
+
 	/** How many beacons the outline currently draws, for UI snapshot checks. */
 	public static int outlinedBeaconsForSnapshot() {
 		return beaconCount;
@@ -166,36 +187,22 @@ public final class BeaconRadiusRenderer {
 			return;
 		}
 
+		WorldLines.Prepared prepared = WorldLines.prepare(cachedLines, context.levelState().cameraRenderState);
+		if (prepared.isEmpty()) {
+			return;
+		}
 		PoseStack matrices = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
-		matrices.pushPose();
-		try {
-			matrices.translate(
-				-context.levelState().cameraRenderState.pos.x,
-				-context.levelState().cameraRenderState.pos.y,
-				-context.levelState().cameraRenderState.pos.z
-			);
-			collector.submitCustomGeometry(matrices, RenderTypes.lines(), (pose, buffer) -> {
-				for (Line line : cachedLines) {
-					line.render(buffer, pose);
-				}
-			});
-		} finally {
-			matrices.popPose();
-		}
+		collector.submitCustomGeometry(matrices, RenderTypes.lines(), prepared::render);
 	}
 
-	/** Adds the outline of a beacon that has a pyramid and an unblocked beam; returns whether it did. */
-	private static boolean addBeaconGeometry(
-		ClientLevel level,
-		BeaconBlockEntity beacon,
-		List<Line> lines,
-		List<BeaconMapPoint> mapPoints
-	) {
+	/** A beacon's effect area, if it has a pyramid and an unblocked beam. */
+	@Nullable
+	private static Outline outline(ClientLevel level, BeaconBlockEntity beacon) {
 		int levels = ((BeaconBlockEntityAccessor) beacon).emutils$getLevels();
 		List<BeaconBeamOwner.Section> sections = beacon.getBeamSections();
 		if (levels <= 0 || sections.isEmpty() || beacon.isRemoved()) {
-			return false;
+			return null;
 		}
 
 		BlockPos pos = beacon.getBlockPos();
@@ -204,10 +211,55 @@ public final class BeaconRadiusRenderer {
 			.inflate(radius)
 			.setMinY(Math.max(level.getMinY(), pos.getY() - radius))
 			.setMaxY(level.getMaxY());
-		int rgb = sections.getFirst().getColor() & 0x00FFFFFF;
-		addGridOutline(lines, bounds, 0xB3000000 | rgb);
-		addMapPoints(mapPoints, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, pos.getY(), 0xCC000000 | rgb);
-		return true;
+		Holder<MobEffect> effect = ((BeaconBlockEntityAccessor) beacon).emutils$getPrimaryPower();
+		int beam = sections.getFirst().getColor() & 0x00FFFFFF;
+		// An undyed beam is white glass's off-white; its cage is drawn plain white.
+		int rgb = effect != null ? effect.value().getColor() : beam == (DyeColor.WHITE.getTextureDiffuseColor() & 0x00FFFFFF) ? 0xFFFFFF : beam;
+		return new Outline(pos.immutable(), bounds, rgb & 0x00FFFFFF);
+	}
+
+	/**
+	 * Each cage takes its beacon's effect color, or its beam color before an effect is picked (white
+	 * unless the beam is dyed). Where cages of the same color touch, every other one is drawn lighter,
+	 * so neighbors stay apart.
+	 */
+	private static int[] colors(List<Outline> outlines) {
+		List<Integer> order = new ArrayList<>();
+		for (int i = 0; i < outlines.size(); i++) {
+			order.add(i);
+		}
+		order.sort(Comparator.comparingLong(i -> outlines.get(i).pos().asLong()));
+		boolean[] lighter = new boolean[outlines.size()];
+		for (int i = 0; i < order.size(); i++) {
+			Outline outline = outlines.get(order.get(i));
+			AABB touching = outline.bounds().inflate(0.5D);
+			boolean nextToDefault = false;
+			boolean nextToLighter = false;
+			for (int j = 0; j < i; j++) {
+				Outline earlier = outlines.get(order.get(j));
+				if (earlier.rgb() == outline.rgb() && earlier.bounds().intersects(touching)) {
+					if (lighter[order.get(j)]) {
+						nextToLighter = true;
+					} else {
+						nextToDefault = true;
+					}
+				}
+			}
+			lighter[order.get(i)] = nextToDefault && !nextToLighter;
+		}
+		int[] colors = new int[outlines.size()];
+		for (int i = 0; i < outlines.size(); i++) {
+			int rgb = outlines.get(i).rgb();
+			if (!lighter[i]) {
+				colors[i] = 0xFF000000 | rgb;
+			} else if (ARGB.red(rgb) > 0xE0 && ARGB.green(rgb) > 0xE0 && ARGB.blue(rgb) > 0xE0) {
+				// Too light to get lighter.
+				colors[i] = WHITE_NEIGHBOR;
+			} else {
+				colors[i] = ARGB.srgbLerp(NEIGHBOR_LIGHTEN, 0xFF000000 | rgb, 0xFFFFFFFF);
+			}
+		}
+		return colors;
 	}
 
 	private static void addMapPoints(
@@ -230,7 +282,7 @@ public final class BeaconRadiusRenderer {
 	}
 
 	private static void addGridOutline(
-		List<Line> lines,
+		List<WorldLines.Line> lines,
 		AABB box,
 		int color
 	) {
@@ -256,7 +308,7 @@ public final class BeaconRadiusRenderer {
 	}
 
 	private static void addHorizontalOutline(
-		List<Line> lines,
+		List<WorldLines.Line> lines,
 		AABB box,
 		double y,
 		int color,
@@ -269,7 +321,7 @@ public final class BeaconRadiusRenderer {
 	}
 
 	private static void addLine(
-		List<Line> lines,
+		List<WorldLines.Line> lines,
 		double x1,
 		double y1,
 		double z1,
@@ -279,27 +331,12 @@ public final class BeaconRadiusRenderer {
 		int color,
 		float width
 	) {
-		lines.add(new Line(x1, y1, z1, x2, y2, z2, color, width));
+		lines.add(new WorldLines.Line(x1, y1, z1, x2, y2, z2, color, width));
 	}
 
 	public record BeaconMapPoint(double x, double y, double z, int color) {
 	}
 
-	private record Line(
-		double x1, double y1, double z1, double x2, double y2, double z2, int color, float width
-	) {
-		private void render(VertexConsumer buffer, PoseStack.Pose pose) {
-			float dx = (float) (x2 - x1);
-			float dy = (float) (y2 - y1);
-			float dz = (float) (z2 - z1);
-			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-			float nx = length == 0.0F ? 0.0F : dx / length;
-			float ny = length == 0.0F ? 1.0F : dy / length;
-			float nz = length == 0.0F ? 0.0F : dz / length;
-			buffer.addVertex(pose, (float) x1, (float) y1, (float) z1)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			buffer.addVertex(pose, (float) x2, (float) y2, (float) z2)
-				.setColor(color).setNormal(pose, nx, ny, nz).setLineWidth(width);
-		}
+	private record Outline(BlockPos pos, AABB bounds, int rgb) {
 	}
 }

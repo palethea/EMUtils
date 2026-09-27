@@ -85,6 +85,7 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -1464,10 +1465,13 @@ public final class UiSnapshotter {
 			case 255 -> {
 				client.gui.setScreen(null);
 				setGuiScale(client, 2);
-				quickWinsOrigin = client.player.blockPosition();
+				// Start on the surface: the world is new every run and may spawn the player in a cave,
+				// where beacon beams can't reach the sky.
+				BlockPos spawn = client.player.blockPosition();
+				quickWinsOrigin = new BlockPos(spawn.getX(), client.level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, spawn.getX(), spawn.getZ()), spawn.getZ());
 				command(client, "difficulty peaceful");
 				command(client, "time set day");
-				command(client, "tp @s ~ ~ ~ 0 0");
+				command(client, "tp @s " + at(0, 0, 0) + " 0 0");
 				EMUtilsClient.config().setWaypointCoordinateFormat(WaypointCoordinateFormat.COMMA);
 				EMUtilsClient.config().setCopyCoordinatesFeedback(true);
 				next();
@@ -1476,6 +1480,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 10) {
 					EMUtilsClient.waypoint().copyCurrentCoordinates(client);
 					BlockPos pos = client.player.blockPosition();
+					check(pos.equals(quickWinsOrigin), "the player stands on the surface for the quick wins checks: " + pos);
 					String copied = client.keyboardHandler.getClipboard();
 					check((pos.getX() + ", " + pos.getY() + ", " + pos.getZ()).equals(copied), "Copy Coordinates copies the player's position in the Coord Format (" + copied + ")");
 				}
@@ -1586,11 +1591,33 @@ public final class UiSnapshotter {
 				EMUtilsClient.config().setBeaconRadiusOutline(true);
 				command(client, "fill " + at(2, 2, -1) + " " + at(4, 2, 1) + " minecraft:iron_block");
 				command(client, "setblock " + at(3, 3, 0) + " minecraft:beacon");
+				// A second beacon next to it, so the two cages overlap.
+				command(client, "fill " + at(2, 2, 3) + " " + at(4, 2, 5) + " minecraft:iron_block");
+				command(client, "setblock " + at(3, 3, 4) + " minecraft:beacon");
 				command(client, "tp @s ~ ~ ~ -90 -30");
 				next();
 			}
-			case 270 -> waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, 300, "a beacon on an iron pyramid gets an outline");
-			case 271 -> captureAfter(client, 10, "beacon radius outline");
+			case 270 -> {
+				waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 2, 300, "beacons on iron pyramids get an outline");
+				if (step != 270) {
+					List<Integer> colors = BeaconRadiusRenderer.outlineColorsForSnapshot();
+					check(colors.contains(0xFFFFFFFF) && colors.contains(0xFFB4B4B4), "of two touching beacons without an effect, one cage is white and the other light gray: " + hexColors(colors));
+				}
+			}
+			case 271 -> {
+				// Turn the camera inside the cage, looking up, where lines run behind the camera: each
+				// frame should show the same still lines, not ones jumping across the screen.
+				if (stepTicks >= 10) {
+					client.player.setYRot(-90.0F + (stepTicks - 10) * 6.0F);
+					client.player.setXRot(-55.0F);
+				}
+				if (stepTicks >= 12 && stepTicks % 2 == 0) {
+					grab(client, "beacon radius outline, turning " + (stepTicks - 10) / 2);
+				}
+				if (stepTicks >= 20) {
+					next();
+				}
+			}
 			case 272 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setBeaconRadiusActiveOnly(true);
@@ -1628,16 +1655,27 @@ public final class UiSnapshotter {
 			case 276 -> waitForCheck(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, 60, "Only Active Beacons outlines a beacon right after you pick its effect in the beacon screen");
 			case 277 -> {
 				if (stepTicks == 1) {
-					EMUtilsClient.config().setBeaconRadiusRange(2);
+					EMUtilsClient.config().setBeaconRadiusActiveOnly(false);
+					client.player.setYRot(-60.0F);
+					client.player.setXRot(-45.0F);
 				}
 				if (stepTicks == 3) {
+					List<Integer> colors = BeaconRadiusRenderer.outlineColorsForSnapshot();
+					int haste = 0xFF000000 | MobEffects.HASTE.value().getColor();
+					check(colors.contains(haste) && colors.contains(0xFFFFFFFF), "the Haste beacon's cage is Haste's color and the other stays white: " + hexColors(colors));
+				}
+				if (stepTicks == 10) {
+					grab(client, "beacon radius outline, haste next to no effect");
+					EMUtilsClient.config().setBeaconRadiusRange(2);
+				}
+				if (stepTicks == 12) {
 					check(BeaconRadiusRenderer.outlinedBeaconsForSnapshot() >= 1, "a beacon in the player's chunk stays outlined at the smallest Max Distance");
 					next();
 				}
 			}
 			case 278 -> openSheetAndCapture(client, "beacon_radius_outline", "beacon radius sheet");
 			case 279 -> {
-				command(client, "fill " + at(2, 2, -1) + " " + at(4, 3, 1) + " minecraft:air");
+				command(client, "fill " + at(2, 2, -1) + " " + at(4, 3, 5) + " minecraft:air");
 				EMUtilsClient.config().resetBeaconRadiusDefaults();
 				EMUtilsClient.config().resetLightLevelDefaults();
 				EMUtilsClient.config().setLightLevelOverlay(true);
@@ -2106,6 +2144,10 @@ public final class UiSnapshotter {
 		} catch (IOException exception) {
 			return -1L;
 		}
+	}
+
+	private static String hexColors(List<Integer> colors) {
+		return colors.stream().map(color -> String.format(Locale.ROOT, "#%08X", color)).toList().toString();
 	}
 
 	/** Runs a command as the player; the test world is created with commands allowed. */
