@@ -70,6 +70,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -1866,6 +1867,21 @@ public final class UiSnapshotter {
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
 				}
 				capture(client, "waypoints, not in a world");
+			}
+			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
+			case 297 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					TitleScreen title = new TitleScreen();
+					client.gui.setScreen(title);
+					client.gui.setScreen(new SettingsScreen(title));
+				}
+				if (stepTicks == 15) {
+					Screen settings = MinecraftClientCompat.screen(client);
+					settings.onClose();
+					check(settings instanceof SettingsScreen && MinecraftClientCompat.screen(client) instanceof TitleScreen, "closing the settings goes back to the title screen right away");
+				}
+				captureAfter(client, 16, "settings closing back to the title screen, mid-fade");
 			}
 			default -> finish(client);
 		}

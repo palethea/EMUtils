@@ -35,7 +35,7 @@ public final class UiClosingScreens {
 	static void clear() {
 		if (!SCREENS.isEmpty()) {
 			for (Entry entry : SCREENS) {
-				entry.screen().finishFadingOnHud();
+				entry.screen().finishFadingOut();
 			}
 			SCREENS.clear();
 			UiBlur.reset();
@@ -55,7 +55,7 @@ public final class UiClosingScreens {
 		long now = System.nanoTime();
 		SCREENS.removeIf(entry -> {
 			if (now - entry.startNanos() > MAX_NANOS || !entry.screen().extractClosingFrame(context)) {
-				entry.screen().finishFadingOnHud();
+				entry.screen().finishFadingOut();
 				return true;
 			}
 			return false;
