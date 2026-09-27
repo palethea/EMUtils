@@ -109,6 +109,10 @@ public final class UiWidgets {
 	public static void ghostIconButton(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int size, Identifier icon, int iconColor, float hover) {
 		UiShapes.roundedRect(context, x, y, size, size, 6, UiTheme.fade(theme.hover(), hover * 1.6F));
 		int iconSize = Math.round(size * 0.6F);
+		// An odd leftover can't be split evenly and would leave the icon half a pixel up and left.
+		if ((size - iconSize) % 2 != 0) {
+			iconSize++;
+		}
 		int offset = (size - iconSize) / 2;
 		UiIcons.draw(context, icon, x + offset, y + offset, iconSize, iconColor);
 	}

@@ -200,6 +200,7 @@ final class SettingsSheet {
 			if (box.key != null) {
 				UiText.prepare(Component.translatable(box.key.getName()), UiText.Size.BOLD);
 				UiText.prepare(capture.label(box.key), UiText.Size.SMALL);
+				UiText.prepare(Component.translatable(EMUtilsTexts.UI_KEYBIND_HINT), UiText.Size.SMALL);
 				continue;
 			}
 			String key = labelKey(box.row);
@@ -457,12 +458,9 @@ final class SettingsSheet {
 		int labelCenter = box.y + ROW_PADDING + 6;
 
 		if (box.key != null) {
-			Component cap = capture.label(box.key);
-			int capWidth = UiWidgets.keycapWidth(font, cap);
-			int capX = right - capWidth;
-			Component name = UiText.ellipsize(font, Component.translatable(box.key.getName()), UiText.Size.BOLD, right - left - capWidth - 10);
-			UiText.drawCentered(context, font, name, UiText.Size.BOLD, left, labelCenter, theme.text());
-			UiWidgets.keycap(context, font, theme, capX, labelCenter - UiWidgets.KEYCAP_HEIGHT / 2, cap, capture.isListening(box.key), KeybindCapture.clashes(box.key), hovered ? 1.0F : 0.0F);
+			int nameWidth = right - left - KeybindControl.width(font, capture, box.key) - 10;
+			KeybindControl.drawName(context, font, theme, anim, capture, box.key, Component.translatable(box.key.getName()), left, labelCenter, nameWidth);
+			box.keyLayout = KeybindControl.draw(context, font, theme, anim, capture, box.key, right, labelCenter, hovered, mouseX, mouseY);
 			box.setControl(box.x, box.y, box.width, box.height);
 			return;
 		}
@@ -708,7 +706,11 @@ final class SettingsSheet {
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void clickRow(RowBox box, double mouseX, double mouseY) {
 		if (box.key != null) {
-			capture.start(box.key);
+			if (box.keyLayout != null && box.keyLayout.hitsClear(capture, box.key, mouseX, mouseY)) {
+				KeybindCapture.clear(box.key);
+			} else {
+				capture.start(box.key);
+			}
 			return;
 		}
 		HubSettingRow row = box.row;
@@ -876,6 +878,7 @@ final class SettingsSheet {
 		/** The setting, or null for a keybind row. */
 		private final @Nullable HubSettingRow row;
 		private @Nullable KeyMapping key;
+		private KeybindControl.@Nullable Layout keyLayout;
 		private final int top;
 		private int height;
 		private List<Component> description = List.of();

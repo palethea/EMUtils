@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
-import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.config.ConfigTransfer;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.hub.HubFeature;
 import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
@@ -122,12 +122,11 @@ public final class EMUtilsCommand {
 
 	private static int export(CommandContext<FabricClientCommandSource> context) {
 		Minecraft client = Minecraft.getInstance();
-		EMUtilsConfig config = EMUtilsClient.config();
-		if (client == null || config == null) {
+		if (client == null || EMUtilsClient.config() == null) {
 			return 0;
 		}
 
-		client.keyboardHandler.setClipboard(config.toJson());
+		client.keyboardHandler.setClipboard(ConfigTransfer.export());
 		feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_EXPORTED));
 		return 1;
 	}
@@ -138,17 +137,11 @@ public final class EMUtilsCommand {
 			return 0;
 		}
 
-		// Replaces the active profile's settings.
-		EMUtilsConfig current = EMUtilsClient.config();
-		EMUtilsConfig imported = current == null ? null : EMUtilsConfig.fromJson(client.keyboardHandler.getClipboard(), current.file());
-		if (imported == null) {
+		// Replaces the active profile's settings, and binds the exported keys.
+		if (!ConfigTransfer.importFrom(client.keyboardHandler.getClipboard())) {
 			feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_IMPORT_FAILED));
 			return 0;
 		}
-
-		// How the menus look belongs to the player, as when switching profiles.
-		imported.copyMenuSettingsFrom(current);
-		EMUtilsClient.replaceConfig(imported);
 		feedback(context, Component.translatable(EMUtilsTexts.COMMAND_FEEDBACK_IMPORTED));
 		return 1;
 	}

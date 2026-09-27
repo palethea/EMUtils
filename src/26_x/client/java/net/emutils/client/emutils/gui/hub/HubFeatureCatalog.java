@@ -10,6 +10,7 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.profile.gui.ProfilesScreen;
@@ -171,6 +172,18 @@ public final class HubFeatureCatalog {
 				true,
 				null
 			).keys("key.emutils.next_profile"),
+			actionFeature(
+				"keybinds",
+				null,
+				HubFeature.Group.MANAGEMENT,
+				EMUtilsTexts.SCREEN_KEYBINDS,
+				EMUtilsTexts.HUB_FEATURE_KEYBINDS_DESC,
+				HubFeature.Icon.KEYBOARD,
+				null,
+				openScreenAction(KeybindsScreen::new),
+				true,
+				null
+			),
 			categoryFeature("menus", HubCategory.MENUS, HubFeature.Group.MANAGEMENT, EMUtilsTexts.UI_MENUS_TITLE, EMUtilsTexts.HUB_FEATURE_MENUS_DESC, HubFeature.Icon.PALETTE, null),
 			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::chatFeaturesEnabled, config::setChatFeaturesEnabled)),
 			categoryFeature("inventory", HubCategory.INVENTORY, HubFeature.Group.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, HubFeature.Icon.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)).keys("key.emutils.slot_lock", "key.emutils.slot_bind", "key.emutils.quick_stack", "key.emutils.mass_drop"),

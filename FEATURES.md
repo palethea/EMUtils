@@ -167,7 +167,7 @@ Open the EMUtils settings from the pause menu, the vanilla Options screen, a key
   - Compact Cards: smaller cards without descriptions, four to a row.
   - Category Colors: turn the colored category dots off.
   - High Contrast: stronger secondary text, borders and dividers.
-- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the config through the clipboard.
+- `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the active profile's settings together with the EMUtils keybinds through the clipboard.
 
 ### Screenshot Gallery
 
@@ -222,6 +222,17 @@ Keep several sets of EMUtils settings, such as one for a PvP server and one for 
 - Auto-Switch: link a profile to servers, typed or picked from your multiplayer server list (a domain also covers its subdomains, such as `hypixel.net` for `mc.hypixel.net`), or to singleplayer worlds, and it loads when you join. Joining anywhere else goes back to the profile you last picked yourself.
 - Profile Management: create profiles from the current settings or the defaults, rename, duplicate, reorder, reset to defaults, and delete them. Names are unique, and the Default profile always stays.
 - Import and Export: copy a profile to the clipboard to share it, and add one from the clipboard, including a config copied with `/emutils export`.
+
+### Keybinds
+
+Every EMUtils key on one page, opened from the Keybinds card or the keyboard button in the settings header. Keys are grouped by category like the settings, plus General for keys that don't belong to one feature, such as Open Settings. Changes here and in a feature's sheet are the same keys, so both always agree.
+
+- Rebinding: click a key, here or in a feature's sheet, and press the new one. Esc cancels, Backspace clears it, and a right click puts back its default; a hint says so while the key waits. A bound key shows an × while hovered that unbinds it right away.
+- Conflicts: a key shared with anything else, including vanilla keys and other mods, is highlighted, with what it clashes with. Conflicts Only lists just those.
+- Search: find a key by its name, its feature or the key it's bound to.
+- Feature Links: each key links to its feature's sheet, which opens over the page.
+- Reset All: put every EMUtils key back to its default.
+- Script Keybinds and Command Shortcuts: listed read-only, with a link to the Script Manager or Command Shortcuts where they're edited.
 
 ## QoL
 
