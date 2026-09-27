@@ -150,7 +150,7 @@ Save death and custom waypoints per world or server.
 
 ### Settings Hub
 
-Open the EMUtils settings from the pause menu, the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command. Every feature is a card with a short description, grouped by category, with search. A card's switch turns the feature on or off, Open opens its screen, and the rest of the card opens a sheet with its settings and keybinds. All EMUtils screens share this look.
+Open the EMUtils settings from the EMUtils icon on the title screen and in the pause menu (the first of the small icon buttons), the vanilla Options screen, a keybind, Mod Menu, or the `/emutils` client command. Every feature is a card with a short description, grouped by category, with search. A card's switch turns the feature on or off, Open opens its screen, and the rest of the card opens a sheet with its settings and keybinds. All EMUtils screens share this look.
 
 - Mod Menu Integration: open the EMUtils settings from Mod Menu's config button when Mod Menu is installed.
 - Menu Settings: the palette button in the header, or the Menus card, sets how every EMUtils menu looks, in four tabs: Colors, Fonts, Layout and Effects. Menu settings stay the same for every profile.

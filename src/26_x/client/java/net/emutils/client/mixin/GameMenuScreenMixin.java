@@ -1,17 +1,16 @@
 package net.emutils.client.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.spotify.gui.SpotifyPlayerOverlay;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
-import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,15 +20,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(PauseScreen.class)
 public abstract class GameMenuScreenMixin extends Screen {
-	private static final int BUTTON_WIDTH = 140;
-	private static final int BUTTON_HEIGHT = 20;
-	private static final int BUTTON_MARGIN = 8;
-
 	@Unique
 	private SpotifyPlayerOverlay emutils$spotifyOverlay;
-
-	@Unique
-	private Button emutils$hubButton;
 
 	protected GameMenuScreenMixin(Component title) {
 		super(title);
@@ -37,9 +29,23 @@ public abstract class GameMenuScreenMixin extends Screen {
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void emutils$init(CallbackInfo ci) {
-		emutils$hubButton = null;
-		emutils$layoutGameMenuButtons();
 		emutils$initSpotifyPlayer();
+	}
+
+	/**
+	 * Opens the EMUtils settings from the row of small icon buttons, as its first icon, left of the bug
+	 * report one (#160). The row is laid out and its buttons added to the screen by the menu itself.
+	 */
+	@Inject(
+		method = "createPauseMenu",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/layouts/LinearLayout;addChild(Lnet/minecraft/client/gui/layouts/LayoutElement;)Lnet/minecraft/client/gui/layouts/LayoutElement;",
+			ordinal = 0
+		)
+	)
+	private void emutils$addSettingsIcon(CallbackInfo ci, @Local LinearLayout iconButtonRow) {
+		iconButtonRow.addChild(SettingsIconButton.create(this));
 	}
 
 	@Inject(method = "tick", at = @At("TAIL"))
@@ -48,10 +54,6 @@ public abstract class GameMenuScreenMixin extends Screen {
 			SpotifyTrackState state = EMUtilsClient.spotify().state();
 			emutils$spotifyOverlay.setVisible(SpotifyPlayerOverlay.shouldDisplay(state));
 			emutils$spotifyOverlay.syncPlaybackState(state);
-		}
-
-		if (emutils$hubButton == null) {
-			emutils$layoutGameMenuButtons();
 		}
 	}
 
@@ -74,33 +76,16 @@ public abstract class GameMenuScreenMixin extends Screen {
 	}
 
 	@Unique
-	private void emutils$layoutGameMenuButtons() {
-		if (emutils$hubButton != null) {
-			return;
-		}
-
-		emutils$hubButton = addRenderableWidget(emutils$createHubButton(BUTTON_MARGIN, BUTTON_MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT));
-	}
-
-	@Unique
-	private Button emutils$createHubButton(int x, int y, int width, int height) {
-		return Button.builder(
-			Component.translatable(EMUtilsTexts.HUB_TITLE),
-			open -> Minecraft.getInstance().gui.setScreen(new SettingsScreen(this))
-		).bounds(x, y, width, height).build();
-	}
-
-	@Unique
 	private void emutils$initSpotifyPlayer() {
 		emutils$spotifyOverlay = null;
 		if (!EMUtilsClient.config().spotifyEnabled() || !EMUtilsClient.config().spotifyPlayerEnabled()) {
 			return;
 		}
 
-		// The card stays below the menu's lowest button; our EMUtils button sits in the top corner.
+		// The card stays below the menu's lowest button.
 		int menuBottom = 0;
 		for (GuiEventListener child : children()) {
-			if (child instanceof AbstractWidget widget && widget != emutils$hubButton) {
+			if (child instanceof AbstractWidget widget) {
 				menuBottom = Math.max(menuBottom, widget.getBottom());
 			}
 		}
