@@ -1869,7 +1869,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 297 -> {
+			case 298 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
