@@ -228,7 +228,7 @@ Keep several sets of EMUtils settings, such as one for a PvP server and one for 
 Every EMUtils key on one page, opened from the Keybinds card or the keyboard button in the settings header. Keys are grouped by category like the settings, plus General for keys that don't belong to one feature, such as Open Settings. Changes here and in a feature's sheet are the same keys, so both always agree.
 
 - Rebinding: click a key, here or in a feature's sheet, and press the new one. Esc cancels, Backspace clears it, and a right click puts back its default; a hint says so while the key waits. A bound key shows an × while hovered that unbinds it right away.
-- Conflicts: a key shared with anything else, including vanilla keys and other mods, is shown in orange with what it clashes with. Conflicts Only lists just those.
+- Conflicts: a key shared with anything else, including vanilla keys and other mods, is highlighted, with what it clashes with. Conflicts Only lists just those.
 - Search: find a key by its name, its feature or the key it's bound to.
 - Feature Links: each key links to its feature's sheet, which opens over the page.
 - Reset All: put every EMUtils key back to its default.

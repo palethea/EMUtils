@@ -63,6 +63,11 @@ public final class KeybindsScreen extends UiPanelScreen {
 	private List<Section> sections = List.of();
 	/** Built for {@link #sectionsConfig}; switching profiles swaps the config, and the features' sheets with it. */
 	private @Nullable EMUtilsConfig sectionsConfig;
+	/**
+	 * Set when the page is shown again, such as after coming back from the Script Manager or Command
+	 * Shortcuts, whose key combos may have changed there.
+	 */
+	private boolean sectionsStale = true;
 	private boolean conflictsOnly;
 	private @Nullable SettingsSheet sheet;
 	private @Nullable UiConfirmDialog dialog;
@@ -96,15 +101,20 @@ public final class KeybindsScreen extends UiPanelScreen {
 		int bodyY = toolbarY + TOOLBAR_HEIGHT + 8;
 		scroll.setBounds(panelX + PADDING, bodyY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - bodyY);
 		search.restoreFocus();
+		sectionsStale = true;
 	}
 
 	@Override
 	protected void beforeFrame() {
 		capture.frame();
 		if (EMUtilsClient.config() != sectionsConfig) {
+			sheet = null;
+			sectionsStale = true;
+		}
+		if (sectionsStale) {
 			sections = buildSections();
 			sectionsConfig = EMUtilsClient.config();
-			sheet = null;
+			sectionsStale = false;
 		}
 	}
 
