@@ -1,6 +1,8 @@
 package net.emutils.client.emutils.gui.settings;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.ArrayList;
+import java.util.List;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -9,10 +11,10 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Rebinding a key from a settings sheet's Keybinds section, like the vanilla Controls screen: after
- * clicking a keybind, the next key or mouse side button is bound. Esc cancels and keeps the key as it
- * was, even if that was unbound (in this UI Esc always backs out), Backspace unbinds, and a left or right
- * click cancels.
+ * Rebinding a key from a settings sheet's Keybinds section or the Keybinds page, like the vanilla
+ * Controls screen: after clicking a keybind, the next key or mouse side button is bound. Esc cancels and
+ * keeps the key as it was, even if that was unbound (in this UI Esc always backs out), Backspace unbinds,
+ * a right click resets the key to its default, and a left click cancels.
  */
 final class KeybindCapture {
 	private @Nullable KeyMapping listening;
@@ -53,14 +55,16 @@ final class KeybindCapture {
 		return true;
 	}
 
-	/** Binds a middle or side mouse button; the left and right buttons cancel instead. */
+	/** Binds a middle or side mouse button; the left button cancels, and the right one resets the key. */
 	boolean mouseClicked(int button) {
 		KeyMapping mapping = listening;
 		if (mapping == null) {
 			return false;
 		}
 		listening = null;
-		if (button != InputConstants.MOUSE_BUTTON_LEFT && button != InputConstants.MOUSE_BUTTON_RIGHT) {
+		if (button == InputConstants.MOUSE_BUTTON_RIGHT) {
+			resetToDefault(mapping);
+		} else if (button != InputConstants.MOUSE_BUTTON_LEFT) {
 			apply(mapping, InputConstants.Type.MOUSE.getOrCreate(button));
 		}
 		return true;
@@ -82,6 +86,19 @@ final class KeybindCapture {
 		apply(mapping, mapping.getDefaultKey());
 	}
 
+	static void clear(KeyMapping mapping) {
+		apply(mapping, InputConstants.UNKNOWN);
+	}
+
+	/** Resets every EMUtils key to its default, saving once. */
+	static void resetAll(List<KeyMapping> mappings) {
+		for (KeyMapping mapping : mappings) {
+			mapping.setKey(mapping.getDefaultKey());
+		}
+		KeyMapping.resetMapping();
+		Minecraft.getInstance().options.save();
+	}
+
 	private static void apply(KeyMapping mapping, InputConstants.Key key) {
 		mapping.setKey(key);
 		KeyMapping.resetMapping();
@@ -96,16 +113,22 @@ final class KeybindCapture {
 		return mapping.isUnbound() ? Component.translatable(EMUtilsTexts.UI_NOT_BOUND) : mapping.getTranslatedKeyMessage();
 	}
 
-	/** Whether another key mapping uses the same key. */
+	/** Whether another key mapping, from EMUtils, vanilla or another mod, uses the same key. */
 	static boolean clashes(KeyMapping mapping) {
+		return !clashesWith(mapping).isEmpty();
+	}
+
+	/** The other key mappings that use the same key. */
+	static List<KeyMapping> clashesWith(KeyMapping mapping) {
+		List<KeyMapping> others = new ArrayList<>();
 		if (mapping.isUnbound()) {
-			return false;
+			return others;
 		}
 		for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
 			if (other != mapping && other.same(mapping)) {
-				return true;
+				others.add(other);
 			}
 		}
-		return false;
+		return others;
 	}
 }

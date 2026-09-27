@@ -223,6 +223,17 @@ Keep several sets of EMUtils settings, such as one for a PvP server and one for 
 - Profile Management: create profiles from the current settings or the defaults, rename, duplicate, reorder, reset to defaults, and delete them. Names are unique, and the Default profile always stays.
 - Import and Export: copy a profile to the clipboard to share it, and add one from the clipboard, including a config copied with `/emutils export`.
 
+### Keybinds
+
+Every EMUtils key on one page, opened from the Keybinds card or the keyboard button in the settings header. Keys are grouped by category like the settings, plus General for keys that don't belong to one feature, such as Open Settings. Changes here and in a feature's sheet are the same keys, so both always agree.
+
+- Rebinding: click a key, here or in a feature's sheet, and press the new one. Esc cancels, Backspace clears it, and a right click puts back its default; a hint says so while the key waits. A bound key shows an × while hovered that unbinds it right away.
+- Conflicts: a key shared with anything else, including vanilla keys and other mods, is shown in orange with what it clashes with. Conflicts Only lists just those.
+- Search: find a key by its name, its feature or the key it's bound to.
+- Feature Links: each key links to its feature's sheet, which opens over the page.
+- Reset All: put every EMUtils key back to its default.
+- Script Keybinds and Command Shortcuts: listed read-only, with a link to the Script Manager or Command Shortcuts where they're edited.
+
 ## QoL
 
 ### Chat Features

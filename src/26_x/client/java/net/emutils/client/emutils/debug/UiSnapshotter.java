@@ -30,6 +30,7 @@ import net.emutils.client.emutils.commandshortcuts.CommandShortcut;
 import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
+import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.ui.UiFontRenderer;
@@ -1737,20 +1738,101 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
+			// The Keybinds page (#155): every EMUtils key, the × that unbinds one, the hint while one waits
+			// for a key, conflicts, and the link to a feature's sheet. Freelook is put on Q, like Drop Item.
 			case 285 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					EMUtilsClient.config().setSettingsUiDark(true);
+					KeyMapping freelook = KeyMapping.get("key.emutils.freelook");
+					freelook.setKey(InputConstants.getKey(new KeyEvent(InputConstants.KEY_Q, 0, 0)));
+					KeyMapping.resetMapping();
+					client.gui.setScreen(new KeybindsScreen(new SettingsScreen(null)));
+				}
+				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					List<String> general = screen.generalKeysForSnapshot();
+					check(general.contains("key.emutils.open_settings_hub"), "Open Settings is listed under General on the Keybinds page " + general);
+					check(!general.contains("key.emutils.zoom"), "keys a feature lists aren't under General");
+				}
+				captureAfter(client, 20, "keybinds page, freelook clashing with Drop Item");
+			}
+			case 286 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.hoverClearForSnapshot("key.emutils.zoom");
+				}
+				captureAfter(client, 15, "keybinds page, the x on a hovered key");
+			}
+			case 287 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.hoverClearForSnapshot(null);
+					screen.listenForSnapshot("key.emutils.zoom");
+				}
+				captureAfter(client, 15, "keybinds page, waiting for a key with the hint");
+			}
+			case 288 -> {
+				if (MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					KeyMapping zoom = KeyMapping.get("key.emutils.zoom");
+					screen.keyPressed(new KeyEvent(InputConstants.KEY_ESCAPE, 0, 0));
+					check(!zoom.isUnbound() && MinecraftClientCompat.screen(client) == screen, "Esc cancels waiting for a key and keeps the page open");
+					screen.clickClearForSnapshot("key.emutils.zoom");
+					check(zoom.isUnbound(), "the x unbinds the key right away");
+					screen.listenForSnapshot("key.emutils.zoom");
+					MouseButtonInfo right = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, 0);
+					screen.mouseClicked(new MouseButtonEvent(0, 0, right), false);
+					check(zoom.isDefault(), "a right click while waiting for a key resets it to its default");
+				}
+				next();
+			}
+			case 289 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.setConflictsOnlyForSnapshot(true);
+				}
+				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					int conflicts = screen.conflictCountForSnapshot();
+					check(conflicts >= 1 && screen.visibleRowsForSnapshot() == conflicts, "Conflicts only shows just the clashing keys (" + screen.visibleRowsForSnapshot() + " rows, " + conflicts + " conflicts)");
+				}
+				captureAfter(client, 15, "keybinds page, conflicts only");
+			}
+			case 290 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.setConflictsOnlyForSnapshot(false);
+					screen.searchForSnapshot("waypoint");
+				}
+				captureAfter(client, 15, "keybinds page, search waypoint");
+			}
+			case 291 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.searchForSnapshot("");
+					check(screen.openFeatureSheetForSnapshot("key.emutils.freelook"), "the feature link opens Freelook's sheet over the Keybinds page");
+				}
+				captureAfter(client, 20, "keybinds page, freelook sheet from the link");
+			}
+			case 292 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof KeybindsScreen screen) {
+					screen.closeSheetForSnapshot();
+					setGuiScale(client, 3);
+					EMUtilsClient.config().setSettingsUiDark(false);
+				}
+				captureAfter(client, 20, "keybinds page, gui scale 3, light");
+			}
+			case 293 -> {
+				KeyMapping freelook = KeyMapping.get("key.emutils.freelook");
+				freelook.setKey(freelook.getDefaultKey());
+				KeyMapping.resetMapping();
+				client.options.save();
 				deleteTestScripts();
 				EMUtilsClient.config().resetMenuSettings();
 				client.gui.setScreen(null);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 286 -> {
+			case 294 -> {
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 287 -> {
+			case 295 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -1759,7 +1841,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 288 -> {
+			case 296 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");

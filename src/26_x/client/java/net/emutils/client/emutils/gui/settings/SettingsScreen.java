@@ -81,6 +81,7 @@ public final class SettingsScreen extends UiPanelScreen {
 	private int controlY;
 	private int controlWidth;
 	private int menusButtonX;
+	private int keybindsButtonX;
 	private int rightButtonsY;
 	private int titleY;
 	private boolean stackedHeader;
@@ -108,7 +109,7 @@ public final class SettingsScreen extends UiPanelScreen {
 		buttonsWidth += (categoryButtons.size() - 1) * 2;
 		controlWidth = Math.min(panelWidth - PADDING * 2, Math.max(300, buttonsWidth + 8));
 
-		int rightButtonsWidth = ROUND_BUTTON + 6 + PROFILE_BUTTON_WIDTH;
+		int rightButtonsWidth = ROUND_BUTTON + 6 + PROFILE_BUTTON_WIDTH + 6 + ROUND_BUTTON;
 		int titleBlockWidth = titleBlockWidth();
 		int centeredX = panelX + (panelWidth - controlWidth) / 2;
 		stackedHeader = centeredX < panelX + PADDING + titleBlockWidth + 12
@@ -120,6 +121,7 @@ public final class SettingsScreen extends UiPanelScreen {
 
 		menusButtonX = panelX + panelWidth - PADDING - ROUND_BUTTON;
 		profileButtonX = menusButtonX - 6 - PROFILE_BUTTON_WIDTH;
+		keybindsButtonX = profileButtonX - 6 - ROUND_BUTTON;
 		controlX = centeredX;
 		controlY = stackedHeader ? panelY + PADDING + 28 : panelY + PADDING;
 
@@ -184,6 +186,8 @@ public final class SettingsScreen extends UiPanelScreen {
 		} else if (sheet == null && System.currentTimeMillis() < switchFailedUntil) {
 			Component failed = Component.translatable(EMUtilsTexts.PROFILE_SWITCH_FAILED);
 			UiWidgets.tooltip(context, font, theme, failed, profileButtonX + PROFILE_BUTTON_WIDTH / 2, rightButtonsY + ROUND_BUTTON + 2, width, height);
+		} else if (sheet == null && !closing() && contains(mouseX, mouseY, keybindsButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_KEYBINDS_BUTTON), mouseX, mouseY, width, height);
 		} else if (sheet == null && !closing() && contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
 			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_MENUS_BUTTON), mouseX, mouseY, width, height);
 		} else if (sheet == null && !closing() && contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON)) {
@@ -301,6 +305,10 @@ public final class SettingsScreen extends UiPanelScreen {
 	}
 
 	private void drawRightButtons(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		// Every EMUtils key on one page (#155).
+		float keybindsHover = anim.towards("keybinds-button", contains(mouseX, mouseY, keybindsButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON), 16.0F);
+		UiWidgets.iconButton(context, theme, keybindsButtonX, rightButtonsY, ROUND_BUTTON, HubIcons.KEYBOARD, keybindsHover);
+
 		// The profile switcher: the active profile's icon and a chevron, like the mockup.
 		boolean menuOpen = profileMenu != null;
 		float profileHover = anim.towards("profile-button", menuOpen || contains(mouseX, mouseY, profileButtonX, rightButtonsY, PROFILE_BUTTON_WIDTH, ROUND_BUTTON), 16.0F);
@@ -530,6 +538,11 @@ public final class SettingsScreen extends UiPanelScreen {
 		}
 		if (contains(mouseX, mouseY, menusButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
 			openMenuSettings();
+			return true;
+		}
+		if (contains(mouseX, mouseY, keybindsButtonX, rightButtonsY, ROUND_BUTTON, ROUND_BUTTON)) {
+			search.setFocused(false);
+			minecraft.gui.setScreen(new KeybindsScreen(this));
 			return true;
 		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {

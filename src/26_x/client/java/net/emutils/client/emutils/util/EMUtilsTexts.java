@@ -1143,6 +1143,26 @@ public final class EMUtilsTexts {
     public static final String UI_MENUS_ACCENT = "emutils.ui.menus.accent";
     public static final String UI_MENUS_ACCENT_CUSTOM = "emutils.ui.menus.accent.custom";
     public static final String UI_MENUS_ACCENT_FROM_PROFILE = "emutils.ui.menus.accent_from_profile";
+
+    public static final String SCREEN_KEYBINDS = "emutils.screen.keybinds";
+    public static final String HUB_FEATURE_KEYBINDS_DESC = "emutils.hub.feature.keybinds.desc";
+    public static final String UI_KEYBIND_HINT = "emutils.ui.keybind_hint";
+    public static final String UI_KEYBIND_CLEAR = "emutils.ui.keybind_clear";
+    public static final String UI_KEYBINDS_COUNT = "emutils.ui.keybinds.count";
+    public static final String UI_KEYBINDS_COUNT_WITH_CONFLICTS = "emutils.ui.keybinds.count_with_conflicts";
+    public static final String UI_KEYBINDS_CONFLICTS = "emutils.ui.keybinds.conflicts";
+    public static final String UI_KEYBINDS_CONFLICT_ONE = "emutils.ui.keybinds.conflict_one";
+    public static final String UI_KEYBINDS_CONFLICTS_ONLY = "emutils.ui.keybinds.conflicts_only";
+    public static final String UI_KEYBINDS_NO_CONFLICTS = "emutils.ui.keybinds.no_conflicts";
+    public static final String UI_KEYBINDS_SEARCH = "emutils.ui.keybinds.search";
+    public static final String UI_KEYBINDS_RESET_ALL = "emutils.ui.keybinds.reset_all";
+    public static final String UI_KEYBINDS_RESET_TITLE = "emutils.ui.keybinds.reset_title";
+    public static final String UI_KEYBINDS_RESET_MESSAGE = "emutils.ui.keybinds.reset_message";
+    public static final String UI_KEYBINDS_GENERAL = "emutils.ui.keybinds.general";
+    public static final String UI_KEYBINDS_SCRIPTS = "emutils.ui.keybinds.scripts";
+    public static final String UI_KEYBINDS_SAME_KEY_AS = "emutils.ui.keybinds.same_key_as";
+    public static final String UI_KEYBINDS_SAME_KEY_AS_MORE = "emutils.ui.keybinds.same_key_as_more";
+    public static final String UI_KEYBINDS_BUTTON = "emutils.ui.keybinds.button";
     public static final String UI_MENUS_FONT = "emutils.ui.menus.font";
     public static final String UI_MENUS_CODE_FONT = "emutils.ui.menus.code_font";
     public static final String UI_MENUS_CODE_SIZE = "emutils.ui.menus.code_size";
