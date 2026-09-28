@@ -126,6 +126,19 @@ Show a card about the block or entity in your crosshair, within your reach: its 
   - Armor: armor points, when it has any.
   - Effects: each active effect with its level and time left, green when it helps and red when it harms. Servers only share your own effects and those of what you ride, so other mobs' effects show in singleplayer only.
 
+### Keystrokes
+
+Show your movement keys on screen as keys in the settings UI's look, lighting up while held and fading out a moment after, so quick taps still show. Each key shows what it is bound to, so rebound controls show their own keys. It sits at the left edge of the screen by default and can be moved, resized and given a background opacity in the HUD Layout Editor. Off by default. Its settings are split into Keys and Style tabs.
+
+- Mouse Buttons: show the attack (LMB) and use (RMB) buttons under the movement keys.
+  - Clicks per Second: show how many times each was pressed in the last second. Every press counts, whatever the attack and use keys are bound to.
+- Jump: show the jump key as a bar.
+- Sneak: show the sneak key at the bottom. Off by default.
+- Hide in Containers: hide the keys while a chest, your inventory or another container is open. They also hide with F1.
+- Key Style: Rounded keys like the menus, or Square.
+- Use Menu Accent: held keys light up in the menus' accent color.
+  - Pressed Color: with Use Menu Accent off, pick the color held keys light up in.
+
 ### Food HUD
 
 Show food and saturation information on the vanilla hunger bar.

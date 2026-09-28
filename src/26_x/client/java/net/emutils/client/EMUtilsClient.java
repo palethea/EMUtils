@@ -32,6 +32,7 @@ import net.emutils.client.emutils.screenshot.gui.GalleryThumbnails;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
+import net.emutils.client.emutils.hud.KeystrokesHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoRenderer;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -210,6 +211,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new SpotifyHudElement());
 		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
 		HudLayoutRegistry.register(MOD_ID, new LookAtInfoHudElement());
+		HudLayoutRegistry.register(MOD_ID, new KeystrokesHudElement());
 	}
 
 	private static void registerKeyMappings() {

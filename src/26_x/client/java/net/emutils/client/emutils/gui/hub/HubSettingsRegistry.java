@@ -19,6 +19,7 @@ import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.HudTextShadow;
+import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -39,6 +40,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
+		ROWS.put(HubCategory.KEYSTROKES, HubSettingsRegistry::keystrokesRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
 		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
@@ -80,6 +82,7 @@ public final class HubSettingsRegistry {
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
+			case KEYSTROKES -> config::resetKeystrokesDefaults;
 			case ZOOM -> config::resetZoomDefaults;
 			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
@@ -402,6 +405,35 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_HEALTH, config::lookAtInfoHealth, config::setLookAtInfoHealth));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_ARMOR, config::lookAtInfoArmor, config::setLookAtInfoArmor));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_EFFECTS, config::lookAtInfoEffects, config::setLookAtInfoEffects));
+		return rows;
+	}
+
+	/** Keystrokes (#43): which keys show, then how they look. */
+	private static List<HubSettingRow> keystrokesRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES, config::keystrokes, config::setKeystrokes));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_KEYSTROKES_SECTION_KEYS));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
+				}
+			},
+			true
+		));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_MOUSE, config::keystrokesMouse, config::setKeystrokesMouse));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_CPS, config::keystrokesCps, config::setKeystrokesCps));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_SPACE, config::keystrokesSpace, config::setKeystrokesSpace));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_SNEAK, config::keystrokesSneak, config::setKeystrokesSneak));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_HIDE_IN_CONTAINERS, config::keystrokesHideInContainers, config::setKeystrokesHideInContainers));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_KEYSTROKES_SECTION_STYLE));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_KEYSTROKES_STYLE, config::keystrokesStyle, config::setKeystrokesStyle, KeystrokesStyle.class, style -> Component.translatable(style.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_MENU_ACCENT, config::keystrokesMenuAccent, config::setKeystrokesMenuAccent));
+		rows.add(new HubSettingRow.Swatches(EMUtilsTexts.OPTION_KEYSTROKES_PRESSED_COLOR, ACCENT_PRESETS, config::keystrokesPressedColor, config::setKeystrokesPressedColor, () -> !config.keystrokesMenuAccent()));
 		return rows;
 	}
 
