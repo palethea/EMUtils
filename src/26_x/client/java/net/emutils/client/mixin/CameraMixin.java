@@ -17,9 +17,15 @@ public abstract class CameraMixin {
 
 	@Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
 	private void emutils$applyZoom(float partialTicks, CallbackInfoReturnable<Float> cir) {
-		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().isZoomEffectActive()) {
-			cir.setReturnValue(cir.getReturnValue() / EMUtilsClient.zoom().zoomDivisor());
+		float fov = cir.getReturnValue();
+		// Free Camera's own FOV replaces the base FOV, and zooming still works on top of it.
+		if (EMUtilsClient.tweaks() != null) {
+			fov = EMUtilsClient.tweaks().freeCamera().fov(fov);
 		}
+		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().isZoomEffectActive()) {
+			fov /= EMUtilsClient.zoom().zoomDivisor();
+		}
+		cir.setReturnValue(fov);
 	}
 
 	@Redirect(

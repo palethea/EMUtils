@@ -81,6 +81,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int FULLBRIGHT_STRENGTH_MAX = 100;
 	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MIN = 1;
 	public static final int FREE_CAMERA_BOOST_MULTIPLIER_MAX = 10;
+	public static final int FREE_CAMERA_SPEED_DEFAULT = 100;
+	public static final int FREE_CAMERA_SPEED_MIN = 10;
+	public static final int FREE_CAMERA_SPEED_MAX = 500;
+	public static final int FREE_CAMERA_FOV_DEFAULT = 70;
+	public static final int FREE_CAMERA_FOV_MIN = 30;
+	public static final int FREE_CAMERA_FOV_MAX = 110;
 	public static final int ANTI_DURABILITY_THRESHOLD_MIN = 1;
 	public static final int ANTI_DURABILITY_THRESHOLD_MAX = 100;
 	public static final int ANTI_DURABILITY_PROTECT_AT_DEFAULT = 5;
@@ -304,6 +310,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakFreeCamera = Boolean.FALSE;
 	private String freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
 	private Integer freeCameraBoostMultiplier = 3;
+	private Integer freeCameraHorizontalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+	private Integer freeCameraVerticalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+	private Boolean freeCameraCollision = Boolean.FALSE;
+	private Boolean freeCameraDoubleTap = Boolean.FALSE;
+	private Boolean freeCameraCustomFov = Boolean.FALSE;
+	private Integer freeCameraFov = FREE_CAMERA_FOV_DEFAULT;
 	private Boolean autoFlightGearEnabled;
 	private Boolean tweakAutoSwitchElytra = Boolean.FALSE;
 	private Boolean tweakAutoSwitchRockets = Boolean.FALSE;
@@ -1831,6 +1843,75 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Free Camera's horizontal speed, in percent of its base speed. */
+	public int freeCameraHorizontalSpeed() {
+		return clamp(freeCameraHorizontalSpeed == null ? FREE_CAMERA_SPEED_DEFAULT : freeCameraHorizontalSpeed, FREE_CAMERA_SPEED_MIN, FREE_CAMERA_SPEED_MAX);
+	}
+
+	public void setFreeCameraHorizontalSpeed(int percent) {
+		freeCameraHorizontalSpeed = clamp(percent, FREE_CAMERA_SPEED_MIN, FREE_CAMERA_SPEED_MAX);
+		save();
+	}
+
+	/** Free Camera's up and down speed, in percent of its base speed. */
+	public int freeCameraVerticalSpeed() {
+		return clamp(freeCameraVerticalSpeed == null ? FREE_CAMERA_SPEED_DEFAULT : freeCameraVerticalSpeed, FREE_CAMERA_SPEED_MIN, FREE_CAMERA_SPEED_MAX);
+	}
+
+	public void setFreeCameraVerticalSpeed(int percent) {
+		freeCameraVerticalSpeed = clamp(percent, FREE_CAMERA_SPEED_MIN, FREE_CAMERA_SPEED_MAX);
+		save();
+	}
+
+	public boolean freeCameraCollision() {
+		return freeCameraCollision != null && freeCameraCollision;
+	}
+
+	public void setFreeCameraCollision(boolean enabled) {
+		freeCameraCollision = enabled;
+		save();
+	}
+
+	public boolean freeCameraDoubleTap() {
+		return freeCameraDoubleTap != null && freeCameraDoubleTap;
+	}
+
+	public void setFreeCameraDoubleTap(boolean enabled) {
+		freeCameraDoubleTap = enabled;
+		save();
+	}
+
+	public boolean freeCameraCustomFov() {
+		return freeCameraCustomFov != null && freeCameraCustomFov;
+	}
+
+	public void setFreeCameraCustomFov(boolean enabled) {
+		freeCameraCustomFov = enabled;
+		save();
+	}
+
+	public int freeCameraFov() {
+		return clamp(freeCameraFov == null ? FREE_CAMERA_FOV_DEFAULT : freeCameraFov, FREE_CAMERA_FOV_MIN, FREE_CAMERA_FOV_MAX);
+	}
+
+	public void setFreeCameraFov(int fov) {
+		freeCameraFov = clamp(fov, FREE_CAMERA_FOV_MIN, FREE_CAMERA_FOV_MAX);
+		save();
+	}
+
+	/** Free Camera's settings, besides whether it is on. */
+	public void resetFreeCameraSettings() {
+		freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
+		freeCameraBoostMultiplier = 3;
+		freeCameraHorizontalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+		freeCameraVerticalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+		freeCameraCollision = Boolean.FALSE;
+		freeCameraDoubleTap = Boolean.FALSE;
+		freeCameraCustomFov = Boolean.FALSE;
+		freeCameraFov = FREE_CAMERA_FOV_DEFAULT;
+		save();
+	}
+
 	public boolean tweakAutoSwitchElytra() {
 		return tweakAutoSwitchElytra != null && tweakAutoSwitchElytra;
 	}
@@ -3094,6 +3175,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakFreeCamera = Boolean.FALSE;
 		freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
 		freeCameraBoostMultiplier = 3;
+		freeCameraHorizontalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+		freeCameraVerticalSpeed = FREE_CAMERA_SPEED_DEFAULT;
+		freeCameraCollision = Boolean.FALSE;
+		freeCameraDoubleTap = Boolean.FALSE;
+		freeCameraCustomFov = Boolean.FALSE;
+		freeCameraFov = FREE_CAMERA_FOV_DEFAULT;
 		autoFlightGearEnabled = Boolean.FALSE;
 		tweakAutoSwitchElytra = Boolean.FALSE;
 		tweakAutoSwitchRockets = Boolean.FALSE;
