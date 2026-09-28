@@ -310,6 +310,10 @@ Protect important slots and move items faster.
 - Quick Stack: use its container button or configurable keybind to move matching items from your inventory into a container that already holds the same item.
 - Quick Stack Speed: choose Normal transfers or Legit transfers that add a short varied delay between matching stacks.
 - Auto Refill: refill the active hotbar slot with a matching block stack when block placement empties it.
+- Inventory Search: a search box above chests, barrels, shulker boxes, hoppers, dispensers and your inventory. Items whose name, ID or lore contain every word you type are outlined in yellow. Ctrl+F jumps to the box, typing there never closes the screen or drops items, and Enter or a click elsewhere leaves it.
+  - Dim Other Items: darken the items that don't match.
+  - Search Inside Shulker Boxes: a shulker box, or any other item holding items, with a match inside is outlined too, with a filled corner, and its tooltip preview dims what doesn't match, so you see which box and where in it.
+  - Keep Search Text: keep what you typed for the next container, so you can look through chest after chest.
 - Inventory Preview: show a small inventory preview above the hotbar.
 - Preserve Container Cursor: keep the mouse cursor in place when switching between container screens.
 - Mass Drop: maintain a list of items to drop, found by searching every item by name or ID, then drop matching inventory stacks with a configurable keybind. The list shows how many of each item you carry, and the drop key and mode sit at the top.

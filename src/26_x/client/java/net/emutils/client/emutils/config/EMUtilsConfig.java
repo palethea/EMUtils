@@ -343,6 +343,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean sortButtonsEnabled = Boolean.TRUE;
 	private String sortSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean quickStackEnabled = Boolean.TRUE;
+	private Boolean inventorySearch = Boolean.TRUE;
+	private Boolean inventorySearchDim = Boolean.TRUE;
+	private Boolean inventorySearchShulkers = Boolean.TRUE;
+	private Boolean inventorySearchRemember = Boolean.TRUE;
 	private String quickStackSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean autoRefillEnabled = Boolean.FALSE;
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
@@ -2952,8 +2956,48 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean inventorySearch() {
+		return inventorySearch == null || inventorySearch;
+	}
+
+	public void setInventorySearch(boolean enabled) {
+		inventorySearch = enabled;
+		save();
+	}
+
+	public boolean inventorySearchDim() {
+		return inventorySearchDim == null || inventorySearchDim;
+	}
+
+	public void setInventorySearchDim(boolean enabled) {
+		inventorySearchDim = enabled;
+		save();
+	}
+
+	public boolean inventorySearchShulkers() {
+		return inventorySearchShulkers == null || inventorySearchShulkers;
+	}
+
+	public void setInventorySearchShulkers(boolean enabled) {
+		inventorySearchShulkers = enabled;
+		save();
+	}
+
+	public boolean inventorySearchRemember() {
+		return inventorySearchRemember == null || inventorySearchRemember;
+	}
+
+	public void setInventorySearchRemember(boolean enabled) {
+		inventorySearchRemember = enabled;
+		save();
+	}
+
 	public void resetInventoryToolsDefaults() {
 		inventoryToolsEnabled = Boolean.TRUE;
+		inventorySearch = Boolean.TRUE;
+		inventorySearchDim = Boolean.TRUE;
+		inventorySearchShulkers = Boolean.TRUE;
+		inventorySearchRemember = Boolean.TRUE;
 		slotLockingEnabled = Boolean.TRUE;
 		slotBindingEnabled = Boolean.TRUE;
 		slotBindingShowIcons = Boolean.TRUE;

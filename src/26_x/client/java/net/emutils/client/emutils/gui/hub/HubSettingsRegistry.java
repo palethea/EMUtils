@@ -696,6 +696,11 @@ public final class HubSettingsRegistry {
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_REFILL, config::autoRefillEnabled, config::setAutoRefillEnabled));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH, config::inventorySearch, config::setInventorySearch));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_DIM, config::inventorySearchDim, config::setInventorySearchDim));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_SHULKERS, config::inventorySearchShulkers, config::setInventorySearchShulkers));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_REMEMBER, config::inventorySearchRemember, config::setInventorySearchRemember));
+		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
 		rows.add(divider());
