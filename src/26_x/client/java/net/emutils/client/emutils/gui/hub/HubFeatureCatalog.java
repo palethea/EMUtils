@@ -99,14 +99,40 @@ public final class HubFeatureCatalog {
 						EMUtilsConfig.FREE_CAMERA_BOOST_MULTIPLIER_MAX,
 						config::freeCameraBoostMultiplier,
 						config::setFreeCameraBoostMultiplier
+					),
+					new HubSettingRow.Slider(
+						EMUtilsTexts.OPTION_FREE_CAMERA_HORIZONTAL_SPEED,
+						EMUtilsTexts.SUFFIX_PERCENT,
+						EMUtilsConfig.FREE_CAMERA_SPEED_MIN,
+						EMUtilsConfig.FREE_CAMERA_SPEED_MAX,
+						config::freeCameraHorizontalSpeed,
+						config::setFreeCameraHorizontalSpeed
+					),
+					new HubSettingRow.Slider(
+						EMUtilsTexts.OPTION_FREE_CAMERA_VERTICAL_SPEED,
+						EMUtilsTexts.SUFFIX_PERCENT,
+						EMUtilsConfig.FREE_CAMERA_SPEED_MIN,
+						EMUtilsConfig.FREE_CAMERA_SPEED_MAX,
+						config::freeCameraVerticalSpeed,
+						config::setFreeCameraVerticalSpeed
+					),
+					new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FREE_CAMERA_COLLISION, config::freeCameraCollision, config::setFreeCameraCollision),
+					new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FREE_CAMERA_DOUBLE_TAP, config::freeCameraDoubleTap, config::setFreeCameraDoubleTap),
+					new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FREE_CAMERA_CUSTOM_FOV, config::freeCameraCustomFov, config::setFreeCameraCustomFov),
+					new HubSettingRow.Slider(
+						EMUtilsTexts.OPTION_FREE_CAMERA_FOV,
+						EMUtilsTexts.SUFFIX_DEGREES,
+						EMUtilsConfig.FREE_CAMERA_FOV_MIN,
+						EMUtilsConfig.FREE_CAMERA_FOV_MAX,
+						config::freeCameraFov,
+						config::setFreeCameraFov
 					)
 				),
 				null,
 				true,
 				() -> {
 					config.setTweakFreeCamera(false);
-					config.setFreeCameraHudMode(FreeCameraHudMode.SPECTATOR);
-					config.setFreeCameraBoostMultiplier(3);
+					config.resetFreeCameraSettings();
 				}
 			).keys("key.emutils.free_camera"),
 			actionFeature(
