@@ -270,6 +270,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakNoNausea = Boolean.FALSE;
 	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
 	private Boolean tweakNoPumpkinOverlay = Boolean.FALSE;
+	private Boolean tweakHideEffects = Boolean.FALSE;
+	private Boolean tweakHideEffectsHud = Boolean.TRUE;
+	private Boolean tweakHideEffectsInventory = Boolean.TRUE;
 	private Boolean tweakFastPlace = Boolean.FALSE;
 	private Boolean tweakFastUse = Boolean.FALSE;
 	private Boolean tweakAntiDurabilityBreak = Boolean.FALSE;
@@ -1623,6 +1626,50 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean tweakHideEffects() {
+		return tweakHideEffects != null && tweakHideEffects;
+	}
+
+	public void setTweakHideEffects(boolean enabled) {
+		tweakHideEffects = enabled;
+		save();
+	}
+
+	public boolean tweakHideEffectsHud() {
+		return tweakHideEffectsHud == null || tweakHideEffectsHud;
+	}
+
+	public void setTweakHideEffectsHud(boolean enabled) {
+		tweakHideEffectsHud = enabled;
+		save();
+	}
+
+	public boolean tweakHideEffectsInventory() {
+		return tweakHideEffectsInventory == null || tweakHideEffectsInventory;
+	}
+
+	public void setTweakHideEffectsInventory(boolean enabled) {
+		tweakHideEffectsInventory = enabled;
+		save();
+	}
+
+	/** Hide Effects (#176): whether the effect icons in the HUD's top-right corner are hidden. */
+	public boolean hideHudEffects() {
+		return tweakHideEffects() && tweakHideEffectsHud();
+	}
+
+	/** Hide Effects (#176): whether the effect list beside the inventory is hidden. */
+	public boolean hideInventoryEffects() {
+		return tweakHideEffects() && tweakHideEffectsInventory();
+	}
+
+	public void resetHideEffectsDefaults() {
+		tweakHideEffects = Boolean.FALSE;
+		tweakHideEffectsHud = Boolean.TRUE;
+		tweakHideEffectsInventory = Boolean.TRUE;
+		save();
+	}
+
 	public boolean tweakNoPumpkinOverlay() {
 		return tweakNoPumpkinOverlay != null && tweakNoPumpkinOverlay;
 	}
@@ -2869,6 +2916,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakNoNausea = Boolean.FALSE;
 		tweakNoSpyglassOverlay = Boolean.FALSE;
 		tweakNoPumpkinOverlay = Boolean.FALSE;
+		tweakHideEffects = Boolean.FALSE;
+		tweakHideEffectsHud = Boolean.TRUE;
+		tweakHideEffectsInventory = Boolean.TRUE;
 		tweakFastPlace = Boolean.FALSE;
 		tweakFastUse = Boolean.FALSE;
 		setAntiDurabilityBreakDefaults();

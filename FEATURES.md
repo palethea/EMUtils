@@ -35,6 +35,9 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - No Nausea: hide nausea and portal distortion effects.
 - No Spyglass Overlay: hide the spyglass scope overlay.
 - No Pumpkin Overlay: hide the carved pumpkin blur while wearing one.
+- Hide Effects: hide the vanilla status effect display. Effects still work; only the icons and list go away. Off by default.
+  - On the HUD: hide the effect icons in the top-right corner of the screen.
+  - Beside the Inventory: hide the effect list, and its tooltips, next to the survival and creative inventory.
 - No Hurt Cam: disable hurt camera shake.
 - Freelook: look around without turning movement.
   - Keep Perspective: look around in the perspective you're in, first person too, instead of switching to third person. Off by default.

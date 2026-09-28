@@ -2403,15 +2403,47 @@ public final class UiSnapshotter {
 					command(client, "setblock " + sortChest.getX() + " " + sortChest.getY() + " " + sortChest.getZ() + " minecraft:air");
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Hide Effects (#176): the effect list beside the inventory, then without it, then the HUD without
+			// the effect icons in its top-right corner.
 			case 315 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsClient.config().resetHideEffectsDefaults();
+					command(client, "effect give @s minecraft:speed 120 1");
+					command(client, "effect give @s minecraft:resistance 120 0");
+				}
+				if (stepTicks == 15) {
+					client.gui.setScreen(new InventoryScreen(client.player));
+				}
+				captureAfter(client, 30, "inventory with the effect list");
+			}
+			case 316 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setTweakHideEffects(true);
+					check(EMUtilsClient.config().hideInventoryEffects() && EMUtilsClient.config().hideHudEffects(), "Hide Effects hides both the inventory list and the HUD icons by default");
+				}
+				captureAfter(client, 10, "inventory, effects hidden");
+			}
+			case 317 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+				}
+				captureAfter(client, 15, "hud, effect icons hidden");
+				if (step != 317) {
+					command(client, "effect clear @s");
+					EMUtilsClient.config().resetHideEffectsDefaults();
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 318 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 316 -> {
+			case 319 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2420,7 +2452,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 317 -> {
+			case 320 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2431,7 +2463,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 318 -> {
+			case 321 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2442,7 +2474,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 319 -> {
+			case 322 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
