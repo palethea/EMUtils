@@ -535,6 +535,10 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_nausea";
     public static final String OPTION_TWEAK_NO_SPYGLASS_OVERLAY =
         "emutils.option.tweak_no_spyglass_overlay";
+    public static final String OPTION_TWEAK_HIDE_EFFECTS = "emutils.option.tweak_hide_effects";
+    public static final String OPTION_TWEAK_HIDE_EFFECTS_HUD = "emutils.option.tweak_hide_effects_hud";
+    public static final String OPTION_TWEAK_HIDE_EFFECTS_INVENTORY = "emutils.option.tweak_hide_effects_inventory";
+    public static final String HUB_FEATURE_HIDE_EFFECTS_DESC = "emutils.hub.feature.hide_effects.desc";
     public static final String OPTION_TWEAK_NO_PUMPKIN_OVERLAY =
         "emutils.option.tweak_no_pumpkin_overlay";
     public static final String OPTION_TWEAK_FAST_PLACE =

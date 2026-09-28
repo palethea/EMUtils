@@ -59,6 +59,8 @@ import net.emutils.client.emutils.tweaks.ShulkerTooltipComponent;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipData;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.ClientTooltipComponentCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -214,6 +216,13 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
 		HudLayoutRegistry.register(MOD_ID, new LookAtInfoHudElement());
 		HudLayoutRegistry.register(MOD_ID, new KeystrokesHudElement());
+		// Hide Effects (#176): the vanilla effect icons in the top-right corner are skipped while hidden.
+		HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, effects -> (context, tickCounter) -> {
+			EMUtilsConfig config = config();
+			if (config == null || !config.hideHudEffects()) {
+				effects.extractRenderState(context, tickCounter);
+			}
+		});
 	}
 
 	private static void registerKeyMappings() {

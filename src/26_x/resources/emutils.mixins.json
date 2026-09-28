@@ -22,6 +22,7 @@
 		"DeathScreenMixin",
 		"DisconnectedScreenAccess",
 		"DisconnectedScreenMixin",
+		"EffectsInInventoryMixin",
 		"FramerateLimitTrackerMixin",
 		"GameMenuScreenMixin",
 		"GameRendererMixin",
