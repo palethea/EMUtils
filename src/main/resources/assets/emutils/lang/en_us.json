@@ -667,7 +667,7 @@
   "emutils.option.look_at_info_tool": "Tool",
   "emutils.option.look_at_info_tool.desc": "The tool that mines it fastest, and the lowest tier that gets drops when it needs one.",
   "emutils.option.look_at_info_harvest": "Can Harvest",
-  "emutils.option.look_at_info_harvest.desc": "Whether what you hold gets drops from it, in green or red.",
+  "emutils.option.look_at_info_harvest.desc": "For blocks that need a certain tool, like stone and ores: whether what you hold gets drops from it, in green or red.",
   "emutils.option.look_at_info_health": "Health",
   "emutils.option.look_at_info_health.desc": "Health, max health and absorption, colored by how hurt it is.",
   "emutils.option.look_at_info_armor": "Armor",

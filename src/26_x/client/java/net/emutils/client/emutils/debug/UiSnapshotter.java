@@ -2082,9 +2082,9 @@ public final class UiSnapshotter {
 					config.resetLookAtInfoDefaults();
 					config.setLookAtInfo(true);
 					BlockPos feet = client.player.blockPosition();
-					// Stand in the middle of the block, facing south and looking down at obsidian right in front.
+					// Stand in the middle of the block, facing south and looking down at dirt right in front, then obsidian.
 					command(client, "tp @s " + (feet.getX() + 0.5) + " " + feet.getY() + " " + (feet.getZ() + 0.5) + " 0 60");
-					command(client, "setblock ~ ~ ~1 minecraft:obsidian");
+					command(client, "setblock ~ ~ ~1 minecraft:dirt");
 					command(client, "setblock ~ ~1 ~1 minecraft:air");
 					command(client, "time set 6000");
 					command(client, "item replace entity @s hotbar.8 with minecraft:air");
@@ -2093,6 +2093,12 @@ public final class UiSnapshotter {
 				if (stepTicks == 5) {
 					client.player.setYRot(0.0F);
 					client.player.setXRot(60.0F);
+				}
+				if (stepTicks == 20) {
+					// Dirt drops with anything, so there's no Can Harvest line (#45).
+					LookAtInfoData data = LookAtInfoData.current();
+					check(data != null && data.id().equals("minecraft:dirt") && lookAtValue(data, "emutils.hud.look_at.harvest").isEmpty(), "a block that drops with anything has no Can Harvest line");
+					command(client, "setblock ~ ~ ~1 minecraft:obsidian");
 				}
 				if (stepTicks == 40) {
 					LookAtInfoData data = LookAtInfoData.current();

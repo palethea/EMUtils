@@ -105,7 +105,8 @@ public record LookAtInfoData(ItemStack icon, String name, String id, List<HudOve
 		if (config.lookAtInfoTool()) {
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOOK_AT_TOOL, tool(state), HubIcons.PICKAXE));
 		}
-		if (config.lookAtInfoHarvest() && hardness >= 0.0F) {
+		// Only for blocks that need a certain tool to drop anything; every other block always drops.
+		if (config.lookAtInfoHarvest() && hardness >= 0.0F && state.requiresCorrectToolForDrops()) {
 			boolean harvest = client.player.hasCorrectToolForDrops(state);
 			lines.add(new HudOverlayLine(EMUtilsTexts.HUD_LOOK_AT_HARVEST, yesNo(harvest), HubIcons.CHECK, harvest ? HudOverlayLine.Tone.GOOD : HudOverlayLine.Tone.BAD));
 		}

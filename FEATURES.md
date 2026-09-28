@@ -120,7 +120,7 @@ Show a card about the block or entity in your crosshair, within your reach: its 
   - Hardness: how hard the block is to break, or Unbreakable.
   - Break Time: how long breaking it takes with what you hold, counting enchantments, effects, water and being in midair; Instant or Never when it is.
   - Tool: the tool that mines it fastest, and the lowest tier that gets drops when it needs one, such as Pickaxe · Iron+. Worked out from the vanilla tools themselves, so it follows the game's rules for every block.
-  - Can Harvest: whether what you hold gets drops from it, in green or red.
+  - Can Harvest: for blocks that need a certain tool to drop anything, such as stone, ores and obsidian, whether what you hold gets drops from it, in green or red. Other blocks always drop, so they don't show it.
 - Entities: show the card for mobs, players and other entities; a dropped item shows its item and count.
   - Health: health, max health and absorption, green, amber or red by how hurt it is.
   - Armor: armor points, when it has any.
