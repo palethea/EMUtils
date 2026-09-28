@@ -45,6 +45,7 @@ import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
 import net.emutils.client.emutils.tweaks.AutoToolManager;
+import net.emutils.client.emutils.tweaks.FreeCameraManager;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
@@ -132,6 +133,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -169,6 +171,9 @@ public final class UiSnapshotter {
 	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
 	private static BlockPos sortChest = BlockPos.ZERO;
 	private static int armorStatusSounds;
+	private static Vec3 freeCameraStart = Vec3.ZERO;
+	private static int freeCameraWallX;
+	private static int freeCameraArrivedTick = -1;
 	private static BlockPos searchChest = BlockPos.ZERO;
 	private static int warningsBefore;
 	private static int lightLevelSpotsBefore;
@@ -2494,10 +2499,136 @@ public final class UiSnapshotter {
 				command(client, "clear @s minecraft:firework_rocket");
 				next();
 			}
+			// Free Camera settings (#49): Collision stops the camera at a wall and without it the camera flies
+			// through; Double-Tap to Start; the camera keeps facing the same way through a dimension change;
+			// Camera FOV.
+			case 322 -> {
+				if (stepTicks == 1 && client.player != null) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setTweakFreeCamera(false);
+					config.resetFreeCameraSettings();
+					config.setFreeCameraCollision(true);
+					freeCameraStart = client.player.position();
+					freeCameraWallX = client.player.blockPosition().getX() + 6;
+					BlockPos base = client.player.blockPosition();
+					command(client, "fill " + freeCameraWallX + " " + (base.getY() - 3) + " " + (base.getZ() - 4) + " " + freeCameraWallX + " " + (base.getY() + 8) + " " + (base.getZ() + 4) + " minecraft:stone");
+					config.setTweakFreeCamera(true);
+				}
+				if (stepTicks == 10) {
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x, freeCameraStart.y, freeCameraStart.z, -90.0F, 0.0F);
+					client.options.keyUp.setDown(true);
+				}
+				if (stepTicks == 50) {
+					client.options.keyUp.setDown(false);
+					Vec3 camera = EMUtilsClient.tweaks().freeCamera().positionForSnapshot();
+					check(camera != null && camera.x > freeCameraStart.x + 3 && camera.x + 0.25 <= freeCameraWallX + 0.001, "with Collision on, the camera flies up to the wall and stops there (" + (camera == null ? "none" : String.format("%.2f", camera.x)) + ", wall at " + freeCameraWallX + ")");
+					next();
+				}
+			}
+			case 323 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setFreeCameraCollision(false);
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x, freeCameraStart.y, freeCameraStart.z, -90.0F, 0.0F);
+					client.options.keyUp.setDown(true);
+				}
+				if (stepTicks == 40) {
+					client.options.keyUp.setDown(false);
+					Vec3 camera = EMUtilsClient.tweaks().freeCamera().positionForSnapshot();
+					check(camera != null && camera.x > freeCameraWallX + 2, "with Collision off, the camera flies through the wall (" + (camera == null ? "none" : String.format("%.2f", camera.x)) + ")");
+					next();
+				}
+			}
+			case 324 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
+				if (stepTicks == 1) {
+					config.setTweakFreeCamera(false);
+					config.setFreeCameraDoubleTap(true);
+				}
+				if (stepTicks == 5) {
+					freeCamera.pressKeyForSnapshot();
+				}
+				if (stepTicks == 8) {
+					check(!config.tweakFreeCamera(), "with Double-Tap to Start, one press doesn't start Free Camera");
+					freeCamera.pressKeyForSnapshot();
+				}
+				if (stepTicks == 10) {
+					check(config.tweakFreeCamera() && freeCamera.isActive(), "a second press right after starts it");
+					freeCamera.pressKeyForSnapshot();
+				}
+				if (stepTicks == 12) {
+					check(!config.tweakFreeCamera() && !freeCamera.isActive(), "one press ends it");
+					config.setFreeCameraDoubleTap(false);
+					next();
+				}
+			}
+			case 325 -> {
+				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setTweakFreeCamera(true);
+					command(client, "effect give @s minecraft:resistance 60 4");
+					command(client, "effect give @s minecraft:fire_resistance 60 0");
+				}
+				if (stepTicks == 5) {
+					freeCamera.placeForSnapshot(freeCameraStart.x, freeCameraStart.y + 8, freeCameraStart.z, 45.0F, 20.0F);
+					command(client, "execute in minecraft:the_nether run tp @s " + (int) freeCameraStart.x + " 70 " + (int) freeCameraStart.z);
+				}
+				if (stepTicks == 1) {
+					freeCameraArrivedTick = -1;
+				}
+				if (freeCameraArrivedTick < 0 && stepTicks > 5 && client.level != null && client.level.dimension() == Level.NETHER && freeCamera.dimensionForSnapshot() == Level.NETHER) {
+					freeCameraArrivedTick = stepTicks;
+					command(client, "fill ~-1 ~ ~-1 ~1 ~2 ~1 minecraft:air");
+					check(Math.abs(freeCamera.yawForSnapshot() - 45.0F) < 0.01F, "after going to the Nether, the free camera is on in the Nether, facing the same way (" + freeCamera.yawForSnapshot() + ")");
+				}
+				if (freeCameraArrivedTick >= 0) {
+					captureAfter(client, freeCameraArrivedTick + 40, "free camera in the nether, facing the same way");
+				} else if (stepTicks == 400) {
+					check(false, "went to the Nether with Free Camera on");
+					next();
+				}
+			}
+			case 326 -> {
+				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
+				if (stepTicks == 1) {
+					command(client, "execute in minecraft:overworld run tp @s " + freeCameraStart.x + " " + freeCameraStart.y + " " + freeCameraStart.z);
+				}
+				if (stepTicks > 1 && client.level != null && client.level.dimension() == Level.OVERWORLD && freeCamera.dimensionForSnapshot() == Level.OVERWORLD) {
+					check(freeCamera.isActive() && Math.abs(freeCamera.yawForSnapshot() - 45.0F) < 0.01F, "back in the Overworld, the free camera is still on, facing the same way");
+					next();
+				} else if (stepTicks == 400) {
+					check(false, "came back to the Overworld with Free Camera on");
+					next();
+				}
+			}
+			case 327 -> {
+				if (stepTicks == 1 && client.player != null) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setFreeCameraCustomFov(true);
+					config.setFreeCameraFov(30);
+					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x - 12, freeCameraStart.y + 4, freeCameraStart.z, -90.0F, 10.0F);
+				}
+				if (stepTicks == 20) {
+					float fov = client.gameRenderer.mainCamera().getFov();
+					check(Math.abs(fov - 30.0F) < 0.5F, "with Camera FOV at 30, the detached camera's field of view is 30 (" + fov + ")");
+				}
+				captureAfter(client, 30, "free camera with a 30 degree field of view, looking at the wall");
+			}
+			case 328 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				config.setTweakFreeCamera(false);
+				config.resetFreeCameraSettings();
+				BlockPos base = BlockPos.containing(freeCameraStart);
+				command(client, "fill " + freeCameraWallX + " " + (base.getY() - 3) + " " + (base.getZ() - 4) + " " + freeCameraWallX + " " + (base.getY() + 8) + " " + (base.getZ() + 4) + " minecraft:air");
+				command(client, "effect clear @s");
+				next();
+			}
 			// Auto Tool enchantment priorities and hotbar slots (#50): Fortune on ores, Silk Touch on glass,
 			// the fastest pickaxe on stone and obsidian; then reordered, a slot left out, and the sheet's
 			// Enchantments tab.
-			case 322 -> {
+			case 329 -> {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2534,13 +2665,13 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 55, "auto tool sheet, enchantments tab, efficiency first");
 			}
-			case 323 -> {
+			case 330 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
 					settings.selectSheetSectionForSnapshot(2);
 				}
 				captureAfter(client, 20, "auto tool sheet, hotbar slots tab, slot 9 left out");
 			}
-			case 324 -> {
+			case 331 -> {
 				EMUtilsClient.config().resetAutoToolDefaults();
 				client.gui.setScreen(null);
 				for (int slot = 0; slot < 3; slot++) {
@@ -2549,14 +2680,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 325 -> {
+			case 332 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 326 -> {
+			case 333 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2565,7 +2696,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 327 -> {
+			case 334 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2576,7 +2707,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 328 -> {
+			case 335 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2587,7 +2718,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 329 -> {
+			case 336 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

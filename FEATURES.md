@@ -391,4 +391,13 @@ Press a configurable keybind while targeting a block to lock block placements to
 
 ### Free Camera
 
-Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera defaults to a clean spectator-style HUD with held items and survival HUD elements hidden, and can switch to the regular HUD to show the real player's hand, hotbar, health, armor, food, and XP while the camera is detached. Left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored.
+Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera defaults to a clean spectator-style HUD with held items and survival HUD elements hidden, and can switch to the regular HUD to show the real player's hand, hotbar, health, armor, food, and XP while the camera is detached. Left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored. Through a dimension change or a respawn the camera stays detached and keeps facing the same way, and stays where it was when you end up in the same dimension.
+
+- Free Camera HUD: a clean spectator-style view, or the regular HUD.
+- Free Camera Boost: how much faster the camera moves while sprinting, both across and up and down.
+- Horizontal Speed: how fast the camera moves forward, back and sideways, from 10% to 500%.
+- Vertical Speed: how fast the camera moves up with jump and down with sneak, from 10% to 500%.
+- Collision: stop the camera at blocks instead of passing through them. Off by default.
+- Double-Tap to Start: start Free Camera with a double tap of its key, so a stray press doesn't detach the camera. One press still ends it. Off by default.
+- Camera FOV: use a field of view of its own while the camera is detached. Off by default.
+  - Field of View: the detached camera's field of view, from 30 to 110. Zoom still works on top of it.

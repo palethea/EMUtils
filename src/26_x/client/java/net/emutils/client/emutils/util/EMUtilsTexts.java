@@ -573,6 +573,18 @@ public final class EMUtilsTexts {
         "emutils.option.free_camera_hud_mode.regular";
     public static final String OPTION_FREE_CAMERA_BOOST_MULTIPLIER =
         "emutils.option.free_camera_boost_multiplier";
+    public static final String OPTION_FREE_CAMERA_HORIZONTAL_SPEED =
+        "emutils.option.free_camera_horizontal_speed";
+    public static final String OPTION_FREE_CAMERA_VERTICAL_SPEED =
+        "emutils.option.free_camera_vertical_speed";
+    public static final String OPTION_FREE_CAMERA_COLLISION =
+        "emutils.option.free_camera_collision";
+    public static final String OPTION_FREE_CAMERA_DOUBLE_TAP =
+        "emutils.option.free_camera_double_tap";
+    public static final String OPTION_FREE_CAMERA_CUSTOM_FOV =
+        "emutils.option.free_camera_custom_fov";
+    public static final String OPTION_FREE_CAMERA_FOV =
+        "emutils.option.free_camera_fov";
     public static final String OPTION_AUTO_FLIGHT_GEAR =
         "emutils.option.auto_flight_gear";
     public static final String OPTION_TWEAK_AUTO_SWITCH_ELYTRA =
@@ -828,6 +840,7 @@ public final class EMUtilsTexts {
     public static final String SUFFIX_SECONDS = "emutils.suffix.seconds";
     public static final String SUFFIX_PERCENT = "emutils.suffix.percent";
     public static final String SUFFIX_MULTIPLIER = "emutils.suffix.multiplier";
+    public static final String SUFFIX_DEGREES = "emutils.suffix.degrees";
 
     public static final String CHAT_COPY_SUCCESS = "emutils.chat.copy.success";
     public static final String CHAT_SCREENSHOT_COPY_SUCCESS =
