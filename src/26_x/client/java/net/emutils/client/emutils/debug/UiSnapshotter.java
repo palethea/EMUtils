@@ -98,6 +98,7 @@ import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
@@ -2314,14 +2315,31 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 20, "inventory search, own inventory keeps the text");
 			}
+			// With Search in Creative on, the creative inventory gets the box too, above its tabs, and it only
+			// marks your own inventory's slots.
 			case 312 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof InventoryScreen screen) {
 					check(searchMatch(screen, Items.SHULKER_BOX) == InventorySearch.Match.INSIDE, "the search carries over to the inventory");
+					client.gui.setScreen(null);
+					command(client, "gamemode creative");
+					EMUtilsClient.config().setInventorySearchCreative(true);
 				}
-				next();
+				if (stepTicks == 15) {
+					client.gui.setScreen(new CreativeModeInventoryScreen(client.player, client.player.connection.enabledFeatures(), client.options.operatorItemsTab().get()));
+				}
+				if (stepTicks == 25 && MinecraftClientCompat.screen(client) instanceof CreativeModeInventoryScreen screen) {
+					press(screen, InputConstants.KEY_F, InputConstants.MOD_CONTROL);
+					type(screen, "x");
+					check(InventorySearch.queryForSnapshot().equals("diamondx"), "typing in the creative inventory goes to the search box, not the creative search tab (" + InventorySearch.queryForSnapshot() + ")");
+					press(screen, InputConstants.KEY_BACKSPACE, 0);
+					press(screen, InputConstants.KEY_RETURN, 0);
+				}
+				captureAfter(client, 35, "inventory search, creative inventory");
 			}
 			case 313 -> {
 				InventorySearch.setQueryForSnapshot("");
+				EMUtilsClient.config().setInventorySearchCreative(false);
+				command(client, "gamemode survival");
 				client.gui.setScreen(null);
 				command(client, "setblock " + searchChest.getX() + " " + searchChest.getY() + " " + searchChest.getZ() + " minecraft:air");
 				command(client, "clear @s");

@@ -583,6 +583,8 @@
   "emutils.option.inventory_search_shulkers.desc": "A shulker box with a match inside is outlined too, with a filled corner, and its preview shows which items match.",
   "emutils.option.inventory_search_remember": "Keep Search Text",
   "emutils.option.inventory_search_remember.desc": "Keep what you typed for the next container, so you can look through chest after chest.",
+  "emutils.option.inventory_search_creative": "Search in Creative",
+  "emutils.option.inventory_search_creative.desc": "Also show the search box in the creative inventory. It only looks at your own inventory, not the item tabs, which have their own search.",
   "emutils.option.quick_stack": "Quick Stack",
   "emutils.option.quick_stack.desc": "Move items into a container that already holds the same items.",
   "emutils.option.quick_stack_speed": "Quick Stack Speed",

@@ -646,6 +646,7 @@ public final class EMUtilsTexts {
     public static final String OPTION_INVENTORY_SEARCH_DIM = "emutils.option.inventory_search_dim";
     public static final String OPTION_INVENTORY_SEARCH_SHULKERS = "emutils.option.inventory_search_shulkers";
     public static final String OPTION_INVENTORY_SEARCH_REMEMBER = "emutils.option.inventory_search_remember";
+    public static final String OPTION_INVENTORY_SEARCH_CREATIVE = "emutils.option.inventory_search_creative";
     public static final String OPTION_QUICK_STACK =
         "emutils.option.quick_stack";
     public static final String OPTION_QUICK_STACK_SPEED =

@@ -347,6 +347,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean inventorySearchDim = Boolean.TRUE;
 	private Boolean inventorySearchShulkers = Boolean.TRUE;
 	private Boolean inventorySearchRemember = Boolean.TRUE;
+	private Boolean inventorySearchCreative = Boolean.FALSE;
 	private String quickStackSpeed = InventorySortSpeed.NORMAL.name();
 	private Boolean autoRefillEnabled = Boolean.FALSE;
 	private Boolean inventoryPreviewEnabled = Boolean.FALSE;
@@ -2983,6 +2984,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean inventorySearchCreative() {
+		return inventorySearchCreative != null && inventorySearchCreative;
+	}
+
+	public void setInventorySearchCreative(boolean enabled) {
+		inventorySearchCreative = enabled;
+		save();
+	}
+
 	public boolean inventorySearchRemember() {
 		return inventorySearchRemember == null || inventorySearchRemember;
 	}
@@ -2998,6 +3008,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		inventorySearchDim = Boolean.TRUE;
 		inventorySearchShulkers = Boolean.TRUE;
 		inventorySearchRemember = Boolean.TRUE;
+		inventorySearchCreative = Boolean.FALSE;
 		slotLockingEnabled = Boolean.TRUE;
 		slotBindingEnabled = Boolean.TRUE;
 		slotBindingShowIcons = Boolean.TRUE;

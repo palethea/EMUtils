@@ -110,7 +110,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Inject(method = "extractSlot", at = @At("TAIL"))
 	private void emutils$drawInventoryToolSlotOverlay(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
-		InventorySearch.drawSlot(context, slot);
+		InventorySearch.drawSlot((Screen) (Object) this, context, slot);
 		Inventory inventory = emutils$playerInventory();
 		if (inventory != null) {
 			EMUtilsClient.inventoryTools().drawSlotOverlay(context, menu, slot, inventory);
@@ -166,6 +166,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Inject(method = "removed", at = @At("HEAD"))
 	private void emutils$clearInventoryToolDrag(CallbackInfo ci) {
+		InventorySearch.detach();
 		HudLayoutEditorOverlay.cancelActive();
 		EMUtilsClient.inventoryTools().clearDrag();
 	}
