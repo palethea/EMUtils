@@ -18,6 +18,7 @@ import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -41,6 +42,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
 		ROWS.put(HubCategory.KEYSTROKES, HubSettingsRegistry::keystrokesRows);
+		ROWS.put(HubCategory.ARMOR_STATUS, HubSettingsRegistry::armorStatusRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
 		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
@@ -83,6 +85,7 @@ public final class HubSettingsRegistry {
 			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
 			case KEYSTROKES -> config::resetKeystrokesDefaults;
+			case ARMOR_STATUS -> config::resetArmorStatusDefaults;
 			case ZOOM -> config::resetZoomDefaults;
 			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
@@ -434,6 +437,40 @@ public final class HubSettingsRegistry {
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_KEYSTROKES_STYLE, config::keystrokesStyle, config::setKeystrokesStyle, KeystrokesStyle.class, style -> Component.translatable(style.labelKey())));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_KEYSTROKES_MENU_ACCENT, config::keystrokesMenuAccent, config::setKeystrokesMenuAccent));
 		rows.add(new HubSettingRow.Swatches(EMUtilsTexts.OPTION_KEYSTROKES_PRESSED_COLOR, ACCENT_PRESETS, config::keystrokesPressedColor, config::setKeystrokesPressedColor, () -> !config.keystrokesMenuAccent()));
+		return rows;
+	}
+
+	/** Armor Status (#44): which items show, then how durability shows and warns when low. */
+	private static List<HubSettingRow> armorStatusRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS, config::armorStatus, config::setArmorStatus));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_ARMOR_STATUS_SECTION_ITEMS));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
+				}
+			},
+			true
+		));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_HELMET, config::armorStatusHelmet, config::setArmorStatusHelmet));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_CHESTPLATE, config::armorStatusChestplate, config::setArmorStatusChestplate));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_LEGGINGS, config::armorStatusLeggings, config::setArmorStatusLeggings));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_BOOTS, config::armorStatusBoots, config::setArmorStatusBoots));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_MAIN_HAND, config::armorStatusMainHand, config::setArmorStatusMainHand));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_OFF_HAND, config::armorStatusOffHand, config::setArmorStatusOffHand));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_FIREWORKS, config::armorStatusFireworks, config::setArmorStatusFireworks));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_HIDE_IN_CONTAINERS, config::armorStatusHideInContainers, config::setArmorStatusHideInContainers));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_ARMOR_STATUS_SECTION_DISPLAY));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_ARMOR_STATUS_DISPLAY, config::armorStatusDisplay, config::setArmorStatusDisplay, ArmorStatusDisplay.class, display -> Component.translatable(display.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_BAR, config::armorStatusBar, config::setArmorStatusBar));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_ARMOR_STATUS_LOW_PERCENT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.ARMOR_STATUS_LOW_PERCENT_MIN, EMUtilsConfig.ARMOR_STATUS_LOW_PERCENT_MAX, config::armorStatusLowPercent, config::setArmorStatusLowPercent));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_FLASH, config::armorStatusFlash, config::setArmorStatusFlash));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_SOUND, config::armorStatusSound, config::setArmorStatusSound));
 		return rows;
 	}
 

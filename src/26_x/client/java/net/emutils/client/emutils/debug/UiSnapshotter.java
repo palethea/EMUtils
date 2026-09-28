@@ -40,6 +40,8 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.hud.ArmorStatusDisplay;
+import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
@@ -164,6 +166,7 @@ public final class UiSnapshotter {
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
 	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
 	private static BlockPos sortChest = BlockPos.ZERO;
+	private static int armorStatusSounds;
 	private static BlockPos searchChest = BlockPos.ZERO;
 	private static int warningsBefore;
 	private static int lightLevelSpotsBefore;
@@ -2435,15 +2438,69 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().resetHideEffectsDefaults();
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Armor Status (#44): worn armor with an elytra, a low helmet in the warning color with its sound,
+			// the fireworks carried, then a light card with Remaining / Max, and the Display tab of its settings.
 			case 318 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetArmorStatusDefaults();
+					config.setArmorStatus(true);
+					config.setArmorStatusSound(true);
+					config.setArmorStatusFlash(false);
+					armorStatusSounds = ArmorStatusRenderer.soundsForSnapshot();
+					command(client, "item replace entity @s armor.head with minecraft:diamond_helmet[damage=350]");
+					command(client, "item replace entity @s armor.chest with minecraft:elytra[damage=120]");
+					command(client, "item replace entity @s armor.legs with minecraft:iron_leggings");
+					command(client, "item replace entity @s armor.feet with minecraft:netherite_boots[damage=90]");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:diamond_pickaxe[damage=700]");
+					command(client, "item replace entity @s weapon.offhand with minecraft:torch 40");
+					command(client, "give @s minecraft:firework_rocket 23");
+				}
+				if (stepTicks == 25) {
+					check(ArmorStatusRenderer.soundsForSnapshot() == armorStatusSounds + 1, "putting on a low helmet plays the low durability sound once (" + (ArmorStatusRenderer.soundsForSnapshot() - armorStatusSounds) + ")");
+				}
+				captureAfter(client, 30, "armor status, low helmet, elytra with fireworks");
+			}
+			case 319 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(false);
+					config.setArmorStatusDisplay(ArmorStatusDisplay.REMAINING_MAX);
+				}
+				captureAfter(client, 10, "armor status, light, remaining out of max");
+			}
+			case 320 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setSettingsUiDark(true);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("armor_status");
+				}
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 35, "armor status sheet, display tab");
+			}
+			case 321 -> {
+				EMUtilsClient.config().resetArmorStatusDefaults();
+				client.gui.setScreen(null);
+				for (String slot : new String[] {"armor.head", "armor.chest", "armor.legs", "armor.feet", "weapon.mainhand", "weapon.offhand"}) {
+					command(client, "item replace entity @s " + slot + " with minecraft:air");
+				}
+				command(client, "clear @s minecraft:firework_rocket");
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 322 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 319 -> {
+			case 323 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2452,7 +2509,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 320 -> {
+			case 324 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2463,7 +2520,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 321 -> {
+			case 325 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2474,7 +2531,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 322 -> {
+			case 326 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

@@ -29,6 +29,8 @@ import net.emutils.client.emutils.gui.ui.UiFontRenderer;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryThumbnails;
+import net.emutils.client.emutils.hud.ArmorStatusHudElement;
+import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
@@ -170,6 +172,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
 		LookAtInfoRenderer.tick(client);
+		ArmorStatusRenderer.tick(client);
 		tickSpotify(client);
 		BackgroundLaunch.tick(client);
 		UiFontRenderer.freeReleased();
@@ -216,6 +219,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
 		HudLayoutRegistry.register(MOD_ID, new LookAtInfoHudElement());
 		HudLayoutRegistry.register(MOD_ID, new KeystrokesHudElement());
+		HudLayoutRegistry.register(MOD_ID, new ArmorStatusHudElement());
 		// Hide Effects (#176): the vanilla effect icons in the top-right corner are skipped while hidden.
 		HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, effects -> (context, tickCounter) -> {
 			EMUtilsConfig config = config();
