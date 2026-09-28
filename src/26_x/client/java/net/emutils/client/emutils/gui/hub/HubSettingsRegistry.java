@@ -10,6 +10,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
+import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.chat.ChatMentionAlerts;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -613,6 +614,7 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_TOOL, config::autoToolEnabled, config::setAutoToolEnabled));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_AUTO_TOOL_SECTION_GENERAL));
 		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_AUTO_TOOL_MODE,
 			config::autoToolMode,
@@ -625,6 +627,37 @@ public final class HubSettingsRegistry {
 			config::autoToolReturnToPreviousItem,
 			config::setAutoToolReturnToPreviousItem
 		));
+		// The enchantment priority list (#50): between tools that can mine a block, the first enchantment
+		// that tells them apart decides. Moving an entry rebuilds the rows in the new order.
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_AUTO_TOOL_SECTION_ENCHANTMENTS));
+		List<AutoToolEnchantment> order = config.autoToolEnchantmentOrder();
+		for (int i = 0; i < order.size(); i++) {
+			AutoToolEnchantment enchantment = order.get(i);
+			rows.add(new HubSettingRow.Ranked(
+				enchantment.labelKey(),
+				i + 1,
+				() -> config.autoToolEnchantmentEnabled(enchantment),
+				enabled -> config.setAutoToolEnchantmentEnabled(enchantment, enabled),
+				i == 0 ? null : () -> {
+					config.moveAutoToolEnchantment(enchantment, -1);
+					refresh.run();
+				},
+				i == order.size() - 1 ? null : () -> {
+					config.moveAutoToolEnchantment(enchantment, 1);
+					refresh.run();
+				}
+			));
+		}
+		// Hotbar slots Auto Tool may pick tools from, so a slot kept for a weapon or a block stays as is.
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_AUTO_TOOL_SECTION_HOTBAR));
+		for (int slot = 0; slot < EMUtilsConfig.HOTBAR_SLOT_MAX; slot++) {
+			int index = slot;
+			rows.add(new HubSettingRow.Toggle(
+				EMUtilsTexts.OPTION_AUTO_TOOL_HOTBAR_SLOT_PREFIX + (slot + 1),
+				() -> config.autoToolHotbarSlot(index),
+				enabled -> config.setAutoToolHotbarSlot(index, enabled)
+			));
+		}
 		return rows;
 	}
 

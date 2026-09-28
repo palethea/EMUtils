@@ -43,6 +43,8 @@ import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
+import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
+import net.emutils.client.emutils.tweaks.AutoToolManager;
 import net.emutils.client.emutils.tweaks.FreeCameraManager;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
@@ -2623,15 +2625,69 @@ public final class UiSnapshotter {
 				command(client, "effect clear @s");
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Auto Tool enchantment priorities and hotbar slots (#50): Fortune on ores, Silk Touch on glass,
+			// the fastest pickaxe on stone and obsidian; then reordered, a slot left out, and the sheet's
+			// Enchantments tab.
 			case 329 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsClient.config().resetAutoToolDefaults();
+					command(client, "item replace entity @s hotbar.0 with minecraft:diamond_pickaxe[enchantments={efficiency:5}]");
+					command(client, "item replace entity @s hotbar.1 with minecraft:iron_pickaxe[enchantments={fortune:3}]");
+					command(client, "item replace entity @s hotbar.2 with minecraft:diamond_pickaxe[enchantments={silk_touch:1}]");
+					command(client, "item replace entity @s hotbar.8 with minecraft:air");
+					client.player.getInventory().setSelectedSlot(8);
+				}
+				if (stepTicks == 20) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) == 1, "Auto Tool picks the Fortune pickaxe for diamond ore (" + AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) + ")");
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.GLASS.defaultBlockState()) == 2, "Auto Tool picks the Silk Touch pickaxe for glass (" + AutoToolManager.bestSlotForSnapshot(client, Blocks.GLASS.defaultBlockState()) + ")");
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.STONE.defaultBlockState()) == 0, "Auto Tool picks the Efficiency pickaxe for stone (" + AutoToolManager.bestSlotForSnapshot(client, Blocks.STONE.defaultBlockState()) + ")");
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.OBSIDIAN.defaultBlockState()) == 0, "Auto Tool leaves out the iron pickaxe, which can't get obsidian (" + AutoToolManager.bestSlotForSnapshot(client, Blocks.OBSIDIAN.defaultBlockState()) + ")");
+					config.moveAutoToolEnchantment(AutoToolEnchantment.SILK_TOUCH, -1);
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) == 2, "with Silk Touch first, Auto Tool picks the Silk Touch pickaxe for diamond ore");
+					config.setAutoToolHotbarSlot(2, false);
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) == 1, "with slot 3 left out, Auto Tool falls back to the Fortune pickaxe");
+					config.setAutoToolHotbarSlot(2, true);
+					config.moveAutoToolEnchantment(AutoToolEnchantment.EFFICIENCY, -2);
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) == 0, "with Efficiency first, Auto Tool picks the fastest pickaxe for diamond ore");
+					config.setAutoToolEnchantmentEnabled(AutoToolEnchantment.EFFICIENCY, false);
+					check(AutoToolManager.bestSlotForSnapshot(client, Blocks.DIAMOND_ORE.defaultBlockState()) == 2, "with Efficiency off, the next enchantment decides");
+					config.setAutoToolEnchantmentEnabled(AutoToolEnchantment.EFFICIENCY, true);
+					config.setAutoToolHotbarSlot(8, false);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("auto_tool");
+				}
+				if (stepTicks == 35 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 55, "auto tool sheet, enchantments tab, efficiency first");
+			}
+			case 330 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 20, "auto tool sheet, hotbar slots tab, slot 9 left out");
+			}
+			case 331 -> {
+				EMUtilsClient.config().resetAutoToolDefaults();
+				client.gui.setScreen(null);
+				for (int slot = 0; slot < 3; slot++) {
+					command(client, "item replace entity @s hotbar." + slot + " with minecraft:air");
+				}
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 332 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 330 -> {
+			case 333 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2640,7 +2696,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 331 -> {
+			case 334 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2651,7 +2707,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 332 -> {
+			case 335 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2662,7 +2718,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 333 -> {
+			case 336 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
