@@ -2336,14 +2336,29 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 35, "inventory search, creative inventory");
 			}
+			// The Inventory Tools sheet, split into tabs; the Search tab.
 			case 313 -> {
-				InventorySearch.setQueryForSnapshot("");
-				EMUtilsClient.config().setInventorySearchCreative(false);
-				command(client, "gamemode survival");
-				client.gui.setScreen(null);
-				command(client, "setblock " + searchChest.getX() + " " + searchChest.getY() + " " + searchChest.getZ() + " minecraft:air");
-				command(client, "clear @s");
-				next();
+				if (stepTicks == 1) {
+					InventorySearch.setQueryForSnapshot("");
+					EMUtilsClient.config().setInventorySearchCreative(false);
+					command(client, "gamemode survival");
+					command(client, "setblock " + searchChest.getX() + " " + searchChest.getY() + " " + searchChest.getZ() + " minecraft:air");
+					command(client, "clear @s");
+					client.gui.setScreen(null);
+				}
+				// After the game mode change has come back from the server, which closes the creative screen.
+				if (stepTicks == 10) {
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("inventory");
+				}
+				if (stepTicks == 25 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 45, "inventory tools sheet, search tab");
+				if (step != 313) {
+					client.gui.setScreen(null);
+				}
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
 			case 314 -> {

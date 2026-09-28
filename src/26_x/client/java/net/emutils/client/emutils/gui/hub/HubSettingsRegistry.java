@@ -657,7 +657,8 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_TOOLS, config::inventoryToolsEnabled, config::setInventoryToolsEnabled));
-		rows.add(divider());
+		// Tabs, since the tools have grown many settings (#46).
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_INVENTORY_SECTION_SLOTS));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_LOCKING, config::slotLockingEnabled, config::setSlotLockingEnabled));
 		rows.add(new HubSettingRow.Rgb(
 			EMUtilsTexts.OPTION_SLOT_LOCK_COLOR,
@@ -672,7 +673,7 @@ public final class HubSettingsRegistry {
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_BINDING, config::slotBindingEnabled, config::setSlotBindingEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SLOT_BINDING_LOCK_BOUND_SLOTS, config::slotBindingLockBoundSlots, config::setSlotBindingLockBoundSlots));
-		rows.add(divider());
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_INVENTORY_SECTION_MOVING));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER, config::hoverTransferEnabled, config::setHoverTransferEnabled));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HOVER_TRANSFER_GLOBAL, config::hoverTransferGlobal, config::setHoverTransferGlobal));
 		rows.add(divider());
@@ -696,15 +697,6 @@ public final class HubSettingsRegistry {
 		rows.add(divider());
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_REFILL, config::autoRefillEnabled, config::setAutoRefillEnabled));
 		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH, config::inventorySearch, config::setInventorySearch));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_DIM, config::inventorySearchDim, config::setInventorySearchDim));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_SHULKERS, config::inventorySearchShulkers, config::setInventorySearchShulkers));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_REMEMBER, config::inventorySearchRemember, config::setInventorySearchRemember));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_CREATIVE, config::inventorySearchCreative, config::setInventorySearchCreative));
-		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
-		rows.add(divider());
 		rows.add(new HubSettingRow.Action(
 			Component.translatable("emutils.mass_drop.manage"),
 			() -> {
@@ -713,6 +705,16 @@ public final class HubSettingsRegistry {
 			},
 			true
 		));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_INVENTORY_SECTION_SEARCH));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH, config::inventorySearch, config::setInventorySearch));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_DIM, config::inventorySearchDim, config::setInventorySearchDim));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_SHULKERS, config::inventorySearchShulkers, config::setInventorySearchShulkers));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_REMEMBER, config::inventorySearchRemember, config::setInventorySearchRemember));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_SEARCH_CREATIVE, config::inventorySearchCreative, config::setInventorySearchCreative));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_INVENTORY_SECTION_MORE));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_INVENTORY_PREVIEW, config::inventoryPreviewEnabled, config::setInventoryPreviewEnabled));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_PRESERVE_CONTAINER_CURSOR, config::preserveContainerCursor, config::setPreserveContainerCursor));
 		return rows;
 	}
 
