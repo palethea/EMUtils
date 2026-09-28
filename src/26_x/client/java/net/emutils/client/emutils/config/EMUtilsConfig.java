@@ -12,6 +12,7 @@ import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
+import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.layout.HudCustomLayoutEntry;
 import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
@@ -96,6 +97,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int HOTBAR_SLOT_MIN = 1;
 	public static final int HOTBAR_SLOT_MAX = 9;
 	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
+	/** The Keystrokes overlay's own pressed-key color, used when it doesn't follow the menu accent. */
+	public static final int KEYSTROKES_PRESSED_COLOR_DEFAULT = 0xFF2F6FD6;
 	public static final int UI_CODE_SIZE_MIN = 80;
 	public static final int UI_CODE_SIZE_MAX = 150;
 	public static final int UI_TEXT_SIZE_MIN = 90;
@@ -185,6 +188,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean lookAtInfoArmor = Boolean.TRUE;
 	private Boolean lookAtInfoEffects = Boolean.TRUE;
 	private String lookAtInfoTextShadow = HudTextShadow.AUTO.name();
+	private Boolean keystrokes = Boolean.FALSE;
+	private Boolean keystrokesMouse = Boolean.TRUE;
+	private Boolean keystrokesCps = Boolean.TRUE;
+	private Boolean keystrokesSpace = Boolean.TRUE;
+	private Boolean keystrokesSneak = Boolean.FALSE;
+	private Boolean keystrokesHideInContainers = Boolean.TRUE;
+	private Boolean keystrokesMenuAccent = Boolean.TRUE;
+	private String keystrokesStyle = KeystrokesStyle.ROUNDED.name();
+	private Integer keystrokesPressedColor = KEYSTROKES_PRESSED_COLOR_DEFAULT;
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -2671,6 +2683,104 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hudTextShadow = HudTextShadow.AUTO.name();
 		hudBackgroundOpacity = 100;
 		hudScale = 100;
+		save();
+	}
+
+	public boolean keystrokes() {
+		return keystrokes != null && keystrokes;
+	}
+
+	public void setKeystrokes(boolean enabled) {
+		keystrokes = enabled;
+		save();
+	}
+
+	public boolean keystrokesMouse() {
+		return keystrokesMouse == null || keystrokesMouse;
+	}
+
+	public void setKeystrokesMouse(boolean enabled) {
+		keystrokesMouse = enabled;
+		save();
+	}
+
+	public boolean keystrokesCps() {
+		return keystrokesCps == null || keystrokesCps;
+	}
+
+	public void setKeystrokesCps(boolean enabled) {
+		keystrokesCps = enabled;
+		save();
+	}
+
+	public boolean keystrokesSpace() {
+		return keystrokesSpace == null || keystrokesSpace;
+	}
+
+	public void setKeystrokesSpace(boolean enabled) {
+		keystrokesSpace = enabled;
+		save();
+	}
+
+	public boolean keystrokesSneak() {
+		return keystrokesSneak != null && keystrokesSneak;
+	}
+
+	public void setKeystrokesSneak(boolean enabled) {
+		keystrokesSneak = enabled;
+		save();
+	}
+
+	public boolean keystrokesHideInContainers() {
+		return keystrokesHideInContainers == null || keystrokesHideInContainers;
+	}
+
+	public void setKeystrokesHideInContainers(boolean enabled) {
+		keystrokesHideInContainers = enabled;
+		save();
+	}
+
+	public boolean keystrokesMenuAccent() {
+		return keystrokesMenuAccent == null || keystrokesMenuAccent;
+	}
+
+	public void setKeystrokesMenuAccent(boolean enabled) {
+		keystrokesMenuAccent = enabled;
+		save();
+	}
+
+	public KeystrokesStyle keystrokesStyle() {
+		return KeystrokesStyle.fromName(keystrokesStyle);
+	}
+
+	public void setKeystrokesStyle(KeystrokesStyle style) {
+		keystrokesStyle = (style == null ? KeystrokesStyle.ROUNDED : style).name();
+		save();
+	}
+
+	public int keystrokesPressedColor() {
+		return keystrokesPressedColor == null ? KEYSTROKES_PRESSED_COLOR_DEFAULT : keystrokesPressedColor | 0xFF000000;
+	}
+
+	public void setKeystrokesPressedColor(int argb) {
+		keystrokesPressedColor = argb | 0xFF000000;
+		save();
+	}
+
+	/** Keystrokes (#43): its settings and its place in the HUD layout. */
+	public void resetKeystrokesDefaults() {
+		keystrokes = Boolean.FALSE;
+		keystrokesMouse = Boolean.TRUE;
+		keystrokesCps = Boolean.TRUE;
+		keystrokesSpace = Boolean.TRUE;
+		keystrokesSneak = Boolean.FALSE;
+		keystrokesHideInContainers = Boolean.TRUE;
+		keystrokesMenuAccent = Boolean.TRUE;
+		keystrokesStyle = KeystrokesStyle.ROUNDED.name();
+		keystrokesPressedColor = KEYSTROKES_PRESSED_COLOR_DEFAULT;
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.KEYSTROKES.configKey());
+		}
 		save();
 	}
 

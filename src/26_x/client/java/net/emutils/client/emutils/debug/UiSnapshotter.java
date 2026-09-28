@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.accessor.KeyBindingAccess;
 import net.emutils.client.emutils.capes.CapeAnimations;
 import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.capes.CustomCapeManager;
@@ -39,11 +40,13 @@ import net.emutils.client.emutils.commandshortcuts.gui.CommandShortcutsScreen;
 import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.HudTpsTracker;
+import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.LookAtInfoData;
 import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
@@ -84,6 +87,7 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.emutils.client.mixin.MouseAccess;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -2186,15 +2190,75 @@ public final class UiSnapshotter {
 					client.gui.setScreen(null);
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Keystrokes (#43): held keys light up, clicks per second count every press of the attack key,
+			// then a light, square variant in a color of its own, and the Style tab of its settings.
 			case 306 -> {
+				Options options = client.options;
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetKeystrokesDefaults();
+					config.setKeystrokes(true);
+					config.setKeystrokesSneak(true);
+					options.keyUp.setDown(true);
+					options.keyJump.setDown(true);
+					InputConstants.Key attack = ((KeyBindingAccess) options.keyAttack).emhelpers$getBoundKey();
+					for (int i = 0; i < 6; i++) {
+						KeyMapping.click(attack);
+					}
+				}
+				if (stepTicks == 10) {
+					check(ClickCounter.leftCps() == 6 && ClickCounter.rightCps() == 0, "six attack presses in a second are 6 left CPS and no right ones (" + ClickCounter.leftCps() + ", " + ClickCounter.rightCps() + ")");
+					int sliding = ClickCounter.countForSnapshot(new long[] {0L, 300L, 600L, 900L, 1200L}, 1250L);
+					check(sliding == 4, "CPS only counts the last second (" + sliding + ")");
+				}
+				captureAfter(client, 12, "keystrokes, forward and jump held, 6 cps");
+				if (step != 306) {
+					options.keyUp.setDown(false);
+					options.keyJump.setDown(false);
+				}
+			}
+			case 307 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(false);
+					config.setKeystrokesStyle(KeystrokesStyle.SQUARE);
+					config.setKeystrokesMenuAccent(false);
+					config.setKeystrokesPressedColor(0xFFC23D7A);
+					client.options.keyLeft.setDown(true);
+				}
+				captureAfter(client, 10, "keystrokes, light, square, own color, left held");
+				if (step != 307) {
+					client.options.keyLeft.setDown(false);
+				}
+			}
+			case 308 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setSettingsUiDark(true);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("keystrokes");
+				}
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 35, "keystrokes sheet, style tab");
+			}
+			case 309 -> {
+				EMUtilsClient.config().resetKeystrokesDefaults();
+				client.gui.setScreen(null);
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 310 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 307 -> {
+			case 311 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2203,7 +2267,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 308 -> {
+			case 312 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2214,7 +2278,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 309 -> {
+			case 313 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2225,7 +2289,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 310 -> {
+			case 314 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

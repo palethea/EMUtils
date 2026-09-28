@@ -35,6 +35,7 @@
 		"InGameOverlayRendererAccessor",
 		"InGameOverlayRendererMixin",
 		"KeyBindingAccessorMixin",
+		"KeyMappingClickMixin",
 		"KeyboardInputFreeCameraMixin",
 		"LevelExtractorFreeCameraMixin",
 		"LightningBoltRendererMixin",
