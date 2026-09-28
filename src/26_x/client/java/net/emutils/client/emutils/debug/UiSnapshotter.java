@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -39,9 +40,11 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.hud.HudOverlayData;
+import net.emutils.client.emutils.hud.HudOverlayLine;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.HudTpsTracker;
+import net.emutils.client.emutils.hud.LookAtInfoData;
 import net.emutils.client.emutils.gui.settings.SettingsIconButton;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.ConfigTransfer;
@@ -108,6 +111,8 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -2066,15 +2071,130 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().resetCapesDefaults();
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Look-At Info (#45): the card for a block, then for a mob with an effect, in the light theme on the
+			// right side of the screen, and the sample the layout editor shows while nothing is targeted.
 			case 301 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetHudDefaults();
+					config.resetLookAtInfoDefaults();
+					config.setLookAtInfo(true);
+					BlockPos feet = client.player.blockPosition();
+					// Stand in the middle of the block, facing south and looking down at dirt right in front, then obsidian.
+					command(client, "tp @s " + (feet.getX() + 0.5) + " " + feet.getY() + " " + (feet.getZ() + 0.5) + " 0 60");
+					command(client, "setblock ~ ~ ~1 minecraft:dirt");
+					command(client, "setblock ~ ~1 ~1 minecraft:air");
+					command(client, "time set 6000");
+					command(client, "item replace entity @s hotbar.8 with minecraft:air");
+					client.player.getInventory().setSelectedSlot(8);
+				}
+				if (stepTicks == 5) {
+					client.player.setYRot(0.0F);
+					client.player.setXRot(60.0F);
+				}
+				if (stepTicks == 20) {
+					// Dirt drops with anything, so there's no Can Harvest line (#45).
+					LookAtInfoData data = LookAtInfoData.current();
+					check(data != null && data.id().equals("minecraft:dirt") && lookAtValue(data, "emutils.hud.look_at.harvest").isEmpty(), "a block that drops with anything has no Can Harvest line");
+					command(client, "setblock ~ ~ ~1 minecraft:obsidian");
+				}
+				if (stepTicks == 40) {
+					LookAtInfoData data = LookAtInfoData.current();
+					check(data != null && data.id().equals("minecraft:obsidian") && data.name().equals("Obsidian"), "Look-At Info names the targeted block (" + (data == null ? "nothing" : data.name() + ", " + data.id()) + ")");
+					check(data != null && lookAtValue(data, "emutils.hud.look_at.hardness").equals("50"), "obsidian's hardness is 50");
+					check(data != null && lookAtValue(data, "emutils.hud.look_at.tool").equals("Pickaxe · Diamond+"), "obsidian needs a diamond pickaxe (" + (data == null ? "" : lookAtValue(data, "emutils.hud.look_at.tool")) + ")");
+					check(data != null && lookAtValue(data, "emutils.hud.look_at.harvest").equals("No"), "an empty hand can't harvest obsidian");
+					check(data != null && lookAtValue(data, "emutils.hud.look_at.position").matches("-?\\d+ -?\\d+ -?\\d+"), "the Position line shows the block's coordinates");
+					List<Map.Entry<Block, String>> tools = List.of(
+						Map.entry(Blocks.STONE, "Pickaxe · Wood+"),
+						Map.entry(Blocks.IRON_ORE, "Pickaxe · Stone+"),
+						Map.entry(Blocks.DIAMOND_ORE, "Pickaxe · Iron+"),
+						Map.entry(Blocks.OAK_LOG, "Axe"),
+						Map.entry(Blocks.DIRT, "Shovel"),
+						Map.entry(Blocks.HAY_BLOCK, "Hoe"),
+						Map.entry(Blocks.GLASS, "Any"),
+						Map.entry(Blocks.BEDROCK, "Any")
+					);
+					for (Map.Entry<Block, String> tool : tools) {
+						String value = LookAtInfoData.toolForSnapshot(tool.getKey().defaultBlockState());
+						check(value.equals(tool.getValue()), "the Tool line for " + tool.getKey().getName().getString() + " is " + tool.getValue() + " (" + value + ")");
+					}
+					String cobweb = LookAtInfoData.toolForSnapshot(Blocks.COBWEB.defaultBlockState());
+					check(cobweb.startsWith("Sword") || cobweb.startsWith("Shears"), "a cobweb needs a sword or shears (" + cobweb + ")");
+				}
+				captureAfter(client, 40, "look-at info, block");
+			}
+			case 302 -> {
+				if (stepTicks == 1) {
+					// A clear stone floor, so grass or a slope doesn't get between the player and the mob.
+					command(client, "fill ~-1 ~-1 ~1 ~1 ~-1 ~4 minecraft:stone");
+					command(client, "fill ~-1 ~ ~1 ~1 ~2 ~4 minecraft:air");
+					command(client, "summon minecraft:husk ~ ~ ~3 {NoAI:1b,Silent:1b,active_effects:[{id:\"minecraft:speed\",amplifier:1b,duration:2400}]}");
+					command(client, "damage @e[type=minecraft:husk,limit=1,sort=nearest] 5 minecraft:generic");
+					client.player.setXRot(10.0F);
+				}
+				if (stepTicks == 40) {
+					LookAtInfoData data = LookAtInfoData.current();
+					check(data != null && data.id().equals("minecraft:husk"), "Look-At Info names the targeted mob (" + (data == null ? "nothing" : data.id()) + ")");
+					String health = data == null ? "" : lookAtValue(data, "emutils.hud.look_at.health");
+					check(health.equals("15 / 20"), "the Health line shows health and max health (" + health + ")");
+					String speed = data == null ? "" : lookAtValue(data, "effect.minecraft.speed");
+					check(speed.startsWith("II · "), "in singleplayer the mob's effects show, with their level (" + speed + ")");
+				}
+				captureAfter(client, 40, "look-at info, mob with an effect");
+			}
+			case 303 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(false);
+					config.setLookAtInfoTextShadow(HudTextShadow.ON);
+					int width = client.getWindow().getGuiScaledWidth();
+					config.setHudCustomLayoutEntry(EMUtilsHudElements.LOOK_AT_INFO, width - 178, 40, 100, 100);
+				}
+				captureAfter(client, 10, "look-at info, light, right side lines up right");
+			}
+			case 304 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setSettingsUiDark(true);
+					EMUtilsClient.config().resetLookAtInfoDefaults();
+					EMUtilsClient.config().setLookAtInfo(true);
+					client.player.setXRot(-90.0F);
+				}
+				if (stepTicks == 5 && HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					check(LookAtInfoData.current() == null, "looking at the sky targets nothing");
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				captureAfter(client, 25, "hud editor, look-at info sample");
+			}
+			case 305 -> {
+				if (stepTicks == 1) {
+					HudLayoutManager.cancelEditor(EMUtilsClient.config());
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("look_at_info");
+				}
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 35, "look-at info sheet, block tab");
+				if (step != 305) {
+					command(client, "kill @e[type=minecraft:husk]");
+					EMUtilsClient.config().resetLookAtInfoDefaults();
+					client.player.setXRot(0.0F);
+					client.gui.setScreen(null);
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 306 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 302 -> {
+			case 307 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2083,7 +2203,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 303 -> {
+			case 308 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2094,7 +2214,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 304 -> {
+			case 309 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2105,7 +2225,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 305 -> {
+			case 310 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -2589,6 +2709,16 @@ public final class UiSnapshotter {
 			lightningSeenAt = -1;
 			next();
 		}
+	}
+
+	/** The value of the Look-At Info line labeled {@code labelKey}, or an empty string. */
+	private static String lookAtValue(LookAtInfoData data, String labelKey) {
+		for (HudOverlayLine line : data.lines()) {
+			if (line.labelKey().equals(labelKey)) {
+				return line.value();
+			}
+		}
+		return "";
 	}
 
 	private static void check(boolean passed, String what) {

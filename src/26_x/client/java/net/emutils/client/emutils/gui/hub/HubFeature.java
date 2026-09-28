@@ -41,6 +41,7 @@ public final class HubFeature {
 		IMAGE(HubIcons.IMAGE),
 		TOOL(HubIcons.FOLDER_COG),
 		HUD(HubIcons.MONITOR),
+		CROSSHAIR(HubIcons.CROSSHAIR),
 		MOUSE_CLICK(HubIcons.MOUSE_POINTER_CLICK),
 		APPLE(HubIcons.APPLE),
 		ZOOM(HubIcons.ZOOM_IN),

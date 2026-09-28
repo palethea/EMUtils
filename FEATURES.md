@@ -81,7 +81,7 @@ Show third-party player capes from supported providers.
 
 Show a configurable info panel with icons and useful world or client stats, as a rounded card in the settings UI's dark or light theme with values lined up in a column. Its settings are split into General, World, Performance and Time tabs.
 
-- HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element.
+- HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element. The editor's toolbar moves to the bottom of the screen when it would cover more of the elements at the top.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
 - Hide in Containers: hide the overlay while a chest, your inventory or another container is open. Off by default.
@@ -105,6 +105,26 @@ Show a configurable info panel with icons and useful world or client stats, as a
 - Server Time: show world time.
 - Day and Night: show the real time left until night (when monsters start spawning) or until day, or Time stopped when the daylight cycle is off. Off by default.
 - Real Time: show local time.
+
+### Look-At Info
+
+Show a card about the block or entity in your crosshair, within your reach: its item, name and ID on top, then the lines below, in the HUD Overlay's look. It sits at the top middle of the screen by default and can be moved and resized in the HUD Layout Editor; its width follows the content and it lines up with the left edge, middle or right edge of its place, depending on which third of the screen that place is in. Off by default. Its settings are split into General, Block and Entity tabs.
+
+- Show ID: show the ID under the name, such as minecraft:stone.
+- Show Icons: show the item and the icons beside the lines.
+- Text Shadow: a shadow under the text and icons, like the HUD Overlay's.
+- Hide With F3: hide the card when the debug screen is open.
+- Hide in Containers: hide the card while a chest, your inventory or another container is open.
+- Blocks: show the card for blocks.
+  - Position: the block's coordinates.
+  - Hardness: how hard the block is to break, or Unbreakable.
+  - Break Time: how long breaking it takes with what you hold, counting enchantments, effects, water and being in midair; Instant or Never when it is.
+  - Tool: the tool that mines it fastest, and the lowest tier that gets drops when it needs one, such as Pickaxe · Iron+. Worked out from the vanilla tools themselves, so it follows the game's rules for every block.
+  - Can Harvest: for blocks that need a certain tool to drop anything, such as stone, ores and obsidian, whether what you hold gets drops from it, in green or red. Other blocks always drop, so they don't show it.
+- Entities: show the card for mobs, players and other entities; a dropped item shows its item and count.
+  - Health: health, max health and absorption, green, amber or red by how hurt it is.
+  - Armor: armor points, when it has any.
+  - Effects: each active effect with its level and time left, green when it helps and red when it harms. Servers only share your own effects and those of what you ride, so other mobs' effects show in singleplayer only.
 
 ### Food HUD
 
