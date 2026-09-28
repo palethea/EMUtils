@@ -63,7 +63,8 @@ public final class HubFeature {
 		SCRIPT(HubIcons.PACKAGE_OPEN),
 		USERS(HubIcons.USERS),
 		PALETTE(HubIcons.PALETTE),
-		KEYBOARD(HubIcons.KEYBOARD);
+		KEYBOARD(HubIcons.KEYBOARD),
+		TROPHY(HubIcons.TROPHY);
 
 		private final Identifier texture;
 

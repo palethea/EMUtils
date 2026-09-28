@@ -155,6 +155,18 @@ Show your armor and held items in a card, each with how much durability it has l
   - Flash When Low: low items fade in and out.
   - Sound When Low: play a sound when an item drops to Low Durability, or one that low is put on. Off by default. Held items are left to Anti-Durability Break's warning while that's on, so they don't warn twice.
 
+### Scoreboard
+
+Take over the server's sidebar scoreboard, so you can place, resize and restyle it like the other HUD elements. It shows exactly what vanilla shows: the objective's title, up to 15 lines sorted the way vanilla sorts them, team prefixes and suffixes, the number formats servers set (blank, fixed, styled), and the sidebar for your team's color when the server sets one. Nothing shows while there is no sidebar; the HUD Layout Editor shows a sample then. It sits at the right edge of the screen, vertically centered, by default, where vanilla draws it, and can be moved, resized and given a background opacity in the HUD Layout Editor. It lines up with the left, middle or right, and the top, middle or bottom, of its place, depending on which third of the screen that place is in, so it keeps its side as the server adds and removes lines. Text too long for the screen is cut with "...". Off by default; with it off, vanilla's own scoreboard shows as before. Its settings are split into Look and Content tabs.
+
+- Style: a Card in the settings UI's look, like the HUD Overlay, or Vanilla's dark bars behind the sidebar. Server colors are made for a dark background, so under the light menu theme the Vanilla style reads better.
+- Font: Minecraft's font keeps every server color and style exactly. The EMUtils font keeps colors, bold, underline and strikethrough, but not italics or obfuscated text, and text a server sets in another font, such as icon glyphs, is still drawn in Minecraft's.
+- Text Shadow: a shadow under the text, like the HUD Overlay's. Auto (the default) adds it below 50% background opacity.
+- Show Numbers: show the scores on the right, the red numbers.
+- Title: center the title or line it up with the left edge.
+- Bold Title: write the title in bold.
+- Hide With F3: hide the scoreboard when the debug screen is open.
+
 ### Food HUD
 
 Show food and saturation information on the vanilla hunger bar.
