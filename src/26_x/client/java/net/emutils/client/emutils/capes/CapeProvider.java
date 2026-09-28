@@ -45,7 +45,9 @@ public enum CapeProvider {
 		return switch (this) {
 			case OPTIFINE -> "http://s.optifine.net/capes/" + name + ".png";
 			case LABYMOD -> "https://dl.labymod.net/capes/" + profile.id();
-			case COSMETICA -> "https://api.cosmetica.cc/v2/get/info?uuid=" + profile.id();
+			// Cosmetica 2's API (#52). The old api.cosmetica.cc/v2/get/info now answers every player with an
+			// "Update Cosmetica" placeholder cape.
+			case COSMETICA -> "https://api.cloaks.gg/players/" + profile.id();
 			case MINECRAFTCAPES -> "https://api.minecraftcapes.net/profile/" + profile.id().toString().replace("-", "");
 			case CLOAKSPLUS -> "http://161.35.130.99/capes/" + name + ".png";
 		};

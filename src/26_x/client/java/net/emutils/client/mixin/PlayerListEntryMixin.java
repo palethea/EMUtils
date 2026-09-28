@@ -23,14 +23,15 @@ public abstract class PlayerListEntryMixin {
 		CustomCapeManager.onLoadTexture(profile);
 	}
 
+	/** Shows the cape the priority list picks (#52): a provider's, the official one, or none. */
 	@Inject(method = "getSkin", at = @At("RETURN"), cancellable = true)
 	private void emutils$applyCustomCape(CallbackInfoReturnable<PlayerSkin> cir) {
-		ClientAsset.Texture capeTexture = CustomCapeManager.capeTextureFor(profile);
-		if (capeTexture == null) {
+		PlayerSkin original = cir.getReturnValue();
+		ClientAsset.Texture capeTexture = CustomCapeManager.capeTextureFor(profile, original.cape());
+		if (capeTexture == original.cape()) {
 			return;
 		}
 
-		PlayerSkin original = cir.getReturnValue();
 		cir.setReturnValue(new PlayerSkin(
 			original.body(),
 			capeTexture,

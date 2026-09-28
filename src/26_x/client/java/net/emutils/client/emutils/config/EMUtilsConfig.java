@@ -7,7 +7,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
-import net.emutils.client.emutils.capes.CapePreferredProvider;
+import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
@@ -31,8 +31,10 @@ import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -289,7 +291,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean capeMinecraftCapes = Boolean.TRUE;
 	private Boolean capeCosmetica = Boolean.TRUE;
 	private Boolean capeCloaksPlus = Boolean.TRUE;
-	private String capePreferredProvider = CapePreferredProvider.AUTO.name();
+	/** Only read to carry an old Preferred Provider over into {@link #capeOrder} (#52). */
+	private String capePreferredProvider;
+	/** The cape priority list (#52), as {@link CapeSource} names; null until changed, then the default order. */
+	private List<String> capeOrder;
+	private Boolean capeMinecraft = Boolean.TRUE;
 	/** The Spotify Player main toggle; null in configs from before it existed, then derived on load. */
 	private Boolean spotifyEnabled;
 	private Boolean spotifyPlayerEnabled = Boolean.FALSE;
@@ -1992,12 +1998,55 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		CustomCapeManager.reload();
 	}
 
-	public CapePreferredProvider capePreferredProvider() {
-		return CapePreferredProvider.fromName(capePreferredProvider);
+	/** Whether official Minecraft capes show; off hides them, even for players with no other cape (#52). */
+	public boolean capeMinecraft() {
+		return capeMinecraft == null || capeMinecraft;
 	}
 
-	public void setCapePreferredProvider(CapePreferredProvider preferred) {
-		capePreferredProvider = preferred.name();
+	public void setCapeMinecraft(boolean enabled) {
+		capeMinecraft = enabled;
+		save();
+		CustomCapeManager.reload();
+	}
+
+	/**
+	 * The cape priority list (#52): every {@link CapeSource} once, the first with a cape for a player wins.
+	 * Configs from before it put their old Preferred Provider first, then the default order.
+	 */
+	public List<CapeSource> capeOrder() {
+		List<CapeSource> order = new ArrayList<>();
+		if (capeOrder != null) {
+			for (String name : capeOrder) {
+				CapeSource source = CapeSource.fromName(name);
+				if (source != null && !order.contains(source)) {
+					order.add(source);
+				}
+			}
+		} else {
+			CapeSource preferred = CapeSource.fromName(capePreferredProvider);
+			if (preferred != null) {
+				order.add(preferred);
+			}
+		}
+		for (CapeSource source : CapeSource.DEFAULT_ORDER) {
+			if (!order.contains(source)) {
+				order.add(source);
+			}
+		}
+		return order;
+	}
+
+	/** Moves {@code source} {@code delta} places up (negative) or down in the cape priority list. */
+	public void moveCapeSource(CapeSource source, int delta) {
+		List<CapeSource> order = capeOrder();
+		int from = order.indexOf(source);
+		int to = Math.clamp(from + delta, 0, order.size() - 1);
+		if (from < 0 || from == to) {
+			return;
+		}
+		order.remove(from);
+		order.add(to, source);
+		capeOrder = order.stream().map(CapeSource::name).collect(Collectors.toCollection(ArrayList::new));
 		save();
 		CustomCapeManager.reload();
 	}
@@ -2591,7 +2640,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		capeMinecraftCapes = Boolean.TRUE;
 		capeCosmetica = Boolean.TRUE;
 		capeCloaksPlus = Boolean.TRUE;
-		capePreferredProvider = CapePreferredProvider.AUTO.name();
+		capeMinecraft = Boolean.TRUE;
+		capePreferredProvider = null;
+		capeOrder = null;
 		save();
 		CustomCapeManager.reload();
 	}
@@ -3090,9 +3141,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (capeCloaksPlus == null) {
 			capeCloaksPlus = Boolean.TRUE;
-		}
-		if (capePreferredProvider == null || capePreferredProvider.isBlank()) {
-			capePreferredProvider = CapePreferredProvider.AUTO.name();
 		}
 		if (spotifyPlayerEnabled == null) {
 			spotifyPlayerEnabled = Boolean.FALSE;

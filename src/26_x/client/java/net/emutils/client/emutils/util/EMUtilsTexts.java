@@ -593,6 +593,7 @@ public final class EMUtilsTexts {
         "emutils.option.pack_manager_search_limit";
     public static final String OPTION_CUSTOM_CAPES =
         "emutils.option.custom_capes";
+    public static final String OPTION_CAPE_MINECRAFT = "emutils.option.cape.minecraft";
     public static final String OPTION_CAPE_OPTIFINE =
         "emutils.option.cape.optifine";
     public static final String OPTION_CAPE_LABYMOD =
@@ -603,10 +604,6 @@ public final class EMUtilsTexts {
         "emutils.option.cape.cosmetica";
     public static final String OPTION_CAPE_CLOAKSPLUS =
         "emutils.option.cape.cloaksplus";
-    public static final String OPTION_CAPE_PREFERRED_PROVIDER =
-        "emutils.option.cape.preferred_provider";
-    public static final String OPTION_CAPE_PREFERRED_AUTO =
-        "emutils.option.cape.preferred.auto";
     public static final String CAPES_HINT = "emutils.capes.hint";
     public static final String OPTION_SPOTIFY = "emutils.option.spotify";
     public static final String OPTION_CHAT_FEATURES = "emutils.option.chat_features";
