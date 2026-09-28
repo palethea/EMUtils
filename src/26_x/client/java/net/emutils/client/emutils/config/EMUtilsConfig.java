@@ -169,6 +169,22 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean hudTpsCompact = Boolean.FALSE;
 	private Boolean hudHideInContainers = Boolean.FALSE;
 	private String hudTextShadow = HudTextShadow.AUTO.name();
+	private Boolean lookAtInfo = Boolean.FALSE;
+	private Boolean lookAtInfoBlocks = Boolean.TRUE;
+	private Boolean lookAtInfoEntities = Boolean.TRUE;
+	private Boolean lookAtInfoShowIcons = Boolean.TRUE;
+	private Boolean lookAtInfoShowId = Boolean.TRUE;
+	private Boolean lookAtInfoHideWithDebug = Boolean.TRUE;
+	private Boolean lookAtInfoHideInContainers = Boolean.TRUE;
+	private Boolean lookAtInfoPosition = Boolean.TRUE;
+	private Boolean lookAtInfoHardness = Boolean.TRUE;
+	private Boolean lookAtInfoBreakTime = Boolean.TRUE;
+	private Boolean lookAtInfoTool = Boolean.TRUE;
+	private Boolean lookAtInfoHarvest = Boolean.TRUE;
+	private Boolean lookAtInfoHealth = Boolean.TRUE;
+	private Boolean lookAtInfoArmor = Boolean.TRUE;
+	private Boolean lookAtInfoEffects = Boolean.TRUE;
+	private String lookAtInfoTextShadow = HudTextShadow.AUTO.name();
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -905,6 +921,150 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setHudTextShadow(HudTextShadow mode) {
 		hudTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
+		save();
+	}
+
+	public boolean lookAtInfo() {
+		return lookAtInfo != null && lookAtInfo;
+	}
+
+	public void setLookAtInfo(boolean enabled) {
+		lookAtInfo = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoBlocks() {
+		return lookAtInfoBlocks == null || lookAtInfoBlocks;
+	}
+
+	public void setLookAtInfoBlocks(boolean enabled) {
+		lookAtInfoBlocks = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoEntities() {
+		return lookAtInfoEntities == null || lookAtInfoEntities;
+	}
+
+	public void setLookAtInfoEntities(boolean enabled) {
+		lookAtInfoEntities = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoShowIcons() {
+		return lookAtInfoShowIcons == null || lookAtInfoShowIcons;
+	}
+
+	public void setLookAtInfoShowIcons(boolean enabled) {
+		lookAtInfoShowIcons = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoShowId() {
+		return lookAtInfoShowId == null || lookAtInfoShowId;
+	}
+
+	public void setLookAtInfoShowId(boolean enabled) {
+		lookAtInfoShowId = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoHideWithDebug() {
+		return lookAtInfoHideWithDebug == null || lookAtInfoHideWithDebug;
+	}
+
+	public void setLookAtInfoHideWithDebug(boolean enabled) {
+		lookAtInfoHideWithDebug = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoHideInContainers() {
+		return lookAtInfoHideInContainers == null || lookAtInfoHideInContainers;
+	}
+
+	public void setLookAtInfoHideInContainers(boolean enabled) {
+		lookAtInfoHideInContainers = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoPosition() {
+		return lookAtInfoPosition == null || lookAtInfoPosition;
+	}
+
+	public void setLookAtInfoPosition(boolean enabled) {
+		lookAtInfoPosition = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoHardness() {
+		return lookAtInfoHardness == null || lookAtInfoHardness;
+	}
+
+	public void setLookAtInfoHardness(boolean enabled) {
+		lookAtInfoHardness = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoBreakTime() {
+		return lookAtInfoBreakTime == null || lookAtInfoBreakTime;
+	}
+
+	public void setLookAtInfoBreakTime(boolean enabled) {
+		lookAtInfoBreakTime = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoTool() {
+		return lookAtInfoTool == null || lookAtInfoTool;
+	}
+
+	public void setLookAtInfoTool(boolean enabled) {
+		lookAtInfoTool = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoHarvest() {
+		return lookAtInfoHarvest == null || lookAtInfoHarvest;
+	}
+
+	public void setLookAtInfoHarvest(boolean enabled) {
+		lookAtInfoHarvest = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoHealth() {
+		return lookAtInfoHealth == null || lookAtInfoHealth;
+	}
+
+	public void setLookAtInfoHealth(boolean enabled) {
+		lookAtInfoHealth = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoArmor() {
+		return lookAtInfoArmor == null || lookAtInfoArmor;
+	}
+
+	public void setLookAtInfoArmor(boolean enabled) {
+		lookAtInfoArmor = enabled;
+		save();
+	}
+
+	public boolean lookAtInfoEffects() {
+		return lookAtInfoEffects == null || lookAtInfoEffects;
+	}
+
+	public void setLookAtInfoEffects(boolean enabled) {
+		lookAtInfoEffects = enabled;
+		save();
+	}
+
+	public HudTextShadow lookAtInfoTextShadow() {
+		return HudTextShadow.fromName(lookAtInfoTextShadow);
+	}
+
+	public void setLookAtInfoTextShadow(HudTextShadow mode) {
+		lookAtInfoTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
 		save();
 	}
 
@@ -2511,6 +2671,30 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		hudTextShadow = HudTextShadow.AUTO.name();
 		hudBackgroundOpacity = 100;
 		hudScale = 100;
+		save();
+	}
+
+	/** Look-At Info (#45): its settings and its place in the HUD layout. */
+	public void resetLookAtInfoDefaults() {
+		lookAtInfo = Boolean.FALSE;
+		lookAtInfoBlocks = Boolean.TRUE;
+		lookAtInfoEntities = Boolean.TRUE;
+		lookAtInfoShowIcons = Boolean.TRUE;
+		lookAtInfoShowId = Boolean.TRUE;
+		lookAtInfoHideWithDebug = Boolean.TRUE;
+		lookAtInfoHideInContainers = Boolean.TRUE;
+		lookAtInfoPosition = Boolean.TRUE;
+		lookAtInfoHardness = Boolean.TRUE;
+		lookAtInfoBreakTime = Boolean.TRUE;
+		lookAtInfoTool = Boolean.TRUE;
+		lookAtInfoHarvest = Boolean.TRUE;
+		lookAtInfoHealth = Boolean.TRUE;
+		lookAtInfoArmor = Boolean.TRUE;
+		lookAtInfoEffects = Boolean.TRUE;
+		lookAtInfoTextShadow = HudTextShadow.AUTO.name();
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.LOOK_AT_INFO.configKey());
+		}
 		save();
 	}
 

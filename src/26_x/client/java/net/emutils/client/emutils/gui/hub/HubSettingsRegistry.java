@@ -38,6 +38,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.PACK_MANAGER, HubSettingsRegistry::packManagerRows);
 		ROWS.put(HubCategory.HUD_OVERLAY, HubSettingsRegistry::hudRows);
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
+		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
 		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
@@ -78,6 +79,7 @@ public final class HubSettingsRegistry {
 			case PACK_MANAGER -> config::resetPackManagerDefaults;
 			case HUD_OVERLAY -> config::resetHudDefaults;
 			case FOOD_HUD -> config::resetFoodHudDefaults;
+			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
 			case ZOOM -> config::resetZoomDefaults;
 			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
@@ -361,6 +363,45 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SERVER_TIME, config::hudShowServerTime, config::setHudShowServerTime));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_DAY_NIGHT, config::hudShowDayNight, config::setHudShowDayNight));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_REAL_TIME, config::hudShowRealTime, config::setHudShowRealTime));
+		return rows;
+	}
+
+	/** Look-At Info (#45), with a tab for its general look and one each for the block and entity lines. */
+	private static List<HubSettingRow> lookAtInfoRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO, config::lookAtInfo, config::setLookAtInfo));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_HUD_SECTION_GENERAL));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
+				}
+			},
+			true
+		));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_SHOW_ID, config::lookAtInfoShowId, config::setLookAtInfoShowId));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_SHOW_ICONS, config::lookAtInfoShowIcons, config::setLookAtInfoShowIcons));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::lookAtInfoTextShadow, config::setLookAtInfoTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG, config::lookAtInfoHideWithDebug, config::setLookAtInfoHideWithDebug));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_IN_CONTAINERS, config::lookAtInfoHideInContainers, config::setLookAtInfoHideInContainers));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_LOOK_AT_SECTION_BLOCK));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_BLOCKS, config::lookAtInfoBlocks, config::setLookAtInfoBlocks));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_POSITION, config::lookAtInfoPosition, config::setLookAtInfoPosition));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_HARDNESS, config::lookAtInfoHardness, config::setLookAtInfoHardness));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_BREAK_TIME, config::lookAtInfoBreakTime, config::setLookAtInfoBreakTime));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_TOOL, config::lookAtInfoTool, config::setLookAtInfoTool));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_HARVEST, config::lookAtInfoHarvest, config::setLookAtInfoHarvest));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_LOOK_AT_SECTION_ENTITY));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_ENTITIES, config::lookAtInfoEntities, config::setLookAtInfoEntities));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_HEALTH, config::lookAtInfoHealth, config::setLookAtInfoHealth));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_ARMOR, config::lookAtInfoArmor, config::setLookAtInfoArmor));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_EFFECTS, config::lookAtInfoEffects, config::setLookAtInfoEffects));
 		return rows;
 	}
 

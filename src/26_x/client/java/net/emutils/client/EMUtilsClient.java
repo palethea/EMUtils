@@ -32,6 +32,8 @@ import net.emutils.client.emutils.screenshot.gui.GalleryThumbnails;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
+import net.emutils.client.emutils.hud.LookAtInfoHudElement;
+import net.emutils.client.emutils.hud.LookAtInfoRenderer;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.hud.layout.HudLayoutMigration;
 import net.emutils.client.emutils.hud.layout.HudLayoutRegistry;
@@ -162,6 +164,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		inventoryToolsManager.tick(client);
 		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
+		LookAtInfoRenderer.tick(client);
 		tickSpotify(client);
 		BackgroundLaunch.tick(client);
 		UiFontRenderer.freeReleased();
@@ -206,6 +209,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new InfoOverlayHudElement());
 		HudLayoutRegistry.register(MOD_ID, new SpotifyHudElement());
 		HudLayoutRegistry.register(MOD_ID, new InventoryPreviewHudElement());
+		HudLayoutRegistry.register(MOD_ID, new LookAtInfoHudElement());
 	}
 
 	private static void registerKeyMappings() {

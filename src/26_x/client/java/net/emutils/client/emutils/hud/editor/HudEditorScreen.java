@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class HudEditorScreen extends Screen {
 	private static final int TOOLBAR_HEIGHT = 32;
+	private static final int TOOLBAR_MARGIN = 8;
 	private static final int TOOLBAR_BUTTON = 20;
 	private static final int HANDLE = 8;
 	private static final int CARD_WIDTH = 196;
@@ -64,7 +65,7 @@ public final class HudEditorScreen extends Screen {
 	private int grabX;
 	private int grabY;
 	private int toolbarX;
-	private int toolbarY;
+	private int toolbarY = TOOLBAR_MARGIN;
 	private int toolbarWidth;
 	private int resetX;
 	private int resetWidth;
@@ -144,6 +145,24 @@ public final class HudEditorScreen extends Screen {
 			}
 		}
 		return hit;
+	}
+
+	/** How much of the elements the rectangle covers, in square GUI pixels. */
+	private int coveredArea(int x, int y, int width, int height) {
+		int area = 0;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			HudLayoutDraft draft = draft(element.id());
+			HudOverlayPlacement.PanelDimensions panel = dimensions.get(element.id());
+			if (draft == null || panel == null) {
+				continue;
+			}
+			int overlapWidth = Math.min(x + width, draft.x() + panel.width()) - Math.max(x, draft.x());
+			int overlapHeight = Math.min(y + height, draft.y() + panel.height()) - Math.max(y, draft.y());
+			if (overlapWidth > 0 && overlapHeight > 0) {
+				area += overlapWidth * overlapHeight;
+			}
+		}
+		return area;
 	}
 
 	private boolean onResizeHandle(HudElementId id, double mouseX, double mouseY) {
@@ -249,7 +268,13 @@ public final class HudEditorScreen extends Screen {
 		int hintWidth = UiText.width(font, hint, UiText.Size.BODY);
 		toolbarWidth = 12 + titleWidth + 12 + hintWidth + 16 + resetWidth + 4 + cancelWidth + 6 + saveWidth + 6;
 		toolbarX = (width - toolbarWidth) / 2;
-		toolbarY = 8;
+		// At the top, unless it would cover more of the elements there, such as Look-At Info (#45), than at
+		// the bottom. Only decided while nothing is dragged, so it doesn't jump away from under the mouse.
+		if (drag == Drag.NONE) {
+			int top = TOOLBAR_MARGIN;
+			int bottom = height - TOOLBAR_MARGIN - TOOLBAR_HEIGHT;
+			toolbarY = coveredArea(toolbarX, bottom, toolbarWidth, TOOLBAR_HEIGHT) < coveredArea(toolbarX, top, toolbarWidth, TOOLBAR_HEIGHT) ? bottom : top;
+		}
 		// Fades back while dragging, so it never hides what's being placed under it.
 		float shown = anim.towards("hud-editor-toolbar", drag == Drag.NONE, 10.0F);
 		UiOpacity.set(0.35F + 0.65F * shown);
@@ -287,7 +312,10 @@ public final class HudEditorScreen extends Screen {
 		if (drag != Drag.SCALE_SLIDER && drag != Drag.OPACITY_SLIDER) {
 			int right = draft.x() + panel.width() + 12;
 			cardX = right + CARD_WIDTH <= width - 6 ? right : Math.max(6, draft.x() - 12 - CARD_WIDTH);
-			cardY = Math.clamp(draft.y(), toolbarY + TOOLBAR_HEIGHT + 8, Math.max(toolbarY + TOOLBAR_HEIGHT + 8, height - cardHeight - 6));
+			boolean toolbarAtTop = toolbarY == TOOLBAR_MARGIN;
+			int minY = toolbarAtTop ? toolbarY + TOOLBAR_HEIGHT + 8 : 6;
+			int maxY = (toolbarAtTop ? height - 6 : toolbarY - 8) - cardHeight;
+			cardY = Math.clamp(draft.y(), minY, Math.max(minY, maxY));
 		}
 		UiShapes.shadow(context, cardX, cardY, CARD_WIDTH, cardHeight, 10, 10, theme.shadow());
 		UiShapes.borderedRect(context, cardX, cardY, CARD_WIDTH, cardHeight, 10, theme.surface(), theme.line());

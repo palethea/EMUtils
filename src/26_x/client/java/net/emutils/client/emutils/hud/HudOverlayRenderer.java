@@ -28,21 +28,21 @@ import net.minecraft.resources.Identifier;
  */
 public final class HudOverlayRenderer {
 	private static final Identifier ID = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "hud_overlay");
-	private static final int PADDING_X = 8;
-	private static final int PADDING_Y = 7;
-	private static final int ROW_HEIGHT = 12;
+	static final int PADDING_X = 8;
+	static final int PADDING_Y = 7;
+	static final int ROW_HEIGHT = 12;
 	private static final int RADIUS = 9;
 	private static final int SHADOW_BLUR = 8;
-	private static final int ICON_SIZE = 9;
-	private static final int ICON_GAP = 6;
-	private static final int LABEL_VALUE_GAP = 8;
+	static final int ICON_SIZE = 9;
+	static final int ICON_GAP = 6;
+	static final int LABEL_VALUE_GAP = 8;
 	private static final int MIN_CONTENT_WIDTH = 130;
 	private static final int MEMORY_BAR_HEIGHT = 3;
 	private static final int MEMORY_BAR_GAP = 3;
 	/** Below this background opacity the world shows through, so text gets a shadow to stay readable. */
-	private static final int TEXT_SHADOW_BELOW_OPACITY = 50;
-	private static final UiText.Size LABEL_SIZE = UiText.Size.BODY;
-	private static final UiText.Size VALUE_SIZE = UiText.Size.LABEL;
+	static final int TEXT_SHADOW_BELOW_OPACITY = 50;
+	static final UiText.Size LABEL_SIZE = UiText.Size.BODY;
+	static final UiText.Size VALUE_SIZE = UiText.Size.LABEL;
 
 	private static HudOverlayData data = HudOverlayData.empty();
 
@@ -262,7 +262,7 @@ public final class HudOverlayRenderer {
 		};
 	}
 
-	private static int valueColor(UiTheme theme, HudOverlayLine.Tone tone) {
+	static int valueColor(UiTheme theme, HudOverlayLine.Tone tone) {
 		return switch (tone) {
 			case NORMAL -> theme.text();
 			case GOOD -> theme.hud();
@@ -271,7 +271,7 @@ public final class HudOverlayRenderer {
 		};
 	}
 
-	private static int labelColumnWidth(Font font, List<HudOverlayLine> lines) {
+	static int labelColumnWidth(Font font, List<HudOverlayLine> lines) {
 		int width = 0;
 		for (HudOverlayLine line : lines) {
 			width = Math.max(width, UiText.width(font, Component.translatable(line.labelKey()), LABEL_SIZE));
@@ -279,7 +279,7 @@ public final class HudOverlayRenderer {
 		return width;
 	}
 
-	private static void drawCard(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int height, int opacityPercent) {
+	static void drawCard(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int height, int opacityPercent) {
 		float opacity = Math.clamp(opacityPercent / 100.0F, 0.0F, 1.0F);
 		if (opacity <= 0.0F) {
 			return;
@@ -288,7 +288,7 @@ public final class HudOverlayRenderer {
 		UiShapes.borderedRect(context, x, y, width, height, RADIUS, UiTheme.fade(theme.panel(), opacity), UiTheme.fade(theme.border(), opacity));
 	}
 
-	private static void drawLine(
+	static void drawLine(
 		GuiGraphicsExtractor context,
 		Font font,
 		UiTheme theme,
@@ -326,12 +326,12 @@ public final class HudOverlayRenderer {
 	}
 
 	/** A dark shadow under the dark theme's light text, and a light one under the light theme's dark text. */
-	private static int shadowColor() {
+	static int shadowColor() {
 		return UiTheme.dark() ? 0x99000000 : 0x99FFFFFF;
 	}
 
 	/** One physical pixel, however the GUI and the element are scaled. */
-	private static float shadowOffset() {
+	static float shadowOffset() {
 		return 1.0F / (float) (Minecraft.getInstance().getWindow().getGuiScale() * UiRasterScale.get());
 	}
 
