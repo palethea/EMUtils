@@ -60,6 +60,8 @@ import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.inventory.InventorySearch;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
+import net.emutils.client.emutils.inventory.InventorySortMode;
+import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
 import net.emutils.client.emutils.minescript.MinescriptPython;
@@ -87,6 +89,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.emutils.client.mixin.MouseAccess;
+import net.emutils.client.mixin.HandledScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.Screenshot;
@@ -160,6 +163,7 @@ public final class UiSnapshotter {
 	private static int hudTextures;
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
 	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
+	private static BlockPos sortChest = BlockPos.ZERO;
 	private static BlockPos searchChest = BlockPos.ZERO;
 	private static int warningsBefore;
 	private static int lightLevelSpotsBefore;
@@ -2360,15 +2364,54 @@ public final class UiSnapshotter {
 					client.gui.setScreen(null);
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// A left click on a container's sort button sorts it (#177): on 26.3 the left button is 1, not 0, so
+			// the click is built from InputConstants like a real one.
 			case 314 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setInventoryToolsEnabled(true);
+					config.setSortButtonsEnabled(true);
+					config.setSortSpeed(InventorySortSpeed.NORMAL);
+					sortChest = client.player.blockPosition().offset(2, 0, 0);
+					String chest = sortChest.getX() + " " + sortChest.getY() + " " + sortChest.getZ();
+					command(client, "setblock " + chest + " minecraft:chest{Items:[{Slot:0b,id:\"minecraft:stone\",count:8},{Slot:1b,id:\"minecraft:apple\",count:3},{Slot:2b,id:\"minecraft:diamond\",count:2}]}");
+				}
+				if (stepTicks == 15) {
+					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(sortChest), Direction.UP, sortChest, false));
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof ContainerScreen screen) {
+					int[] button = EMUtilsClient.inventoryTools().containerSortButtonForSnapshot(screen.getMenu(), client.player.getInventory(), InventorySortMode.NAME);
+					check(button != null, "the chest has a sort by name button");
+					if (button != null) {
+						HandledScreenAccessor panel = (HandledScreenAccessor) screen;
+						MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
+						double x = panel.emutils$getLeftPos() + button[0];
+						double y = panel.emutils$getTopPos() + button[1];
+						screen.mouseClicked(new MouseButtonEvent(x, y, left), false);
+						screen.mouseReleased(new MouseButtonEvent(x, y, left));
+					}
+				}
+				if (stepTicks == 70 && MinecraftClientCompat.screen(client) instanceof ContainerScreen screen) {
+					ItemStack first = screen.getMenu().getSlot(0).getItem();
+					check(first.is(Items.APPLE), "a left click on the sort by name button sorts the chest, apples first (" + first + ")");
+				}
+				captureAfter(client, 72, "chest sorted by a left click on its sort button");
+				if (step != 314) {
+					client.gui.setScreen(null);
+					command(client, "setblock " + sortChest.getX() + " " + sortChest.getY() + " " + sortChest.getZ() + " minecraft:air");
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 315 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 315 -> {
+			case 316 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2377,7 +2420,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 316 -> {
+			case 317 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2388,7 +2431,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 317 -> {
+			case 318 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2399,7 +2442,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 318 -> {
+			case 319 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

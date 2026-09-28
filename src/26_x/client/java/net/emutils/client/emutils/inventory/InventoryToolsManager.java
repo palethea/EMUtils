@@ -416,7 +416,7 @@ public final class InventoryToolsManager {
 		if (!hoverTransferActive) {
 			return false;
 		}
-		if (!hoverTransferAvailable() || button != 0 || !shiftDown || client.player == null || client.gameMode == null) {
+		if (!hoverTransferAvailable() || button != InputConstants.MOUSE_BUTTON_LEFT || !shiftDown || client.player == null || client.gameMode == null) {
 			clearHoverTransfer();
 			return false;
 		}
@@ -528,7 +528,8 @@ public final class InventoryToolsManager {
 		double mouseY,
 		Inventory playerInventory
 	) {
-		if (button != 0 || !handler.getCarried().isEmpty() || inventoryActionRunning()) {
+		// Each version's own left button: 0 on 26.2, 1 on 26.3 (#177).
+		if (button != InputConstants.MOUSE_BUTTON_LEFT || !handler.getCarried().isEmpty() || inventoryActionRunning()) {
 			return false;
 		}
 
@@ -1029,6 +1030,19 @@ public final class InventoryToolsManager {
 		return slots;
 	}
 
+	/**
+	 * The middle of the container's sort button for {@code mode}, relative to the screen's panel, or null
+	 * if there's none; for the UI snapshot checks.
+	 */
+	public int @Nullable [] containerSortButtonForSnapshot(AbstractContainerMenu handler, Inventory playerInventory, InventorySortMode mode) {
+		for (SortButton button : sortButtons(handler, playerInventory)) {
+			if (button.target() == SortTarget.CONTAINER && button.mode() == mode) {
+				return new int[] {button.x() + SORT_BUTTON_SIZE / 2, button.y() + SORT_BUTTON_SIZE / 2};
+			}
+		}
+		return null;
+	}
+
 	private List<SortButton> sortButtons(AbstractContainerMenu handler, Inventory playerInventory) {
 		List<SortButton> buttons = new ArrayList<>();
 		addSortButtons(buttons, handler, playerInventory, SortTarget.CONTAINER);
@@ -1282,7 +1296,7 @@ public final class InventoryToolsManager {
 		Inventory playerInventory
 	) {
 		return hoverTransferAvailable()
-			&& button == 0
+			&& button == InputConstants.MOUSE_BUTTON_LEFT
 			&& shiftDown
 			&& dragState == null
 			&& client.player != null

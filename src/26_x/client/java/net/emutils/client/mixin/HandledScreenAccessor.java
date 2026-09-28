@@ -11,4 +11,10 @@ public interface HandledScreenAccessor {
 	@Accessor("hoveredSlot")
 	@Nullable
 	Slot emutils$getFocusedSlot();
+
+	@Accessor("leftPos")
+	int emutils$getLeftPos();
+
+	@Accessor("topPos")
+	int emutils$getTopPos();
 }
