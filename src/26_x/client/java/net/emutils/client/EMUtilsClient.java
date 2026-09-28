@@ -39,6 +39,7 @@ import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.hud.layout.HudLayoutMigration;
 import net.emutils.client.emutils.hud.layout.HudLayoutRegistry;
 import net.emutils.client.emutils.inventory.InventoryPreviewHudElement;
+import net.emutils.client.emutils.inventory.InventorySearch;
 import net.emutils.client.emutils.inventory.InventoryToolsManager;
 import net.emutils.client.emutils.inventory.MassDropManager;
 import net.emutils.client.emutils.minescript.MinescriptKeybindManager;
@@ -163,6 +164,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		zoomManager.tick(client);
 		tweaksManager.tick(client);
 		inventoryToolsManager.tick(client);
+		InventorySearch.clearCache();
 		FoodHudRenderer.tick(client);
 		HudOverlayRenderer.tick(client);
 		LookAtInfoRenderer.tick(client);

@@ -58,9 +58,10 @@ import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.hud.editor.HudEditorScreen;
 import net.emutils.client.emutils.hud.layout.HudLayoutDraft;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
+import net.emutils.client.emutils.inventory.InventorySearch;
+import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.inventory.InventorySortMode;
 import net.emutils.client.emutils.inventory.InventorySortSpeed;
-import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.minescript.MinescriptKeyBinding;
 import net.emutils.client.emutils.minescript.MinescriptKeybindStore;
 import net.emutils.client.emutils.minescript.MinescriptPython;
@@ -87,8 +88,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
-import net.emutils.client.mixin.HandledScreenAccessor;
 import net.emutils.client.mixin.MouseAccess;
+import net.emutils.client.mixin.HandledScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.Screenshot;
@@ -98,7 +99,9 @@ import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.BeaconScreen;
@@ -116,8 +119,10 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -159,6 +164,7 @@ public final class UiSnapshotter {
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
 	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
 	private static BlockPos sortChest = BlockPos.ZERO;
+	private static BlockPos searchChest = BlockPos.ZERO;
 	private static int warningsBefore;
 	private static int lightLevelSpotsBefore;
 	private static int lightningSeenAt = -1;
@@ -2255,9 +2261,112 @@ public final class UiSnapshotter {
 				client.gui.setScreen(null);
 				next();
 			}
+			// Inventory Search (#46): a chest with a few items, a shulker box with diamonds inside, a barrel with dirt,
+			// and a map named in its lore. Ctrl+F focuses the box, typing doesn't close the screen, and matches
+			// are outlined, including the shulker box with diamonds inside.
+			case 310 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setInventoryToolsEnabled(true);
+					config.setInventorySearch(true);
+					config.setInventorySearchDim(true);
+					config.setInventorySearchShulkers(true);
+					config.setInventorySearchRemember(true);
+					InventorySearch.setQueryForSnapshot("");
+					searchChest = client.player.blockPosition().offset(2, 0, 0);
+					String chest = searchChest.getX() + " " + searchChest.getY() + " " + searchChest.getZ();
+					command(client, "clear @s");
+					command(client, "setblock " + chest + " minecraft:chest{Items:[{Slot:0b,id:\"minecraft:diamond\",count:5},{Slot:1b,id:\"minecraft:stone\",count:64},{Slot:2b,id:\"minecraft:oak_log\",count:12},{Slot:3b,id:\"minecraft:iron_ingot\",count:9}]}");
+					command(client, "give @s minecraft:shulker_box[minecraft:container=[{slot:0,item:{id:\"minecraft:diamond\",count:3}}]]");
+					command(client, "give @s minecraft:barrel[minecraft:container=[{slot:0,item:{id:\"minecraft:dirt\",count:32}}]]");
+					command(client, "give @s minecraft:paper[minecraft:custom_name=\"Treasure Map\",minecraft:lore=[\"Buried near spawn\"]]");
+				}
+				if (stepTicks == 15) {
+					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(searchChest), Direction.UP, searchChest, false));
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof ContainerScreen screen) {
+					press(screen, InputConstants.KEY_F, InputConstants.MOD_CONTROL);
+					type(screen, "diamond");
+					// The inventory key would close the screen; while typing it's just a letter.
+					press(screen, InputConstants.KEY_E, 0);
+				}
+				if (stepTicks == 35) {
+					Screen screen = MinecraftClientCompat.screen(client);
+					check(screen instanceof ContainerScreen, "typing E into the search box doesn't close the chest");
+					if (screen instanceof ContainerScreen chest) {
+						check(searchMatch(chest, Items.DIAMOND) == InventorySearch.Match.ITEM, "diamonds in the chest match \"diamond\"");
+						check(searchMatch(chest, Items.STONE) == InventorySearch.Match.MISS, "stone doesn't match \"diamond\"");
+						check(searchMatch(chest, Items.SHULKER_BOX) == InventorySearch.Match.INSIDE, "the shulker box with diamonds inside is marked as holding a match");
+						check(searchMatch(chest, Items.BARREL) == InventorySearch.Match.MISS, "a barrel with only dirt inside doesn't match");
+					}
+				}
+				captureAfter(client, 40, "inventory search, diamond in a chest");
+			}
+			case 311 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof ContainerScreen chest) {
+					InventorySearch.setQueryForSnapshot("buried spawn");
+					check(searchMatch(chest, Items.PAPER) == InventorySearch.Match.ITEM, "every word is found in the map's lore");
+					check(searchMatch(chest, Items.DIAMOND) == InventorySearch.Match.MISS, "diamonds don't match \"buried spawn\"");
+					InventorySearch.setQueryForSnapshot("iron_ingot");
+					check(searchMatch(chest, Items.IRON_INGOT) == InventorySearch.Match.ITEM, "an item ID matches");
+					press(chest, InputConstants.KEY_RETURN, 0);
+					InventorySearch.setQueryForSnapshot("diamond");
+				}
+				if (stepTicks == 5) {
+					client.gui.setScreen(new InventoryScreen(client.player));
+				}
+				captureAfter(client, 20, "inventory search, own inventory keeps the text");
+			}
+			// With Search in Creative on, the creative inventory gets the box too, above its tabs, and it only
+			// marks your own inventory's slots.
+			case 312 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof InventoryScreen screen) {
+					check(searchMatch(screen, Items.SHULKER_BOX) == InventorySearch.Match.INSIDE, "the search carries over to the inventory");
+					client.gui.setScreen(null);
+					command(client, "gamemode creative");
+					EMUtilsClient.config().setInventorySearchCreative(true);
+				}
+				if (stepTicks == 15) {
+					client.gui.setScreen(new CreativeModeInventoryScreen(client.player, client.player.connection.enabledFeatures(), client.options.operatorItemsTab().get()));
+				}
+				if (stepTicks == 25 && MinecraftClientCompat.screen(client) instanceof CreativeModeInventoryScreen screen) {
+					press(screen, InputConstants.KEY_F, InputConstants.MOD_CONTROL);
+					type(screen, "x");
+					check(InventorySearch.queryForSnapshot().equals("diamondx"), "typing in the creative inventory goes to the search box, not the creative search tab (" + InventorySearch.queryForSnapshot() + ")");
+					press(screen, InputConstants.KEY_BACKSPACE, 0);
+					press(screen, InputConstants.KEY_RETURN, 0);
+				}
+				captureAfter(client, 35, "inventory search, creative inventory");
+			}
+			// The Inventory Tools sheet, split into tabs; the Search tab.
+			case 313 -> {
+				if (stepTicks == 1) {
+					InventorySearch.setQueryForSnapshot("");
+					EMUtilsClient.config().setInventorySearchCreative(false);
+					command(client, "gamemode survival");
+					command(client, "setblock " + searchChest.getX() + " " + searchChest.getY() + " " + searchChest.getZ() + " minecraft:air");
+					command(client, "clear @s");
+					client.gui.setScreen(null);
+				}
+				// After the game mode change has come back from the server, which closes the creative screen.
+				if (stepTicks == 10) {
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("inventory");
+				}
+				if (stepTicks == 25 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(2);
+				}
+				captureAfter(client, 45, "inventory tools sheet, search tab");
+				if (step != 313) {
+					client.gui.setScreen(null);
+				}
+			}
 			// A left click on a container's sort button sorts it (#177): on 26.3 the left button is 1, not 0, so
 			// the click is built from InputConstants like a real one.
-			case 310 -> {
+			case 314 -> {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2289,20 +2398,20 @@ public final class UiSnapshotter {
 					check(first.is(Items.APPLE), "a left click on the sort by name button sorts the chest, apples first (" + first + ")");
 				}
 				captureAfter(client, 72, "chest sorted by a left click on its sort button");
-				if (step != 310) {
+				if (step != 314) {
 					client.gui.setScreen(null);
 					command(client, "setblock " + sortChest.getX() + " " + sortChest.getY() + " " + sortChest.getZ() + " minecraft:air");
 				}
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 311 -> {
+			case 315 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 312 -> {
+			case 316 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2311,7 +2420,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 313 -> {
+			case 317 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2322,7 +2431,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 314 -> {
+			case 318 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2333,7 +2442,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 315 -> {
+			case 319 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -2700,6 +2809,16 @@ public final class UiSnapshotter {
 	/** Ctrl+A; 26.3 reads shortcuts from the key's layout character, so the event carries it too. */
 	private static KeyEvent selectAll() {
 		return new KeyEvent(InputConstants.KEY_A, 'a', InputConstants.MOD_CONTROL);
+	}
+
+	/** How the search sees the first slot of the screen holding {@code item}, or NONE if there's none. */
+	private static InventorySearch.Match searchMatch(AbstractContainerScreen<?> screen, Item item) {
+		for (Slot slot : screen.getMenu().slots) {
+			if (slot.getItem().is(item)) {
+				return InventorySearch.match(slot.getItem());
+			}
+		}
+		return InventorySearch.Match.NONE;
 	}
 
 	private static void press(Screen screen, int key, int modifiers) {

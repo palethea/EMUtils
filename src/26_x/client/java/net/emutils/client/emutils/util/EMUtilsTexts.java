@@ -641,6 +641,16 @@ public final class EMUtilsTexts {
         "emutils.option.sort_buttons";
     public static final String OPTION_SORT_SPEED =
         "emutils.option.sort_speed";
+    public static final String INVENTORY_SEARCH_HINT = "emutils.inventory.search.hint";
+    public static final String OPTION_INVENTORY_SEARCH = "emutils.option.inventory_search";
+    public static final String OPTION_INVENTORY_SEARCH_DIM = "emutils.option.inventory_search_dim";
+    public static final String OPTION_INVENTORY_SEARCH_SHULKERS = "emutils.option.inventory_search_shulkers";
+    public static final String OPTION_INVENTORY_SEARCH_REMEMBER = "emutils.option.inventory_search_remember";
+    public static final String OPTION_INVENTORY_SEARCH_CREATIVE = "emutils.option.inventory_search_creative";
+    public static final String UI_INVENTORY_SECTION_SLOTS = "emutils.ui.inventory.section.slots";
+    public static final String UI_INVENTORY_SECTION_MOVING = "emutils.ui.inventory.section.moving";
+    public static final String UI_INVENTORY_SECTION_SEARCH = "emutils.ui.inventory.section.search";
+    public static final String UI_INVENTORY_SECTION_MORE = "emutils.ui.inventory.section.more";
     public static final String OPTION_QUICK_STACK =
         "emutils.option.quick_stack";
     public static final String OPTION_QUICK_STACK_SPEED =
