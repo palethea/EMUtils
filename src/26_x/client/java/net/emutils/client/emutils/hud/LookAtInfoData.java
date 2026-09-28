@@ -52,7 +52,8 @@ public record LookAtInfoData(ItemStack icon, String name, String id, List<HudOve
 	}
 
 	public static void tick(Minecraft client, @Nullable EMUtilsConfig config) {
-		current = config == null || client.player == null || client.level == null ? null : collect(client, config);
+		// Nothing is collected while the card is off; the layout editor then shows its sample.
+		current = config == null || !config.lookAtInfo() || client.player == null || client.level == null ? null : collect(client, config);
 	}
 
 	private static @Nullable LookAtInfoData collect(Minecraft client, EMUtilsConfig config) {
