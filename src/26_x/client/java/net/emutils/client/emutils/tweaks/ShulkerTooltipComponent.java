@@ -1,5 +1,6 @@
 package net.emutils.client.emutils.tweaks;
 
+import net.emutils.client.emutils.inventory.InventorySearch;
 import net.emutils.client.emutils.inventory.ShulkerStylePanelRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -28,5 +29,11 @@ public final class ShulkerTooltipComponent implements ClientTooltipComponent {
 	public void extractImage(Font textRenderer, int x, int y, int width, int height, GuiGraphicsExtractor context) {
 		ShulkerStylePanelRenderer.drawPanel(context, x, y, 1.0F);
 		ShulkerStylePanelRenderer.drawContents(context, textRenderer, x, y, contents, 1.0F);
+		// With Inventory Search (#46) on, the preview shows which items in the box match.
+		for (int index = 0; index < contents.size(); index++) {
+			int slotX = x + ShulkerStylePanelRenderer.SLOT_ORIGIN + index % ShulkerStylePanelRenderer.COLUMNS * ShulkerStylePanelRenderer.SLOT_SIZE;
+			int slotY = y + ShulkerStylePanelRenderer.SLOT_ORIGIN + index / ShulkerStylePanelRenderer.COLUMNS * ShulkerStylePanelRenderer.SLOT_SIZE;
+			InventorySearch.drawMark(context, contents.get(index), slotX, slotY);
+		}
 	}
 }

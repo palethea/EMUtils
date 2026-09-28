@@ -6,11 +6,13 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.food.FoodHudHelper;
 import net.emutils.client.emutils.food.FoodTooltipData;
+import net.emutils.client.emutils.inventory.InventorySearch;
 import net.emutils.client.emutils.tweaks.TooltipPreviewRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -44,6 +46,9 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Shadow
 	protected int topPos;
+
+	@Shadow
+	protected int imageWidth;
 
 	// No descriptor on purpose: extractTooltip makes a single setTooltipForNextFrame call whose trailing
 	// arguments differ between Minecraft versions (26.3 adds a boolean), while argument 1 is always the
@@ -105,6 +110,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Inject(method = "extractSlot", at = @At("TAIL"))
 	private void emutils$drawInventoryToolSlotOverlay(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+		InventorySearch.drawSlot((Screen) (Object) this, context, slot);
 		Inventory inventory = emutils$playerInventory();
 		if (inventory != null) {
 			EMUtilsClient.inventoryTools().drawSlotOverlay(context, menu, slot, inventory);
@@ -113,6 +119,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Inject(method = "extractContents", at = @At("TAIL"))
 	private void emutils$drawInventoryToolDragLine(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+		InventorySearch.follow((Screen) (Object) this, leftPos, topPos);
 		Inventory inventory = emutils$playerInventory();
 		Minecraft client = Minecraft.getInstance();
 		if (inventory != null && client != null) {
@@ -136,6 +143,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 			return;
 		}
 
+		if (InventorySearch.handleKeyPressed((Screen) (Object) this, input)) {
+			cir.setReturnValue(true);
+			return;
+		}
+
 		if (EMUtilsClient.tryOpenHudLayoutEditor(input)) {
 			cir.setReturnValue(true);
 			return;
@@ -154,12 +166,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 
 	@Inject(method = "removed", at = @At("HEAD"))
 	private void emutils$clearInventoryToolDrag(CallbackInfo ci) {
+		InventorySearch.detach();
 		HudLayoutEditorOverlay.cancelActive();
 		EMUtilsClient.inventoryTools().clearDrag();
 	}
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void emutils$restoreContainerCursor(CallbackInfo ci) {
+		InventorySearch.attach((AbstractContainerScreen<?>) (Object) this, leftPos, topPos, imageWidth);
 		Minecraft client = Minecraft.getInstance();
 		if (client != null) {
 			EMUtilsClient.inventoryTools().cursor().tryRestoreAfterInit(client);
@@ -172,6 +186,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> {
 			cir.setReturnValue(true);
 			return;
 		}
+		InventorySearch.handleMouseClicked((Screen) (Object) this, click);
 
 		Inventory inventory = emutils$playerInventory();
 		Minecraft client = Minecraft.getInstance();
