@@ -24,6 +24,7 @@ import net.emutils.client.emutils.inventory.InventorySortSpeed;
 import net.emutils.client.emutils.inventory.SlotLockColor;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
+import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
 import net.emutils.client.emutils.tweaks.AutoToolMode;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.gui.ui.UiCodeFont;
@@ -97,6 +98,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int LIGHT_LEVEL_RANGE_DEFAULT = 24;
 	public static final int HOTBAR_SLOT_MIN = 1;
 	public static final int HOTBAR_SLOT_MAX = 9;
+	/** Every hotbar slot, as the bits of Auto Tool's Hotbar Slots. */
+	public static final int AUTO_TOOL_HOTBAR_SLOTS_ALL = 0x1FF;
 	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
 	/** The Keystrokes overlay's own pressed-key color, used when it doesn't follow the menu accent. */
 	public static final int KEYSTROKES_PRESSED_COLOR_DEFAULT = 0xFF2F6FD6;
@@ -313,6 +316,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean autoToolEnabled = Boolean.FALSE;
 	private String autoToolMode = AutoToolMode.LEGIT.name();
 	private Boolean autoToolReturnToPreviousItem = Boolean.FALSE;
+	/** Auto Tool's enchantment priority list (#50), as {@link AutoToolEnchantment} names; null until changed. */
+	private List<String> autoToolEnchantmentOrder;
+	private Boolean autoToolFortune = Boolean.TRUE;
+	private Boolean autoToolSilkTouch = Boolean.TRUE;
+	private Boolean autoToolEfficiency = Boolean.TRUE;
+	private Integer autoToolHotbarSlots = AUTO_TOOL_HOTBAR_SLOTS_ALL;
 	private Boolean tweakOwnNametag = Boolean.FALSE;
 	private Boolean packManagerEnabled = Boolean.TRUE;
 	private Boolean settingsUiDark = Boolean.TRUE;
@@ -1918,6 +1927,80 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/**
+	 * Auto Tool's enchantment priority list (#50): every {@link AutoToolEnchantment} once. Between tools
+	 * that can mine a block, the first enchantment that tells them apart decides.
+	 */
+	public List<AutoToolEnchantment> autoToolEnchantmentOrder() {
+		List<AutoToolEnchantment> order = new ArrayList<>();
+		if (autoToolEnchantmentOrder != null) {
+			for (String name : autoToolEnchantmentOrder) {
+				AutoToolEnchantment enchantment = AutoToolEnchantment.fromName(name);
+				if (enchantment != null && !order.contains(enchantment)) {
+					order.add(enchantment);
+				}
+			}
+		}
+		for (AutoToolEnchantment enchantment : AutoToolEnchantment.DEFAULT_ORDER) {
+			if (!order.contains(enchantment)) {
+				order.add(enchantment);
+			}
+		}
+		return order;
+	}
+
+	/** Moves {@code enchantment} {@code delta} places up (negative) or down in Auto Tool's priority list. */
+	public void moveAutoToolEnchantment(AutoToolEnchantment enchantment, int delta) {
+		List<AutoToolEnchantment> order = autoToolEnchantmentOrder();
+		int from = order.indexOf(enchantment);
+		int to = Math.clamp(from + delta, 0, order.size() - 1);
+		if (from < 0 || from == to) {
+			return;
+		}
+		order.remove(from);
+		order.add(to, enchantment);
+		autoToolEnchantmentOrder = order.stream().map(AutoToolEnchantment::name).collect(Collectors.toCollection(ArrayList::new));
+		save();
+	}
+
+	public boolean autoToolEnchantmentEnabled(AutoToolEnchantment enchantment) {
+		Boolean enabled = switch (enchantment) {
+			case FORTUNE -> autoToolFortune;
+			case SILK_TOUCH -> autoToolSilkTouch;
+			case EFFICIENCY -> autoToolEfficiency;
+		};
+		return enabled == null || enabled;
+	}
+
+	public void setAutoToolEnchantmentEnabled(AutoToolEnchantment enchantment, boolean enabled) {
+		switch (enchantment) {
+			case FORTUNE -> autoToolFortune = enabled;
+			case SILK_TOUCH -> autoToolSilkTouch = enabled;
+			case EFFICIENCY -> autoToolEfficiency = enabled;
+		}
+		save();
+	}
+
+	/** Whether Auto Tool may use hotbar slot {@code slot} (0-8). */
+	public boolean autoToolHotbarSlot(int slot) {
+		int slots = autoToolHotbarSlots == null ? AUTO_TOOL_HOTBAR_SLOTS_ALL : autoToolHotbarSlots;
+		return (slots & (1 << slot)) != 0;
+	}
+
+	public void setAutoToolHotbarSlot(int slot, boolean enabled) {
+		int slots = autoToolHotbarSlots == null ? AUTO_TOOL_HOTBAR_SLOTS_ALL : autoToolHotbarSlots;
+		autoToolHotbarSlots = (enabled ? slots | (1 << slot) : slots & ~(1 << slot)) & AUTO_TOOL_HOTBAR_SLOTS_ALL;
+		save();
+	}
+
+	private void setAutoToolSelectionDefaults() {
+		autoToolEnchantmentOrder = null;
+		autoToolFortune = Boolean.TRUE;
+		autoToolSilkTouch = Boolean.TRUE;
+		autoToolEfficiency = Boolean.TRUE;
+		autoToolHotbarSlots = AUTO_TOOL_HOTBAR_SLOTS_ALL;
+	}
+
 	public boolean tweakOwnNametag() {
 		return tweakOwnNametag != null && tweakOwnNametag;
 	}
@@ -3103,6 +3186,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
 		autoToolReturnToPreviousItem = Boolean.FALSE;
+		setAutoToolSelectionDefaults();
 		tweakOwnNametag = Boolean.FALSE;
 		save();
 	}
@@ -3117,6 +3201,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		autoToolEnabled = Boolean.FALSE;
 		autoToolMode = AutoToolMode.LEGIT.name();
 		autoToolReturnToPreviousItem = Boolean.FALSE;
+		setAutoToolSelectionDefaults();
 		save();
 	}
 

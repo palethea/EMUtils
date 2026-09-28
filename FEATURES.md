@@ -361,6 +361,11 @@ Automatically select the fastest suitable tool using each item and block's publi
 - Legit: switch only between tools already in the hotbar.
 - Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
 - Return to Previous Item: switch back to the item you were holding after Auto Tool stops using a tool.
+- Enchantments: a priority list of the enchantments to prefer between tools that can mine the block and get its drops; the first one that tells two tools apart decides, and the fastest tool wins when none does. Each can be turned off and moved up or down. By default Fortune, then Silk Touch, then Efficiency.
+  - Fortune: the highest Fortune, on ores, glowstone, sea lanterns, melons and amethyst clusters.
+  - Silk Touch: a Silk Touch tool, on blocks it keeps whole, such as ores, glass, ice, bookshelves, ender chests, sculk blocks, bee nests and campfires.
+  - Efficiency: the fastest tool, counting Efficiency.
+- Hotbar Slots: the hotbar slots Auto Tool may pick tools from, so a slot kept for a weapon or blocks is left alone. Unfair still searches the rest of the inventory too.
 
 ### Auto Flight Gear
 

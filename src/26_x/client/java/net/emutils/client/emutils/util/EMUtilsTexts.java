@@ -785,6 +785,14 @@ public final class EMUtilsTexts {
     public static final String OPTION_ARMOR_STATUS_SOUND = "emutils.option.armor_status_sound";
     public static final String UI_ARMOR_STATUS_SECTION_ITEMS = "emutils.ui.armor_status.section.items";
     public static final String UI_ARMOR_STATUS_SECTION_DISPLAY = "emutils.ui.armor_status.section.display";
+    public static final String OPTION_AUTO_TOOL_FORTUNE = "emutils.option.auto_tool_fortune";
+    public static final String OPTION_AUTO_TOOL_SILK_TOUCH = "emutils.option.auto_tool_silk_touch";
+    public static final String OPTION_AUTO_TOOL_EFFICIENCY = "emutils.option.auto_tool_efficiency";
+    public static final String UI_AUTO_TOOL_SECTION_GENERAL = "emutils.ui.auto_tool.section.general";
+    public static final String UI_AUTO_TOOL_SECTION_ENCHANTMENTS = "emutils.ui.auto_tool.section.enchantments";
+    public static final String UI_AUTO_TOOL_SECTION_HOTBAR = "emutils.ui.auto_tool.section.hotbar";
+    /** Followed by the hotbar slot number, 1-9. */
+    public static final String OPTION_AUTO_TOOL_HOTBAR_SLOT_PREFIX = "emutils.option.auto_tool_hotbar_slot_";
     public static final String HUB_KEYSTROKES = "emutils.hub.keystrokes";
     public static final String HUB_FEATURE_KEYSTROKES_DESC = "emutils.hub.feature.keystrokes.desc";
     public static final String HUD_ELEMENT_KEYSTROKES = "emutils.hud.element.keystrokes";
