@@ -208,7 +208,7 @@ public final class ArmorStatusRenderer {
 				stack = slot.sample();
 			}
 			if (!stack.isEmpty()) {
-				rows.add(row(player, stack, display, lowPercent, config.armorStatusBar()));
+				rows.add(row(player, slot, stack, display, lowPercent, config.armorStatusBar()));
 			}
 		}
 		boolean elytra = player != null && player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
@@ -222,16 +222,17 @@ public final class ArmorStatusRenderer {
 		return rows;
 	}
 
-	private static Row row(@Nullable Player player, ItemStack stack, ArmorStatusDisplay display, int lowPercent, boolean bar) {
+	private static Row row(@Nullable Player player, Slot slot, ItemStack stack, ArmorStatusDisplay display, int lowPercent, boolean bar) {
 		if (stack.isDamageableItem()) {
 			int max = stack.getMaxDamage();
 			int remaining = max - stack.getDamageValue();
 			float fraction = bar ? Math.clamp(remaining / (float) max, 0.0F, 1.0F) : -1.0F;
 			return new Row(stack, display.format(remaining, max), fraction, stack.getBarColor() | 0xFF000000, isLow(stack, lowPercent));
 		}
-		// Blocks, arrows and other stackables show how many are carried; other items just their icon.
+		// Held blocks, arrows and other stackables show how many are carried; worn heads and pumpkins, and
+		// other items, just their icon.
 		String text = null;
-		if (stack.isStackable()) {
+		if (slot.hand() && stack.isStackable()) {
 			text = Integer.toString(player == null ? stack.getCount() : count(player.getInventory(), stack.getItem()));
 		}
 		return new Row(stack, text, -1.0F, 0, false);
