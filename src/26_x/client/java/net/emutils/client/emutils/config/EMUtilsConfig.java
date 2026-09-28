@@ -10,6 +10,7 @@ import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.capes.CustomCapeManager;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
@@ -99,6 +100,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int UI_ACCENT_DEFAULT = 0xFF16A058;
 	/** The Keystrokes overlay's own pressed-key color, used when it doesn't follow the menu accent. */
 	public static final int KEYSTROKES_PRESSED_COLOR_DEFAULT = 0xFF2F6FD6;
+	public static final int ARMOR_STATUS_LOW_PERCENT_DEFAULT = 10;
+	public static final int ARMOR_STATUS_LOW_PERCENT_MIN = 1;
+	public static final int ARMOR_STATUS_LOW_PERCENT_MAX = 50;
 	public static final int UI_CODE_SIZE_MIN = 80;
 	public static final int UI_CODE_SIZE_MAX = 150;
 	public static final int UI_TEXT_SIZE_MIN = 90;
@@ -197,6 +201,20 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean keystrokesMenuAccent = Boolean.TRUE;
 	private String keystrokesStyle = KeystrokesStyle.ROUNDED.name();
 	private Integer keystrokesPressedColor = KEYSTROKES_PRESSED_COLOR_DEFAULT;
+	private Boolean armorStatus = Boolean.FALSE;
+	private Boolean armorStatusHelmet = Boolean.TRUE;
+	private Boolean armorStatusChestplate = Boolean.TRUE;
+	private Boolean armorStatusLeggings = Boolean.TRUE;
+	private Boolean armorStatusBoots = Boolean.TRUE;
+	private Boolean armorStatusMainHand = Boolean.TRUE;
+	private Boolean armorStatusOffHand = Boolean.TRUE;
+	private Boolean armorStatusFireworks = Boolean.TRUE;
+	private Boolean armorStatusBar = Boolean.TRUE;
+	private Boolean armorStatusFlash = Boolean.TRUE;
+	private Boolean armorStatusSound = Boolean.FALSE;
+	private Boolean armorStatusHideInContainers = Boolean.TRUE;
+	private String armorStatusDisplay = ArmorStatusDisplay.REMAINING.name();
+	private Integer armorStatusLowPercent = ARMOR_STATUS_LOW_PERCENT_DEFAULT;
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -2816,6 +2834,154 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setKeystrokesPressedColor(int argb) {
 		keystrokesPressedColor = argb | 0xFF000000;
+		save();
+	}
+
+	public boolean armorStatus() {
+		return armorStatus != null && armorStatus;
+	}
+
+	public void setArmorStatus(boolean enabled) {
+		armorStatus = enabled;
+		save();
+	}
+
+	public boolean armorStatusHelmet() {
+		return armorStatusHelmet == null || armorStatusHelmet;
+	}
+
+	public void setArmorStatusHelmet(boolean enabled) {
+		armorStatusHelmet = enabled;
+		save();
+	}
+
+	public boolean armorStatusChestplate() {
+		return armorStatusChestplate == null || armorStatusChestplate;
+	}
+
+	public void setArmorStatusChestplate(boolean enabled) {
+		armorStatusChestplate = enabled;
+		save();
+	}
+
+	public boolean armorStatusLeggings() {
+		return armorStatusLeggings == null || armorStatusLeggings;
+	}
+
+	public void setArmorStatusLeggings(boolean enabled) {
+		armorStatusLeggings = enabled;
+		save();
+	}
+
+	public boolean armorStatusBoots() {
+		return armorStatusBoots == null || armorStatusBoots;
+	}
+
+	public void setArmorStatusBoots(boolean enabled) {
+		armorStatusBoots = enabled;
+		save();
+	}
+
+	public boolean armorStatusMainHand() {
+		return armorStatusMainHand == null || armorStatusMainHand;
+	}
+
+	public void setArmorStatusMainHand(boolean enabled) {
+		armorStatusMainHand = enabled;
+		save();
+	}
+
+	public boolean armorStatusOffHand() {
+		return armorStatusOffHand == null || armorStatusOffHand;
+	}
+
+	public void setArmorStatusOffHand(boolean enabled) {
+		armorStatusOffHand = enabled;
+		save();
+	}
+
+	public boolean armorStatusFireworks() {
+		return armorStatusFireworks == null || armorStatusFireworks;
+	}
+
+	public void setArmorStatusFireworks(boolean enabled) {
+		armorStatusFireworks = enabled;
+		save();
+	}
+
+	public boolean armorStatusBar() {
+		return armorStatusBar == null || armorStatusBar;
+	}
+
+	public void setArmorStatusBar(boolean enabled) {
+		armorStatusBar = enabled;
+		save();
+	}
+
+	public boolean armorStatusFlash() {
+		return armorStatusFlash == null || armorStatusFlash;
+	}
+
+	public void setArmorStatusFlash(boolean enabled) {
+		armorStatusFlash = enabled;
+		save();
+	}
+
+	public boolean armorStatusSound() {
+		return armorStatusSound != null && armorStatusSound;
+	}
+
+	public void setArmorStatusSound(boolean enabled) {
+		armorStatusSound = enabled;
+		save();
+	}
+
+	public boolean armorStatusHideInContainers() {
+		return armorStatusHideInContainers == null || armorStatusHideInContainers;
+	}
+
+	public void setArmorStatusHideInContainers(boolean enabled) {
+		armorStatusHideInContainers = enabled;
+		save();
+	}
+
+	public ArmorStatusDisplay armorStatusDisplay() {
+		return ArmorStatusDisplay.fromName(armorStatusDisplay);
+	}
+
+	public void setArmorStatusDisplay(ArmorStatusDisplay display) {
+		armorStatusDisplay = (display == null ? ArmorStatusDisplay.REMAINING : display).name();
+		save();
+	}
+
+	public int armorStatusLowPercent() {
+		return armorStatusLowPercent == null ? ARMOR_STATUS_LOW_PERCENT_DEFAULT : Math.clamp(armorStatusLowPercent, ARMOR_STATUS_LOW_PERCENT_MIN, ARMOR_STATUS_LOW_PERCENT_MAX);
+	}
+
+	public void setArmorStatusLowPercent(int percent) {
+		armorStatusLowPercent = Math.clamp(percent, ARMOR_STATUS_LOW_PERCENT_MIN, ARMOR_STATUS_LOW_PERCENT_MAX);
+		save();
+	}
+
+	/** Armor Status (#44): its settings and its place in the HUD layout. */
+	public void resetArmorStatusDefaults() {
+		armorStatus = Boolean.FALSE;
+		armorStatusHelmet = Boolean.TRUE;
+		armorStatusChestplate = Boolean.TRUE;
+		armorStatusLeggings = Boolean.TRUE;
+		armorStatusBoots = Boolean.TRUE;
+		armorStatusMainHand = Boolean.TRUE;
+		armorStatusOffHand = Boolean.TRUE;
+		armorStatusFireworks = Boolean.TRUE;
+		armorStatusBar = Boolean.TRUE;
+		armorStatusFlash = Boolean.TRUE;
+		armorStatusSound = Boolean.FALSE;
+		armorStatusHideInContainers = Boolean.TRUE;
+		armorStatusDisplay = ArmorStatusDisplay.REMAINING.name();
+		armorStatusLowPercent = ARMOR_STATUS_LOW_PERCENT_DEFAULT;
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.ARMOR_STATUS.configKey());
+		}
 		save();
 	}
 

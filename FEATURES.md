@@ -142,6 +142,19 @@ Show your movement keys on screen as keys in the settings UI's look, lighting up
 - Use Menu Accent: held keys light up in the menus' accent color.
   - Pressed Color: with Use Menu Accent off, pick the color held keys light up in.
 
+### Armor Status
+
+Show your armor and held items in a card, each with how much durability it has left and a durability bar in the item's own durability color. Items without durability show how many you carry when they stack, such as blocks and arrows. It sits at the right edge of the screen by default and can be moved, resized and given a background opacity in the HUD Layout Editor; in the lower half of the screen the card sticks to the bottom of its place, so it grows upward. Empty slots are left out. Off by default. Its settings are split into Items and Display tabs.
+
+- Helmet, Chestplate, Leggings, Boots, Main Hand, Off Hand: pick which items show.
+- Fireworks with Elytra: while wearing an elytra, show how many firework rockets you carry, in the warning color when you have none.
+- Hide in Containers: hide the card while a chest, your inventory or another container is open. It also hides with F1.
+- Durability: write it as what's left, what's left out of the maximum, or a percentage.
+- Durability Bar: show a bar under each item's durability.
+- Low Durability: items with this percentage of durability left or less turn the warning color. 10% by default.
+  - Flash When Low: low items fade in and out.
+  - Sound When Low: play a sound when an item drops to Low Durability, or one that low is put on. Off by default. Held items are left to Anti-Durability Break's warning while that's on, so they don't warn twice.
+
 ### Food HUD
 
 Show food and saturation information on the vanilla hunger bar.
