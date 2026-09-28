@@ -2003,6 +2003,8 @@ public final class UiSnapshotter {
 					int animatedBefore = CapeAnimations.count();
 					CompletableFuture.runAsync(() -> {
 						String animated = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("cd19cb6e-c829-46b3-a6df-63bbe2c5a0dd"), "Lythogeor"));
+						// Counted now: the setting changes below reload the capes, which clears animations.
+						int animatedAfter = CapeAnimations.count();
 						String still = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("4f507640-5bc3-4e87-acdd-896a9cf0fe6c"), "Redjie"));
 						String notch = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), "Notch"));
 						// The priority list (#52), with a stand-in for an official cape: by default a provider's cape
@@ -2035,7 +2037,7 @@ public final class UiSnapshotter {
 						EMUtilsConfig migrated = EMUtilsConfig.fromJson("{\"capePreferredProvider\": \"LABYMOD\"}", EMUtilsClient.config().file());
 						client.execute(() -> {
 							check("Cosmetica".equals(animated) && "Cosmetica".equals(still), "Cosmetica 2 users get their capes (" + animated + ", " + still + ")");
-							check(CapeAnimations.count() > animatedBefore, "an animated Cosmetica cape animates (" + CapeAnimations.count() + " animated)");
+							check(animatedAfter > animatedBefore, "an animated Cosmetica cape animates (" + animatedAfter + " animated)");
 							check(notch == null, "a player who isn't a Cosmetica user gets no Cosmetica cape, and no placeholder (" + notch + ")");
 							check(providerWins, "by default a provider's cape wins over the official one");
 							check(officialWins && fallsBack, "with Minecraft first the official cape wins, and players without one still get a provider's");

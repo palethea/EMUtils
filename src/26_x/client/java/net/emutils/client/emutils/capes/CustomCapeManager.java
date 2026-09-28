@@ -79,6 +79,9 @@ public final class CustomCapeManager {
 	}
 
 	public static void reload() {
+		// Every cape is looked up again, and animated ones start over, so no frames linger for a cape
+		// that won't show any more (such as after switching its provider off).
+		Minecraft.getInstance().execute(CapeAnimations::clear);
 		for (CapePlayerHandler handler : HANDLERS.values()) {
 			handler.reset();
 			handler.requestLoad();
