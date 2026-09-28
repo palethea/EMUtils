@@ -226,8 +226,9 @@ public final class InventorySearch {
 	}
 
 	public static Match match(ItemStack stack) {
-		// Empty slots stay as they are, so only items are dimmed.
-		if (terms.isEmpty() || stack.isEmpty() || !active()) {
+		// Empty slots stay as they are, so only items are dimmed. The kept text only applies while a screen
+		// shows the box, not in a shulker's tooltip in, say, a furnace.
+		if (box == null || terms.isEmpty() || stack.isEmpty() || !active()) {
 			return Match.NONE;
 		}
 		return CACHE.computeIfAbsent(stack, InventorySearch::compute);
