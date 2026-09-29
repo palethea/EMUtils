@@ -251,6 +251,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer tabListRowHeight = TAB_LIST_ROW_HEIGHT_DEFAULT;
 	private Boolean tabListHeads = Boolean.TRUE;
 	private Boolean tabListHighlightSelf = Boolean.TRUE;
+	private Boolean tabListAnimation = Boolean.TRUE;
 	private String tabListSort = TabListSort.VANILLA.name();
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
@@ -3356,6 +3357,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether the list fades and slides in and out as Tab is pressed and released, at the menus' animation speed. */
+	public boolean tabListAnimation() {
+		return tabListAnimation == null || tabListAnimation;
+	}
+
+	public void setTabListAnimation(boolean enabled) {
+		tabListAnimation = enabled;
+		save();
+	}
+
 	public TabListSort tabListSort() {
 		return TabListSort.fromName(tabListSort);
 	}
@@ -3377,6 +3388,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tabListRowHeight = TAB_LIST_ROW_HEIGHT_DEFAULT;
 		tabListHeads = Boolean.TRUE;
 		tabListHighlightSelf = Boolean.TRUE;
+		tabListAnimation = Boolean.TRUE;
 		tabListSort = TabListSort.VANILLA.name();
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.TAB_LIST.configKey());

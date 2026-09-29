@@ -3,6 +3,7 @@ package net.emutils.client.emutils.hud;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -225,7 +226,7 @@ final class ServerText {
 		void draw(GuiGraphicsExtractor context, int x, int rowTop, int rowHeight, int color, boolean shadow) {
 			if (!uiFont) {
 				int y = rowTop + (rowHeight - MINECRAFT_LINE_HEIGHT + 1) / 2;
-				context.text(font, sequence, x, y, color, shadow);
+				context.text(font, sequence, x, y, UiOpacity.apply(color), shadow);
 				return;
 			}
 			int capHeight = UiText.lineHeight(font, UiText.Size.BODY);
@@ -244,7 +245,7 @@ final class ServerText {
 			int width = runWidth(run);
 			if (minecraftFont(run)) {
 				// Drawn as vanilla would, so glyphs the UI font lacks still show. Its baseline is 7 below the top.
-				context.text(font, Component.literal(run.text()).withStyle(run.style()), x, baseline - 7, color, shadow);
+				context.text(font, Component.literal(run.text()).withStyle(run.style()), x, baseline - 7, UiOpacity.apply(color), shadow);
 			} else {
 				UiText.Size size = size(run);
 				int top = baseline - UiText.lineHeight(font, size);
@@ -255,11 +256,11 @@ final class ServerText {
 				UiText.drawGlyphs(context, font, run.text(), size, x, top, color);
 			}
 			if (run.style().isUnderlined()) {
-				context.fill(x, baseline + 1, x + width, baseline + 2, color);
+				context.fill(x, baseline + 1, x + width, baseline + 2, UiOpacity.apply(color));
 			}
 			if (run.style().isStrikethrough()) {
 				int y = baseline - capHeight / 2;
-				context.fill(x, y, x + width, y + 1, color);
+				context.fill(x, y, x + width, y + 1, UiOpacity.apply(color));
 			}
 		}
 	}

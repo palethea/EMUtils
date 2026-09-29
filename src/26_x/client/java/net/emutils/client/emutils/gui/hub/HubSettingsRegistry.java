@@ -532,6 +532,7 @@ public final class HubSettingsRegistry {
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_TAB_LIST_STYLE, config::tabListStyle, config::setTabListStyle, HudStyle.class, style -> Component.translatable(style.labelKey())));
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_TAB_LIST_FONT, config::tabListFont, config::setTabListFont, HudFont.class, font -> Component.translatable(font.labelKey())));
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::tabListTextShadow, config::setTabListTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TAB_LIST_ANIMATION, config::tabListAnimation, config::setTabListAnimation));
 		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_TAB_LIST_SECTION_PLAYERS));
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_TAB_LIST_SORT, config::tabListSort, config::setTabListSort, TabListSort.class, sort -> Component.translatable(sort.labelKey())));
 		List<Integer> columnChoices = new ArrayList<>();

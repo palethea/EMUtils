@@ -822,6 +822,7 @@ public final class EMUtilsTexts {
     public static final String OPTION_TAB_LIST_FONT = "emutils.option.tab_list_font";
     public static final String OPTION_TAB_LIST_HEADS = "emutils.option.tab_list_heads";
     public static final String OPTION_TAB_LIST_HIGHLIGHT_SELF = "emutils.option.tab_list_highlight_self";
+    public static final String OPTION_TAB_LIST_ANIMATION = "emutils.option.tab_list_animation";
     public static final String OPTION_TAB_LIST_SORT = "emutils.option.tab_list_sort";
     public static final String OPTION_TAB_LIST_SORT_VANILLA = "emutils.option.tab_list_sort.vanilla";
     public static final String OPTION_TAB_LIST_SORT_NAME = "emutils.option.tab_list_sort.name";

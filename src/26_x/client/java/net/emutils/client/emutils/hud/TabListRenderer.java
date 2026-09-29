@@ -11,6 +11,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.EMUtilsHudElements;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiRasterScale;
 import net.emutils.client.emutils.gui.ui.UiShapes;
@@ -95,7 +96,20 @@ public final class TabListRenderer {
 	};
 	private static final int[] SAMPLE_PINGS = {23, 45, 88, 120, 160, 210, 320, 450, 700, 1200, -1, 60};
 
+	/** How long the list takes to open and to close at the menus' Normal animation speed. */
+	private static final float OPEN_SECONDS = 0.18F;
+	private static final float CLOSE_SECONDS = 0.12F;
+	/** How far above its place the list starts, in its own units, and ends up when it closes. */
+	private static final float SLIDE_DISTANCE = 10.0F;
+	/**
+	 * Below this the list isn't drawn: Minecraft draws text with an alpha under 4 out of 255 fully opaque,
+	 * so a nearly faded-out list would flash.
+	 */
+	private static final float MIN_VISIBLE_PROGRESS = 0.04F;
+
+	private static final UiAnim ANIM = new UiAnim();
 	private static final Map<UUID, HealthState> HEALTH_STATES = new HashMap<>();
+	private static float lastProgress;
 	private static @Nullable TabListData snapshotData;
 
 	private TabListRenderer() {
@@ -270,6 +284,11 @@ public final class TabListRenderer {
 	/** The players in the order the list shows them, as names joined by commas, for UI snapshot checks. */
 	public static String orderForSnapshot(Minecraft client, EMUtilsConfig config) {
 		return shown(client, config).entries().stream().map(TabListData.Entry::profileName).collect(Collectors.joining(","));
+	}
+
+	/** How far open the list was drawn last, from 0 to 1, for UI snapshot checks. */
+	public static float openProgressForSnapshot() {
+		return lastProgress;
 	}
 
 	/** The players' pings in the order the list shows them, joined by commas, for UI snapshot checks. */
@@ -466,7 +485,7 @@ public final class TabListRenderer {
 		List<TabListData.Entry> entries = data.entries();
 
 		if (vanilla) {
-			int panel = UiTheme.fade(PANEL_COLOR, opacity);
+			int panel = UiOpacity.apply(UiTheme.fade(PANEL_COLOR, opacity));
 			if (!layout.header().isEmpty()) {
 				context.fill(x, y, x + layout.width(), y + 1 + layout.header().size() * lineHeight, panel);
 			}
@@ -496,7 +515,7 @@ public final class TabListRenderer {
 			line.draw(context, x + layout.paddingX() + (layout.contentWidth() - line.width()) / 2, y + layout.footerTop() + i * lineHeight, lineHeight, textColor, shadow);
 		}
 
-		int rowBackground = UiTheme.fade(client.options.getBackgroundColor(ROW_COLOR), opacity);
+		int rowBackground = UiOpacity.apply(UiTheme.fade(client.options.getBackgroundColor(ROW_COLOR), opacity));
 		int gridX = x + layout.paddingX() + (layout.contentWidth() - layout.gridWidth()) / 2;
 		long guiTicks = client.gui.hud.getGuiTicks();
 		Set<UUID> present = entries.stream().map(TabListData.Entry::id).collect(Collectors.toSet());
@@ -516,14 +535,14 @@ public final class TabListRenderer {
 			if (entry.self() && config.tabListHighlightSelf()) {
 				int highlight = UiTheme.fade(theme.accent(), 0.30F);
 				if (vanilla) {
-					context.fill(cellX, cellY, cellX + layout.columnWidth(), cellY + rowHeight - 1, highlight);
+					context.fill(cellX, cellY, cellX + layout.columnWidth(), cellY + rowHeight - 1, UiOpacity.apply(highlight));
 				} else {
 					UiShapes.roundedRect(context, cellX, cellY, layout.columnWidth(), rowHeight, 4, highlight);
 				}
 			}
 			int contentX = cellX + layout.cellPadding();
 			if (layout.heads() && entry.face() != null) {
-				PlayerFaceExtractor.extractRenderState(context, entry.face(), contentX, cellY + (rowHeight - layout.headSize()) / 2, layout.headSize(), entry.hat(), entry.flipped(), -1);
+				PlayerFaceExtractor.extractRenderState(context, entry.face(), contentX, cellY + (rowHeight - layout.headSize()) / 2, layout.headSize(), entry.hat(), entry.flipped(), UiOpacity.apply(-1));
 			}
 			int nameX = contentX + layout.headSlot();
 			layout.names().get(i).draw(context, nameX, cellY, rowHeight, entry.spectator() ? spectatorColor : textColor, shadow);
@@ -572,7 +591,7 @@ public final class TabListRenderer {
 			} else {
 				sprite = PING_1_SPRITE;
 			}
-			context.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, right - PING_ICON_WIDTH, cellY + (layout.rowHeight() - PING_ICON_HEIGHT) / 2, PING_ICON_WIDTH, PING_ICON_HEIGHT);
+			context.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, right - PING_ICON_WIDTH, cellY + (layout.rowHeight() - PING_ICON_HEIGHT) / 2, PING_ICON_WIDTH, PING_ICON_HEIGHT, UiOpacity.apply(-1));
 			numberRight = right - PING_ICON_WIDTH - PING_NUMBER_GAP;
 		}
 		if (layout.ping().number()) {
@@ -632,7 +651,7 @@ public final class TabListRenderer {
 	}
 
 	private static void heart(GuiGraphicsExtractor context, Identifier sprite, int x, int y) {
-		context.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 9, 9);
+		context.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 9, 9, UiOpacity.apply(-1));
 	}
 
 	/**
@@ -658,7 +677,16 @@ public final class TabListRenderer {
 			// Vanilla's list also announces itself to the narrator when it becomes visible.
 			client.gui.hud.getTabList().setVisible(show);
 		}
-		if (!show) {
+		// The list fades and slides in as Tab is pressed and out as it's let go, at the menus' animation speed
+		// (Fast is twice as quick, Off is instant). It keeps drawing while it closes.
+		float progress = show ? 1.0F : 0.0F;
+		if (config.tabListAnimation()) {
+			progress = ANIM.transition("open", progress, show ? OPEN_SECONDS : CLOSE_SECONDS, true);
+		} else {
+			ANIM.snap("open", progress);
+		}
+		lastProgress = progress;
+		if (progress < MIN_VISIBLE_PROGRESS) {
 			HEALTH_STATES.clear();
 			return true;
 		}
@@ -681,11 +709,15 @@ public final class TabListRenderer {
 		context.nextStratum();
 		context.pose().pushMatrix();
 		UiRasterScale.set(layout.scaleFactor());
+		UiOpacity.set(progress);
 		try {
+			// The slide is in the card's own units, so it's the same distance at any size.
 			context.pose().translate(layout.position().x(), layout.position().y());
 			context.pose().scale(layout.scaleFactor(), layout.scaleFactor());
+			context.pose().translate(0.0F, -(1.0F - progress) * SLIDE_DISTANCE);
 			renderInSlot(context, client, config, data, 0, 0, layout.position().x(), layout.dimensions().width(), layout.opacityPercent());
 		} finally {
+			UiOpacity.reset();
 			UiRasterScale.reset();
 			context.pose().popMatrix();
 		}
