@@ -1,6 +1,10 @@
 package net.emutils.client.emutils.waypoint;
 
+import java.util.UUID;
+
 public final class Waypoint {
+	/** Identifies the waypoint for good; null only in files saved before ids existed, until they are loaded. */
+	private String id;
 	private int x;
 	private int y;
 	private int z;
@@ -13,11 +17,14 @@ public final class Waypoint {
 	private String type;
 	private Boolean beaconEnabled;
 	private Boolean hidden;
+	/** The set the waypoint is grouped in; null or blank when it is in none. */
+	private String set;
 
 	public Waypoint() {
 	}
 
 	public Waypoint(int x, int y, int z, String dimension, String serverAddress, long timestamp, String label, int color, WaypointType type) {
+		this.id = UUID.randomUUID().toString();
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -27,6 +34,19 @@ public final class Waypoint {
 		this.label = label;
 		this.color = color;
 		this.type = type.name();
+	}
+
+	public String id() {
+		return id;
+	}
+
+	/** Gives the waypoint a new id, for old files that have none and for ids that turn up twice. */
+	void assignNewId() {
+		id = UUID.randomUUID().toString();
+	}
+
+	boolean hasId() {
+		return id != null && !id.isBlank();
 	}
 
 	public int x() {
@@ -103,6 +123,15 @@ public final class Waypoint {
 
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	/** The set name, or an empty string when the waypoint is in none. */
+	public String set() {
+		return set == null ? "" : set;
+	}
+
+	public void setSet(String set) {
+		this.set = set == null || set.isBlank() ? null : set.trim();
 	}
 
 	public boolean matchesDimension(String otherDimension) {

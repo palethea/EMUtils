@@ -18,11 +18,11 @@ public final class WaypointClickHandler {
 
 	public static boolean tryHandle(Identifier actionId, ClickEvent.Custom custom, Minecraft client) {
 		WaypointManager manager = EMUtilsClient.waypoint();
-		Optional<Long> timestamp = parseTimestamp(custom);
+		Optional<String> id = parseId(custom);
 
 		if (WaypointMessage.CLEAR_WAYPOINT_ACTION.equals(actionId)) {
-			if (timestamp.isPresent()) {
-				manager.clear(client, timestamp.get());
+			if (id.isPresent()) {
+				manager.clear(client, id.get());
 			} else if (manager.hasWaypoint()) {
 				manager.clearForCurrentWorld(client);
 			}
@@ -31,22 +31,15 @@ public final class WaypointClickHandler {
 		}
 
 		if (WaypointMessage.KEEP_WAYPOINT_ACTION.equals(actionId)) {
-			timestamp.ifPresent(t -> manager.keep(client, t));
+			id.ifPresent(value -> manager.keep(client, value));
 			return true;
 		}
 
 		return false;
 	}
 
-	private static Optional<Long> parseTimestamp(ClickEvent.Custom custom) {
+	private static Optional<String> parseId(ClickEvent.Custom custom) {
 		return custom.payload()
-			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty())
-			.flatMap(value -> {
-				try {
-					return Optional.of(Long.parseLong(value));
-				} catch (NumberFormatException ignored) {
-					return Optional.empty();
-				}
-			});
+			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty());
 	}
 }

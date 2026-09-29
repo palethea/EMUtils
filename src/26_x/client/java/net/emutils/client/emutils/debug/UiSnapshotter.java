@@ -3358,7 +3358,7 @@ public final class UiSnapshotter {
 		for (int i = 0; i < names.length; i++) {
 			EMUtilsClient.waypoint().addCustom(client, names[i], x + offsets[i][0], y + offsets[i][1], z + offsets[i][2], colors[i], i == 1);
 			try {
-				// Waypoints are told apart by their creation time in milliseconds.
+				// The list is ordered by creation time in milliseconds, so keep each waypoint's apart.
 				Thread.sleep(3);
 			} catch (InterruptedException exception) {
 				Thread.currentThread().interrupt();
@@ -3366,7 +3366,7 @@ public final class UiSnapshotter {
 		}
 		List<Waypoint> waypoints = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
 		if (waypoints.size() > 2) {
-			EMUtilsClient.waypoint().toggleHidden(waypoints.get(2).timestamp());
+			EMUtilsClient.waypoint().toggleHidden(waypoints.get(2).id());
 		}
 	}
 

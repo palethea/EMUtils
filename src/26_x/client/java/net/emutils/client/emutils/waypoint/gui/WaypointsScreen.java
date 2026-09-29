@@ -214,7 +214,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 
 	private RowBox drawRow(GuiGraphicsExtractor context, UiTheme theme, Waypoint waypoint, int x, int y, int width, int mouseX, int mouseY) {
 		boolean hovered = contains(mouseX, mouseY, x, y, width, ROW_HEIGHT);
-		float hover = anim.towards("waypoint:" + waypoint.timestamp(), hovered, 16.0F);
+		float hover = anim.towards("waypoint:" + waypoint.id(), hovered, 16.0F);
 		UiShapes.borderedRect(context, x, y, width, ROW_HEIGHT, ROW_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
 		// Hidden waypoints are dimmed, so the ones shown in the world stand out.
 		float shown = waypoint.hidden() ? 0.45F : 1.0F;
@@ -271,7 +271,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		UiWidgets.badge(context, font, badgeX, badgeY, type, death ? UiTheme.fade(theme.warning(), 0.16F) : theme.segmentBackground(), death ? theme.warning() : theme.textSecondary());
 		Component coords = Component.literal("X " + waypoint.x() + "   Y " + waypoint.y() + "   Z " + waypoint.z());
 		UiText.drawCentered(context, font, coords, UiText.Size.BODY, nameX, y + ROW_HEIGHT - ROW_PADDING - 4, UiTheme.fade(theme.muted(), shown));
-		return new RowBox(waypoint.timestamp(), actionsX, actionY);
+		return new RowBox(waypoint.id(), actionsX, actionY);
 	}
 
 	@Override
@@ -340,7 +340,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 			for (RowBox row : rows) {
 				for (int i = 0; i < 4; i++) {
 					if (contains(mouseX, mouseY, row.actionsX() + i * (ACTION + ACTION_GAP), row.actionY(), ACTION, ACTION)) {
-						runAction(row.timestamp(), i);
+						runAction(row.id(), i);
 						return true;
 					}
 				}
@@ -349,12 +349,12 @@ public final class WaypointsScreen extends UiPanelScreen {
 		return super.mouseClicked(click, doubled);
 	}
 
-	private void runAction(long timestamp, int action) {
+	private void runAction(String id, int action) {
 		switch (action) {
-			case 0 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, timestamp);
-			case 1 -> EMUtilsClient.waypoint().toggleHidden(timestamp);
-			case 2 -> EMUtilsClient.waypoint().toggleBeacon(timestamp);
-			default -> EMUtilsClient.waypoint().clear(minecraft, timestamp);
+			case 0 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, id);
+			case 1 -> EMUtilsClient.waypoint().toggleHidden(id);
+			case 2 -> EMUtilsClient.waypoint().toggleBeacon(id);
+			default -> EMUtilsClient.waypoint().clear(minecraft, id);
 		}
 	}
 
@@ -458,6 +458,6 @@ public final class WaypointsScreen extends UiPanelScreen {
 		);
 	}
 
-	private record RowBox(long timestamp, int actionsX, int actionY) {
+	private record RowBox(String id, int actionsX, int actionY) {
 	}
 }
