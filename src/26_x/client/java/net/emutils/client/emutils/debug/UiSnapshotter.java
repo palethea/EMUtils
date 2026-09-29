@@ -2542,7 +2542,7 @@ public final class UiSnapshotter {
 			}
 			case 323 -> {
 				if (stepTicks == 1) {
-					EMUtilsClient.config().setHudStyle(HudStyle.VANILLA);
+					EMUtilsClient.config().setScoreboardStyle(HudStyle.VANILLA);
 					command(client, "scoreboard objectives modify emsb numberformat fixed {\"text\":\"pts\",\"color\":\"aqua\"}");
 				}
 				if (stepTicks == 20) {
@@ -2555,8 +2555,8 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setSettingsUiDark(false);
-					config.setHudStyle(HudStyle.CARD);
-					config.setHudFont(HudFont.EMUTILS);
+					config.setScoreboardStyle(HudStyle.CARD);
+					config.setScoreboardFont(HudFont.EMUTILS);
 					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.LEFT);
 					config.setScoreboardTitleBold(true);
 				}
@@ -2566,7 +2566,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setSettingsUiDark(true);
-					config.setHudFont(HudFont.MINECRAFT);
+					config.setScoreboardFont(HudFont.MINECRAFT);
 					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.CENTERED);
 					config.setScoreboardTitleBold(false);
 					scoreboardWidth = ScoreboardRenderer.cardWidthForSnapshot(client, config);

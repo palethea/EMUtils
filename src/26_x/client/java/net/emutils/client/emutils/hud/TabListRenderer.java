@@ -111,6 +111,8 @@ public final class TabListRenderer {
 	private static final Map<UUID, HealthState> HEALTH_STATES = new HashMap<>();
 	private static float lastProgress;
 	private static @Nullable TabListData snapshotData;
+	/** The card {@link #render} has laid out this frame, so placing its slot doesn't lay it out again. */
+	private static @Nullable Layout frameLayout;
 
 	private TabListRenderer() {
 	}
@@ -418,7 +420,7 @@ public final class TabListRenderer {
 			// Three panels: a pixel of room above the header's text, the rows a pixel inside their panel, and
 			// the panels touching, as vanilla draws them.
 			headerTop = 1;
-			mainTop = header.isEmpty() ? 0 : 1 + header.size() * lineHeight - 1;
+			mainTop = header.isEmpty() ? 0 : 1 + header.size() * lineHeight;
 			rowsTop = mainTop + 1;
 			int mainBottom = rowsTop + rows * rowHeight;
 			footerTop = mainBottom + 1;
@@ -453,7 +455,7 @@ public final class TabListRenderer {
 	 */
 	static HudOverlayPlacement.PanelDimensions slotDimensions(Minecraft client, EMUtilsConfig config) {
 		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
-		Layout layout = layout(client, config, shown(client, config), maxContentWidth(client, scale));
+		Layout layout = frameLayout != null ? frameLayout : layout(client, config, shown(client, config), maxContentWidth(client, scale));
 		if (config.tabListCentered()) {
 			int screenWidth = (int) Math.ceil(client.getWindow().getGuiScaledWidth() * 100.0 / Math.max(1, scale));
 			return new HudOverlayPlacement.PanelDimensions(Math.max(screenWidth, layout.width()), layout.height());
@@ -483,7 +485,23 @@ public final class TabListRenderer {
 	) {
 		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
 		Layout layout = layout(client, config, data, maxContentWidth(client, scale));
-		int offsetX = cardOffsetX(layout, config, screenX, screenWidth, context.guiWidth(), scale);
+		drawInSlot(context, client, config, layout, data, slotX, slotY, screenX, screenWidth, scale, opacityPercent);
+	}
+
+	private static void drawInSlot(
+		GuiGraphicsExtractor context,
+		Minecraft client,
+		EMUtilsConfig config,
+		Layout layout,
+		TabListData data,
+		int slotX,
+		int slotY,
+		int screenX,
+		int screenWidth,
+		int scalePercent,
+		int opacityPercent
+	) {
+		int offsetX = cardOffsetX(layout, config, screenX, screenWidth, context.guiWidth(), scalePercent);
 		draw(context, client, config, layout, data, slotX + offsetX, slotY, opacityPercent);
 	}
 
@@ -567,16 +585,14 @@ public final class TabListRenderer {
 		long guiTicks = client.gui.hud.getGuiTicks();
 		Set<UUID> present = entries.stream().map(TabListData.Entry::id).collect(Collectors.toSet());
 		HEALTH_STATES.keySet().removeIf(id -> !present.contains(id));
-		for (int i = 0; i < layout.rows() * layout.columns(); i++) {
+		// Only the players' cells, as vanilla draws them: a last column that isn't full ends early.
+		for (int i = 0; i < entries.size(); i++) {
 			int column = i / layout.rows();
 			int row = i % layout.rows();
 			int cellX = gridX + column * (layout.columnWidth() + layout.columnGap());
 			int cellY = y + layout.rowsTop() + row * rowHeight;
 			if (vanilla) {
 				context.fill(cellX, cellY, cellX + layout.columnWidth(), cellY + rowHeight - 1, rowBackground);
-			}
-			if (i >= entries.size()) {
-				continue;
 			}
 			TabListData.Entry entry = entries.get(i);
 			if (entry.self() && config.tabListHighlightSelf()) {
@@ -745,13 +761,22 @@ public final class TabListRenderer {
 		}
 
 		TabListData data = shown(client, config);
-		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(
-			EMUtilsHudElements.TAB_LIST,
-			config,
-			context.guiWidth(),
-			context.guiHeight(),
-			client
-		);
+		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
+		Layout card = layout(client, config, data, maxContentWidth(client, scale));
+		HudLayoutManager.ResolvedLayout layout;
+		// The card is laid out once a frame: placing its slot uses this one.
+		frameLayout = card;
+		try {
+			layout = HudLayoutManager.resolveLayout(
+				EMUtilsHudElements.TAB_LIST,
+				config,
+				context.guiWidth(),
+				context.guiHeight(),
+				client
+			);
+		} finally {
+			frameLayout = null;
+		}
 		// Like vanilla's, on a layer of its own.
 		context.nextStratum();
 		context.pose().pushMatrix();
@@ -762,7 +787,7 @@ public final class TabListRenderer {
 			context.pose().translate(layout.position().x(), layout.position().y());
 			context.pose().scale(layout.scaleFactor(), layout.scaleFactor());
 			context.pose().translate(0.0F, -(1.0F - progress) * SLIDE_DISTANCE);
-			renderInSlot(context, client, config, data, 0, 0, layout.position().x(), layout.dimensions().width(), layout.opacityPercent());
+			drawInSlot(context, client, config, card, data, 0, 0, layout.position().x(), layout.dimensions().width(), scale, layout.opacityPercent());
 		} finally {
 			UiOpacity.reset();
 			UiRasterScale.reset();

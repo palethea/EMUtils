@@ -3192,7 +3192,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return HudStyle.fromName(scoreboardStyle);
 	}
 
-	public void setHudStyle(HudStyle style) {
+	public void setScoreboardStyle(HudStyle style) {
 		scoreboardStyle = (style == null ? HudStyle.CARD : style).name();
 		save();
 	}
@@ -3201,7 +3201,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return HudFont.fromName(scoreboardFont);
 	}
 
-	public void setHudFont(HudFont font) {
+	public void setScoreboardFont(HudFont font) {
 		scoreboardFont = (font == null ? HudFont.MINECRAFT : font).name();
 		save();
 	}
@@ -3210,7 +3210,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return HudTextShadow.fromName(scoreboardTextShadow);
 	}
 
-	public void setServerTextShadow(HudTextShadow mode) {
+	public void setScoreboardTextShadow(HudTextShadow mode) {
 		scoreboardTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
 		save();
 	}

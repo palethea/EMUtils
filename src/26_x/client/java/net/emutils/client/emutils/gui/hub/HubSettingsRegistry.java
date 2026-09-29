@@ -501,9 +501,9 @@ public final class HubSettingsRegistry {
 			true
 		));
 		rows.add(divider());
-		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_STYLE, config::scoreboardStyle, config::setHudStyle, HudStyle.class, style -> Component.translatable(style.labelKey())));
-		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_FONT, config::scoreboardFont, config::setHudFont, HudFont.class, font -> Component.translatable(font.labelKey())));
-		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::scoreboardTextShadow, config::setServerTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_STYLE, config::scoreboardStyle, config::setScoreboardStyle, HudStyle.class, style -> Component.translatable(style.labelKey())));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_FONT, config::scoreboardFont, config::setScoreboardFont, HudFont.class, font -> Component.translatable(font.labelKey())));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::scoreboardTextShadow, config::setScoreboardTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
 		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_SCOREBOARD_SECTION_CONTENT));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCOREBOARD_SHOW_NUMBERS, config::scoreboardShowNumbers, config::setScoreboardShowNumbers));
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_TITLE_ALIGNMENT, config::scoreboardTitleAlignment, config::setScoreboardTitleAlignment, ScoreboardTitleAlignment.class, alignment -> Component.translatable(alignment.labelKey())));
