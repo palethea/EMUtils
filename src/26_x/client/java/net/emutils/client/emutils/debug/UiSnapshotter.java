@@ -3091,6 +3091,8 @@ public final class UiSnapshotter {
 			}
 			case 362 -> {
 				if (stepTicks == 1) {
+					// A small marker size, so the far markers are small enough to lose their letter if it were dropped.
+					EMUtilsClient.config().setWaypointSize(35);
 					faceWaypoint(client, "Home base", 180.0F);
 				}
 				captureAfter(client, 10, "waypoint markers, pinned to the screen edge");

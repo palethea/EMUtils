@@ -140,8 +140,10 @@ public final class WaypointMarkerRenderer {
 		for (Marker marker : markers) {
 			Waypoint waypoint = marker.waypoint();
 			float alpha = opacity / 100.0F * fade(marker.distance(), maxDistance);
-			float scale = userScale * distanceScale(marker.distance());
-			int size = Math.max(MIN_MARKER_SIZE, Math.round(MARKER_SIZE * scale));
+			// Far away a marker shrinks, but never below the size its letter stays readable at, unless the Size setting makes it smaller up close.
+			int nearSize = Math.max(MIN_MARKER_SIZE, Math.round(MARKER_SIZE * userScale));
+			int size = Math.max(Math.min(nearSize, MIN_INITIAL_SIZE), Math.round(MARKER_SIZE * userScale * distanceScale(marker.distance())));
+			float scale = size / (float) MARKER_SIZE;
 			double half = size / 2.0D;
 			int shownDistance = (int) Math.round(marker.distance());
 
