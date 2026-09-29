@@ -252,6 +252,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tabListHeads = Boolean.TRUE;
 	private Boolean tabListHighlightSelf = Boolean.TRUE;
 	private Boolean tabListAnimation = Boolean.TRUE;
+	private Boolean tabListCentered = Boolean.TRUE;
 	private String tabListSort = TabListSort.VANILLA.name();
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
@@ -3367,6 +3368,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether the list stays in the middle of the screen however wide it gets; only its height is placed. */
+	public boolean tabListCentered() {
+		return tabListCentered == null || tabListCentered;
+	}
+
+	public void setTabListCentered(boolean enabled) {
+		tabListCentered = enabled;
+		save();
+	}
+
 	public TabListSort tabListSort() {
 		return TabListSort.fromName(tabListSort);
 	}
@@ -3389,6 +3400,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tabListHeads = Boolean.TRUE;
 		tabListHighlightSelf = Boolean.TRUE;
 		tabListAnimation = Boolean.TRUE;
+		tabListCentered = Boolean.TRUE;
 		tabListSort = TabListSort.VANILLA.name();
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.TAB_LIST.configKey());

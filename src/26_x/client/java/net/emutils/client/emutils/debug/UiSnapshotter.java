@@ -2853,10 +2853,47 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// The tab list's Always Centered: with a saved place off to the left, one column and three columns both
+			// sit in the middle of the screen; turned off, the card follows its saved place instead.
+			case 348 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetTabListDefaults();
+					config.setSettingsUiDark(true);
+					config.setTabList(true);
+					config.setTabListAnimation(false);
+					config.setHudCustomLayoutEntry(EMUtilsHudElements.TAB_LIST, 37, 40, 100, 100);
+					TabListRenderer.showFakePlayersForSnapshot(client, 12, 0, true);
+				}
+				if (stepTicks == 5) {
+					int one = TabListRenderer.centerOffsetForSnapshot(client, EMUtilsClient.config());
+					check(Math.abs(one) <= 1, "with Always Centered one column is in the middle even with a saved place at the left: " + one);
+					TabListRenderer.showFakePlayersForSnapshot(client, 48, 0, true);
+				}
+				if (stepTicks == 7) {
+					int three = TabListRenderer.centerOffsetForSnapshot(client, EMUtilsClient.config());
+					check(Math.abs(three) <= 1, "with Always Centered three columns are in the middle too: " + three);
+					TabListRenderer.showFakePlayersForSnapshot(client, 12, 0, true);
+					EMUtilsClient.config().setTabListCentered(false);
+				}
+				if (stepTicks == 9) {
+					int off = TabListRenderer.centerOffsetForSnapshot(client, EMUtilsClient.config());
+					check(Math.abs(off) > 20, "with Always Centered off the card follows its saved place: " + off);
+					EMUtilsClient.config().setTabListCentered(true);
+				}
+				captureAfter(client, 12, "tab list, always centered with a saved place at the left");
+			}
+			case 349 -> {
+				TabListRenderer.clearFakePlayersForSnapshot();
+				EMUtilsClient.config().resetTabListDefaults();
+				next();
+			}
 			// Free Camera settings (#49): Collision stops the camera at a wall and without it the camera flies
 			// through; Double-Tap to Start; the camera keeps facing the same way through a dimension change;
 			// Camera FOV.
-			case 348 -> {
+			case 350 -> {
 				if (stepTicks == 1 && client.player != null) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2881,7 +2918,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 349 -> {
+			case 351 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setFreeCameraCollision(false);
 					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x, freeCameraStart.y, freeCameraStart.z, -90.0F, 0.0F);
@@ -2894,7 +2931,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 350 -> {
+			case 352 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
@@ -2918,7 +2955,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 351 -> {
+			case 353 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setTweakFreeCamera(true);
@@ -2944,7 +2981,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 352 -> {
+			case 354 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					command(client, "execute in minecraft:overworld run tp @s " + freeCameraStart.x + " " + freeCameraStart.y + " " + freeCameraStart.z);
@@ -2957,7 +2994,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 353 -> {
+			case 355 -> {
 				if (stepTicks == 1 && client.player != null) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setFreeCameraCustomFov(true);
@@ -2970,7 +3007,7 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 30, "free camera with a 30 degree field of view, looking at the wall");
 			}
-			case 354 -> {
+			case 356 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				config.setTweakFreeCamera(false);
 				config.resetFreeCameraSettings();
@@ -2982,7 +3019,7 @@ public final class UiSnapshotter {
 			// Auto Tool enchantment priorities and hotbar slots (#50): Fortune on ores, Silk Touch on glass,
 			// the fastest pickaxe on stone and obsidian; then reordered, a slot left out, and the sheet's
 			// Enchantments tab.
-			case 355 -> {
+			case 357 -> {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -3019,13 +3056,13 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 55, "auto tool sheet, enchantments tab, efficiency first");
 			}
-			case 356 -> {
+			case 358 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
 					settings.selectSheetSectionForSnapshot(2);
 				}
 				captureAfter(client, 20, "auto tool sheet, hotbar slots tab, slot 9 left out");
 			}
-			case 357 -> {
+			case 359 -> {
 				EMUtilsClient.config().resetAutoToolDefaults();
 				client.gui.setScreen(null);
 				for (int slot = 0; slot < 3; slot++) {
@@ -3034,14 +3071,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 358 -> {
+			case 360 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 359 -> {
+			case 361 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3050,7 +3087,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 360 -> {
+			case 362 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3061,7 +3098,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 361 -> {
+			case 363 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3072,7 +3109,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 362 -> {
+			case 364 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

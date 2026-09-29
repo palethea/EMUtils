@@ -807,6 +807,8 @@
   "emutils.option.tab_list_highlight_self.desc": "Mark your own row in the menu accent color.",
   "emutils.option.tab_list_animation": "Animation",
   "emutils.option.tab_list_animation.desc": "Fade and slide the list in when you press Tab and out when you let go. It follows the Animations speed in the menu settings.",
+  "emutils.option.tab_list_centered": "Always Centered",
+  "emutils.option.tab_list_centered.desc": "Keep the list in the middle of the screen however wide it gets, like vanilla. Only its height is placed in the HUD Layout Editor. Turn off to place it anywhere.",
   "emutils.option.tab_list_sort": "Sort Players",
   "emutils.option.tab_list_sort.desc": "Vanilla puts the server's order first, spectators last, then team and name. Or sort by name, or by lowest ping.",
   "emutils.option.tab_list_sort.vanilla": "Vanilla",

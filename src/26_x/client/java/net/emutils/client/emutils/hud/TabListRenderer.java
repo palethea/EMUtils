@@ -446,14 +446,23 @@ public final class TabListRenderer {
 		);
 	}
 
-	/** The slot's size: the card's height, and its width or {@link #SLOT_WIDTH}, whichever is more. */
+	/**
+	 * The slot's size: the card's height, and its width or {@link #SLOT_WIDTH}, whichever is more. With
+	 * Always Centered the slot is as wide as the screen, which pins it to the screen's left edge, so only its
+	 * height is placed.
+	 */
 	static HudOverlayPlacement.PanelDimensions slotDimensions(Minecraft client, EMUtilsConfig config) {
-		Layout layout = layout(client, config, shown(client, config), maxContentWidth(client, HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config)));
+		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
+		Layout layout = layout(client, config, shown(client, config), maxContentWidth(client, scale));
+		if (config.tabListCentered()) {
+			int screenWidth = (int) Math.ceil(client.getWindow().getGuiScaledWidth() * 100.0 / Math.max(1, scale));
+			return new HudOverlayPlacement.PanelDimensions(Math.max(screenWidth, layout.width()), layout.height());
+		}
 		return new HudOverlayPlacement.PanelDimensions(Math.max(SLOT_WIDTH, layout.width()), layout.height());
 	}
 
-	static HudOverlayPlacement.Position defaultPosition(int screenWidth, HudOverlayPlacement.PanelDimensions dimensions) {
-		return new HudOverlayPlacement.Position((screenWidth - dimensions.width()) / 2, DEFAULT_TOP);
+	static HudOverlayPlacement.Position defaultPosition(EMUtilsConfig config, int screenWidth, HudOverlayPlacement.PanelDimensions dimensions) {
+		return new HudOverlayPlacement.Position(config.tabListCentered() ? 0 : (screenWidth - dimensions.width()) / 2, DEFAULT_TOP);
 	}
 
 	/**
@@ -474,18 +483,39 @@ public final class TabListRenderer {
 	) {
 		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
 		Layout layout = layout(client, config, data, maxContentWidth(client, scale));
+		int offsetX = cardOffsetX(layout, config, screenX, screenWidth, context.guiWidth(), scale);
+		draw(context, client, config, layout, data, slotX + offsetX, slotY, opacityPercent);
+	}
+
+	/**
+	 * Where the card starts inside its slot, in the slot's own units. With Always Centered, the card's middle
+	 * is the screen's middle wherever the slot is, and however wide the card gets; otherwise the card lines up
+	 * with the slot's left, middle or right, by the slot's third of the screen.
+	 */
+	private static int cardOffsetX(Layout layout, EMUtilsConfig config, int screenX, int screenWidth, int guiWidth, int scalePercent) {
+		if (config.tabListCentered()) {
+			return Math.round((guiWidth / 2.0F - screenX) * 100.0F / scalePercent - layout.width() / 2.0F);
+		}
 		int slotWidth = Math.max(SLOT_WIDTH, layout.width());
 		int center = screenX + screenWidth / 2;
-		int guiWidth = context.guiWidth();
-		int offsetX;
 		if (center < guiWidth / 3) {
-			offsetX = 0;
-		} else if (center > guiWidth * 2 / 3) {
-			offsetX = slotWidth - layout.width();
-		} else {
-			offsetX = (slotWidth - layout.width()) / 2;
+			return 0;
 		}
-		draw(context, client, config, layout, data, slotX + offsetX, slotY, opacityPercent);
+		if (center > guiWidth * 2 / 3) {
+			return slotWidth - layout.width();
+		}
+		return (slotWidth - layout.width()) / 2;
+	}
+
+	/** How far the card's middle is from the screen's middle, in pixels, for UI snapshot checks. */
+	public static int centerOffsetForSnapshot(Minecraft client, EMUtilsConfig config) {
+		int scale = HudLayoutManager.layoutScale(EMUtilsHudElements.TAB_LIST, config);
+		int guiWidth = client.getWindow().getGuiScaledWidth();
+		Layout layout = layout(client, config, shown(client, config), maxContentWidth(client, scale));
+		HudLayoutManager.ResolvedLayout resolved = HudLayoutManager.resolveLayout(EMUtilsHudElements.TAB_LIST, config, guiWidth, client.getWindow().getGuiScaledHeight(), client);
+		int offset = cardOffsetX(layout, config, resolved.position().x(), resolved.dimensions().width(), guiWidth, scale);
+		float middle = resolved.position().x() + (offset + layout.width() / 2.0F) * scale / 100.0F;
+		return Math.round(middle - guiWidth / 2.0F);
 	}
 
 	// ---- Drawing -------------------------------------------------------------------------------

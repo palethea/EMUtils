@@ -29,7 +29,7 @@ public final class TabListHudElement extends AbstractHudLayoutElement {
 		int screenHeight,
 		HudOverlayPlacement.PanelDimensions dimensions
 	) {
-		return TabListRenderer.defaultPosition(screenWidth, dimensions);
+		return TabListRenderer.defaultPosition((EMUtilsConfig) config, screenWidth, dimensions);
 	}
 
 	@Override
