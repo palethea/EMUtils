@@ -22,6 +22,9 @@ import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
+import net.emutils.client.emutils.hud.ScoreboardFont;
+import net.emutils.client.emutils.hud.ScoreboardStyle;
+import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
 import net.emutils.client.emutils.screenshot.ScreenshotGallerySort;
 import net.emutils.client.emutils.util.EMUtilsTexts;
@@ -44,6 +47,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
 		ROWS.put(HubCategory.KEYSTROKES, HubSettingsRegistry::keystrokesRows);
 		ROWS.put(HubCategory.ARMOR_STATUS, HubSettingsRegistry::armorStatusRows);
+		ROWS.put(HubCategory.SCOREBOARD, HubSettingsRegistry::scoreboardRows);
 		ROWS.put(HubCategory.ZOOM, HubSettingsRegistry::zoomRows);
 		ROWS.put(HubCategory.FULLBRIGHT, HubSettingsRegistry::fullbrightRows);
 		ROWS.put(HubCategory.CLEAR_WEATHER, HubSettingsRegistry::clearWeatherRows);
@@ -87,6 +91,7 @@ public final class HubSettingsRegistry {
 			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
 			case KEYSTROKES -> config::resetKeystrokesDefaults;
 			case ARMOR_STATUS -> config::resetArmorStatusDefaults;
+			case SCOREBOARD -> config::resetScoreboardDefaults;
 			case ZOOM -> config::resetZoomDefaults;
 			case FULLBRIGHT -> config::resetFullbrightDefaults;
 			case CLEAR_WEATHER -> config::resetClearWeatherDefaults;
@@ -472,6 +477,34 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_ARMOR_STATUS_LOW_PERCENT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.ARMOR_STATUS_LOW_PERCENT_MIN, EMUtilsConfig.ARMOR_STATUS_LOW_PERCENT_MAX, config::armorStatusLowPercent, config::setArmorStatusLowPercent));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_FLASH, config::armorStatusFlash, config::setArmorStatusFlash));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ARMOR_STATUS_SOUND, config::armorStatusSound, config::setArmorStatusSound));
+		return rows;
+	}
+
+	/** Custom Scoreboard (#169): how the sidebar looks, then what it shows. */
+	private static List<HubSettingRow> scoreboardRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCOREBOARD, config::scoreboard, config::setScoreboard));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_SCOREBOARD_SECTION_LOOK));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
+				}
+			},
+			true
+		));
+		rows.add(divider());
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_STYLE, config::scoreboardStyle, config::setScoreboardStyle, ScoreboardStyle.class, style -> Component.translatable(style.labelKey())));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_FONT, config::scoreboardFont, config::setScoreboardFont, ScoreboardFont.class, font -> Component.translatable(font.labelKey())));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_HUD_TEXT_SHADOW, config::scoreboardTextShadow, config::setScoreboardTextShadow, HudTextShadow.class, mode -> Component.translatable(mode.labelKey())));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_SCOREBOARD_SECTION_CONTENT));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCOREBOARD_SHOW_NUMBERS, config::scoreboardShowNumbers, config::setScoreboardShowNumbers));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_SCOREBOARD_TITLE_ALIGNMENT, config::scoreboardTitleAlignment, config::setScoreboardTitleAlignment, ScoreboardTitleAlignment.class, alignment -> Component.translatable(alignment.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_SCOREBOARD_TITLE_BOLD, config::scoreboardTitleBold, config::setScoreboardTitleBold));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_HUD_HIDE_WITH_DEBUG, config::scoreboardHideWithDebug, config::setScoreboardHideWithDebug));
 		return rows;
 	}
 

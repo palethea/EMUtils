@@ -14,6 +14,9 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
+import net.emutils.client.emutils.hud.ScoreboardFont;
+import net.emutils.client.emutils.hud.ScoreboardStyle;
+import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
 import net.emutils.client.emutils.hud.layout.HudCustomLayoutEntry;
 import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
@@ -224,6 +227,14 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean armorStatusHideInContainers = Boolean.TRUE;
 	private String armorStatusDisplay = ArmorStatusDisplay.REMAINING.name();
 	private Integer armorStatusLowPercent = ARMOR_STATUS_LOW_PERCENT_DEFAULT;
+	private Boolean scoreboard = Boolean.FALSE;
+	private String scoreboardStyle = ScoreboardStyle.CARD.name();
+	private String scoreboardFont = ScoreboardFont.MINECRAFT.name();
+	private String scoreboardTextShadow = HudTextShadow.AUTO.name();
+	private Boolean scoreboardShowNumbers = Boolean.TRUE;
+	private String scoreboardTitleAlignment = ScoreboardTitleAlignment.CENTERED.name();
+	private Boolean scoreboardTitleBold = Boolean.FALSE;
+	private Boolean scoreboardHideWithDebug = Boolean.TRUE;
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -3145,6 +3156,94 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		armorStatusLowPercent = ARMOR_STATUS_LOW_PERCENT_DEFAULT;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.ARMOR_STATUS.configKey());
+		}
+		save();
+	}
+
+	public boolean scoreboard() {
+		return scoreboard != null && scoreboard;
+	}
+
+	public void setScoreboard(boolean enabled) {
+		scoreboard = enabled;
+		save();
+	}
+
+	public ScoreboardStyle scoreboardStyle() {
+		return ScoreboardStyle.fromName(scoreboardStyle);
+	}
+
+	public void setScoreboardStyle(ScoreboardStyle style) {
+		scoreboardStyle = (style == null ? ScoreboardStyle.CARD : style).name();
+		save();
+	}
+
+	public ScoreboardFont scoreboardFont() {
+		return ScoreboardFont.fromName(scoreboardFont);
+	}
+
+	public void setScoreboardFont(ScoreboardFont font) {
+		scoreboardFont = (font == null ? ScoreboardFont.MINECRAFT : font).name();
+		save();
+	}
+
+	public HudTextShadow scoreboardTextShadow() {
+		return HudTextShadow.fromName(scoreboardTextShadow);
+	}
+
+	public void setScoreboardTextShadow(HudTextShadow mode) {
+		scoreboardTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
+		save();
+	}
+
+	public boolean scoreboardShowNumbers() {
+		return scoreboardShowNumbers == null || scoreboardShowNumbers;
+	}
+
+	public void setScoreboardShowNumbers(boolean enabled) {
+		scoreboardShowNumbers = enabled;
+		save();
+	}
+
+	public ScoreboardTitleAlignment scoreboardTitleAlignment() {
+		return ScoreboardTitleAlignment.fromName(scoreboardTitleAlignment);
+	}
+
+	public void setScoreboardTitleAlignment(ScoreboardTitleAlignment alignment) {
+		scoreboardTitleAlignment = (alignment == null ? ScoreboardTitleAlignment.CENTERED : alignment).name();
+		save();
+	}
+
+	public boolean scoreboardTitleBold() {
+		return scoreboardTitleBold != null && scoreboardTitleBold;
+	}
+
+	public void setScoreboardTitleBold(boolean enabled) {
+		scoreboardTitleBold = enabled;
+		save();
+	}
+
+	public boolean scoreboardHideWithDebug() {
+		return scoreboardHideWithDebug == null || scoreboardHideWithDebug;
+	}
+
+	public void setScoreboardHideWithDebug(boolean enabled) {
+		scoreboardHideWithDebug = enabled;
+		save();
+	}
+
+	/** Custom Scoreboard (#169): its settings and its place in the HUD layout. */
+	public void resetScoreboardDefaults() {
+		scoreboard = Boolean.FALSE;
+		scoreboardStyle = ScoreboardStyle.CARD.name();
+		scoreboardFont = ScoreboardFont.MINECRAFT.name();
+		scoreboardTextShadow = HudTextShadow.AUTO.name();
+		scoreboardShowNumbers = Boolean.TRUE;
+		scoreboardTitleAlignment = ScoreboardTitleAlignment.CENTERED.name();
+		scoreboardTitleBold = Boolean.FALSE;
+		scoreboardHideWithDebug = Boolean.TRUE;
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.SCOREBOARD.configKey());
 		}
 		save();
 	}

@@ -48,6 +48,10 @@ import net.emutils.client.emutils.tweaks.AutoToolManager;
 import net.emutils.client.emutils.tweaks.FreeCameraManager;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
+import net.emutils.client.emutils.hud.ScoreboardFont;
+import net.emutils.client.emutils.hud.ScoreboardRenderer;
+import net.emutils.client.emutils.hud.ScoreboardStyle;
+import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.HudTpsTracker;
@@ -171,6 +175,7 @@ public final class UiSnapshotter {
 	private static BlockPos quickWinsOrigin = BlockPos.ZERO;
 	private static BlockPos sortChest = BlockPos.ZERO;
 	private static int armorStatusSounds;
+	private static int scoreboardWidth;
 	private static Vec3 freeCameraStart = Vec3.ZERO;
 	private static int freeCameraWallX;
 	private static int freeCameraArrivedTick = -1;
@@ -2499,10 +2504,141 @@ public final class UiSnapshotter {
 				command(client, "clear @s minecraft:firework_rocket");
 				next();
 			}
+			// Custom Scoreboard (#169): a sidebar with a styled title, a team prefix and suffix, and a line with a
+			// blank number format; then vanilla bars and a fixed number format; the EMUtils font in a light card
+			// with a left bold title; the numbers turned off; the HUD Layout Editor; at most 15 lines, and long
+			// text cut to fit the screen; and the settings sheet.
+			case 322 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetScoreboardDefaults();
+					config.setSettingsUiDark(true);
+					config.setScoreboard(true);
+					command(client, "scoreboard objectives add emsb dummy {\"text\":\"Sidebar\",\"color\":\"gold\",\"bold\":true}");
+					command(client, "scoreboard players set Diamonds emsb 12");
+					command(client, "scoreboard players set Emeralds emsb 9");
+					command(client, "scoreboard players set Iron emsb 7");
+					command(client, "scoreboard players set Coal emsb 3");
+					command(client, "scoreboard players set Blank emsb 1");
+					command(client, "scoreboard players display numberformat Blank emsb blank");
+					command(client, "team add emteam");
+					command(client, "team modify emteam prefix {\"text\":\"[VIP] \",\"color\":\"red\"}");
+					command(client, "team modify emteam suffix {\"text\":\" *\",\"color\":\"green\"}");
+					command(client, "team join emteam Emeralds");
+					command(client, "scoreboard objectives setdisplay sidebar emsb");
+				}
+				if (stepTicks == 25) {
+					check(ScoreboardRenderer.linesForSnapshot(client) == 5, "the sidebar has its 5 lines (" + ScoreboardRenderer.linesForSnapshot(client) + ")");
+					check("Diamonds|12".equals(ScoreboardRenderer.lineForSnapshot(client, 0)), "the highest score comes first: " + ScoreboardRenderer.lineForSnapshot(client, 0));
+					check("[VIP] Emeralds *|9".equals(ScoreboardRenderer.lineForSnapshot(client, 1)), "a line has its team prefix and suffix: " + ScoreboardRenderer.lineForSnapshot(client, 1));
+					check("Blank|".equals(ScoreboardRenderer.lineForSnapshot(client, 4)), "a blank number format shows no score: " + ScoreboardRenderer.lineForSnapshot(client, 4));
+				}
+				captureAfter(client, 30, "scoreboard, card, styled title, team prefix and suffix");
+			}
+			case 323 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setScoreboardStyle(ScoreboardStyle.VANILLA);
+					command(client, "scoreboard objectives modify emsb numberformat fixed {\"text\":\"pts\",\"color\":\"aqua\"}");
+				}
+				if (stepTicks == 20) {
+					check("Diamonds|pts".equals(ScoreboardRenderer.lineForSnapshot(client, 0)), "a fixed number format replaces the score: " + ScoreboardRenderer.lineForSnapshot(client, 0));
+					check("Blank|".equals(ScoreboardRenderer.lineForSnapshot(client, 4)), "a line's own blank format wins: " + ScoreboardRenderer.lineForSnapshot(client, 4));
+				}
+				captureAfter(client, 25, "scoreboard, vanilla bars, fixed number format");
+			}
+			case 324 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(false);
+					config.setScoreboardStyle(ScoreboardStyle.CARD);
+					config.setScoreboardFont(ScoreboardFont.EMUTILS);
+					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.LEFT);
+					config.setScoreboardTitleBold(true);
+				}
+				captureAfter(client, 15, "scoreboard, EMUtils font, light card, left bold title");
+			}
+			case 325 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(true);
+					config.setScoreboardFont(ScoreboardFont.MINECRAFT);
+					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.CENTERED);
+					config.setScoreboardTitleBold(false);
+					scoreboardWidth = ScoreboardRenderer.cardWidthForSnapshot(client, config);
+					config.setScoreboardShowNumbers(false);
+				}
+				if (stepTicks == 2) {
+					int narrow = ScoreboardRenderer.cardWidthForSnapshot(client, EMUtilsClient.config());
+					check(narrow < scoreboardWidth, "hiding the numbers narrows the card: " + scoreboardWidth + " -> " + narrow);
+				}
+				captureAfter(client, 15, "scoreboard, numbers hidden");
+			}
+			case 326 -> {
+				EMUtilsClient.config().setScoreboardShowNumbers(true);
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 327 -> captureAfter(client, 20, "hud editor, scoreboard");
+			case 328 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc closes the editor");
+				next();
+			}
+			case 329 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setHudCustomLayoutEntry(EMUtilsHudElements.SCOREBOARD, 300, 0, 300, 100);
+					for (int i = 1; i <= 14; i++) {
+						command(client, "scoreboard players set Filler" + i + " emsb " + (20 - i));
+					}
+					command(client, "scoreboard players set " + "W".repeat(60) + " emsb 30");
+				}
+				if (stepTicks == 25) {
+					int cap = client.getWindow().getGuiScaledWidth() * 100 / 300 - 8;
+					int width = ScoreboardRenderer.cardWidthForSnapshot(client, EMUtilsClient.config());
+					check(ScoreboardRenderer.linesForSnapshot(client) == 15, "at most 15 lines show out of 20 (" + ScoreboardRenderer.linesForSnapshot(client) + ")");
+					check(width <= cap && width > cap - 20, "a long line is cut to fit the screen at 300%: " + width + " of at most " + cap);
+				}
+				captureAfter(client, 30, "scoreboard, 15 lines, long text cut to the screen, 300 percent");
+			}
+			case 330 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetScoreboardDefaults();
+					EMUtilsClient.config().setScoreboard(true);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("scoreboard");
+				}
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 35, "scoreboard sheet, content tab");
+			}
+			// With the custom scoreboard off, vanilla draws its own sidebar again.
+			case 331 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetScoreboardDefaults();
+					client.gui.setScreen(null);
+				}
+				captureAfter(client, 15, "scoreboard turned off, vanilla's own sidebar");
+			}
+			case 332 -> {
+				EMUtilsClient.config().resetScoreboardDefaults();
+				client.gui.setScreen(null);
+				command(client, "scoreboard objectives remove emsb");
+				command(client, "team remove emteam");
+				next();
+			}
 			// Free Camera settings (#49): Collision stops the camera at a wall and without it the camera flies
 			// through; Double-Tap to Start; the camera keeps facing the same way through a dimension change;
 			// Camera FOV.
-			case 322 -> {
+			case 333 -> {
 				if (stepTicks == 1 && client.player != null) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2527,7 +2663,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 323 -> {
+			case 334 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setFreeCameraCollision(false);
 					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x, freeCameraStart.y, freeCameraStart.z, -90.0F, 0.0F);
@@ -2540,7 +2676,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 324 -> {
+			case 335 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
@@ -2564,7 +2700,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 325 -> {
+			case 336 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setTweakFreeCamera(true);
@@ -2590,7 +2726,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 326 -> {
+			case 337 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					command(client, "execute in minecraft:overworld run tp @s " + freeCameraStart.x + " " + freeCameraStart.y + " " + freeCameraStart.z);
@@ -2603,7 +2739,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 327 -> {
+			case 338 -> {
 				if (stepTicks == 1 && client.player != null) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setFreeCameraCustomFov(true);
@@ -2616,7 +2752,7 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 30, "free camera with a 30 degree field of view, looking at the wall");
 			}
-			case 328 -> {
+			case 339 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				config.setTweakFreeCamera(false);
 				config.resetFreeCameraSettings();
@@ -2628,7 +2764,7 @@ public final class UiSnapshotter {
 			// Auto Tool enchantment priorities and hotbar slots (#50): Fortune on ores, Silk Touch on glass,
 			// the fastest pickaxe on stone and obsidian; then reordered, a slot left out, and the sheet's
 			// Enchantments tab.
-			case 329 -> {
+			case 340 -> {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2665,13 +2801,13 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 55, "auto tool sheet, enchantments tab, efficiency first");
 			}
-			case 330 -> {
+			case 341 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
 					settings.selectSheetSectionForSnapshot(2);
 				}
 				captureAfter(client, 20, "auto tool sheet, hotbar slots tab, slot 9 left out");
 			}
-			case 331 -> {
+			case 342 -> {
 				EMUtilsClient.config().resetAutoToolDefaults();
 				client.gui.setScreen(null);
 				for (int slot = 0; slot < 3; slot++) {
@@ -2680,14 +2816,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 332 -> {
+			case 343 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 333 -> {
+			case 344 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2696,7 +2832,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 334 -> {
+			case 345 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2707,7 +2843,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 335 -> {
+			case 346 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2718,7 +2854,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 336 -> {
+			case 347 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
