@@ -35,6 +35,7 @@ import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.editor.HudLayoutEditorOverlay;
 import net.emutils.client.emutils.hud.InfoOverlayHudElement;
 import net.emutils.client.emutils.hud.ScoreboardHudElement;
+import net.emutils.client.emutils.hud.TabListHudElement;
 import net.emutils.client.emutils.hud.KeystrokesHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoRenderer;
@@ -223,6 +224,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new ArmorStatusHudElement());
 		// Custom Scoreboard (#169): replaces the vanilla sidebar element while turned on.
 		HudLayoutRegistry.register(MOD_ID, new ScoreboardHudElement());
+		// Custom Tab List (#170): replaces the vanilla player list element while turned on.
+		HudLayoutRegistry.register(MOD_ID, new TabListHudElement());
 		// Hide Effects (#176): the vanilla effect icons in the top-right corner are skipped while hidden.
 		HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, effects -> (context, tickCounter) -> {
 			EMUtilsConfig config = config();

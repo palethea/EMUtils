@@ -15,14 +15,16 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 
 /**
- * Server text for the custom scoreboard (#169), measured and drawn in the font picked for it.
+ * Server text for the custom scoreboard (#169) and tab list (#170), measured and drawn in the font picked
+ * for them.
  * <p>
  * Minecraft's font draws a component exactly as vanilla does, every color and style included. The EMUtils
  * UI font draws it run by run in that run's color, in a heavier weight where it is bold, with underline and
  * strikethrough as lines. Italics and obfuscation can't be drawn in it, and a run set in another font, such
- * as a server's icon glyphs, is drawn in Minecraft's font because the UI font doesn't have those glyphs.
+ * as a server's icon glyphs, is drawn in Minecraft's font because the UI font doesn't have those glyphs. It
+ * is drawn from cached glyphs, so a tab list of 80 names doesn't make a texture per name.
  */
-final class ScoreboardText {
+final class ServerText {
 	private static final String ELLIPSIS = "...";
 	/** Height of Minecraft's text. */
 	private static final int MINECRAFT_LINE_HEIGHT = 9;
@@ -31,9 +33,9 @@ final class ScoreboardText {
 	private final Font font;
 	private final boolean uiFont;
 
-	ScoreboardText(Font font, ScoreboardFont mode) {
+	ServerText(Font font, HudFont mode) {
 		this.font = font;
-		this.uiFont = mode == ScoreboardFont.EMUTILS;
+		this.uiFont = mode == HudFont.EMUTILS;
 	}
 
 	/** How tall one line is: vanilla's own height for the vanilla style in Minecraft's font. */
@@ -55,7 +57,59 @@ final class ScoreboardText {
 
 	/** The text ready to draw, cut short with "..." if it is wider than {@code maxWidth}. */
 	Prepared prepare(Component text, boolean bold, int maxWidth) {
-		return uiFont ? prepareUi(text, bold, maxWidth) : prepareMinecraft(text, bold, maxWidth);
+		return uiFont ? prepareUi(collect(text, bold), maxWidth) : prepareMinecraft(text, bold, maxWidth);
+	}
+
+	/**
+	 * The text as lines no wider than {@code maxWidth}, broken at line breaks and, where a line is too long,
+	 * at spaces, like a header or footer in vanilla's tab list.
+	 */
+	List<Prepared> lines(Component text, int maxWidth) {
+		List<Prepared> lines = new ArrayList<>();
+		if (!uiFont) {
+			for (FormattedCharSequence line : font.split(text, maxWidth)) {
+				lines.add(new Prepared(line, font.width(line), List.of()));
+			}
+			return lines;
+		}
+		List<Run> current = new ArrayList<>();
+		List<List<Run>> logical = new ArrayList<>();
+		for (Run run : collect(text, false)) {
+			String[] parts = run.text().split("\n", -1);
+			for (int i = 0; i < parts.length; i++) {
+				if (i > 0) {
+					logical.add(current);
+					current = new ArrayList<>();
+				}
+				if (!parts[i].isEmpty()) {
+					current.add(run.withText(parts[i]));
+				}
+			}
+		}
+		logical.add(current);
+		for (List<Run> line : logical) {
+			wrap(line, maxWidth, lines);
+		}
+		return lines;
+	}
+
+	private void wrap(List<Run> line, int maxWidth, List<Prepared> lines) {
+		List<Run> current = new ArrayList<>();
+		int width = 0;
+		for (Run run : line) {
+			for (String word : run.text().split("(?<= )")) {
+				Run piece = run.withText(word);
+				int pieceWidth = runWidth(piece);
+				if (!current.isEmpty() && width + pieceWidth > maxWidth) {
+					lines.add(prepareUi(current, maxWidth));
+					current = new ArrayList<>();
+					width = 0;
+				}
+				current.add(piece);
+				width += pieceWidth;
+			}
+		}
+		lines.add(prepareUi(current, maxWidth));
 	}
 
 	private Prepared prepareMinecraft(Component text, boolean bold, int maxWidth) {
@@ -69,27 +123,33 @@ final class ScoreboardText {
 		return new Prepared(sequence, font.width(sequence), List.of());
 	}
 
-	private Prepared prepareUi(Component text, boolean bold, int maxWidth) {
-		List<Run> collected = new ArrayList<>();
+	private List<Run> collect(Component text, boolean bold) {
+		List<Run> runs = new ArrayList<>();
 		text.visit((style, string) -> {
 			if (!string.isEmpty()) {
-				collected.add(new Run(string, style, bold || style.isBold()));
+				runs.add(new Run(string, style, bold || style.isBold()));
 			}
 			return Optional.empty();
 		}, Style.EMPTY);
+		return runs;
+	}
+
+	private Prepared prepareUi(List<Run> collected, int maxWidth) {
 		List<Run> runs = collected;
+		int width = totalWidth(runs);
+		if (width > maxWidth) {
+			runs = truncate(runs, maxWidth);
+			width = totalWidth(runs);
+		}
+		return new Prepared(null, width, runs);
+	}
+
+	private int totalWidth(List<Run> runs) {
 		int width = 0;
 		for (Run run : runs) {
 			width += runWidth(run);
 		}
-		if (width > maxWidth) {
-			runs = truncate(runs, maxWidth);
-			width = 0;
-			for (Run run : runs) {
-				width += runWidth(run);
-			}
-		}
-		return new Prepared(null, width, runs);
+		return width;
 	}
 
 	/** Keeps whole runs while they fit, cuts the one that doesn't, and ends with "...". */
@@ -132,7 +192,7 @@ final class ScoreboardText {
 		if (minecraftFont(run)) {
 			return font.width(Component.literal(run.text()).withStyle(run.style()));
 		}
-		return UiText.width(font, Component.literal(run.text()), size(run));
+		return UiText.glyphsWidth(font, run.text(), size(run));
 	}
 
 	/** A piece of text with one style. */
@@ -188,12 +248,11 @@ final class ScoreboardText {
 			} else {
 				UiText.Size size = size(run);
 				int top = baseline - UiText.lineHeight(font, size);
-				Component text = Component.literal(run.text());
 				if (shadow) {
 					float offset = HudOverlayRenderer.shadowOffset();
-					UiText.drawExact(context, font, text, size, x + offset, top + offset, HudOverlayRenderer.shadowColor());
+					UiText.drawGlyphs(context, font, run.text(), size, x + offset, top + offset, HudOverlayRenderer.shadowColor());
 				}
-				UiText.drawExact(context, font, text, size, x, top, color);
+				UiText.drawGlyphs(context, font, run.text(), size, x, top, color);
 			}
 			if (run.style().isUnderlined()) {
 				context.fill(x, baseline + 1, x + width, baseline + 2, color);

@@ -14,9 +14,11 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
-import net.emutils.client.emutils.hud.ScoreboardFont;
-import net.emutils.client.emutils.hud.ScoreboardStyle;
+import net.emutils.client.emutils.hud.HudFont;
+import net.emutils.client.emutils.hud.HudStyle;
 import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
+import net.emutils.client.emutils.hud.TabListPing;
+import net.emutils.client.emutils.hud.TabListSort;
 import net.emutils.client.emutils.hud.layout.HudCustomLayoutEntry;
 import net.emutils.client.emutils.hud.layout.HudElementId;
 import net.emutils.client.emutils.hud.layout.HudLayoutConfig;
@@ -115,6 +117,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int ARMOR_STATUS_LOW_PERCENT_DEFAULT = 10;
 	public static final int ARMOR_STATUS_LOW_PERCENT_MIN = 1;
 	public static final int ARMOR_STATUS_LOW_PERCENT_MAX = 50;
+	public static final int TAB_LIST_ROW_HEIGHT_DEFAULT = 10;
+	public static final int TAB_LIST_ROW_HEIGHT_MIN = 9;
+	public static final int TAB_LIST_ROW_HEIGHT_MAX = 18;
+	public static final int TAB_LIST_MAX_COLUMNS_MAX = 6;
 	public static final int UI_CODE_SIZE_MIN = 80;
 	public static final int UI_CODE_SIZE_MAX = 150;
 	public static final int UI_TEXT_SIZE_MIN = 90;
@@ -228,13 +234,24 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String armorStatusDisplay = ArmorStatusDisplay.REMAINING.name();
 	private Integer armorStatusLowPercent = ARMOR_STATUS_LOW_PERCENT_DEFAULT;
 	private Boolean scoreboard = Boolean.FALSE;
-	private String scoreboardStyle = ScoreboardStyle.CARD.name();
-	private String scoreboardFont = ScoreboardFont.MINECRAFT.name();
+	private String scoreboardStyle = HudStyle.CARD.name();
+	private String scoreboardFont = HudFont.MINECRAFT.name();
 	private String scoreboardTextShadow = HudTextShadow.AUTO.name();
 	private Boolean scoreboardShowNumbers = Boolean.TRUE;
 	private String scoreboardTitleAlignment = ScoreboardTitleAlignment.CENTERED.name();
 	private Boolean scoreboardTitleBold = Boolean.FALSE;
 	private Boolean scoreboardHideWithDebug = Boolean.TRUE;
+	private Boolean tabList = Boolean.FALSE;
+	private String tabListStyle = HudStyle.CARD.name();
+	private String tabListFont = HudFont.MINECRAFT.name();
+	private String tabListTextShadow = HudTextShadow.AUTO.name();
+	private String tabListPing = TabListPing.BARS.name();
+	private Boolean tabListPingColors = Boolean.TRUE;
+	private Integer tabListMaxColumns = 0;
+	private Integer tabListRowHeight = TAB_LIST_ROW_HEIGHT_DEFAULT;
+	private Boolean tabListHeads = Boolean.TRUE;
+	private Boolean tabListHighlightSelf = Boolean.TRUE;
+	private String tabListSort = TabListSort.VANILLA.name();
 	private Boolean foodHud = Boolean.TRUE;
 	private Boolean foodHudSaturationOverlay = Boolean.TRUE;
 	private Boolean foodHudHeldFoodOverlay = Boolean.TRUE;
@@ -3169,21 +3186,21 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	public ScoreboardStyle scoreboardStyle() {
-		return ScoreboardStyle.fromName(scoreboardStyle);
+	public HudStyle scoreboardStyle() {
+		return HudStyle.fromName(scoreboardStyle);
 	}
 
-	public void setScoreboardStyle(ScoreboardStyle style) {
-		scoreboardStyle = (style == null ? ScoreboardStyle.CARD : style).name();
+	public void setHudStyle(HudStyle style) {
+		scoreboardStyle = (style == null ? HudStyle.CARD : style).name();
 		save();
 	}
 
-	public ScoreboardFont scoreboardFont() {
-		return ScoreboardFont.fromName(scoreboardFont);
+	public HudFont scoreboardFont() {
+		return HudFont.fromName(scoreboardFont);
 	}
 
-	public void setScoreboardFont(ScoreboardFont font) {
-		scoreboardFont = (font == null ? ScoreboardFont.MINECRAFT : font).name();
+	public void setHudFont(HudFont font) {
+		scoreboardFont = (font == null ? HudFont.MINECRAFT : font).name();
 		save();
 	}
 
@@ -3191,7 +3208,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		return HudTextShadow.fromName(scoreboardTextShadow);
 	}
 
-	public void setScoreboardTextShadow(HudTextShadow mode) {
+	public void setServerTextShadow(HudTextShadow mode) {
 		scoreboardTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
 		save();
 	}
@@ -3235,8 +3252,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	/** Custom Scoreboard (#169): its settings and its place in the HUD layout. */
 	public void resetScoreboardDefaults() {
 		scoreboard = Boolean.FALSE;
-		scoreboardStyle = ScoreboardStyle.CARD.name();
-		scoreboardFont = ScoreboardFont.MINECRAFT.name();
+		scoreboardStyle = HudStyle.CARD.name();
+		scoreboardFont = HudFont.MINECRAFT.name();
 		scoreboardTextShadow = HudTextShadow.AUTO.name();
 		scoreboardShowNumbers = Boolean.TRUE;
 		scoreboardTitleAlignment = ScoreboardTitleAlignment.CENTERED.name();
@@ -3244,6 +3261,125 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		scoreboardHideWithDebug = Boolean.TRUE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.SCOREBOARD.configKey());
+		}
+		save();
+	}
+
+	public boolean tabList() {
+		return tabList != null && tabList;
+	}
+
+	public void setTabList(boolean enabled) {
+		tabList = enabled;
+		save();
+	}
+
+	public HudStyle tabListStyle() {
+		return HudStyle.fromName(tabListStyle);
+	}
+
+	public void setTabListStyle(HudStyle style) {
+		tabListStyle = (style == null ? HudStyle.CARD : style).name();
+		save();
+	}
+
+	public HudFont tabListFont() {
+		return HudFont.fromName(tabListFont);
+	}
+
+	public void setTabListFont(HudFont font) {
+		tabListFont = (font == null ? HudFont.MINECRAFT : font).name();
+		save();
+	}
+
+	public HudTextShadow tabListTextShadow() {
+		return HudTextShadow.fromName(tabListTextShadow);
+	}
+
+	public void setTabListTextShadow(HudTextShadow mode) {
+		tabListTextShadow = (mode == null ? HudTextShadow.AUTO : mode).name();
+		save();
+	}
+
+	public TabListPing tabListPing() {
+		return TabListPing.fromName(tabListPing);
+	}
+
+	public void setTabListPing(TabListPing ping) {
+		tabListPing = (ping == null ? TabListPing.BARS : ping).name();
+		save();
+	}
+
+	public boolean tabListPingColors() {
+		return tabListPingColors == null || tabListPingColors;
+	}
+
+	public void setTabListPingColors(boolean enabled) {
+		tabListPingColors = enabled;
+		save();
+	}
+
+	/** The most columns the list may use; 0 is automatic, as many as it takes to keep the rows at 20. */
+	public int tabListMaxColumns() {
+		return tabListMaxColumns == null ? 0 : Math.clamp(tabListMaxColumns, 0, TAB_LIST_MAX_COLUMNS_MAX);
+	}
+
+	public void setTabListMaxColumns(int columns) {
+		tabListMaxColumns = Math.clamp(columns, 0, TAB_LIST_MAX_COLUMNS_MAX);
+		save();
+	}
+
+	public int tabListRowHeight() {
+		return tabListRowHeight == null ? TAB_LIST_ROW_HEIGHT_DEFAULT : Math.clamp(tabListRowHeight, TAB_LIST_ROW_HEIGHT_MIN, TAB_LIST_ROW_HEIGHT_MAX);
+	}
+
+	public void setTabListRowHeight(int height) {
+		tabListRowHeight = Math.clamp(height, TAB_LIST_ROW_HEIGHT_MIN, TAB_LIST_ROW_HEIGHT_MAX);
+		save();
+	}
+
+	public boolean tabListHeads() {
+		return tabListHeads == null || tabListHeads;
+	}
+
+	public void setTabListHeads(boolean enabled) {
+		tabListHeads = enabled;
+		save();
+	}
+
+	public boolean tabListHighlightSelf() {
+		return tabListHighlightSelf == null || tabListHighlightSelf;
+	}
+
+	public void setTabListHighlightSelf(boolean enabled) {
+		tabListHighlightSelf = enabled;
+		save();
+	}
+
+	public TabListSort tabListSort() {
+		return TabListSort.fromName(tabListSort);
+	}
+
+	public void setTabListSort(TabListSort sort) {
+		tabListSort = (sort == null ? TabListSort.VANILLA : sort).name();
+		save();
+	}
+
+	/** Custom Tab List (#170): its settings and its place in the HUD layout. */
+	public void resetTabListDefaults() {
+		tabList = Boolean.FALSE;
+		tabListStyle = HudStyle.CARD.name();
+		tabListFont = HudFont.MINECRAFT.name();
+		tabListTextShadow = HudTextShadow.AUTO.name();
+		tabListPing = TabListPing.BARS.name();
+		tabListPingColors = Boolean.TRUE;
+		tabListMaxColumns = 0;
+		tabListRowHeight = TAB_LIST_ROW_HEIGHT_DEFAULT;
+		tabListHeads = Boolean.TRUE;
+		tabListHighlightSelf = Boolean.TRUE;
+		tabListSort = TabListSort.VANILLA.name();
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.TAB_LIST.configKey());
 		}
 		save();
 	}

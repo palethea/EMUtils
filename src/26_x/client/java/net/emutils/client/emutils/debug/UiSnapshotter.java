@@ -48,10 +48,13 @@ import net.emutils.client.emutils.tweaks.AutoToolManager;
 import net.emutils.client.emutils.tweaks.FreeCameraManager;
 import net.emutils.client.emutils.hud.HudOverlayData;
 import net.emutils.client.emutils.hud.HudOverlayLine;
-import net.emutils.client.emutils.hud.ScoreboardFont;
+import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.hud.ScoreboardRenderer;
-import net.emutils.client.emutils.hud.ScoreboardStyle;
+import net.emutils.client.emutils.hud.HudStyle;
 import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
+import net.emutils.client.emutils.hud.TabListPing;
+import net.emutils.client.emutils.hud.TabListRenderer;
+import net.emutils.client.emutils.hud.TabListSort;
 import net.emutils.client.emutils.hud.HudOverlayRenderer;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.HudTpsTracker;
@@ -2539,7 +2542,7 @@ public final class UiSnapshotter {
 			}
 			case 323 -> {
 				if (stepTicks == 1) {
-					EMUtilsClient.config().setScoreboardStyle(ScoreboardStyle.VANILLA);
+					EMUtilsClient.config().setHudStyle(HudStyle.VANILLA);
 					command(client, "scoreboard objectives modify emsb numberformat fixed {\"text\":\"pts\",\"color\":\"aqua\"}");
 				}
 				if (stepTicks == 20) {
@@ -2552,8 +2555,8 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setSettingsUiDark(false);
-					config.setScoreboardStyle(ScoreboardStyle.CARD);
-					config.setScoreboardFont(ScoreboardFont.EMUTILS);
+					config.setHudStyle(HudStyle.CARD);
+					config.setHudFont(HudFont.EMUTILS);
 					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.LEFT);
 					config.setScoreboardTitleBold(true);
 				}
@@ -2563,7 +2566,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setSettingsUiDark(true);
-					config.setScoreboardFont(ScoreboardFont.MINECRAFT);
+					config.setHudFont(HudFont.MINECRAFT);
 					config.setScoreboardTitleAlignment(ScoreboardTitleAlignment.CENTERED);
 					config.setScoreboardTitleBold(false);
 					scoreboardWidth = ScoreboardRenderer.cardWidthForSnapshot(client, config);
@@ -2635,10 +2638,164 @@ public final class UiSnapshotter {
 				command(client, "team remove emteam");
 				next();
 			}
+			// Custom Tab List (#170): made-up players with a header and footer; 48 players in 3 columns with ping
+			// as bars and numbers; at most 2 columns and sorting by name and by ping; vanilla bars; the EMUtils
+			// font in a light card with list scores; hearts; the HUD Layout Editor; the settings sheet; the real
+			// list in singleplayer with a list objective; and vanilla's own list with the feature off.
+			case 333 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetTabListDefaults();
+					config.setSettingsUiDark(true);
+					config.setTabList(true);
+					TabListRenderer.showFakePlayersForSnapshot(client, 12, 0, true);
+				}
+				if (stepTicks == 5) {
+					String order = TabListRenderer.orderForSnapshot(client, EMUtilsClient.config());
+					check(order.endsWith(",Luna"), "vanilla's order puts the spectator last: " + order);
+					check("1x12".equals(TabListRenderer.gridForSnapshot(client, EMUtilsClient.config())), "12 players fit one column: " + TabListRenderer.gridForSnapshot(client, EMUtilsClient.config()));
+				}
+				captureAfter(client, 15, "tab list, card, header and footer, 12 players");
+			}
+			case 334 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setTabListPing(TabListPing.BOTH);
+					TabListRenderer.showFakePlayersForSnapshot(client, 48, 0, true);
+				}
+				if (stepTicks == 5) {
+					check("3x16".equals(TabListRenderer.gridForSnapshot(client, EMUtilsClient.config())), "48 players make 3 columns of 16, as vanilla does: " + TabListRenderer.gridForSnapshot(client, EMUtilsClient.config()));
+				}
+				captureAfter(client, 15, "tab list, 48 players, ping bars and numbers");
+			}
+			case 335 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setTabListMaxColumns(2);
+					config.setTabListSort(TabListSort.NAME);
+				}
+				if (stepTicks == 5) {
+					String[] names = TabListRenderer.orderForSnapshot(client, EMUtilsClient.config()).split(",");
+					boolean sorted = true;
+					for (int i = 1; i < names.length; i++) {
+						sorted &= String.CASE_INSENSITIVE_ORDER.compare(names[i - 1], names[i]) <= 0;
+					}
+					check(sorted, "Sort Players by name orders every player by name");
+					check("2x24".equals(TabListRenderer.gridForSnapshot(client, EMUtilsClient.config())), "Columns at most 2 makes 2 columns of 24: " + TabListRenderer.gridForSnapshot(client, EMUtilsClient.config()));
+					EMUtilsClient.config().setTabListSort(TabListSort.PING);
+					String[] pings = TabListRenderer.pingsForSnapshot(client, EMUtilsClient.config()).split(",");
+					boolean ascending = true;
+					boolean unknownLast = true;
+					boolean seenUnknown = false;
+					int previous = -1;
+					for (String value : pings) {
+						int ping = Integer.parseInt(value);
+						if (ping < 0) {
+							seenUnknown = true;
+						} else {
+							unknownLast &= !seenUnknown;
+							ascending &= ping >= previous;
+							previous = ping;
+						}
+					}
+					check(ascending && unknownLast, "Sort Players by ping puts the lowest first and unknown pings last: " + String.join(",", pings));
+					EMUtilsClient.config().setTabListSort(TabListSort.NAME);
+				}
+				captureAfter(client, 15, "tab list, 2 columns at most, sorted by name");
+			}
+			case 336 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setTabListMaxColumns(0);
+					config.setTabListSort(TabListSort.VANILLA);
+					config.setTabListPing(TabListPing.BARS);
+					config.setTabListStyle(HudStyle.VANILLA);
+					TabListRenderer.showFakePlayersForSnapshot(client, 24, 0, true);
+				}
+				captureAfter(client, 15, "tab list, vanilla bars, 24 players");
+			}
+			case 337 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(false);
+					config.setTabListStyle(HudStyle.CARD);
+					config.setTabListFont(HudFont.EMUTILS);
+					config.setTabListPing(TabListPing.NUMBER);
+					TabListRenderer.showFakePlayersForSnapshot(client, 24, 1, true);
+				}
+				captureAfter(client, 15, "tab list, EMUtils font, light card, ping numbers, list scores");
+			}
+			case 338 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setSettingsUiDark(true);
+					config.setTabListFont(HudFont.MINECRAFT);
+					config.setTabListPing(TabListPing.BARS);
+					TabListRenderer.showFakePlayersForSnapshot(client, 12, 2, false);
+				}
+				captureAfter(client, 15, "tab list, hearts, no header or footer");
+			}
+			case 339 -> {
+				TabListRenderer.clearFakePlayersForSnapshot();
+				if (HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
+					client.gui.setScreen(new HudEditorScreen(null));
+				}
+				next();
+			}
+			case 340 -> captureAfter(client, 20, "hud editor, tab list");
+			case 341 -> {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+					press(screen, InputConstants.KEY_ESCAPE, 0);
+				}
+				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc closes the editor");
+				next();
+			}
+			case 342 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetTabListDefaults();
+					EMUtilsClient.config().setTabList(true);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("tab_list");
+				}
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(1);
+				}
+				captureAfter(client, 35, "tab list sheet, players tab");
+			}
+			case 343 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					EMUtilsClient.config().resetTabListDefaults();
+					EMUtilsClient.config().setTabList(true);
+					command(client, "scoreboard objectives add emlist dummy {\"text\":\"Points\",\"color\":\"gold\"}");
+					command(client, "scoreboard players set @s emlist 7");
+					command(client, "scoreboard objectives setdisplay list emlist");
+					client.options.keyPlayerList.setDown(true);
+				}
+				if (stepTicks == 20) {
+					String order = TabListRenderer.orderForSnapshot(client, EMUtilsClient.config());
+					check(order.equals(client.player.getScoreboardName()), "the real list has the local player: " + order);
+				}
+				captureAfter(client, 25, "tab list, the real list in singleplayer with a list objective");
+			}
+			case 344 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setTabList(false);
+				}
+				captureAfter(client, 15, "tab list turned off, vanilla's own list");
+			}
+			case 345 -> {
+				client.options.keyPlayerList.setDown(false);
+				EMUtilsClient.config().resetTabListDefaults();
+				command(client, "scoreboard objectives remove emlist");
+				next();
+			}
 			// Free Camera settings (#49): Collision stops the camera at a wall and without it the camera flies
 			// through; Double-Tap to Start; the camera keeps facing the same way through a dimension change;
 			// Camera FOV.
-			case 333 -> {
+			case 346 -> {
 				if (stepTicks == 1 && client.player != null) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2663,7 +2820,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 334 -> {
+			case 347 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setFreeCameraCollision(false);
 					EMUtilsClient.tweaks().freeCamera().placeForSnapshot(freeCameraStart.x, freeCameraStart.y, freeCameraStart.z, -90.0F, 0.0F);
@@ -2676,7 +2833,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 335 -> {
+			case 348 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
@@ -2700,7 +2857,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 336 -> {
+			case 349 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setTweakFreeCamera(true);
@@ -2726,7 +2883,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 337 -> {
+			case 350 -> {
 				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
 				if (stepTicks == 1) {
 					command(client, "execute in minecraft:overworld run tp @s " + freeCameraStart.x + " " + freeCameraStart.y + " " + freeCameraStart.z);
@@ -2739,7 +2896,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 338 -> {
+			case 351 -> {
 				if (stepTicks == 1 && client.player != null) {
 					EMUtilsConfig config = EMUtilsClient.config();
 					config.setFreeCameraCustomFov(true);
@@ -2752,7 +2909,7 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 30, "free camera with a 30 degree field of view, looking at the wall");
 			}
-			case 339 -> {
+			case 352 -> {
 				EMUtilsConfig config = EMUtilsClient.config();
 				config.setTweakFreeCamera(false);
 				config.resetFreeCameraSettings();
@@ -2764,7 +2921,7 @@ public final class UiSnapshotter {
 			// Auto Tool enchantment priorities and hotbar slots (#50): Fortune on ores, Silk Touch on glass,
 			// the fastest pickaxe on stone and obsidian; then reordered, a slot left out, and the sheet's
 			// Enchantments tab.
-			case 340 -> {
+			case 353 -> {
 				if (stepTicks == 1) {
 					client.gui.setScreen(null);
 					setGuiScale(client, 2);
@@ -2801,13 +2958,13 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 55, "auto tool sheet, enchantments tab, efficiency first");
 			}
-			case 341 -> {
+			case 354 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
 					settings.selectSheetSectionForSnapshot(2);
 				}
 				captureAfter(client, 20, "auto tool sheet, hotbar slots tab, slot 9 left out");
 			}
-			case 342 -> {
+			case 355 -> {
 				EMUtilsClient.config().resetAutoToolDefaults();
 				client.gui.setScreen(null);
 				for (int slot = 0; slot < 3; slot++) {
@@ -2816,14 +2973,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 343 -> {
+			case 356 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 344 -> {
+			case 357 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -2832,7 +2989,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 345 -> {
+			case 358 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -2843,7 +3000,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 346 -> {
+			case 359 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -2854,7 +3011,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 347 -> {
+			case 360 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

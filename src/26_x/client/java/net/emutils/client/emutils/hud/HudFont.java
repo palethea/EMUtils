@@ -3,16 +3,16 @@ package net.emutils.client.emutils.hud;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import org.jspecify.annotations.Nullable;
 
-/** The font the custom scoreboard (#169) writes its text in. */
-public enum ScoreboardFont {
+/** The font a custom server HUD element, the scoreboard (#169) or the tab list (#170), writes its text in. */
+public enum HudFont {
 	/** Minecraft's font, which keeps every server color and style exactly. */
-	MINECRAFT(EMUtilsTexts.OPTION_SCOREBOARD_FONT_MINECRAFT),
+	MINECRAFT(EMUtilsTexts.OPTION_HUD_FONT_MINECRAFT),
 	/** The settings UI's font. Server colors and bold stay, italics and obfuscation don't. */
-	EMUTILS(EMUtilsTexts.OPTION_SCOREBOARD_FONT_EMUTILS);
+	EMUTILS(EMUtilsTexts.OPTION_HUD_FONT_EMUTILS);
 
 	private final String labelKey;
 
-	ScoreboardFont(String labelKey) {
+	HudFont(String labelKey) {
 		this.labelKey = labelKey;
 	}
 
@@ -20,9 +20,9 @@ public enum ScoreboardFont {
 		return labelKey;
 	}
 
-	public static ScoreboardFont fromName(@Nullable String name) {
+	public static HudFont fromName(@Nullable String name) {
 		if (name != null) {
-			for (ScoreboardFont font : values()) {
+			for (HudFont font : values()) {
 				if (font.name().equals(name)) {
 					return font;
 				}
