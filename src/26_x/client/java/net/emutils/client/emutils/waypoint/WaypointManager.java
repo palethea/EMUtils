@@ -319,28 +319,6 @@ public final class WaypointManager {
         );
     }
 
-    public double distanceToCamera(Minecraft client, Waypoint waypoint) {
-        if (
-            client.gameRenderer == null ||
-            net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client) == null
-        ) {
-            return 1.0D;
-        }
-
-        var cameraPos = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client).position();
-        double dx = renderX(waypoint) - cameraPos.x;
-        double dy = renderY(waypoint) - cameraPos.y;
-        double dz = renderZ(waypoint) - cameraPos.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    public float labelScale(Minecraft client, Waypoint waypoint) {
-        double distance = Math.max(1.0D, distanceToCamera(client, waypoint));
-        float scale = (float) (distance * 0.01333334D);
-        scale = Math.max(0.12F, Math.min(2.5F, scale));
-        return scale * EMUtilsClient.config().waypointSizeMultiplier();
-    }
-
     public static double renderX(Waypoint waypoint) {
         return waypoint.x() + 0.5D;
     }

@@ -262,7 +262,27 @@ public final class HubSettingsRegistry {
 			config::waypointSize,
 			config::setWaypointSize
 		));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_EDGE_PIN, config::waypointEdgePin, config::setWaypointEdgePin));
+		rows.add(new HubSettingRow.Cycle<>(
+			EMUtilsTexts.OPTION_WAYPOINT_MAX_DISTANCE,
+			config::waypointMaxDistance,
+			config::setWaypointMaxDistance,
+			() -> {
+				List<Integer> choices = EMUtilsConfig.WAYPOINT_MAX_DISTANCES;
+				int index = choices.indexOf(config.waypointMaxDistance());
+				return choices.get((index + 1) % choices.size());
+			},
+			() -> waypointMaxDistanceLabel(config.waypointMaxDistance()),
+			EMUtilsConfig.WAYPOINT_MAX_DISTANCES,
+			HubSettingsRegistry::waypointMaxDistanceLabel
+		));
 		return rows;
+	}
+
+	private static Component waypointMaxDistanceLabel(int blocks) {
+		return blocks <= 0
+			? Component.translatable(EMUtilsTexts.OPTION_WAYPOINT_MAX_DISTANCE_UNLIMITED)
+			: Component.literal(Integer.toString(blocks)).append(Component.translatable(EMUtilsTexts.SUFFIX_BLOCKS));
 	}
 
 	private static List<HubSettingRow> reconnectRows(Runnable refresh) {

@@ -64,6 +64,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int DEATH_WAYPOINT_OPACITY_MAX = 100;
 	public static final int DEATH_WAYPOINT_SIZE_MIN = 25;
 	public static final int DEATH_WAYPOINT_SIZE_MAX = 100;
+	/** The choices for the waypoint max distance, in blocks; 0 is no limit. */
+	public static final List<Integer> WAYPOINT_MAX_DISTANCES = List.of(0, 100, 250, 500, 1000, 2500, 5000);
 	public static final int HUD_BACKGROUND_OPACITY_MIN = 25;
 	public static final int HUD_BACKGROUND_OPACITY_MAX = 100;
 	public static final int INVENTORY_PREVIEW_OPACITY_MIN = 25;
@@ -274,6 +276,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer deathWaypointSize = DEFAULT_DEATH_WAYPOINT_SIZE;
 	private Integer waypointDefaultDeathColor = 0xFFFF5555;
 	private Integer waypointDefaultCustomColor = 0xFF55FF55;
+	private Boolean waypointEdgePin = Boolean.TRUE;
+	private Integer waypointMaxDistance = 0;
 	private Integer hudBackgroundOpacity = 100;
 	private Integer hudScale = 100;
 	private Boolean zoomEnabled = Boolean.TRUE;
@@ -2748,12 +2752,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	public float deathWaypointSizeMultiplier() {
-		float displayPercent = deathWaypointSize() / 100.0F;
-		float referencePercent = DEFAULT_DEATH_WAYPOINT_SIZE / 100.0F;
-		return displayPercent * (LEGACY_SIZE_REFERENCE_PERCENT / 100.0F) / referencePercent;
-	}
-
 	public boolean waypointEnabled() {
 		return deathWaypoint == null || deathWaypoint;
 	}
@@ -2808,10 +2806,29 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	public float waypointSizeMultiplier() {
-		float displayPercent = waypointSize() / 100.0F;
-		float referencePercent = DEFAULT_DEATH_WAYPOINT_SIZE / 100.0F;
-		return displayPercent * (LEGACY_SIZE_REFERENCE_PERCENT / 100.0F) / referencePercent;
+	/** How much larger or smaller than normal waypoint markers are drawn: 1 at the default size. */
+	public float waypointMarkerScale() {
+		return waypointSize() / (float) DEFAULT_DEATH_WAYPOINT_SIZE;
+	}
+
+	public boolean waypointEdgePin() {
+		return waypointEdgePin == null || waypointEdgePin;
+	}
+
+	public void setWaypointEdgePin(boolean enabled) {
+		waypointEdgePin = enabled;
+		save();
+	}
+
+	/** The farthest a waypoint is still shown, in blocks; 0 for no limit. */
+	public int waypointMaxDistance() {
+		int value = waypointMaxDistance == null ? 0 : waypointMaxDistance;
+		return value <= 0 ? 0 : Math.min(value, WAYPOINT_MAX_DISTANCES.getLast());
+	}
+
+	public void setWaypointMaxDistance(int blocks) {
+		waypointMaxDistance = Math.max(0, blocks);
+		save();
 	}
 
 	public int waypointDefaultDeathColor() {
@@ -2891,6 +2908,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		deathWaypointSize = DEFAULT_DEATH_WAYPOINT_SIZE;
 		waypointDefaultDeathColor = 0xFFFF5555;
 		waypointDefaultCustomColor = 0xFF55FF55;
+		waypointEdgePin = Boolean.TRUE;
+		waypointMaxDistance = 0;
 		save();
 	}
 

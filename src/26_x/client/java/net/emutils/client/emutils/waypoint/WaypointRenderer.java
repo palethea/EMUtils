@@ -2,24 +2,18 @@ package net.emutils.client.emutils.waypoint;
 
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
-import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.phys.Vec3;
 
 public final class WaypointRenderer {
 	private static final int BEACON_HEIGHT = 256;
@@ -32,7 +26,7 @@ public final class WaypointRenderer {
 
 	public static void register() {
 		LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(WaypointRenderer::render);
-		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, LABEL_HUD_ID, WaypointRenderer::renderLabels);
+		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, LABEL_HUD_ID, WaypointMarkerRenderer::render);
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -113,74 +107,6 @@ public final class WaypointRenderer {
 		} finally {
 			matrices.popPose();
 		}
-	}
-
-	private static void renderLabels(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-		Minecraft client = Minecraft.getInstance();
-		WaypointManager manager = EMUtilsClient.waypoint();
-		if (!manager.shouldRender(client)) {
-			return;
-		}
-
-		int opacity = EMUtilsClient.config().waypointOpacity();
-		if (opacity <= 0) {
-			return;
-		}
-
-		Font textRenderer = client.font;
-		int textColor = 0xFFFFFFFF;
-		int backgroundColor = waypointTextBackground(opacity);
-
-		for (Waypoint waypoint : manager.waypointsForCurrentWorld(client)) {
-			if (waypoint.hidden()) {
-				continue;
-			}
-			Vec3 labelPosition = new Vec3(
-				WaypointManager.renderX(waypoint),
-				WaypointManager.renderY(waypoint),
-				WaypointManager.renderZ(waypoint)
-			);
-			Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(client);
-			Vec3 toWaypoint = labelPosition.subtract(camera.position());
-			Vec3 cameraForward = Vec3.directionFromRotation(camera.xRot(), camera.yaw());
-			if (toWaypoint.dot(cameraForward) <= 0.0D) {
-				continue;
-			}
-
-			Vec3 projected = client.gameRenderer.projectPointToScreen(labelPosition);
-			if (projected.z < -1.0D || projected.z > 1.0D) {
-				continue;
-			}
-
-			int screenX = (int) Math.round((projected.x + 1.0D) * 0.5D * graphics.guiWidth());
-			int screenY = (int) Math.round((1.0D - projected.y) * 0.5D * graphics.guiHeight());
-			if (screenX < -80 || screenX > graphics.guiWidth() + 80 || screenY < -40 || screenY > graphics.guiHeight() + 40) {
-				continue;
-			}
-
-			Component title = Component.literal(waypoint.label());
-			Component lore = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE, manager.distanceBlocks(client, waypoint));
-			int titleWidth = textRenderer.width(title);
-			int loreWidth = textRenderer.width(lore);
-			int labelWidth = Math.max(titleWidth, loreWidth);
-			int panelWidth = labelWidth + 8;
-			int panelHeight = 23;
-			int panelX = screenX - panelWidth / 2;
-			int panelY = screenY - panelHeight / 2;
-
-			graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, backgroundColor);
-			graphics.text(textRenderer, title, screenX - titleWidth / 2, panelY + 3, textColor, true);
-			graphics.text(textRenderer, lore, screenX - loreWidth / 2, panelY + 13, textColor, true);
-		}
-
-	}
-
-	private static int waypointTextBackground(int opacityPercent) {
-		if (opacityPercent <= 0) {
-			return 0;
-		}
-		int alpha = Math.max(64, Math.min(112, opacityPercent * 112 / 100));
-		return alpha << 24;
 	}
 
 	private static void addBeamVertex(

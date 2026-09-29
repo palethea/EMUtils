@@ -3070,15 +3070,44 @@ public final class UiSnapshotter {
 				}
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Waypoint markers (#105): one aimed at shows its name and distance, the others sit at the screen edge when out of view.
 			case 360 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					client.gui.setScreen(null);
+					seedWaypoints(client);
+					EMUtilsClient.waypoint().captureDeath(client);
+					command(client, "tp @s ~10 ~ ~10");
+				}
+				if (stepTicks >= 20) {
+					next();
+				}
+			}
+			case 361 -> {
+				if (stepTicks == 1) {
+					faceWaypoint(client, "Home base", 0.0F);
+				}
+				captureAfter(client, 10, "waypoint markers, aimed at one");
+			}
+			case 362 -> {
+				if (stepTicks == 1) {
+					faceWaypoint(client, "Home base", 180.0F);
+				}
+				captureAfter(client, 10, "waypoint markers, pinned to the screen edge");
+			}
+			case 363 -> {
+				EMUtilsClient.waypoint().clearForCurrentWorld(client);
+				next();
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 364 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 361 -> {
+			case 365 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3087,7 +3116,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 362 -> {
+			case 366 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3098,7 +3127,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 363 -> {
+			case 367 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3109,7 +3138,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 364 -> {
+			case 368 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -3342,6 +3371,23 @@ public final class UiSnapshotter {
 
 		profiles.onJoin(client);
 		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");
+	}
+
+	/** Turns the player toward the waypoint called {@code label}, plus {@code extraYaw} degrees. */
+	private static void faceWaypoint(Minecraft client, String label, float extraYaw) {
+		if (client.player == null) {
+			return;
+		}
+		for (Waypoint waypoint : EMUtilsClient.waypoint().waypointsForCurrentWorld(client)) {
+			if (waypoint.label().equals(label)) {
+				double dx = waypoint.x() + 0.5D - client.player.getX();
+				double dy = waypoint.y() + 1.25D - client.player.getEyeY();
+				double dz = waypoint.z() + 0.5D - client.player.getZ();
+				client.player.setYRot((float) Math.toDegrees(Math.atan2(-dx, dz)) + extraYaw);
+				client.player.setXRot((float) -Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz))));
+				return;
+			}
+		}
 	}
 
 	/** Adds a few waypoints around the player, one hidden and one with its beacon on, to show the list. */

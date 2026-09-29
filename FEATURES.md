@@ -224,7 +224,7 @@ Replace the default screenshot message with quick actions and optional metadata.
 
 ### Waypoints
 
-Save death and custom waypoints per world or server.
+Save death and custom waypoints per world or server. In the world each one is a colored marker with the waypoint's initial (a cross for deaths). Markers shrink and fade with distance and fade out right next to you. The name and distance show when you aim at a marker or are within 8 blocks.
 
 - Auto Copy Coords: copy coordinates when a waypoint is created.
 - Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
@@ -232,8 +232,10 @@ Save death and custom waypoints per world or server.
 - Copy Coords Feedback: show a chat message with the copied coordinates.
 - Death Color: choose the default color for death waypoints.
 - Custom Waypoint Color: choose the default color for custom waypoints.
-- Waypoint Opacity: adjust in-world label opacity.
-- Waypoint Size: adjust in-world label size.
+- Waypoint Opacity: adjust how see-through markers and labels are.
+- Waypoint Size: adjust marker size.
+- Pin to Screen Edge: keep waypoints that are off-screen or behind you at the edge of the screen, with an arrow and their distance.
+- Max Distance: hide waypoints beyond a distance (unlimited by default); they fade out over the last fifth.
 
 ## Management
 
