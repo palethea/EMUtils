@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
@@ -69,8 +71,7 @@ public final class WaypointManager {
         }
 
         lastCaptureTimestamp = timestamp;
-        waypoints.add(
-            new Waypoint(
+        Waypoint waypoint = new Waypoint(
                 blockPos.getX(),
                 blockPos.getY(),
                 blockPos.getZ(),
@@ -80,13 +81,13 @@ public final class WaypointManager {
                 "Death",
                 EMUtilsClient.config().waypointDefaultDeathColor(),
                 WaypointType.DEATH
-            )
-        );
+            );
+        waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
         save();
 
         if (EMUtilsClient.config().waypointAutoCopyCoords()) {
-            copyCoordinates(client, timestamp);
+            copyCoordinates(client, waypoint.id());
         }
     }
 
@@ -157,7 +158,7 @@ public final class WaypointManager {
         try {
             WaypointChat.showNearPrompt(
                 net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
-                nearest.timestamp()
+                nearest.id()
             );
             nearest.setNearPromptShown(true);
             save();
@@ -169,19 +170,19 @@ public final class WaypointManager {
         }
     }
 
-    public void keep(Minecraft client, long timestamp) {
-        Waypoint waypoint = findByTimestamp(timestamp);
+    public void keep(Minecraft client, String id) {
+        Waypoint waypoint = findById(id);
         if (waypoint == null || client == null || client.gui == null) {
             return;
         }
 
-        WaypointChat.removeNearPrompt(net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client), timestamp);
+        WaypointChat.removeNearPrompt(net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client), id);
         net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
             .addClientSystemMessage(EmUtilsChatPrefix.chat(WaypointMessage.kept()));
     }
 
-    public void copyCoordinates(Minecraft client, long timestamp) {
-        Waypoint waypoint = findByTimestamp(timestamp);
+    public void copyCoordinates(Minecraft client, String id) {
+        Waypoint waypoint = findById(id);
         if (waypoint == null || client == null || client.keyboardHandler == null) {
             return;
         }
@@ -239,8 +240,8 @@ public final class WaypointManager {
         }
     }
 
-    public void clear(Minecraft client, long timestamp) {
-        clear(client, timestamp, WaypointMessage::cleared);
+    public void clear(Minecraft client, String id) {
+        clear(client, id, WaypointMessage::cleared);
     }
 
     public void clearForCurrentWorld(Minecraft client) {
@@ -261,16 +262,16 @@ public final class WaypointManager {
         clear(client, WaypointMessage::clearedForWorld);
     }
 
-    public void toggleBeacon(long timestamp) {
-        Waypoint waypoint = findByTimestamp(timestamp);
+    public void toggleBeacon(String id) {
+        Waypoint waypoint = findById(id);
         if (waypoint != null) {
             waypoint.setBeaconEnabled(!waypoint.beaconEnabled());
             save();
         }
     }
 
-    public void toggleHidden(long timestamp) {
-        Waypoint waypoint = findByTimestamp(timestamp);
+    public void toggleHidden(String id) {
+        Waypoint waypoint = findById(id);
         if (waypoint != null) {
             waypoint.setHidden(!waypoint.hidden());
             save();
@@ -381,9 +382,9 @@ public final class WaypointManager {
     }
 
     @Nullable
-    private Waypoint findByTimestamp(long timestamp) {
+    private Waypoint findById(String id) {
         for (Waypoint waypoint : waypoints) {
-            if (waypoint.timestamp() == timestamp) {
+            if (waypoint.id().equals(id)) {
                 return waypoint;
             }
         }
@@ -403,10 +404,10 @@ public final class WaypointManager {
 
     private void clear(
         Minecraft client,
-        long timestamp,
+        String id,
         Supplier<Component> confirmationMessage
     ) {
-        Waypoint waypoint = findByTimestamp(timestamp);
+        Waypoint waypoint = findById(id);
         if (waypoint == null) {
             return;
         }
@@ -465,7 +466,7 @@ public final class WaypointManager {
             try {
                 WaypointChat.removeNearPrompt(
                     net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
-                    waypoint.timestamp()
+                    waypoint.id()
                 );
             } catch (RuntimeException exception) {
                 EMUtilsClient.LOGGER.warn(
@@ -519,6 +520,9 @@ public final class WaypointManager {
             ) {
                 waypoints.clear();
                 waypoints.addAll(saveData.waypoints());
+                if (ensureUniqueIds()) {
+                    save();
+                }
                 return;
             }
         } catch (
@@ -590,6 +594,7 @@ public final class WaypointManager {
             }
 
             if (!waypoints.isEmpty()) {
+                ensureUniqueIds();
                 save();
                 Files.deleteIfExists(EMUtilsPaths.deathWaypointFile());
                 EMUtilsClient.LOGGER.info(
@@ -607,6 +612,20 @@ public final class WaypointManager {
                 exception
             );
         }
+    }
+
+    /** Gives an id to every waypoint that has none or shares one; returns whether any changed. */
+    private boolean ensureUniqueIds() {
+        Set<String> seen = new HashSet<>();
+        boolean changed = false;
+        for (Waypoint waypoint : waypoints) {
+            if (!waypoint.hasId() || !seen.add(waypoint.id())) {
+                waypoint.assignNewId();
+                seen.add(waypoint.id());
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     /** Writes the waypoints; returns false if that failed. */

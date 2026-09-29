@@ -9,21 +9,21 @@ public final class WaypointChat {
 	private WaypointChat() {
 	}
 
-	public static void showNearPrompt(ChatComponent chatHud, long timestamp) {
+	public static void showNearPrompt(ChatComponent chatHud, String id) {
 		chatHud.addPlayerMessage(
-			WaypointMessage.nearWaypointPrompt(timestamp),
-			createNearPromptSignature(timestamp),
+			WaypointMessage.nearWaypointPrompt(id),
+			createNearPromptSignature(id),
 			GuiMessageTag.system()
 		);
 	}
 
-	public static void removeNearPrompt(ChatComponent chatHud, long timestamp) {
-		((WaypointChatAccess) chatHud).emutils$removeMessageSilently(createNearPromptSignature(timestamp));
+	public static void removeNearPrompt(ChatComponent chatHud, String id) {
+		((WaypointChatAccess) chatHud).emutils$removeMessageSilently(createNearPromptSignature(id));
 	}
 
-	private static MessageSignature createNearPromptSignature(long timestamp) {
+	private static MessageSignature createNearPromptSignature(String id) {
 		byte[] data = new byte[MessageSignature.BYTES];
-		byte[] seed = ("emutils:waypoint_prompt:" + timestamp).getBytes(StandardCharsets.UTF_8);
+		byte[] seed = ("emutils:waypoint_prompt:" + id).getBytes(StandardCharsets.UTF_8);
 		System.arraycopy(seed, 0, data, 0, Math.min(seed.length, data.length));
 		return new MessageSignature(data);
 	}

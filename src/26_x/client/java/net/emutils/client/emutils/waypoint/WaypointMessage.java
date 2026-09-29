@@ -18,13 +18,13 @@ public final class WaypointMessage {
 	private WaypointMessage() {
 	}
 
-	public static Component nearWaypointPrompt(long timestamp) {
+	public static Component nearWaypointPrompt(String id) {
 		return Component.empty()
 			.append(EMUtilsTexts.greenPrefix())
 			.append(Component.translatable(EMUtilsTexts.WAYPOINT_PROMPT).withStyle(ChatFormatting.GRAY))
-			.append(action(EMUtilsTexts.WAYPOINT_ACTION_REMOVE, ChatFormatting.RED, CLEAR_WAYPOINT_ACTION, timestamp, EMUtilsTexts.WAYPOINT_HOVER_REMOVE))
+			.append(action(EMUtilsTexts.WAYPOINT_ACTION_REMOVE, ChatFormatting.RED, CLEAR_WAYPOINT_ACTION, id, EMUtilsTexts.WAYPOINT_HOVER_REMOVE))
 			.append(Component.literal(" "))
-			.append(action(EMUtilsTexts.WAYPOINT_ACTION_KEEP, ChatFormatting.AQUA, KEEP_WAYPOINT_ACTION, timestamp, EMUtilsTexts.WAYPOINT_HOVER_KEEP));
+			.append(action(EMUtilsTexts.WAYPOINT_ACTION_KEEP, ChatFormatting.AQUA, KEEP_WAYPOINT_ACTION, id, EMUtilsTexts.WAYPOINT_HOVER_KEEP));
 	}
 
 	public static Component cleared() {
@@ -47,13 +47,13 @@ public final class WaypointMessage {
 		String labelKey,
 		ChatFormatting color,
 		Identifier actionId,
-		long timestamp,
+		String id,
 		String hoverKey
 	) {
 		return Component.empty()
 			.append(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY))
 			.append(Component.translatable(labelKey).withStyle(color).withStyle(style -> style
-				.withClickEvent(new ClickEvent.Custom(actionId, Optional.of(StringTag.valueOf(Long.toString(timestamp)))))
+				.withClickEvent(new ClickEvent.Custom(actionId, Optional.of(StringTag.valueOf(id))))
 				.withHoverEvent(new HoverEvent.ShowText(Component.translatable(hoverKey)))))
 			.append(Component.literal("]").withStyle(ChatFormatting.DARK_GRAY));
 	}
