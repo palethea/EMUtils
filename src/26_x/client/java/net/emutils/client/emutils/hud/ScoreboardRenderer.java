@@ -45,10 +45,10 @@ public final class ScoreboardRenderer {
 
 	/** One sidebar laid out: its text ready to draw, and how big the card is. */
 	private record Card(
-		ScoreboardText text,
-		ScoreboardText.Prepared title,
-		List<ScoreboardText.Prepared> names,
-		List<ScoreboardText.Prepared> scores,
+		ServerText text,
+		ServerText.Prepared title,
+		List<ServerText.Prepared> names,
+		List<ServerText.Prepared> scores,
 		boolean vanilla,
 		int rowHeight,
 		int paddingX,
@@ -78,21 +78,21 @@ public final class ScoreboardRenderer {
 	}
 
 	private static Card layout(Minecraft client, EMUtilsConfig config, ScoreboardData data, int maxWidth) {
-		boolean vanilla = config.scoreboardStyle() == ScoreboardStyle.VANILLA;
-		ScoreboardText text = new ScoreboardText(client.font, config.scoreboardFont());
+		boolean vanilla = config.scoreboardStyle() == HudStyle.VANILLA;
+		ServerText text = new ServerText(client.font, config.scoreboardFont());
 		int rowHeight = text.rowHeight(vanilla);
 		int paddingX = vanilla ? VANILLA_PADDING_X : HudOverlayRenderer.PADDING_X;
 		int maxContent = Math.max(1, maxWidth - paddingX * 2);
 		int gap = vanilla ? text.width(": ") : CARD_SCORE_GAP;
 
-		ScoreboardText.Prepared title = text.prepare(data.title(), config.scoreboardTitleBold(), maxContent);
-		List<ScoreboardText.Prepared> names = new ArrayList<>();
-		List<ScoreboardText.Prepared> scores = new ArrayList<>();
+		ServerText.Prepared title = text.prepare(data.title(), config.scoreboardTitleBold(), maxContent);
+		List<ServerText.Prepared> names = new ArrayList<>();
+		List<ServerText.Prepared> scores = new ArrayList<>();
 		int contentWidth = title.width();
 		for (ScoreboardData.Line line : data.lines()) {
-			ScoreboardText.Prepared score = text.prepare(config.scoreboardShowNumbers() ? line.score() : Component.empty(), false, maxContent);
+			ServerText.Prepared score = text.prepare(config.scoreboardShowNumbers() ? line.score() : Component.empty(), false, maxContent);
 			int reserved = score.width() > 0 ? gap + score.width() : 0;
-			ScoreboardText.Prepared name = text.prepare(line.name(), false, Math.max(1, maxContent - reserved));
+			ServerText.Prepared name = text.prepare(line.name(), false, Math.max(1, maxContent - reserved));
 			names.add(name);
 			scores.add(score);
 			contentWidth = Math.max(contentWidth, name.width() + reserved);
@@ -121,8 +121,8 @@ public final class ScoreboardRenderer {
 
 	/** The slot's height: what a card with 15 lines needs, whatever the sidebar has now. */
 	private static int slotHeight(Minecraft client, EMUtilsConfig config) {
-		boolean vanilla = config.scoreboardStyle() == ScoreboardStyle.VANILLA;
-		int rowHeight = new ScoreboardText(client.font, config.scoreboardFont()).rowHeight(vanilla);
+		boolean vanilla = config.scoreboardStyle() == HudStyle.VANILLA;
+		int rowHeight = new ServerText(client.font, config.scoreboardFont()).rowHeight(vanilla);
 		int lines = ScoreboardData.MAX_LINES;
 		if (vanilla) {
 			return rowHeight + 1 + lines * rowHeight;
@@ -217,7 +217,7 @@ public final class ScoreboardRenderer {
 		for (int i = 0; i < lines; i++) {
 			int rowTop = linesTop + i * rowHeight;
 			card.names().get(i).draw(context, x + card.paddingX(), rowTop, rowHeight, textColor, shadow);
-			ScoreboardText.Prepared score = card.scores().get(i);
+			ServerText.Prepared score = card.scores().get(i);
 			if (score.width() > 0) {
 				score.draw(context, scoresRight - score.width(), rowTop, rowHeight, textColor, shadow);
 			}

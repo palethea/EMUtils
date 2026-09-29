@@ -65,7 +65,7 @@ public final class UiAnim {
 	public float transition(String key, float target, float seconds, boolean easeOut) {
 		UiMotion motion = UiStyle.motion();
 		if (motion == UiMotion.OFF) {
-			tweens.put(key, new Tween(target, target, 0L, easeOut));
+			tweens.put(key, new Tween(target, target, 0L, 0.0F, easeOut));
 			return target;
 		}
 		if (motion == UiMotion.FAST) {
@@ -74,26 +74,31 @@ public final class UiAnim {
 		long now = System.nanoTime();
 		Tween tween = tweens.get(key);
 		if (tween == null) {
-			tween = new Tween(target, target, now, easeOut);
+			tween = new Tween(target, target, now, seconds, easeOut);
 			tweens.put(key, tween);
 		} else if (tween.to() != target) {
-			tween = new Tween(tween.value(now, seconds), target, now, easeOut);
+			// Picked up from where the interrupted transition is at its own speed, so a transition that is
+			// quicker one way than the other doesn't jump when it turns around.
+			tween = new Tween(tween.value(now), target, now, seconds, easeOut);
 			tweens.put(key, tween);
 		}
-		return tween.value(now, seconds);
+		return tween.value(now);
 	}
 
 	/** Jumps a {@link #transition} value to {@code value}, so the next transition starts from there. */
 	public void snap(String key, float value) {
-		tweens.put(key, new Tween(value, value, System.nanoTime(), false));
+		tweens.put(key, new Tween(value, value, System.nanoTime(), 0.0F, false));
 	}
 
 	public float transition(String key, boolean on, float seconds) {
 		return transition(key, on ? 1.0F : 0.0F, seconds);
 	}
 
-	private record Tween(float from, float to, long startNanos, boolean easeOut) {
-		private float value(long now, float seconds) {
+	private record Tween(float from, float to, long startNanos, float seconds, boolean easeOut) {
+		private float value(long now) {
+			if (seconds <= 0.0F) {
+				return to;
+			}
 			float t = Math.clamp((now - startNanos) / (seconds * 1_000_000_000.0F), 0.0F, 1.0F);
 			float eased = easeOut
 				? 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t)

@@ -3,16 +3,16 @@ package net.emutils.client.emutils.hud;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import org.jspecify.annotations.Nullable;
 
-/** How the custom scoreboard (#169) is drawn. */
-public enum ScoreboardStyle {
+/** How a custom server HUD element, the scoreboard (#169) or the tab list (#170), is drawn. */
+public enum HudStyle {
 	/** A card in the settings UI's look, like the HUD Overlay. */
-	CARD(EMUtilsTexts.OPTION_SCOREBOARD_STYLE_CARD),
+	CARD(EMUtilsTexts.OPTION_HUD_STYLE_CARD),
 	/** The dark translucent bars vanilla draws behind the sidebar. */
-	VANILLA(EMUtilsTexts.OPTION_SCOREBOARD_STYLE_VANILLA);
+	VANILLA(EMUtilsTexts.OPTION_HUD_STYLE_VANILLA);
 
 	private final String labelKey;
 
-	ScoreboardStyle(String labelKey) {
+	HudStyle(String labelKey) {
 		this.labelKey = labelKey;
 	}
 
@@ -20,9 +20,9 @@ public enum ScoreboardStyle {
 		return labelKey;
 	}
 
-	public static ScoreboardStyle fromName(@Nullable String name) {
+	public static HudStyle fromName(@Nullable String name) {
 		if (name != null) {
-			for (ScoreboardStyle style : values()) {
+			for (HudStyle style : values()) {
 				if (style.name().equals(name)) {
 					return style;
 				}

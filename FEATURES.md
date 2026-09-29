@@ -160,12 +160,29 @@ Show your armor and held items in a card, each with how much durability it has l
 Take over the server's sidebar scoreboard, so you can place, resize and restyle it like the other HUD elements. It shows exactly what vanilla shows: the objective's title, up to 15 lines sorted the way vanilla sorts them, team prefixes and suffixes, the number formats servers set (blank, fixed, styled), and the sidebar for your team's color when the server sets one. Nothing shows while there is no sidebar; the HUD Layout Editor shows a sample then. It sits at the right edge of the screen, vertically centered, by default, where vanilla draws it, and can be moved, resized and given a background opacity in the HUD Layout Editor. It lines up with the left, middle or right, and the top, middle or bottom, of its place, depending on which third of the screen that place is in, so it keeps its side as the server adds and removes lines. Text too long for the screen is cut with "...". Off by default; with it off, vanilla's own scoreboard shows as before. Its settings are split into Look and Content tabs.
 
 - Style: a Card in the settings UI's look, like the HUD Overlay, or Vanilla's dark bars behind the sidebar. Server colors are made for a dark background, so under the light menu theme the Vanilla style reads better.
-- Font: Minecraft's font keeps every server color and style exactly. The EMUtils font keeps colors, bold, underline and strikethrough, but not italics or obfuscated text, and text a server sets in another font, such as icon glyphs, is still drawn in Minecraft's.
+- Font: Minecraft's font keeps every server color and style exactly. The EMUtils font keeps colors (including the legacy § color codes servers such as Hypixel put in the text), bold, underline and strikethrough, but not italics or obfuscated text, and text a server sets in another font, such as icon glyphs, is still drawn in Minecraft's.
 - Text Shadow: a shadow under the text, like the HUD Overlay's. Auto (the default) adds it below 50% background opacity.
 - Show Numbers: show the scores on the right, the red numbers.
 - Title: center the title or line it up with the left edge.
 - Bold Title: write the title in bold.
 - Hide With F3: hide the scoreboard when the debug screen is open.
+
+### Tab List
+
+Take over the player list you hold Tab for, so you can restyle it and place, resize and fade it in the HUD Layout Editor. It lists the same players as vanilla, at most 80, with their display names, team formatting and skin heads, spectators dimmed, the server's header and footer, and the list objective's score as numbers or hearts when the server sets one. Like vanilla, it adds columns as the list grows so no column is longer than 20 players, and it only shows in singleplayer when there is someone else to list or a list objective. It sits at the top middle of the screen by default, where vanilla draws it, and grows downward; with Always Centered off, it lines up with the left, middle or right of its slot, depending on which third of the screen the slot is in. Text too long for the screen is cut with "...". In the HUD Layout Editor it is previewed with sample players until the server lists more. Off by default; with it off, vanilla's own list shows as before. Its settings are split into Look, Players and Ping tabs. It fades and slides in and out at the menus' animation speed.
+
+- Style: a Card in the settings UI's look, like the HUD Overlay, or Vanilla's dark bars. Server colors are made for a dark background, so under the light menu theme the Vanilla style reads better.
+- Font: Minecraft's font keeps every server color and style exactly. The EMUtils font keeps colors (including the legacy § color codes servers such as Hypixel put in the text), bold, underline and strikethrough, but not italics or obfuscated text, and text a server sets in another font, such as icon glyphs, is still drawn in Minecraft's. It is drawn from cached glyphs, so a full list stays cheap.
+- Text Shadow: a shadow under the text, like the HUD Overlay's. Auto (the default) adds it below 50% background opacity.
+- Animation: fade and slide the list in when you press Tab and out when you let go. It follows the Animations setting in the menu settings, so Fast is twice as quick and Off is instant. On by default.
+- Always Centered: keep the list in the middle of the screen however wide it gets, like vanilla, so one column is as centered as three. Only its height is placed in the HUD Layout Editor; turn it off to place it anywhere. On by default.
+- Sort Players: Vanilla's order (the server's tab list order, spectators last, then team and name), by name, or by lowest ping with unknown pings last.
+- Columns: the most columns the list may use. Auto (the default) adds columns like vanilla; a lower number makes longer columns.
+- Row Height: how tall each player's row is, 9 to 18 pixels. Vanilla's is 9; the default is 10.
+- Heads: show each player's head. Like vanilla, not on offline-mode servers.
+- Highlight Yourself: mark your own row in the menu accent color.
+- Ping: vanilla's connection bars, a number in milliseconds, or both.
+  - Ping Colors: color the number green under 150 ms, amber under 300 ms and red above, so a bad connection stands out.
 
 ### Food HUD
 
