@@ -180,6 +180,10 @@ public final class WaypointManager {
             waypoint.setNearPromptShown(oldPrompt);
             return false;
         }
+        if (moved && oldPrompt) {
+            // The prompt in chat was for the old spot; a new one comes when you get near the new one.
+            removeWaypoint(Minecraft.getInstance(), waypoint);
+        }
         return true;
     }
 
