@@ -3,7 +3,7 @@ package net.emutils.client.emutils.hud;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import org.jspecify.annotations.Nullable;
 
-/** The font a custom server HUD element, the scoreboard (#169) or the tab list (#170), writes its text in. */
+/** The font a custom server HUD element, the scoreboard (#169) or the tab list (#170), or the waypoint markers (#105), writes its text in. */
 public enum HudFont {
 	/** Minecraft's font, which keeps every server color and style exactly. */
 	MINECRAFT(EMUtilsTexts.OPTION_HUD_FONT_MINECRAFT),

@@ -275,7 +275,7 @@ public final class WaypointMarkerRenderer {
 	}
 
 	private static void drawLabel(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Waypoint waypoint, int distance, double centerX, double top, float alpha, int background, double guiScale) {
-		Component title = Component.literal(waypoint.label());
+		Component title = Component.literal(waypoint.label() == null ? "" : waypoint.label());
 		Component lore = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE, distance);
 		int titleWidth = textWidth(font, fontMode, title);
 		int loreWidth = textWidth(font, fontMode, lore);
