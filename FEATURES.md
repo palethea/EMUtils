@@ -274,6 +274,7 @@ Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.
 
 View and manage saved waypoints for the current world or server.
 
+- Edit Waypoint: change a waypoint's name, position, color and beacon after creating it, with the pencil button or by clicking its row.
 - Nearby Removal Prompts: remove nearby waypoints quickly while playing.
 - Coordinate Copying: copy waypoint coordinates in the configured format.
 - Waypoint Visibility: hide individual waypoints without deleting them.

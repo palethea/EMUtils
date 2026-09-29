@@ -165,6 +165,10 @@ public final class EMUtilsTexts {
     public static final String UI_WAYPOINT_NO_WORLD = "emutils.ui.waypoint.no_world";
     public static final String UI_WAYPOINT_TURNED_OFF = "emutils.ui.waypoint.turned_off";
     public static final String UI_WAYPOINT_SAVE_FAILED = "emutils.ui.waypoint.save_failed";
+    public static final String SCREEN_EDIT_WAYPOINT =
+        "emutils.screen.edit_waypoint";
+    public static final String UI_WAYPOINT_EDIT = "emutils.ui.waypoint.edit";
+    public static final String UI_WAYPOINT_SAVE = "emutils.ui.waypoint.save";
     public static final String UI_COPY_COORDINATES = "emutils.ui.waypoint.copy_coordinates";
     public static final String UI_BEACON_TURN_ON = "emutils.ui.waypoint.beacon_turn_on";
     public static final String UI_BEACON_TURN_OFF = "emutils.ui.waypoint.beacon_turn_off";

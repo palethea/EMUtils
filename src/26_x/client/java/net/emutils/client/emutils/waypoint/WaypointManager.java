@@ -137,6 +137,52 @@ public final class WaypointManager {
         return true;
     }
 
+    /**
+     * Changes a waypoint's name, position, color and beacon in place. Returns false, and keeps nothing,
+     * when the waypoint is gone or the waypoints couldn't be written.
+     */
+    public boolean update(
+        String id,
+        String label,
+        int x,
+        int y,
+        int z,
+        int color,
+        boolean beacon
+    ) {
+        Waypoint waypoint = findById(id);
+        if (waypoint == null) {
+            return false;
+        }
+
+        String oldLabel = waypoint.label();
+        int oldX = waypoint.x();
+        int oldY = waypoint.y();
+        int oldZ = waypoint.z();
+        int oldColor = waypoint.color();
+        boolean oldBeacon = waypoint.beaconEnabled();
+        boolean oldPrompt = waypoint.nearPromptShown();
+
+        boolean moved = !waypoint.sameBlock(x, y, z);
+        waypoint.setLabel(label);
+        waypoint.setPosition(x, y, z);
+        waypoint.setColor(color);
+        waypoint.setBeaconEnabled(beacon);
+        if (moved) {
+            // A death waypoint moved somewhere new can ask to be removed again once you get near it.
+            waypoint.setNearPromptShown(false);
+        }
+        if (!save()) {
+            waypoint.setLabel(oldLabel);
+            waypoint.setPosition(oldX, oldY, oldZ);
+            waypoint.setColor(oldColor);
+            waypoint.setBeaconEnabled(oldBeacon);
+            waypoint.setNearPromptShown(oldPrompt);
+            return false;
+        }
+        return true;
+    }
+
     public void tick(Minecraft client) {
         if (!enabled() || client.player == null || client.level == null) {
             return;

@@ -3112,20 +3112,41 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 10, "waypoint markers, EMUtils font and a label background");
 			}
+			// Editing a waypoint (#105): the sheet starts from its values, and saving changes it in place.
 			case 364 -> {
+				client.gui.setScreen(new WaypointsScreen(null));
+				next();
+			}
+			case 365 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					List<Waypoint> waypoints = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
+					screen.openEditSheetForSnapshot();
+					check(!waypoints.isEmpty() && waypoints.getFirst().label().equals(screen.sheetNameForSnapshot()), "the edit sheet starts from the waypoint's name (" + screen.sheetNameForSnapshot() + ")");
+					if (!waypoints.isEmpty()) {
+						Waypoint first = waypoints.getFirst();
+						String id = first.id();
+						int originalX = first.x();
+						check(EMUtilsClient.waypoint().update(id, "Renamed", originalX + 5, first.y(), first.z(), 0xFFFF55FF, true), "saving an edit succeeds");
+						Waypoint updated = EMUtilsClient.waypoint().waypointsForCurrentWorld(client).stream().filter(waypoint -> waypoint.id().equals(id)).findFirst().orElse(null);
+						check(updated != null && updated.label().equals("Renamed") && updated.x() == originalX + 5 && updated.beaconEnabled() && updated.color() == 0xFFFF55FF, "an edit changes the waypoint in place, keeping its id");
+					}
+				}
+				captureAfter(client, 20, "edit waypoint sheet");
+			}
+			case 366 -> {
 				EMUtilsClient.config().resetDeathWaypointDefaults();
 				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 365 -> {
+			case 367 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 366 -> {
+			case 368 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3134,7 +3155,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 367 -> {
+			case 369 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3145,7 +3166,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 368 -> {
+			case 370 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3156,7 +3177,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 369 -> {
+			case 371 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

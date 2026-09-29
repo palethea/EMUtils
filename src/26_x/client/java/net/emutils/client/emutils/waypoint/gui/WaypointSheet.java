@@ -16,6 +16,7 @@ import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.emutils.waypoint.Waypoint;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -29,9 +30,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * The Add Waypoint form as a sheet over the waypoints list (#103): a name, the coordinates (your
  * position to start with), one of the preset colors or any other from the color picker, and the beacon.
- * Enter adds, Esc cancels, Tab moves between the fields.
+ * Given a waypoint it edits that one instead (#105), starting from its values. Enter adds or saves, Esc
+ * cancels, Tab moves between the fields.
  */
-final class AddWaypointSheet {
+final class WaypointSheet {
 	/** The preset colors; the default custom color is picked if it's one of them. */
 	private static final int[] PRESET_COLORS = {
 		0xFFFF5555, 0xFF55FF55, 0xFF5555FF, 0xFFFFFF55, 0xFF55FFFF, 0xFFFF55FF, 0xFFFFAA55, 0xFFFFFFFF, 0xFF555555
@@ -48,11 +50,14 @@ final class AddWaypointSheet {
 	private final UiAnim anim;
 	private final Consumer<Boolean> onClose;
 	private final UiSheetFrame frame;
+	/** The id of the waypoint being edited, or null when adding a new one. */
+	private final @Nullable String editingId;
+	private final String titleKey;
 	private final UiTextField name = new UiTextField(this, 32);
 	private final UiTextField[] coords = {
-		new UiTextField(this, 9, AddWaypointSheet::coordinateChar),
-		new UiTextField(this, 9, AddWaypointSheet::coordinateChar),
-		new UiTextField(this, 9, AddWaypointSheet::coordinateChar)
+		new UiTextField(this, 9, WaypointSheet::coordinateChar),
+		new UiTextField(this, 9, WaypointSheet::coordinateChar),
+		new UiTextField(this, 9, WaypointSheet::coordinateChar)
 	};
 	private final List<UiTextField> fields = List.of(name, coords[0], coords[1], coords[2]);
 	private int color;
@@ -75,15 +80,34 @@ final class AddWaypointSheet {
 	private int cancelWidth;
 	private int locateX;
 
-	/** {@code onClose} runs as soon as the sheet starts closing, with whether a waypoint was added. */
-	AddWaypointSheet(Font font, UiAnim anim, Consumer<Boolean> onClose) {
+	/**
+	 * {@code editing} is the waypoint to change, or null to add a new one. {@code onClose} runs as soon as
+	 * the sheet starts closing, with whether a waypoint was added or saved.
+	 */
+	WaypointSheet(Font font, UiAnim anim, @Nullable Waypoint editing, Consumer<Boolean> onClose) {
 		this.font = font;
 		this.anim = anim;
 		this.onClose = onClose;
 		this.frame = new UiSheetFrame(anim, "add-waypoint:" + System.identityHashCode(this), 16);
-		this.color = 0xFF000000 | EMUtilsClient.config().waypointDefaultCustomColor();
-		useMyPosition();
+		this.editingId = editing == null ? null : editing.id();
+		this.titleKey = editing == null ? EMUtilsTexts.SCREEN_ADD_WAYPOINT : EMUtilsTexts.SCREEN_EDIT_WAYPOINT;
+		if (editing == null) {
+			this.color = 0xFF000000 | EMUtilsClient.config().waypointDefaultCustomColor();
+			useMyPosition();
+		} else {
+			this.color = 0xFF000000 | editing.color();
+			this.beacon = editing.beaconEnabled();
+			name.setText(editing.label() == null ? "" : editing.label());
+			coords[0].setText(String.valueOf(editing.x()));
+			coords[1].setText(String.valueOf(editing.y()));
+			coords[2].setText(String.valueOf(editing.z()));
+		}
 		focus(name);
+	}
+
+	/** The name field's text, for UI snapshot checks. */
+	String nameForSnapshot() {
+		return name.text();
 	}
 
 	private static boolean coordinateChar(int codepoint) {
@@ -163,7 +187,7 @@ final class AddWaypointSheet {
 		onClose.accept(added);
 	}
 
-	private void add() {
+	private void submit() {
 		if (!valid()) {
 			return;
 		}
@@ -172,11 +196,14 @@ final class AddWaypointSheet {
 		if (label.isEmpty()) {
 			label = "Waypoint";
 		}
-		if (!EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon)) {
+		boolean saved = editingId == null
+			? EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon)
+			: EMUtilsClient.waypoint().update(editingId, label, coordinate(0), coordinate(1), coordinate(2), color, beacon);
+		if (!saved) {
 			saveFailed = true;
 			return;
 		}
-		if (client.gui != null) {
+		if (editingId == null && client.gui != null) {
 			MinecraftClientCompat.chat(client).addClientSystemMessage(EmUtilsChatPrefix.chat(
 				Component.translatable(EMUtilsTexts.WAYPOINT_ADDED, label).withStyle(ChatFormatting.GREEN)
 			));
@@ -203,7 +230,7 @@ final class AddWaypointSheet {
 	void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
 		layout(screenWidth, screenHeight);
 		if (frame.firstFrame()) {
-			UiText.prepare(Component.translatable(EMUtilsTexts.SCREEN_ADD_WAYPOINT), UiText.Size.HEADING);
+			UiText.prepare(Component.translatable(titleKey), UiText.Size.HEADING);
 		}
 		if (!frame.begin(context, theme, screenWidth, screenHeight, x, y, WIDTH, height)) {
 			return;
@@ -213,7 +240,7 @@ final class AddWaypointSheet {
 		int hoverY = interactive ? mouseY : Integer.MIN_VALUE / 2;
 		int left = x + PADDING;
 		int right = x + WIDTH - PADDING;
-		UiText.draw(context, font, Component.translatable(EMUtilsTexts.SCREEN_ADD_WAYPOINT), UiText.Size.HEADING, left, y + PADDING, theme.text());
+		UiText.draw(context, font, Component.translatable(titleKey), UiText.Size.HEADING, left, y + PADDING, theme.text());
 
 		label(context, theme, Component.translatable(EMUtilsTexts.UI_WAYPOINT_NAME), left, y + nameY);
 		field(context, theme, name, left, y + nameY, right - left, Component.translatable(EMUtilsTexts.WAYPOINT_LABEL_PLACEHOLDER), false);
@@ -251,7 +278,7 @@ final class AddWaypointSheet {
 		float beaconOn = anim.transition("add-waypoint-beacon", beacon, 0.18F);
 		UiWidgets.toggle(context, theme, right - UiWidgets.SWITCH_WIDTH, y + beaconY + 6 - UiWidgets.SWITCH_HEIGHT / 2, beaconOn, 0.0F);
 
-		Component addLabel = Component.translatable(EMUtilsTexts.UI_ADD);
+		Component addLabel = Component.translatable(editingId == null ? EMUtilsTexts.UI_ADD : EMUtilsTexts.UI_WAYPOINT_SAVE);
 		addWidth = Math.max(60, UiWidgets.buttonWidth(font, addLabel) + 12);
 		addX = right - addWidth;
 		cancelWidth = UiWidgets.buttonWidth(font, CommonComponents.GUI_CANCEL) + 4;
@@ -312,7 +339,7 @@ final class AddWaypointSheet {
 			return;
 		}
 		if (contains(mouseX, mouseY, addX, y + footerY, addWidth, BUTTON_HEIGHT)) {
-			add();
+			submit();
 			return;
 		}
 		int left = x + PADDING;
@@ -383,7 +410,7 @@ final class AddWaypointSheet {
 			return;
 		}
 		if (input.isConfirmation()) {
-			add();
+			submit();
 			return;
 		}
 		if (input.key() == InputConstants.KEY_TAB) {

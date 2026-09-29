@@ -28,8 +28,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The waypoints of the current world and dimension (#103): each one with its color,
- * name, type, coordinates and distance, and buttons to copy the coordinates, hide it, toggle its
- * beacon or delete it. New waypoints are added in a sheet over the list.
+ * name, type, coordinates and distance, and buttons to edit it, copy the coordinates, hide it, toggle
+ * its beacon or delete it. Clicking a row edits it too. Waypoints are added and edited in a sheet over the list.
  */
 public final class WaypointsScreen extends UiPanelScreen {
 	private static final int PADDING = 16;
@@ -40,13 +40,14 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private static final int ROW_PADDING = 12;
 	private static final int ACTION = 20;
 	private static final int ACTION_GAP = 2;
+	private static final int ACTION_COUNT = 5;
 	private static final int FADE_HEIGHT = 12;
 
 	private final UiScrollArea scroll = new UiScrollArea();
 	private final List<RowBox> rows = new ArrayList<>();
 	/** Opened by the Add Waypoint keybind: the screen closes together with the add sheet. */
 	private final boolean addOnly;
-	private @Nullable AddWaypointSheet sheet;
+	private @Nullable WaypointSheet sheet;
 	private @Nullable UiConfirmDialog dialog;
 	private int addX;
 	private int addWidth;
@@ -99,14 +100,28 @@ public final class WaypointsScreen extends UiPanelScreen {
 	}
 
 	private void openAddSheet() {
+		openSheet(null);
+	}
+
+	/** Opens the sheet to add a waypoint, or to edit {@code editing}. */
+	private void openSheet(@Nullable Waypoint editing) {
 		if (!inWorld()) {
 			return;
 		}
-		sheet = new AddWaypointSheet(font, anim, added -> {
+		sheet = new WaypointSheet(font, anim, editing, added -> {
 			if (addOnly) {
 				onClose();
 			}
 		});
+	}
+
+	private void openEditSheet(String id) {
+		for (Waypoint waypoint : waypoints()) {
+			if (waypoint.id().equals(id)) {
+				openSheet(waypoint);
+				return;
+			}
+		}
 	}
 
 	// ---- drawing --------------------------------------------------------------------------------
@@ -225,12 +240,14 @@ public final class WaypointsScreen extends UiPanelScreen {
 
 		// Right side: the distance, then the actions.
 		Identifier[] icons = {
+			HubIcons.PENCIL,
 			HubIcons.COPY,
 			waypoint.hidden() ? HubIcons.EYE_OFF : HubIcons.EYE,
 			HubIcons.BEAM,
 			HubIcons.TRASH
 		};
 		String[] tips = {
+			EMUtilsTexts.UI_WAYPOINT_EDIT,
 			EMUtilsTexts.UI_COPY_COORDINATES,
 			waypoint.hidden() ? EMUtilsTexts.WAYPOINT_ACTION_SHOW : EMUtilsTexts.WAYPOINT_ACTION_HIDE,
 			waypoint.beaconEnabled() ? EMUtilsTexts.UI_BEACON_TURN_OFF : EMUtilsTexts.UI_BEACON_TURN_ON,
@@ -243,8 +260,8 @@ public final class WaypointsScreen extends UiPanelScreen {
 			int actionX = actionsX + i * (ACTION + ACTION_GAP);
 			boolean actionHovered = contains(mouseX, mouseY, actionX, actionY, ACTION, ACTION);
 			int color = switch (i) {
-				case 2 -> waypoint.beaconEnabled() ? theme.accent() : theme.muted();
-				case 3 -> actionHovered ? theme.warning() : theme.textSecondary();
+				case 3 -> waypoint.beaconEnabled() ? theme.accent() : theme.muted();
+				case 4 -> actionHovered ? theme.warning() : theme.textSecondary();
 				default -> theme.textSecondary();
 			};
 			UiWidgets.ghostIconButton(context, theme, actionX, actionY, ACTION, icons[i], color, actionHovered ? 1.0F : 0.0F);
@@ -271,7 +288,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		UiWidgets.badge(context, font, badgeX, badgeY, type, death ? UiTheme.fade(theme.warning(), 0.16F) : theme.segmentBackground(), death ? theme.warning() : theme.textSecondary());
 		Component coords = Component.literal("X " + waypoint.x() + "   Y " + waypoint.y() + "   Z " + waypoint.z());
 		UiText.drawCentered(context, font, coords, UiText.Size.BODY, nameX, y + ROW_HEIGHT - ROW_PADDING - 4, UiTheme.fade(theme.muted(), shown));
-		return new RowBox(waypoint.id(), actionsX, actionY);
+		return new RowBox(waypoint.id(), x, y, width, actionsX, actionY);
 	}
 
 	@Override
@@ -338,11 +355,16 @@ public final class WaypointsScreen extends UiPanelScreen {
 		}
 		if (scroll.contains(mouseX, mouseY)) {
 			for (RowBox row : rows) {
-				for (int i = 0; i < 4; i++) {
+				for (int i = 0; i < ACTION_COUNT; i++) {
 					if (contains(mouseX, mouseY, row.actionsX() + i * (ACTION + ACTION_GAP), row.actionY(), ACTION, ACTION)) {
 						runAction(row.id(), i);
 						return true;
 					}
+				}
+				// Anywhere else on the row edits it.
+				if (contains(mouseX, mouseY, row.x(), row.y(), row.width(), ROW_HEIGHT)) {
+					openEditSheet(row.id());
+					return true;
 				}
 			}
 		}
@@ -351,9 +373,10 @@ public final class WaypointsScreen extends UiPanelScreen {
 
 	private void runAction(String id, int action) {
 		switch (action) {
-			case 0 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, id);
-			case 1 -> EMUtilsClient.waypoint().toggleHidden(id);
-			case 2 -> EMUtilsClient.waypoint().toggleBeacon(id);
+			case 0 -> openEditSheet(id);
+			case 1 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, id);
+			case 2 -> EMUtilsClient.waypoint().toggleHidden(id);
+			case 3 -> EMUtilsClient.waypoint().toggleBeacon(id);
 			default -> EMUtilsClient.waypoint().clear(minecraft, id);
 		}
 	}
@@ -439,6 +462,19 @@ public final class WaypointsScreen extends UiPanelScreen {
 		openAddSheet();
 	}
 
+	/** Opens the edit sheet for the first waypoint in the list; used by UI snapshots. */
+	public void openEditSheetForSnapshot() {
+		List<Waypoint> waypoints = waypoints();
+		if (!waypoints.isEmpty()) {
+			openSheet(waypoints.getFirst());
+		}
+	}
+
+	/** The name in the open sheet, or null when none is open; used by UI snapshots. */
+	public @Nullable String sheetNameForSnapshot() {
+		return sheet == null ? null : sheet.nameForSnapshot();
+	}
+
 	/** Opens the clear-all confirmation without clearing on confirm; used by UI snapshots. */
 	public void openClearDialogForSnapshot() {
 		openClearDialog(() -> {
@@ -458,6 +494,6 @@ public final class WaypointsScreen extends UiPanelScreen {
 		);
 	}
 
-	private record RowBox(String id, int actionsX, int actionY) {
+	private record RowBox(String id, int x, int y, int width, int actionsX, int actionY) {
 	}
 }
