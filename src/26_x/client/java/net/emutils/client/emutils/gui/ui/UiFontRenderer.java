@@ -22,6 +22,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.freetype.FT_Bitmap;
 import org.lwjgl.util.freetype.FT_Face;
 import org.lwjgl.util.freetype.FT_GlyphSlot;
+import org.lwjgl.util.freetype.FT_Glyph_Metrics;
 import org.lwjgl.util.freetype.FT_MM_Var;
 import org.lwjgl.util.freetype.FT_Var_Axis;
 import org.lwjgl.util.freetype.FT_Vector;
@@ -64,6 +65,7 @@ public final class UiFontRenderer {
 	/** Counts font changes, so screens know to lay out their text again. */
 	private static int generation;
 	private static final Map<String, Float> WIDTHS = new HashMap<>();
+	private static final Map<String, float[]> INKS = new HashMap<>();
 	private static final LinkedHashMap<String, Rendered> STRINGS = new LinkedHashMap<>(64, 0.75F, true) {
 		@Override
 		protected boolean removeEldestEntry(Map.Entry<String, Rendered> eldest) {
@@ -309,6 +311,49 @@ public final class UiFontRenderer {
 		return pen;
 	}
 
+	/**
+	 * Where the ink of {@code text} lies at {@code pixelSize} pixels per em, in physical pixels from the
+	 * pen's start and the baseline: {left, right, up, down}, with {@code up} above the baseline and
+	 * {@code down} below it. The advance in {@link #measure} includes each end's side bearing, so text
+	 * centered by it sits a little off center, most for characters such as "1".
+	 */
+	public static float[] inkExtent(Weight weight, float pixelSize, String text) {
+		String key = weight.ordinal() + "|" + pixelSize + "|" + text;
+		float[] cached = INKS.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		if (INKS.size() > 4000) {
+			INKS.clear();
+		}
+		FT_Face face = FACES.get(weight);
+		setSize(face, pixelSize);
+		float left = Float.MAX_VALUE;
+		float right = -Float.MAX_VALUE;
+		float up = -Float.MAX_VALUE;
+		float down = -Float.MAX_VALUE;
+		float pen = 0.0F;
+		for (int i = 0; i < text.length(); ) {
+			int codepoint = text.codePointAt(i);
+			i += Character.charCount(codepoint);
+			if (FreeType.FT_Load_Glyph(face, FreeType.FT_Get_Char_Index(face, codepoint), LOAD_TARGET_LIGHT) == 0) {
+				FT_Glyph_Metrics metrics = face.glyph().metrics();
+				if (metrics.width() > 0) {
+					float glyphLeft = pen + metrics.horiBearingX() / 64.0F;
+					left = Math.min(left, glyphLeft);
+					right = Math.max(right, glyphLeft + metrics.width() / 64.0F);
+					up = Math.max(up, metrics.horiBearingY() / 64.0F);
+					down = Math.max(down, (metrics.height() - metrics.horiBearingY()) / 64.0F);
+				}
+				pen += face.glyph().linearHoriAdvance() / 65536.0F;
+			}
+		}
+		// Nothing to see, such as a space: fall back to the advance and the em box.
+		float[] extent = left > right ? new float[] {0.0F, pen, pixelSize * 0.5F, 0.0F} : new float[] {left, right, up, down};
+		INKS.put(key, extent);
+		return extent;
+	}
+
 	public static Rendered render(Weight weight, float pixelSize, String text) {
 		String key = weight.ordinal() + "|" + pixelSize + "|" + text;
 		Rendered cached = STRINGS.get(key);
@@ -447,6 +492,7 @@ public final class UiFontRenderer {
 		}
 		STRINGS.clear();
 		WIDTHS.clear();
+		INKS.clear();
 		releaseGlyphs();
 	}
 }

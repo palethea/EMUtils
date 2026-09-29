@@ -3073,7 +3073,7 @@ public final class UiSnapshotter {
 			// Waypoint markers (#105): one aimed at shows its name and distance, the others sit at the screen edge when out of view.
 			case 360 -> {
 				if (stepTicks == 1) {
-					setGuiScale(client, 2);
+					setGuiScale(client, 3);
 					client.gui.setScreen(null);
 					seedWaypoints(client);
 					EMUtilsClient.waypoint().captureDeath(client);
@@ -3102,7 +3102,13 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setWaypointFont(HudFont.EMUTILS);
 					EMUtilsClient.config().setWaypointLabelBackground(60);
-					faceWaypoint(client, "Home base", 0.0F);
+					// A label of digits, whose first character has a wide left side bearing.
+					for (Waypoint waypoint : EMUtilsClient.waypoint().waypointsForCurrentWorld(client)) {
+						if (waypoint.label().equals("Stronghold")) {
+							waypoint.setLabel("123");
+						}
+					}
+					faceWaypoint(client, "123", 0.0F);
 				}
 				captureAfter(client, 10, "waypoint markers, EMUtils font and a label background");
 			}

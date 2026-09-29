@@ -245,10 +245,7 @@ public final class WaypointMarkerRenderer {
 		graphics.pose().translate(size / 2.0F, size / 2.0F);
 		graphics.pose().scale(scale, scale);
 		if (fontMode == HudFont.EMUTILS) {
-			Component text = Component.literal(initial);
-			// The font's capitals sit about half a GUI pixel high and left of where they are measured to.
-			graphics.pose().translate(0.5F, 0.5F);
-			UiText.drawCentered(graphics, font, text, INITIAL_SIZE, -Math.round(UiText.width(font, text, INITIAL_SIZE) / 2.0F), 0, glyph);
+			UiText.drawInkCentered(graphics, font, Component.literal(initial), INITIAL_SIZE, 0.0F, 0.0F, glyph);
 		} else {
 			// Minecraft's capitals stand 7 pixels tall from the text's y, and each character advances one pixel past its ink.
 			graphics.pose().translate(-(font.width(initial) - 1) / 2.0F, -3.5F);
@@ -272,7 +269,7 @@ public final class WaypointMarkerRenderer {
 	private static void drawDistance(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, int distance, double centerX, double top, float alpha, double guiScale) {
 		Component text = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE_SHORT, distance);
 		graphics.pose().pushMatrix();
-		graphics.pose().translate(snap(centerX - textWidth(font, fontMode, text) / 2.0D, guiScale), snap(top, guiScale));
+		graphics.pose().translate(snap(centerX - inkCenter(font, fontMode, text), guiScale), snap(top, guiScale));
 		drawText(graphics, font, fontMode, text, 0, 0, withAlpha(0xFFFFFF, alpha));
 		graphics.pose().popMatrix();
 	}
@@ -290,8 +287,26 @@ public final class WaypointMarkerRenderer {
 		if (background > 0) {
 			UiShapes.roundedRect(graphics, 0, 0, panelWidth, panelHeight, 4, withAlpha(0x000000, alpha * background / 100.0F));
 		}
-		drawText(graphics, font, fontMode, title, (panelWidth - titleWidth) / 2, 3, withAlpha(0xFFFFFF, alpha));
-		drawText(graphics, font, fontMode, lore, (panelWidth - loreWidth) / 2, 13, withAlpha(0xBBBBBB, alpha));
+		drawLine(graphics, font, fontMode, title, panelWidth / 2.0F, 3, withAlpha(0xFFFFFF, alpha), guiScale);
+		drawLine(graphics, font, fontMode, lore, panelWidth / 2.0F, 13, withAlpha(0xBBBBBB, alpha), guiScale);
+		graphics.pose().popMatrix();
+	}
+
+	/** Where the middle of the text's ink is, in GUI pixels from the x it is drawn at. */
+	private static double inkCenter(Font font, HudFont fontMode, Component text) {
+		if (fontMode == HudFont.EMUTILS) {
+			float[] ink = UiText.inkExtent(font, text, TEXT_SIZE);
+			return (ink[0] + ink[1]) / 2.0D;
+		}
+		// Minecraft's width counts the shadow's pixel, which is part of what you see.
+		return font.width(text) / 2.0D;
+	}
+
+	/** Draws a line of text centered on {@code centerX}, at the current origin's x. */
+	private static void drawLine(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Component text, float centerX, int capTop, int color, double guiScale) {
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(snap(centerX - inkCenter(font, fontMode, text), guiScale), 0.0F);
+		drawText(graphics, font, fontMode, text, 0, capTop, color);
 		graphics.pose().popMatrix();
 	}
 
