@@ -244,6 +244,10 @@ public final class TabListRenderer {
 				default -> ChatFormatting.WHITE;
 			};
 			Component display = Component.literal(name).withStyle(color);
+			if (index % 5 == 4) {
+				// Like Hypixel, with the color codes in the text itself.
+				display = Component.literal("§6[MVP§4++§6] " + name + " §3[TAG]");
+			}
 			if (spectator) {
 				display = display.copy().withStyle(ChatFormatting.ITALIC);
 			}
@@ -284,6 +288,19 @@ public final class TabListRenderer {
 	/** The players in the order the list shows them, as names joined by commas, for UI snapshot checks. */
 	public static String orderForSnapshot(Minecraft client, EMUtilsConfig config) {
 		return shown(client, config).entries().stream().map(TabListData.Entry::profileName).collect(Collectors.joining(","));
+	}
+
+	/** Whether legacy color codes in the text cost no width in either font, so they are read and not drawn (the UI font rounds each color run up, so a pixel or two of difference is fine), for UI snapshot checks. */
+	public static boolean legacyCodesReadForSnapshot(Minecraft client) {
+		for (HudFont font : HudFont.values()) {
+			ServerText text = new ServerText(client.font, font);
+			int coded = text.prepare(Component.literal("§aHi§r there§"), false, Integer.MAX_VALUE).width();
+			int plain = text.prepare(Component.literal("Hi there"), false, Integer.MAX_VALUE).width();
+			if (Math.abs(coded - plain) > 3) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/** How far open the list was drawn last, from 0 to 1, for UI snapshot checks. */

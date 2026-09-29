@@ -2724,6 +2724,9 @@ public final class UiSnapshotter {
 					config.setTabListPing(TabListPing.NUMBER);
 					TabListRenderer.showFakePlayersForSnapshot(client, 24, 1, true);
 				}
+				if (stepTicks == 5) {
+					check(TabListRenderer.legacyCodesReadForSnapshot(client), "legacy color codes in server text are read, not drawn, in both fonts");
+				}
 				captureAfter(client, 15, "tab list, EMUtils font, light card, ping numbers, list scores");
 			}
 			case 338 -> {

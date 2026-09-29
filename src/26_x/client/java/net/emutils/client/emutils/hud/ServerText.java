@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiText;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.locale.Language;
@@ -124,15 +125,43 @@ final class ServerText {
 		return new Prepared(sequence, font.width(sequence), List.of());
 	}
 
+	/**
+	 * The text as runs of one style each. Servers such as Hypixel put legacy {@code §} color codes in the
+	 * text itself instead of in its styles, and Minecraft's font reads them while it draws, so they are read
+	 * here too, the way vanilla's {@code StringDecomposer} does: a code changes the style for the text after
+	 * it, {@code §r} goes back to the style the text came with, and the codes themselves aren't drawn.
+	 */
 	private List<Run> collect(Component text, boolean bold) {
 		List<Run> runs = new ArrayList<>();
 		text.visit((style, string) -> {
-			if (!string.isEmpty()) {
-				runs.add(new Run(string, style, bold || style.isBold()));
+			StringBuilder piece = new StringBuilder();
+			Style current = style;
+			for (int i = 0; i < string.length(); i++) {
+				char character = string.charAt(i);
+				if (character != '§') {
+					piece.append(character);
+					continue;
+				}
+				if (i + 1 >= string.length()) {
+					break;
+				}
+				ChatFormatting format = ChatFormatting.getByCode(string.charAt(++i));
+				if (format != null) {
+					addRun(runs, piece, current, bold);
+					current = format == ChatFormatting.RESET ? style : current.applyLegacyFormat(format);
+				}
 			}
+			addRun(runs, piece, current, bold);
 			return Optional.empty();
 		}, Style.EMPTY);
 		return runs;
+	}
+
+	private static void addRun(List<Run> runs, StringBuilder piece, Style style, boolean bold) {
+		if (!piece.isEmpty()) {
+			runs.add(new Run(piece.toString(), style, bold || style.isBold()));
+			piece.setLength(0);
+		}
 	}
 
 	private Prepared prepareUi(List<Run> collected, int maxWidth) {
