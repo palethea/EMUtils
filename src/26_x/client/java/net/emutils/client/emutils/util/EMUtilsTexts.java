@@ -405,6 +405,16 @@ public final class EMUtilsTexts {
         "emutils.option.waypoint_opacity";
     public static final String OPTION_WAYPOINT_SIZE =
         "emutils.option.waypoint_size";
+    public static final String UI_WAYPOINTS_SECTION_GENERAL =
+        "emutils.ui.waypoints.section.general";
+    public static final String UI_WAYPOINTS_SECTION_APPEARANCE =
+        "emutils.ui.waypoints.section.appearance";
+    public static final String UI_WAYPOINTS_SECTION_DISPLAY =
+        "emutils.ui.waypoints.section.display";
+    public static final String OPTION_WAYPOINT_FONT =
+        "emutils.option.waypoint_font";
+    public static final String OPTION_WAYPOINT_LABEL_BACKGROUND =
+        "emutils.option.waypoint_label_background";
     public static final String OPTION_WAYPOINT_EDGE_PIN =
         "emutils.option.waypoint_edge_pin";
     public static final String OPTION_WAYPOINT_MAX_DISTANCE =

@@ -234,6 +234,8 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Custom Waypoint Color: choose the default color for custom waypoints.
 - Waypoint Opacity: adjust how see-through markers and labels are.
 - Waypoint Size: adjust marker size.
+- Font: write waypoint names, distances and initials in Minecraft's font or the EMUtils font.
+- Label Background: a dark panel behind the name and distance, off (0%) by default.
 - Pin to Screen Edge: keep waypoints that are off-screen or behind you at the edge of the screen, with an arrow and their distance.
 - Max Distance: hide waypoints beyond a distance (unlimited by default); they fade out over the last fifth.
 

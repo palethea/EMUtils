@@ -8,7 +8,9 @@ import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiIcons;
+import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiShapes;
+import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -44,6 +46,8 @@ public final class WaypointMarkerRenderer {
 	private static final int FADE_NEAR_BLOCKS = 5;
 	private static final float MIN_NEAR_FADE = 0.25F;
 	private static final double LIGHT_LUMINANCE = 150.0D;
+	private static final UiText.Size TEXT_SIZE = UiText.Size.LABEL;
+	private static final UiText.Size INITIAL_SIZE = UiText.Size.BOLD;
 
 	private WaypointMarkerRenderer() {
 	}
@@ -67,6 +71,8 @@ public final class WaypointMarkerRenderer {
 		int height = graphics.guiHeight();
 		int maxDistance = config.waypointMaxDistance();
 		boolean pin = config.waypointEdgePin();
+		HudFont fontMode = config.waypointFont();
+		int background = config.waypointLabelBackground();
 
 		List<Marker> markers = new ArrayList<>();
 		for (Waypoint waypoint : manager.waypointsForCurrentWorld(client)) {
@@ -118,15 +124,15 @@ public final class WaypointMarkerRenderer {
 			int size = Math.max(MIN_MARKER_SIZE, Math.round(MARKER_SIZE * scale));
 			int centerX = (int) Math.round(marker.screenX());
 			int centerY = (int) Math.round(marker.screenY());
-			drawMarker(graphics, font, marker.waypoint(), centerX, centerY, size, alpha, scale);
+			drawMarker(graphics, font, fontMode, marker.waypoint(), centerX, centerY, size, alpha, scale);
 
 			int below = centerY + size / 2 + 3;
 			if (marker.pinned()) {
 				drawArrow(graphics, marker, centerX, centerY, size, alpha);
-				drawDistance(graphics, font, marker.distance(), centerX, below, alpha);
+				drawDistance(graphics, font, fontMode, marker.distance(), centerX, below, alpha);
 			} else if (marker.distance() <= LABEL_NEAR_BLOCKS
 				|| (Math.abs(centerX - crosshairX) <= size / 2 + AIM_RADIUS && Math.abs(centerY - crosshairY) <= size / 2 + AIM_RADIUS)) {
-				drawLabel(graphics, font, marker.waypoint(), marker.distance(), centerX, below, alpha);
+				drawLabel(graphics, font, fontMode, marker.waypoint(), marker.distance(), centerX, below, alpha, background);
 			}
 		}
 	}
@@ -173,7 +179,7 @@ public final class WaypointMarkerRenderer {
 		return fade;
 	}
 
-	private static void drawMarker(GuiGraphicsExtractor graphics, Font font, Waypoint waypoint, int centerX, int centerY, int size, float alpha, float scale) {
+	private static void drawMarker(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Waypoint waypoint, int centerX, int centerY, int size, float alpha, float scale) {
 		int color = waypoint.color();
 		int x = centerX - size / 2;
 		int y = centerY - size / 2;
@@ -194,7 +200,16 @@ public final class WaypointMarkerRenderer {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(centerX, centerY);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, initial, -font.width(initial) / 2, -font.lineHeight / 2 + 1, glyph, false);
+		if (fontMode == HudFont.EMUTILS) {
+			Component text = Component.literal(initial);
+			// The font's capitals sit about half a GUI pixel high and left of where they are measured to.
+			graphics.pose().translate(0.5F, 0.5F);
+			UiText.drawCentered(graphics, font, text, INITIAL_SIZE, -Math.round(UiText.width(font, text, INITIAL_SIZE) / 2.0F), 0, glyph);
+		} else {
+			// Minecraft's capitals stand 7 pixels tall from the text's y, and each character advances one pixel past its ink.
+			graphics.pose().translate(-(font.width(initial) - 1) / 2.0F, -3.5F);
+			graphics.text(font, initial, 0, 0, glyph, false);
+		}
 		graphics.pose().popMatrix();
 	}
 
@@ -207,21 +222,38 @@ public final class WaypointMarkerRenderer {
 		graphics.pose().popMatrix();
 	}
 
-	private static void drawDistance(GuiGraphicsExtractor graphics, Font font, int distance, int centerX, int top, float alpha) {
+	private static void drawDistance(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, int distance, int centerX, int top, float alpha) {
 		Component text = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE_SHORT, distance);
-		graphics.text(font, text, centerX - font.width(text) / 2, top, withAlpha(0xFFFFFF, alpha), true);
+		drawText(graphics, font, fontMode, text, centerX - textWidth(font, fontMode, text) / 2, top, withAlpha(0xFFFFFF, alpha));
 	}
 
-	private static void drawLabel(GuiGraphicsExtractor graphics, Font font, Waypoint waypoint, int distance, int centerX, int top, float alpha) {
+	private static void drawLabel(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Waypoint waypoint, int distance, int centerX, int top, float alpha, int background) {
 		Component title = Component.literal(waypoint.label());
 		Component lore = Component.translatable(EMUtilsTexts.WAYPOINT_DISTANCE, distance);
-		int titleWidth = font.width(title);
-		int loreWidth = font.width(lore);
+		int titleWidth = textWidth(font, fontMode, title);
+		int loreWidth = textWidth(font, fontMode, lore);
 		int panelWidth = Math.max(titleWidth, loreWidth) + 10;
 		int panelHeight = 24;
-		UiShapes.roundedRect(graphics, centerX - panelWidth / 2, top, panelWidth, panelHeight, 4, withAlpha(0x000000, alpha * 0.6F));
-		graphics.text(font, title, centerX - titleWidth / 2, top + 3, withAlpha(0xFFFFFF, alpha), true);
-		graphics.text(font, lore, centerX - loreWidth / 2, top + 13, withAlpha(0xBBBBBB, alpha), true);
+		if (background > 0) {
+			UiShapes.roundedRect(graphics, centerX - panelWidth / 2, top, panelWidth, panelHeight, 4, withAlpha(0x000000, alpha * background / 100.0F));
+		}
+		drawText(graphics, font, fontMode, title, centerX - titleWidth / 2, top + 3, withAlpha(0xFFFFFF, alpha));
+		drawText(graphics, font, fontMode, lore, centerX - loreWidth / 2, top + 13, withAlpha(0xBBBBBB, alpha));
+	}
+
+	private static int textWidth(Font font, HudFont fontMode, Component text) {
+		return fontMode == HudFont.EMUTILS ? UiText.width(font, text, TEXT_SIZE) : font.width(text);
+	}
+
+	/** Draws shadowed text with the top of its capital letters at {@code capTop}, in either font. */
+	private static void drawText(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Component text, int x, int capTop, int color) {
+		if (fontMode == HudFont.EMUTILS) {
+			int shadow = Math.round((color >>> 24) * 0.7F) << 24;
+			UiText.draw(graphics, font, text, TEXT_SIZE, x + 1, capTop + 1, shadow);
+			UiText.draw(graphics, font, text, TEXT_SIZE, x, capTop, color);
+		} else {
+			graphics.text(font, text, x, capTop, color, true);
+		}
 	}
 
 	private static String initial(String label) {

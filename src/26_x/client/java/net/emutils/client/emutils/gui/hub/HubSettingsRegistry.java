@@ -225,6 +225,7 @@ public final class HubSettingsRegistry {
 		EMUtilsConfig config = config();
 		List<HubSettingRow> rows = new ArrayList<>();
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINTS, config::waypointEnabled, config::setWaypointEnabled));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_WAYPOINTS_SECTION_GENERAL));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_AUTO_COPY, config::waypointAutoCopyCoords, config::setWaypointAutoCopyCoords));
 		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_WAYPOINT_COORD_FORMAT,
@@ -234,7 +235,7 @@ public final class HubSettingsRegistry {
 			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_COORDINATES_FEEDBACK, config::copyCoordinatesFeedback, config::setCopyCoordinatesFeedback));
-		rows.add(divider());
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_WAYPOINTS_SECTION_APPEARANCE));
 		rows.add(new HubSettingRow.Rgb(
 			EMUtilsTexts.OPTION_WAYPOINT_DEFAULT_DEATH_COLOR,
 			config::waypointDefaultDeathColor,
@@ -245,7 +246,6 @@ public final class HubSettingsRegistry {
 			config::waypointDefaultCustomColor,
 			config::setWaypointDefaultCustomColor
 		));
-		rows.add(divider());
 		rows.add(new HubSettingRow.Slider(
 			EMUtilsTexts.OPTION_WAYPOINT_OPACITY,
 			EMUtilsTexts.SUFFIX_PERCENT,
@@ -262,6 +262,16 @@ public final class HubSettingsRegistry {
 			config::waypointSize,
 			config::setWaypointSize
 		));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_WAYPOINT_FONT, config::waypointFont, config::setWaypointFont, HudFont.class, font -> Component.translatable(font.labelKey())));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_WAYPOINT_LABEL_BACKGROUND,
+			EMUtilsTexts.SUFFIX_PERCENT,
+			0,
+			100,
+			config::waypointLabelBackground,
+			config::setWaypointLabelBackground
+		));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_WAYPOINTS_SECTION_DISPLAY));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_EDGE_PIN, config::waypointEdgePin, config::setWaypointEdgePin));
 		rows.add(new HubSettingRow.Cycle<>(
 			EMUtilsTexts.OPTION_WAYPOINT_MAX_DISTANCE,

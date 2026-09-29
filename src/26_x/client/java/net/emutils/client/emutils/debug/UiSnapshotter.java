@@ -3095,19 +3095,29 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 10, "waypoint markers, pinned to the screen edge");
 			}
+			// The EMUtils font, with a dark panel behind the label (both off by default).
 			case 363 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setWaypointFont(HudFont.EMUTILS);
+					EMUtilsClient.config().setWaypointLabelBackground(60);
+					faceWaypoint(client, "Home base", 0.0F);
+				}
+				captureAfter(client, 10, "waypoint markers, EMUtils font and a label background");
+			}
+			case 364 -> {
+				EMUtilsClient.config().resetDeathWaypointDefaults();
 				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 364 -> {
+			case 365 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 365 -> {
+			case 366 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3116,7 +3126,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 366 -> {
+			case 367 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3127,7 +3137,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 367 -> {
+			case 368 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3138,7 +3148,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 368 -> {
+			case 369 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();

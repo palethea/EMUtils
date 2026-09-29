@@ -278,6 +278,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer waypointDefaultCustomColor = 0xFF55FF55;
 	private Boolean waypointEdgePin = Boolean.TRUE;
 	private Integer waypointMaxDistance = 0;
+	private String waypointFont = HudFont.MINECRAFT.name();
+	private Integer waypointLabelBackground = 0;
 	private Integer hudBackgroundOpacity = 100;
 	private Integer hudScale = 100;
 	private Boolean zoomEnabled = Boolean.TRUE;
@@ -2831,6 +2833,25 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public HudFont waypointFont() {
+		return HudFont.fromName(waypointFont);
+	}
+
+	public void setWaypointFont(HudFont font) {
+		waypointFont = (font == null ? HudFont.MINECRAFT : font).name();
+		save();
+	}
+
+	/** How dark the panel behind a waypoint's name and distance is, in percent; 0 for none. */
+	public int waypointLabelBackground() {
+		return Math.clamp(waypointLabelBackground == null ? 0 : waypointLabelBackground, 0, 100);
+	}
+
+	public void setWaypointLabelBackground(int percent) {
+		waypointLabelBackground = Math.clamp(percent, 0, 100);
+		save();
+	}
+
 	public int waypointDefaultDeathColor() {
 		return waypointDefaultDeathColor == null ? 0xFFFF5555 : waypointDefaultDeathColor;
 	}
@@ -2910,6 +2931,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointDefaultCustomColor = 0xFF55FF55;
 		waypointEdgePin = Boolean.TRUE;
 		waypointMaxDistance = 0;
+		waypointFont = HudFont.MINECRAFT.name();
+		waypointLabelBackground = 0;
 		save();
 	}
 
