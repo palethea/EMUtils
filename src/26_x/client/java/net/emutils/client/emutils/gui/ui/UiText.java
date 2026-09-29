@@ -189,6 +189,34 @@ public final class UiText {
 	}
 
 	/**
+	 * Where the ink of {@code text} lies, as {left, right} in GUI pixels from the x it is drawn at. Text
+	 * centered by its {@link #width} sits a little off center, since the width includes the space beside
+	 * the first and last character; center by this instead where that shows, as in a marker's letter.
+	 */
+	public static float[] inkExtent(Font font, Component text, Size size) {
+		if (freeType(size)) {
+			float scale = guiScale() * UiRasterScale.get();
+			float[] ink = UiFontRenderer.inkExtent(size.weight, em(size) * scale, text.getString());
+			return new float[] {ink[0] / scale, ink[1] / scale};
+		}
+		return new float[] {0.0F, width(font, text, size)};
+	}
+
+	/** Draws text with its ink, both sideways and up and down, centered on ({@code centerX}, {@code centerY}). */
+	public static void drawInkCentered(GuiGraphicsExtractor context, Font font, Component text, Size size, float centerX, float centerY, int color) {
+		if (!freeType(size)) {
+			drawCentered(context, font, text, size, Math.round(centerX - width(font, text, size) / 2.0F), Math.round(centerY), color);
+			return;
+		}
+		float scale = guiScale() * UiRasterScale.get();
+		float[] ink = UiFontRenderer.inkExtent(size.weight, em(size) * scale, text.getString());
+		// The baseline sits at the middle of the ink plus half its height.
+		float baseline = centerY * scale + (ink[2] - ink[3]) / 2.0F;
+		int capPixels = Math.round(em(size) * size.weight.capHeight() * scale);
+		drawFreeType(context, text, size, centerX - (ink[0] + ink[1]) / 2.0F / scale, (baseline - capPixels) / scale, color);
+	}
+
+	/**
 	 * Draws with the top of the capitals at {@code top}, placed to the nearest screen pixel instead of
 	 * the nearest GUI pixel, for text that has to line up exactly, such as code in columns.
 	 */

@@ -405,6 +405,22 @@ public final class EMUtilsTexts {
         "emutils.option.waypoint_opacity";
     public static final String OPTION_WAYPOINT_SIZE =
         "emutils.option.waypoint_size";
+    public static final String UI_WAYPOINTS_SECTION_GENERAL =
+        "emutils.ui.waypoints.section.general";
+    public static final String UI_WAYPOINTS_SECTION_APPEARANCE =
+        "emutils.ui.waypoints.section.appearance";
+    public static final String UI_WAYPOINTS_SECTION_DISPLAY =
+        "emutils.ui.waypoints.section.display";
+    public static final String OPTION_WAYPOINT_FONT =
+        "emutils.option.waypoint_font";
+    public static final String OPTION_WAYPOINT_LABEL_BACKGROUND =
+        "emutils.option.waypoint_label_background";
+    public static final String OPTION_WAYPOINT_EDGE_PIN =
+        "emutils.option.waypoint_edge_pin";
+    public static final String OPTION_WAYPOINT_MAX_DISTANCE =
+        "emutils.option.waypoint_max_distance";
+    public static final String OPTION_WAYPOINT_MAX_DISTANCE_UNLIMITED =
+        "emutils.option.waypoint_max_distance.unlimited";
     public static final String OPTION_CLEAR_WAYPOINTS =
         "emutils.option.clear_waypoints";
     public static final String OPTION_HUD_OVERLAY =
@@ -976,6 +992,8 @@ public final class EMUtilsTexts {
     public static final String WAYPOINT_DEFAULT_DEATH_LABEL =
         "emutils.waypoint.default_death_label";
     public static final String WAYPOINT_DISTANCE = "emutils.waypoint.distance";
+    public static final String WAYPOINT_DISTANCE_SHORT =
+        "emutils.waypoint.distance_short";
     public static final String WAYPOINT_PROMPT = "emutils.waypoint.prompt";
     public static final String WAYPOINT_ACTION_REMOVE =
         "emutils.waypoint.action.remove";
