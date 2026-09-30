@@ -262,6 +262,8 @@
   "emutils.option.zoom": "Zoom",
   "emutils.option.zoom_amount": "Zoom Amount",
   "emutils.option.zoom_amount.desc": "How far the zoom goes.",
+  "emutils.option.zoom_scale_sensitivity": "Scale Sensitivity",
+  "emutils.option.zoom_scale_sensitivity.desc": "Turn the mouse down the more you zoom in, so the view moves at the same speed as when zoomed out.",
   "emutils.option.zoom_cinematic_camera": "Cinematic Camera",
   "emutils.option.zoom_cinematic_camera.desc": "Smooth out mouse movement while zoomed.",
   "emutils.option.zoom_hide_hand": "Hide Hand",

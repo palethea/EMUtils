@@ -94,6 +94,7 @@ import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
+import net.emutils.client.emutils.zoom.ZoomManager;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.CameraType;
@@ -222,7 +223,14 @@ public final class UiSnapshotter {
 			case 8 -> setup(client, 4, true);
 			case 9 -> capture(client, "gui scale 4, dark");
 			case 10 -> sheet(client, "zoom", 2);
-			case 11 -> capture(client, "gui scale 2, zoom sheet");
+			case 11 -> {
+				// Zoom turns the mouse down by the zoom level, and leaves it alone when you aren't zooming (#194).
+				if (stepTicks == 1) {
+					check(ZoomManager.sensitivityScaleFor(4.0F) == 0.25D && ZoomManager.sensitivityScaleFor(1.0F) == 1.0D && ZoomManager.sensitivityScaleFor(0.5F) == 1.0D, "the zoom's mouse scale is 1 over the zoom level, never above 1");
+					check(EMUtilsClient.zoom() != null && EMUtilsClient.zoom().sensitivityScale() == 1.0D, "the mouse isn't scaled while not zooming");
+				}
+				capture(client, "gui scale 2, zoom sheet");
+			}
 			case 12 -> sheet(client, "auto_tool", 2);
 			case 13 -> capture(client, "gui scale 2, auto tool sheet");
 			case 14 -> sheet(client, "chat", 2);

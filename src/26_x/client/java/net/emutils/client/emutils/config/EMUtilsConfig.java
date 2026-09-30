@@ -287,6 +287,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean zoomHideHand = Boolean.FALSE;
 	private Boolean zoomSmoothTransition = Boolean.TRUE;
 	private Boolean zoomHideHud = Boolean.FALSE;
+	private Boolean zoomScaleSensitivity = Boolean.TRUE;
 	private Boolean tweakFullbright = Boolean.FALSE;
 	private Integer tweakFullbrightStrength = 100;
 	private Boolean tweakNoFog = Boolean.FALSE;
@@ -1340,6 +1341,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setZoomSmoothTransition(boolean enabled) {
 		zoomSmoothTransition = enabled;
+		save();
+	}
+
+	/** Whether the mouse turns the view more slowly the more you zoom in, so it moves at the same speed on screen. */
+	public boolean zoomScaleSensitivity() {
+		return zoomScaleSensitivity == null || zoomScaleSensitivity;
+	}
+
+	public void setZoomScaleSensitivity(boolean enabled) {
+		zoomScaleSensitivity = enabled;
 		save();
 	}
 
@@ -3511,6 +3522,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		zoomHideHand = Boolean.FALSE;
 		zoomSmoothTransition = Boolean.TRUE;
 		zoomHideHud = Boolean.FALSE;
+		zoomScaleSensitivity = Boolean.TRUE;
 		save();
 	}
 

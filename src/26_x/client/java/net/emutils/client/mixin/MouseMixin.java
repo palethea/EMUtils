@@ -18,6 +18,10 @@ public abstract class MouseMixin {
 		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V")
 	)
 	private void emutils$turnFreeCameraOrFreelook(LocalPlayer player, double yawDelta, double pitchDelta) {
+		// Zoom scales the turn down, so the view moves at the same speed on screen as it does unzoomed.
+		double scale = EMUtilsClient.zoom() == null ? 1.0D : EMUtilsClient.zoom().sensitivityScale();
+		yawDelta *= scale;
+		pitchDelta *= scale;
 		if (EMUtilsClient.tweaks() == null
 			|| !EMUtilsClient.tweaks().freeCamera().handleMouseTurn(yawDelta, pitchDelta)
 			&& !EMUtilsClient.tweaks().freelook().handleMouseTurn(yawDelta, pitchDelta)) {

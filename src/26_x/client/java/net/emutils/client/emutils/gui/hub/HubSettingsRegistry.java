@@ -636,6 +636,7 @@ public final class HubSettingsRegistry {
 			config::setZoomOutSpeedMultiplier
 		));
 		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ZOOM_SCALE_SENSITIVITY, config::zoomScaleSensitivity, config::setZoomScaleSensitivity));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ZOOM_CINEMATIC_CAMERA, config::zoomCinematicCamera, config::setZoomCinematicCamera));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ZOOM_HIDE_HAND, config::zoomHideHand, config::setZoomHideHand));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ZOOM_HIDE_HUD, config::zoomHideHud, config::setZoomHideHud));

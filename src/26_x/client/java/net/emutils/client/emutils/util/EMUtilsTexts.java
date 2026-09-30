@@ -496,6 +496,8 @@ public final class EMUtilsTexts {
     public static final String OPTION_ZOOM = "emutils.option.zoom";
     public static final String OPTION_ZOOM_AMOUNT =
         "emutils.option.zoom_amount";
+    public static final String OPTION_ZOOM_SCALE_SENSITIVITY =
+        "emutils.option.zoom_scale_sensitivity";
     public static final String OPTION_ZOOM_CINEMATIC_CAMERA =
         "emutils.option.zoom_cinematic_camera";
     public static final String OPTION_ZOOM_HIDE_HAND =
