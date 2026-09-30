@@ -69,6 +69,22 @@ public final class ZoomManager {
 		return currentDivisor;
 	}
 
+	/**
+	 * What the mouse's turn is multiplied by: 1 unzoomed, and less the more you zoom in, so the view moves
+	 * at the same speed on screen. It follows the animated zoom, easing back to 1 as the zoom fades out.
+	 */
+	public double sensitivityScale() {
+		if (EMUtilsClient.config() == null || !EMUtilsClient.config().zoomScaleSensitivity() || !isZoomEffectActive()) {
+			return 1.0D;
+		}
+		return sensitivityScaleFor(zoomDivisor());
+	}
+
+	/** The mouse scale for a zoom level, for {@link #sensitivityScale} and UI snapshot checks. */
+	public static double sensitivityScaleFor(float divisor) {
+		return 1.0D / Math.max(1.0F, divisor);
+	}
+
 	public boolean shouldUseCinematicCamera() {
 		if (EMUtilsClient.config() == null || !EMUtilsClient.config().zoomCinematicCamera()) {
 			return false;

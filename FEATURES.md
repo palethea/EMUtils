@@ -62,6 +62,7 @@ Hold a configurable keybind for OptiFine-style zoom.
 - Smooth Transition: fade smoothly into zoom.
 - Transition Speed: adjust how quickly zoom fades in.
 - Zoom Out Speed: adjust how quickly zoom fades out.
+- Scale Sensitivity: turn the mouse down the more you zoom in, so the view moves at the same speed on screen as when zoomed out. On by default.
 - Cinematic Camera: enable cinematic camera smoothing while zoomed.
 - Hide Hand: hide the held item while zoomed.
 - Hide HUD: use an F1-style hidden HUD while zoomed.
