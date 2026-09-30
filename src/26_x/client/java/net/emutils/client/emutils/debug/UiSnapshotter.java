@@ -91,6 +91,7 @@ import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
@@ -3112,20 +3113,42 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 10, "waypoint markers, EMUtils font and a label background");
 			}
+			// Editing a waypoint (#105): the sheet starts from its values, and saving changes it in place.
 			case 364 -> {
+				checkWaypointFixes(client);
+				client.gui.setScreen(new WaypointsScreen(null));
+				next();
+			}
+			case 365 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					List<Waypoint> waypoints = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
+					screen.openEditSheetForSnapshot();
+					check(!waypoints.isEmpty() && waypoints.getFirst().label().equals(screen.sheetNameForSnapshot()), "the edit sheet starts from the waypoint's name (" + screen.sheetNameForSnapshot() + ")");
+					if (!waypoints.isEmpty()) {
+						Waypoint first = waypoints.getFirst();
+						String id = first.id();
+						int originalX = first.x();
+						check(EMUtilsClient.waypoint().update(id, "Renamed", originalX + 5, first.y(), first.z(), 0xFFFF55FF, true), "saving an edit succeeds");
+						Waypoint updated = EMUtilsClient.waypoint().waypointsForCurrentWorld(client).stream().filter(waypoint -> waypoint.id().equals(id)).findFirst().orElse(null);
+						check(updated != null && updated.label().equals("Renamed") && updated.x() == originalX + 5 && updated.beaconEnabled() && updated.color() == 0xFFFF55FF, "an edit changes the waypoint in place, keeping its id");
+					}
+				}
+				captureAfter(client, 20, "edit waypoint sheet");
+			}
+			case 366 -> {
 				EMUtilsClient.config().resetDeathWaypointDefaults();
 				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 365 -> {
+			case 367 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 366 -> {
+			case 368 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3134,7 +3157,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 367 -> {
+			case 369 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3145,7 +3168,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 368 -> {
+			case 370 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3156,7 +3179,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 369 -> {
+			case 371 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -3389,6 +3412,45 @@ public final class UiSnapshotter {
 
 		profiles.onJoin(client);
 		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");
+	}
+
+	/**
+	 * Checks for the waypoint fixes of #191: a marker pins in screen space on a wide screen, a change that
+	 * can't be written is not kept (hide, beacon and delete), and a prompt nobody answered is not remembered as answered.
+	 */
+	private static void checkWaypointFixes(Minecraft client) {
+		double[] edge = WaypointMarkerRenderer.pinToEdgeForSnapshot(0.8D, 0.892D, 1000, 500);
+		check(Math.abs(edge[0] - 898.2D) < 1.0D && Math.abs(edge[1] - 28.0D) < 0.5D, "a marker past the top edge of a wide screen pins to (898, 28), not to the side (" + edge[0] + ", " + edge[1] + ")");
+		double[] diagonal = WaypointMarkerRenderer.pinToEdgeForSnapshot(0.5D, 0.5D, 1000, 500);
+		check(Math.abs(diagonal[2] / -diagonal[3] - 2.0D) < 0.01D, "the arrow points along the screen-space direction on a wide screen (" + diagonal[2] + ", " + diagonal[3] + ")");
+
+		List<Waypoint> before = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
+		check(before.stream().noneMatch(Waypoint::nearPromptShown), "a nearby-removal prompt nobody answered isn't saved as answered");
+		if (before.isEmpty()) {
+			return;
+		}
+		// A directory where the temporary file goes makes every write fail.
+		Path blocker = EMUtilsPaths.waypointFile().resolveSibling(EMUtilsPaths.waypointFile().getFileName() + ".tmp");
+		try {
+			Files.createDirectories(blocker);
+			Waypoint first = before.getFirst();
+			boolean hidden = first.hidden();
+			boolean beacon = first.beaconEnabled();
+			EMUtilsClient.waypoint().toggleHidden(first.id());
+			EMUtilsClient.waypoint().toggleBeacon(first.id());
+			check(first.hidden() == hidden && first.beaconEnabled() == beacon, "hiding and the beacon toggle change nothing when the waypoints can't be saved");
+			EMUtilsClient.waypoint().clear(client, first.id());
+			check(EMUtilsClient.waypoint().waypointsForCurrentWorld(client).size() == before.size(), "a delete that can't be saved keeps the waypoint");
+			// Clear all can't be checked this way: with nothing left it deletes the file instead of writing one.
+		} catch (IOException exception) {
+			check(false, "could not block the waypoints file: " + exception);
+		} finally {
+			try {
+				Files.deleteIfExists(blocker);
+			} catch (IOException exception) {
+				EMUtilsClient.LOGGER.warn("Could not remove the blocking directory {}", blocker, exception);
+			}
+		}
 	}
 
 	/** Turns the player toward the waypoint called {@code label}, plus {@code extraYaw} degrees. */
