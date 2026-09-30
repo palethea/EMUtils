@@ -1015,6 +1015,8 @@ public final class EMUtilsTexts {
         "emutils.waypoint.hover.keep";
     public static final String WAYPOINT_CLEARED = "emutils.waypoint.cleared";
     public static final String WAYPOINT_KEPT = "emutils.waypoint.kept";
+    public static final String WAYPOINT_SAVE_FAILED =
+        "emutils.waypoint.save_failed";
     public static final String WAYPOINT_CLEARED_WORLD =
         "emutils.waypoint.cleared_world";
     public static final String WAYPOINT_NONE_WORLD =

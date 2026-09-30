@@ -947,6 +947,7 @@
   "emutils.waypoint.default_death_label": "Death",
   "emutils.waypoint.distance": "%s blocks away",
   "emutils.waypoint.distance_short": "%sm",
+  "emutils.waypoint.save_failed": "Couldn't save the waypoints, so nothing was changed. See the log.",
   "emutils.waypoint.prompt": "You are near a waypoint. ",
   "emutils.waypoint.action.remove": "Remove",
   "emutils.waypoint.action.keep": "Keep",

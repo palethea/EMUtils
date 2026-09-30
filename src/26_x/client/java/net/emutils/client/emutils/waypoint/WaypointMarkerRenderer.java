@@ -182,11 +182,15 @@ public final class WaypointMarkerRenderer {
 		return (float) (Math.round(value * guiScale) / guiScale);
 	}
 
-	/** Where a ray from the screen center toward {@code (directionX, directionY)}, in clip space, meets the pin margin: {x, y, unit direction x, unit direction y} in screen space. */
+	/**
+	 * Where a ray from the screen center toward {@code (directionX, directionY)}, in clip space, meets the
+	 * pin margin: {x, y, unit direction x, unit direction y} in screen space. Clip space runs -1 to 1 across
+	 * both sides whatever their length, so the direction is scaled to pixels before it is used as one.
+	 */
 	private static double[] pinToEdge(double directionX, double directionY, int width, int height) {
-		double dx = directionX;
+		double dx = directionX * width / 2.0D;
 		// Screen y grows downward, clip space y upward.
-		double dy = -directionY;
+		double dy = -directionY * height / 2.0D;
 		if (!Double.isFinite(dx) || !Double.isFinite(dy) || dx * dx + dy * dy < 1.0E-9D) {
 			// Straight behind: no side to prefer, so point down.
 			dx = 0.0D;
@@ -201,6 +205,11 @@ public final class WaypointMarkerRenderer {
 		double reachY = Math.abs(dy) < 1.0E-6D ? Double.MAX_VALUE : halfHeight / Math.abs(dy);
 		double reach = Math.min(reachX, reachY);
 		return new double[] {width / 2.0D + dx * reach, height / 2.0D + dy * reach, dx, dy};
+	}
+
+	/** {@link #pinToEdge}, for UI snapshot checks. */
+	public static double[] pinToEdgeForSnapshot(double directionX, double directionY, int width, int height) {
+		return pinToEdge(directionX, directionY, width, height);
 	}
 
 	/** 1 up to {@code NEAR_SCALE_BLOCKS} away, shrinking to {@code FAR_SCALE} at {@code FAR_SCALE_BLOCKS}. */

@@ -35,6 +35,10 @@ public final class WaypointMessage {
 		return Component.translatable(EMUtilsTexts.WAYPOINT_KEPT).withStyle(ChatFormatting.GREEN);
 	}
 
+	public static Component saveFailed() {
+		return Component.translatable(EMUtilsTexts.WAYPOINT_SAVE_FAILED).withStyle(ChatFormatting.RED);
+	}
+
 	public static Component clearedForWorld() {
 		return Component.translatable(EMUtilsTexts.WAYPOINT_CLEARED_WORLD).withStyle(ChatFormatting.GREEN);
 	}

@@ -40,6 +40,13 @@ public final class WaypointManager {
 
     private final List<Waypoint> waypoints = new ArrayList<>();
     private long lastCaptureTimestamp;
+    /**
+     * Waypoints whose nearby-removal prompt was shown in this session. The prompt lives in chat, which
+     * a restart clears, so an unanswered one is asked again next time; only an explicit Keep is saved.
+     */
+    private final Set<String> promptedThisSession = new HashSet<>();
+    /** The old death waypoint file is deleted once the waypoints have been written without it. */
+    private boolean legacyDeathFilePending;
 
     public WaypointManager() {
         load();
@@ -162,6 +169,7 @@ public final class WaypointManager {
         int oldColor = waypoint.color();
         boolean oldBeacon = waypoint.beaconEnabled();
         boolean oldPrompt = waypoint.nearPromptShown();
+        boolean wasPrompted = promptedThisSession.contains(id);
 
         boolean moved = !waypoint.sameBlock(x, y, z);
         waypoint.setLabel(label);
@@ -180,9 +188,12 @@ public final class WaypointManager {
             waypoint.setNearPromptShown(oldPrompt);
             return false;
         }
-        if (moved && oldPrompt) {
-            // The prompt in chat was for the old spot; a new one comes when you get near the new one.
-            removeWaypoint(Minecraft.getInstance(), waypoint);
+        if (moved) {
+            promptedThisSession.remove(id);
+            if (wasPrompted) {
+                // The prompt in chat was for the old spot; a new one comes when you get near the new one.
+                removeWaypoint(Minecraft.getInstance(), waypoint);
+            }
         }
         return true;
     }
@@ -210,8 +221,7 @@ public final class WaypointManager {
                 net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
                 nearest.id()
             );
-            nearest.setNearPromptShown(true);
-            save();
+            promptedThisSession.add(nearest.id());
         } catch (Throwable exception) {
             EMUtilsClient.LOGGER.error(
                 "Failed to show waypoint prompt.",
@@ -226,6 +236,9 @@ public final class WaypointManager {
             return;
         }
 
+        // Keep is the player's answer, so it is remembered and the waypoint isn't asked about again.
+        waypoint.setNearPromptShown(true);
+        save();
         WaypointChat.removeNearPrompt(net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client), id);
         net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
             .addClientSystemMessage(EmUtilsChatPrefix.chat(WaypointMessage.kept()));
@@ -312,19 +325,43 @@ public final class WaypointManager {
         clear(client, WaypointMessage::clearedForWorld);
     }
 
-    public void toggleBeacon(String id) {
+    /** Turns the beacon on or off; returns false, with nothing changed, if the waypoints couldn't be written. */
+    public boolean toggleBeacon(String id) {
         Waypoint waypoint = findById(id);
-        if (waypoint != null) {
-            waypoint.setBeaconEnabled(!waypoint.beaconEnabled());
-            save();
+        if (waypoint == null) {
+            return false;
         }
+        boolean before = waypoint.beaconEnabled();
+        waypoint.setBeaconEnabled(!before);
+        if (!save()) {
+            waypoint.setBeaconEnabled(before);
+            reportSaveFailed(Minecraft.getInstance());
+            return false;
+        }
+        return true;
     }
 
-    public void toggleHidden(String id) {
+    /** Hides or shows the waypoint; returns false, with nothing changed, if the waypoints couldn't be written. */
+    public boolean toggleHidden(String id) {
         Waypoint waypoint = findById(id);
-        if (waypoint != null) {
-            waypoint.setHidden(!waypoint.hidden());
-            save();
+        if (waypoint == null) {
+            return false;
+        }
+        boolean before = waypoint.hidden();
+        waypoint.setHidden(!before);
+        if (!save()) {
+            waypoint.setHidden(before);
+            reportSaveFailed(Minecraft.getInstance());
+            return false;
+        }
+        return true;
+    }
+
+    /** Tells the player a change wasn't kept because the waypoints file couldn't be written. */
+    private void reportSaveFailed(@Nullable Minecraft client) {
+        if (client != null && client.gui != null) {
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
+                .addClientSystemMessage(EmUtilsChatPrefix.chat(WaypointMessage.saveFailed()));
         }
     }
 
@@ -395,7 +432,7 @@ public final class WaypointManager {
         double nearestDistance = Double.MAX_VALUE;
 
         for (Waypoint waypoint : waypointsForCurrentWorld(client)) {
-            if (waypoint.hidden() || !waypoint.isDeath() || waypoint.nearPromptShown()) {
+            if (waypoint.hidden() || !waypoint.isDeath() || waypoint.nearPromptShown() || promptedThisSession.contains(waypoint.id())) {
                 continue;
             }
 
@@ -458,12 +495,19 @@ public final class WaypointManager {
             return;
         }
 
+        List<Waypoint> before = new ArrayList<>(waypoints);
         waypoints.removeIf(wp -> matchesWorld(wp, worldKey, dimension));
+        if (!save()) {
+            // Not written, so they would all be back after a restart; keep them and say so.
+            waypoints.clear();
+            waypoints.addAll(before);
+            reportSaveFailed(client);
+            return;
+        }
         for (Waypoint waypoint : removed) {
+            promptedThisSession.remove(waypoint.id());
             removeWaypoint(client, waypoint);
         }
-
-        save();
 
         if (client.gui != null) {
             net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
@@ -476,12 +520,19 @@ public final class WaypointManager {
         Supplier<Component> confirmationMessage,
         Waypoint waypoint
     ) {
-        if (!waypoints.remove(waypoint)) {
+        int index = waypoints.indexOf(waypoint);
+        if (index < 0) {
             return;
         }
 
+        waypoints.remove(index);
+        if (!save()) {
+            waypoints.add(index, waypoint);
+            reportSaveFailed(client);
+            return;
+        }
+        promptedThisSession.remove(waypoint.id());
         removeWaypoint(client, waypoint);
-        save();
 
         if (client != null && client.gui != null) {
             net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
@@ -623,12 +674,19 @@ public final class WaypointManager {
 
             if (!waypoints.isEmpty()) {
                 ensureUniqueIds();
-                save();
-                Files.deleteIfExists(EMUtilsPaths.deathWaypointFile());
-                EMUtilsClient.LOGGER.info(
-                    "Migrated {} death waypoints to unified format.",
-                    waypoints.size()
-                );
+                // The old file is only deleted once the new one is written, so a failed write can be tried again.
+                legacyDeathFilePending = true;
+                if (save() && !legacyDeathFilePending) {
+                    EMUtilsClient.LOGGER.info(
+                        "Migrated {} death waypoints to unified format.",
+                        waypoints.size()
+                    );
+                } else {
+                    EMUtilsClient.LOGGER.warn(
+                        "Could not save the migrated death waypoints; keeping {} to try again.",
+                        EMUtilsPaths.deathWaypointFile().getFileName()
+                    );
+                }
             }
         } catch (
             IOException
@@ -656,18 +714,33 @@ public final class WaypointManager {
         return changed;
     }
 
+    /** Deletes the old death waypoint file after its waypoints were written to the new one; if that fails, it is tried again with the next save. */
+    private void deleteLegacyDeathFileIfPending() {
+        if (!legacyDeathFilePending) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(EMUtilsPaths.deathWaypointFile());
+            legacyDeathFilePending = false;
+        } catch (IOException exception) {
+            EMUtilsClient.LOGGER.warn("Failed to delete the old death waypoint file.", exception);
+        }
+    }
+
     /** Writes the waypoints; returns false if that failed. */
     private boolean save() {
         try {
             Files.createDirectories(EMUtilsPaths.configDir());
             if (waypoints.isEmpty()) {
                 Files.deleteIfExists(EMUtilsPaths.waypointFile());
+                deleteLegacyDeathFileIfPending();
                 return true;
             }
 
             WaypointSaveData saveData = new WaypointSaveData();
             saveData.setWaypoints(new ArrayList<>(waypoints));
             AtomicFiles.writeString(EMUtilsPaths.waypointFile(), GSON.toJson(saveData));
+            deleteLegacyDeathFileIfPending();
             return true;
         } catch (IOException exception) {
             EMUtilsClient.LOGGER.warn("Failed to save waypoints.", exception);

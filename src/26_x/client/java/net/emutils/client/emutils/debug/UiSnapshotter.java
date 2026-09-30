@@ -91,6 +91,7 @@ import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.util.EMUtilsPaths;
@@ -3114,6 +3115,7 @@ public final class UiSnapshotter {
 			}
 			// Editing a waypoint (#105): the sheet starts from its values, and saving changes it in place.
 			case 364 -> {
+				checkWaypointFixes(client);
 				client.gui.setScreen(new WaypointsScreen(null));
 				next();
 			}
@@ -3410,6 +3412,45 @@ public final class UiSnapshotter {
 
 		profiles.onJoin(client);
 		check(profiles.active() == singleplayer, "singleplayer profile active for the light snapshot");
+	}
+
+	/**
+	 * Checks for the waypoint fixes of #191: a marker pins in screen space on a wide screen, a change that
+	 * can't be written is not kept (hide, beacon and delete), and a prompt nobody answered is not remembered as answered.
+	 */
+	private static void checkWaypointFixes(Minecraft client) {
+		double[] edge = WaypointMarkerRenderer.pinToEdgeForSnapshot(0.8D, 0.892D, 1000, 500);
+		check(Math.abs(edge[0] - 898.2D) < 1.0D && Math.abs(edge[1] - 28.0D) < 0.5D, "a marker past the top edge of a wide screen pins to (898, 28), not to the side (" + edge[0] + ", " + edge[1] + ")");
+		double[] diagonal = WaypointMarkerRenderer.pinToEdgeForSnapshot(0.5D, 0.5D, 1000, 500);
+		check(Math.abs(diagonal[2] / -diagonal[3] - 2.0D) < 0.01D, "the arrow points along the screen-space direction on a wide screen (" + diagonal[2] + ", " + diagonal[3] + ")");
+
+		List<Waypoint> before = EMUtilsClient.waypoint().waypointsForCurrentWorld(client);
+		check(before.stream().noneMatch(Waypoint::nearPromptShown), "a nearby-removal prompt nobody answered isn't saved as answered");
+		if (before.isEmpty()) {
+			return;
+		}
+		// A directory where the temporary file goes makes every write fail.
+		Path blocker = EMUtilsPaths.waypointFile().resolveSibling(EMUtilsPaths.waypointFile().getFileName() + ".tmp");
+		try {
+			Files.createDirectories(blocker);
+			Waypoint first = before.getFirst();
+			boolean hidden = first.hidden();
+			boolean beacon = first.beaconEnabled();
+			EMUtilsClient.waypoint().toggleHidden(first.id());
+			EMUtilsClient.waypoint().toggleBeacon(first.id());
+			check(first.hidden() == hidden && first.beaconEnabled() == beacon, "hiding and the beacon toggle change nothing when the waypoints can't be saved");
+			EMUtilsClient.waypoint().clear(client, first.id());
+			check(EMUtilsClient.waypoint().waypointsForCurrentWorld(client).size() == before.size(), "a delete that can't be saved keeps the waypoint");
+			// Clear all can't be checked this way: with nothing left it deletes the file instead of writing one.
+		} catch (IOException exception) {
+			check(false, "could not block the waypoints file: " + exception);
+		} finally {
+			try {
+				Files.deleteIfExists(blocker);
+			} catch (IOException exception) {
+				EMUtilsClient.LOGGER.warn("Could not remove the blocking directory {}", blocker, exception);
+			}
+		}
 	}
 
 	/** Turns the player toward the waypoint called {@code label}, plus {@code extraYaw} degrees. */
