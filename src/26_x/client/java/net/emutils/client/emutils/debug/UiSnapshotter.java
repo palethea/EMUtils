@@ -90,6 +90,10 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.WaypointSort;
+import net.emutils.client.emutils.waypoint.WaypointManager;
+import net.emutils.client.emutils.waypoint.WaypointEntry;
+import net.emutils.client.emutils.waypoint.WaypointDimensions;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
@@ -3136,27 +3140,47 @@ public final class UiSnapshotter {
 						Waypoint first = waypoints.getFirst();
 						String id = first.id();
 						int originalX = first.x();
-						check(EMUtilsClient.waypoint().update(id, "Renamed", originalX + 5, first.y(), first.z(), 0xFFFF55FF, true), "saving an edit succeeds");
+						check(EMUtilsClient.waypoint().update(id, "Renamed", originalX + 5, first.y(), first.z(), 0xFFFF55FF, true, first.set()), "saving an edit succeeds");
 						Waypoint updated = EMUtilsClient.waypoint().waypointsForCurrentWorld(client).stream().filter(waypoint -> waypoint.id().equals(id)).findFirst().orElse(null);
 						check(updated != null && updated.label().equals("Renamed") && updated.x() == originalX + 5 && updated.beaconEnabled() && updated.color() == 0xFFFF55FF, "an edit changes the waypoint in place, keeping its id");
 					}
 				}
 				captureAfter(client, 20, "edit waypoint sheet");
 			}
+			// Organizing waypoints (#105): sets as groups, a search, the sort, and the waypoints of other dimensions.
 			case 366 -> {
+				if (stepTicks == 1) {
+					seedOrganization(client);
+					setGuiScale(client, 2);
+					EMUtilsClient.config().setWaypointShowOtherDimensions(true);
+					client.gui.setScreen(new WaypointsScreen(null));
+				}
+				captureAfter(client, 10, "waypoints, in sets with other dimensions");
+			}
+			case 367 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
+					checkWaypointOrganization(client, screen);
+					EMUtilsClient.config().setWaypointSort(WaypointSort.NAME);
+					WaypointsScreen.setCollapsedForSnapshot("Far trips", true);
+				}
+				captureAfter(client, 10, "waypoints, sorted by name with a set folded up");
+			}
+			case 368 -> {
+				WaypointsScreen.setCollapsedForSnapshot("Far trips", false);
+				EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 				EMUtilsClient.config().resetDeathWaypointDefaults();
 				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 367 -> {
+			case 369 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 368 -> {
+			case 370 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3165,7 +3189,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 369 -> {
+			case 371 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3176,7 +3200,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 370 -> {
+			case 372 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3187,7 +3211,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 371 -> {
+			case 373 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -3449,6 +3473,9 @@ public final class UiSnapshotter {
 			check(first.hidden() == hidden && first.beaconEnabled() == beacon, "hiding and the beacon toggle change nothing when the waypoints can't be saved");
 			EMUtilsClient.waypoint().clear(client, first.id());
 			check(EMUtilsClient.waypoint().waypointsForCurrentWorld(client).size() == before.size(), "a delete that can't be saved keeps the waypoint");
+			String set = first.set();
+			boolean edited = EMUtilsClient.waypoint().update(first.id(), first.label(), first.x(), first.y(), first.z(), first.color(), first.beaconEnabled(), "Unsaved set");
+			check(!edited && first.set().equals(set), "an edit that can't be saved keeps the old set");
 			// Clear all can't be checked this way: with nothing left it deletes the file instead of writing one.
 		} catch (IOException exception) {
 			check(false, "could not block the waypoints file: " + exception);
@@ -3458,6 +3485,94 @@ public final class UiSnapshotter {
 			} catch (IOException exception) {
 				EMUtilsClient.LOGGER.warn("Could not remove the blocking directory {}", blocker, exception);
 			}
+		}
+	}
+
+	/** Puts the seeded waypoints in sets and adds two from other dimensions, to show the organized list. */
+	private static void seedOrganization(Minecraft client) {
+		if (client.player == null) {
+			return;
+		}
+		for (Waypoint waypoint : EMUtilsClient.waypoint().waypointsForCurrentWorld(client)) {
+			String set = switch (waypoint.label()) {
+				case "Home base", "Iron farm" -> "Base";
+				case "Ancient city entrance with a long name" -> "Far trips";
+				default -> null;
+			};
+			if (set != null) {
+				EMUtilsClient.waypoint().update(waypoint.id(), waypoint.label(), waypoint.x(), waypoint.y(), waypoint.z(), waypoint.color(), waypoint.beaconEnabled(), set);
+			}
+		}
+		try {
+			// Older by creation time than the Nether waypoint, so the Newest sort tells them apart.
+			Thread.sleep(3);
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+		}
+		// A Nether waypoint that lands about 320 blocks east of the player in the Overworld, and one in the End.
+		int netherX = Math.floorDiv(client.player.getBlockX(), 8) + 40;
+		int netherZ = Math.floorDiv(client.player.getBlockZ(), 8) - 10;
+		EMUtilsClient.waypoint().addInDimensionForSnapshot(client, WaypointDimensions.NETHER, "Nether hub", netherX, 70, netherZ, 0xFFFF5555, "Far trips");
+		EMUtilsClient.waypoint().addInDimensionForSnapshot(client, "minecraft:the_end", "End portal", 0, 64, 0, 0xFFAA55FF, "");
+	}
+
+	/** Checks the organized list of #105: other dimensions, sets, sort and search. */
+	private static void checkWaypointOrganization(Minecraft client, WaypointsScreen screen) {
+		WaypointManager manager = EMUtilsClient.waypoint();
+		EMUtilsConfig config = EMUtilsClient.config();
+		screen.searchForSnapshot("");
+
+		config.setWaypointShowOtherDimensions(false);
+		List<String> shown = screen.shownForSnapshot();
+		check(!shown.contains("Nether hub") && !shown.contains("End portal"), "waypoints from other dimensions stay out of the list until that is switched on");
+		check(manager.renderEntries(client).stream().noneMatch(entry -> entry.waypoint().label().equals("Nether hub")), "...and out of the world");
+
+		config.setWaypointShowOtherDimensions(true);
+		shown = screen.shownForSnapshot();
+		check(shown.contains("Nether hub") && shown.contains("End portal"), "with other dimensions on, the list has them");
+		int netherX = Math.floorDiv(client.player.getBlockX(), 8) + 40;
+		int netherZ = Math.floorDiv(client.player.getBlockZ(), 8) - 10;
+		WaypointEntry hub = manager.entriesForCurrentWorld(client, true).stream().filter(entry -> entry.waypoint().label().equals("Nether hub")).findFirst().orElse(null);
+		check(hub != null && hub.converted() && hub.x() == netherX * 8 && hub.z() == netherZ * 8 && hub.y() == 70, "a Nether waypoint shows in the Overworld at eight times its coordinates, keeping its height");
+		WaypointEntry end = manager.entriesForCurrentWorld(client, true).stream().filter(entry -> entry.waypoint().label().equals("End portal")).findFirst().orElse(null);
+		check(end != null && !end.placeable() && end.x() == 0 && end.y() == 64, "an End waypoint keeps its own coordinates and has no place in this dimension");
+		List<String> inWorld = manager.renderEntries(client).stream().map(entry -> entry.waypoint().label()).toList();
+		check(inWorld.contains("Nether hub") && !inWorld.contains("End portal"), "a converted waypoint is shown in the world, an End one is not");
+
+		check(shown.indexOf("# Base") >= 0 && shown.indexOf("# Base") < shown.indexOf("Home base") && shown.indexOf("Home base") < shown.indexOf("# Far trips") && shown.indexOf("# Far trips") < shown.indexOf("# No set"), "waypoints are listed under their set's header, sets alphabetically and the ones in none last: " + shown);
+
+		config.setWaypointSort(WaypointSort.DISTANCE);
+		shown = screen.shownForSnapshot();
+		check(shown.indexOf("Home base") < shown.indexOf("Iron farm") && shown.indexOf("Nether hub") < shown.indexOf("Ancient city entrance with a long name"), "sorted by distance, the nearer waypoint comes first in its set: " + shown);
+		config.setWaypointSort(WaypointSort.NAME);
+		shown = screen.shownForSnapshot();
+		check(shown.indexOf("Ancient city entrance with a long name") < shown.indexOf("Nether hub"), "sorted by name, A comes before N in its set: " + shown);
+		config.setWaypointSort(WaypointSort.NEWEST);
+		shown = screen.shownForSnapshot();
+		check(shown.indexOf("Nether hub") < shown.indexOf("Ancient city entrance with a long name"), "sorted by newest, the later waypoint comes first in its set: " + shown);
+		config.setWaypointSort(WaypointSort.DISTANCE);
+
+		screen.searchForSnapshot("iron");
+		check(screen.shownForSnapshot().equals(List.of("# Base", "Iron farm")), "searching for a name narrows the list to the match: " + screen.shownForSnapshot());
+		screen.searchForSnapshot("trips");
+		shown = screen.shownForSnapshot();
+		check(shown.contains("Nether hub") && shown.contains("Ancient city entrance with a long name") && !shown.contains("Home base"), "the search also matches a set's name: " + shown);
+		screen.searchForSnapshot("zzz");
+		check(screen.shownForSnapshot().isEmpty(), "a search with no match shows nothing");
+
+		screen.searchForSnapshot("");
+		WaypointsScreen.setCollapsedForSnapshot("Base", true);
+		shown = screen.shownForSnapshot();
+		check(shown.contains("# Base") && !shown.contains("Home base") && shown.contains("Nether hub"), "a folded set hides its waypoints and keeps its header: " + shown);
+		screen.searchForSnapshot("home");
+		check(screen.shownForSnapshot().contains("Home base"), "a search opens the folded sets it finds something in");
+		screen.searchForSnapshot("");
+		WaypointsScreen.setCollapsedForSnapshot("Base", false);
+
+		Waypoint home = manager.waypointsForCurrentWorld(client).stream().filter(waypoint -> waypoint.label().equals("Home base")).findFirst().orElse(null);
+		check(home != null && manager.update(home.id(), home.label(), home.x(), home.y(), home.z(), home.color(), home.beaconEnabled(), "Places") && home.set().equals("Places"), "editing a waypoint changes its set");
+		if (home != null) {
+			manager.update(home.id(), home.label(), home.x(), home.y(), home.z(), home.color(), home.beaconEnabled(), "Base");
 		}
 	}
 
@@ -3490,7 +3605,7 @@ public final class UiSnapshotter {
 		int[] colors = {0xFF55FF55, 0xFFFFAA55, 0xFF55FFFF, 0xFFFF55FF};
 		int[][] offsets = {{12, 0, -30}, {-220, -8, 140}, {1480, -40, -2210}, {-640, -52, 90}};
 		for (int i = 0; i < names.length; i++) {
-			EMUtilsClient.waypoint().addCustom(client, names[i], x + offsets[i][0], y + offsets[i][1], z + offsets[i][2], colors[i], i == 1);
+			EMUtilsClient.waypoint().addCustom(client, names[i], x + offsets[i][0], y + offsets[i][1], z + offsets[i][2], colors[i], i == 1, "");
 			try {
 				// The list is ordered by creation time in milliseconds, so keep each waypoint's apart.
 				Thread.sleep(3);

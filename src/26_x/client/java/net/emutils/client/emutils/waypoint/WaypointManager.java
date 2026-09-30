@@ -109,7 +109,8 @@ public final class WaypointManager {
         int y,
         int z,
         int color,
-        boolean beacon
+        boolean beacon,
+        String set
     ) {
         if (!enabled() || client == null || client.level == null) {
             return false;
@@ -131,6 +132,7 @@ public final class WaypointManager {
             WaypointType.CUSTOM
         );
         waypoint.setBeaconEnabled(beacon);
+        waypoint.setSet(set);
         // Trimming can drop the oldest waypoint, so keep the whole list to put back if saving fails.
         List<Waypoint> before = new ArrayList<>(waypoints);
         waypoints.add(waypoint);
@@ -145,7 +147,7 @@ public final class WaypointManager {
     }
 
     /**
-     * Changes a waypoint's name, position, color and beacon in place. Returns false, and keeps nothing,
+     * Changes a waypoint's name, position, color, beacon and set in place. Returns false, and keeps nothing,
      * when the waypoint is gone or the waypoints couldn't be written.
      */
     public boolean update(
@@ -155,7 +157,8 @@ public final class WaypointManager {
         int y,
         int z,
         int color,
-        boolean beacon
+        boolean beacon,
+        String set
     ) {
         Waypoint waypoint = findById(id);
         if (waypoint == null) {
@@ -163,6 +166,7 @@ public final class WaypointManager {
         }
 
         String oldLabel = waypoint.label();
+        String oldSet = waypoint.set();
         int oldX = waypoint.x();
         int oldY = waypoint.y();
         int oldZ = waypoint.z();
@@ -176,6 +180,7 @@ public final class WaypointManager {
         waypoint.setPosition(x, y, z);
         waypoint.setColor(color);
         waypoint.setBeaconEnabled(beacon);
+        waypoint.setSet(set);
         if (moved) {
             // A death waypoint moved somewhere new can ask to be removed again once you get near it.
             waypoint.setNearPromptShown(false);
@@ -185,6 +190,7 @@ public final class WaypointManager {
             waypoint.setPosition(oldX, oldY, oldZ);
             waypoint.setColor(oldColor);
             waypoint.setBeaconEnabled(oldBeacon);
+            waypoint.setSet(oldSet);
             waypoint.setNearPromptShown(oldPrompt);
             return false;
         }
@@ -246,13 +252,22 @@ public final class WaypointManager {
 
     public void copyCoordinates(Minecraft client, String id) {
         Waypoint waypoint = findById(id);
-        if (waypoint == null || client == null || client.keyboardHandler == null) {
+        if (waypoint != null) {
+            copyCoordinates(client, waypoint.x(), waypoint.y(), waypoint.z());
+        }
+    }
+
+    /** Copies these coordinates in the waypoint format, for a waypoint shown at converted coordinates. */
+    public void copyCoordinates(Minecraft client, int x, int y, int z) {
+        if (client == null || client.keyboardHandler == null) {
             return;
         }
 
         client.keyboardHandler.setClipboard(
             WaypointCoordinates.format(
-                waypoint,
+                x,
+                y,
+                z,
                 EMUtilsClient.config().waypointCoordinateFormat()
             )
         );
@@ -387,6 +402,78 @@ public final class WaypointManager {
             .toList();
     }
 
+    /**
+     * The waypoints of this world as they are in the dimension you are in (#105): the ones made here at their
+     * own coordinates and, with {@code includeOtherDimensions}, the ones made in other dimensions after them,
+     * converted between the Overworld and the Nether and listed with their own coordinates otherwise. In no
+     * particular order.
+     */
+    public List<WaypointEntry> entriesForCurrentWorld(Minecraft client, boolean includeOtherDimensions) {
+        if (client == null || client.level == null) {
+            return List.of();
+        }
+
+        String worldKey = worldKey(client);
+        String dimension = dimensionId(client.level);
+        List<WaypointEntry> entries = new ArrayList<>();
+        for (Waypoint waypoint : waypoints) {
+            if (!waypoint.matchesWorldKey(worldKey)) {
+                continue;
+            }
+            if (waypoint.matchesDimension(dimension)) {
+                entries.add(new WaypointEntry(waypoint, waypoint.x(), waypoint.y(), waypoint.z(), true, true));
+            } else if (includeOtherDimensions && waypoint.dimension() != null) {
+                int[] converted = WaypointDimensions.convert(waypoint.dimension(), dimension, waypoint.x(), waypoint.z());
+                entries.add(converted == null
+                    ? new WaypointEntry(waypoint, waypoint.x(), waypoint.y(), waypoint.z(), false, false)
+                    : new WaypointEntry(waypoint, converted[0], waypoint.y(), converted[1], false, true));
+            }
+        }
+        return entries;
+    }
+
+    /** The waypoints that have a place in the world you are in: this dimension's, plus converted ones if that's on. */
+    public List<WaypointEntry> renderEntries(Minecraft client) {
+        return entriesForCurrentWorld(client, EMUtilsClient.config().waypointShowOtherDimensions())
+            .stream()
+            .filter(WaypointEntry::placeable)
+            .toList();
+    }
+
+    /** Adds a waypoint as if it had been made in {@code dimension}, which isn't the one you are in; for UI snapshots. */
+    public void addInDimensionForSnapshot(Minecraft client, String dimension, String label, int x, int y, int z, int color, String set) {
+        if (client == null || client.level == null) {
+            return;
+        }
+        Waypoint waypoint = new Waypoint(x, y, z, dimension, worldKey(client), System.currentTimeMillis(), label, color, WaypointType.CUSTOM);
+        waypoint.setSet(set);
+        waypoints.add(waypoint);
+        save();
+    }
+
+    /** Removes the waypoints of this world that were made in other dimensions; for UI snapshots. */
+    public void clearOtherDimensionsForSnapshot(Minecraft client) {
+        if (client == null || client.level == null) {
+            return;
+        }
+        String worldKey = worldKey(client);
+        String dimension = dimensionId(client.level);
+        if (waypoints.removeIf(waypoint -> waypoint.matchesWorldKey(worldKey) && !waypoint.matchesDimension(dimension))) {
+            save();
+        }
+    }
+
+    /** The names of the sets in use in this world, alphabetically. */
+    public List<String> setsForCurrentWorld(Minecraft client) {
+        return entriesForCurrentWorld(client, true)
+            .stream()
+            .map(entry -> entry.waypoint().set())
+            .filter(set -> !set.isEmpty())
+            .distinct()
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .toList();
+    }
+
     public boolean enabled() {
         return EMUtilsClient.config().waypointEnabled();
     }
@@ -396,14 +483,20 @@ public final class WaypointManager {
             enabled() &&
             client.player != null &&
             client.level != null &&
-            !waypointsForCurrentWorld(client).isEmpty()
+            !renderEntries(client).isEmpty()
         );
     }
 
-    public int distanceBlocks(Minecraft client, Waypoint waypoint) {
-        return (int) Math.round(
-            Math.sqrt(distanceSquaredToPlayer(client, waypoint))
-        );
+    /** How far the player is from the entry in its dimension, in blocks; only meaningful for a placeable entry. */
+    public double distance(Minecraft client, WaypointEntry entry) {
+        double dx = client.player.getX() - entry.renderX();
+        double dy = client.player.getY() - entry.renderY();
+        double dz = client.player.getZ() - entry.renderZ();
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    public int distanceBlocks(Minecraft client, WaypointEntry entry) {
+        return (int) Math.round(distance(client, entry));
     }
 
     public static double renderX(Waypoint waypoint) {

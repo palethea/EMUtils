@@ -90,15 +90,12 @@ public final class WaypointMarkerRenderer {
 		int background = config.waypointLabelBackground();
 
 		List<Marker> markers = new ArrayList<>();
-		for (Waypoint waypoint : manager.waypointsForCurrentWorld(client)) {
+		for (WaypointEntry entry : manager.renderEntries(client)) {
+			Waypoint waypoint = entry.waypoint();
 			if (waypoint.hidden()) {
 				continue;
 			}
-			Vec3 position = new Vec3(
-				WaypointManager.renderX(waypoint),
-				WaypointManager.renderY(waypoint),
-				WaypointManager.renderZ(waypoint)
-			);
+			Vec3 position = new Vec3(entry.renderX(), entry.renderY(), entry.renderZ());
 			Vec3 toWaypoint = position.subtract(camera.position());
 			double distance = toWaypoint.length();
 			if (maxDistance > 0 && distance > maxDistance) {

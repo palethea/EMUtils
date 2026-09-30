@@ -239,6 +239,7 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Label Background: a dark panel behind the name and distance, off (0%) by default.
 - Pin to Screen Edge: keep waypoints that are off-screen or behind you at the edge of the screen, with an arrow and their distance.
 - Max Distance: hide waypoints beyond a distance (unlimited by default); they fade out over the last fifth.
+- Show Other Dimensions: also show the world's waypoints from other dimensions, off by default. Overworld and Nether waypoints appear at the matching spot in the other one (Nether coordinates times eight, the same height), as markers and beacons. End and custom dimensions don't line up, so those stay in the list. The same switch sits in the Current Waypoints list.
 
 ## Management
 
@@ -275,7 +276,11 @@ Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.
 
 View and manage saved waypoints for the current world or server.
 
-- Edit Waypoint: change a waypoint's name, position, color and beacon after creating it, with the pencil button or by clicking its row.
+- Edit Waypoint: change a waypoint's name, set, position, color and beacon after creating it, with the pencil button or by clicking its row.
+- Search: type to narrow the list to waypoints whose name or set matches; Esc clears it.
+- Sort: order the list by distance (default), name or newest.
+- Sets: give a waypoint a set in the add and edit sheet, typing a name or picking one already in use. A list with sets shows them as headers, alphabetically, with the waypoints in no set last; click a header to fold it up. A search opens folded sets it finds something in.
+- Other Dimensions: a switch above the list (also in the Waypoints settings) that adds the waypoints made in the world's other dimensions. Overworld and Nether ones show at converted coordinates with a "From Nether" or "From Overworld" tag, copy those coordinates, and appear in the world; End and custom dimension ones show their own coordinates and dimension, without a distance. Editing such a waypoint shows the coordinates it was saved with. Clear all only deletes the current dimension's waypoints.
 - Nearby Removal Prompts: remove nearby waypoints quickly while playing.
 - Coordinate Copying: copy waypoint coordinates in the configured format.
 - Waypoint Visibility: hide individual waypoints without deleting them.
