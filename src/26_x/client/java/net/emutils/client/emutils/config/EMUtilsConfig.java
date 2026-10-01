@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.HudFont;
+import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.hud.HudStyle;
 import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
 import net.emutils.client.emutils.hud.TabListPing;
@@ -280,6 +281,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer waypointMaxDistance = 0;
 	private String waypointFont = HudFont.MINECRAFT.name();
 	private Integer waypointLabelBackground = 0;
+	private String waypointSort = WaypointSort.DISTANCE.name();
+	private Boolean waypointShowOtherDimensions = Boolean.FALSE;
 	private Integer hudBackgroundOpacity = 100;
 	private Integer hudScale = 100;
 	private Boolean zoomEnabled = Boolean.TRUE;
@@ -2863,6 +2866,26 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** How the waypoints list is ordered. */
+	public WaypointSort waypointSort() {
+		return WaypointSort.fromName(waypointSort);
+	}
+
+	public void setWaypointSort(WaypointSort sort) {
+		waypointSort = (sort == null ? WaypointSort.DISTANCE : sort).name();
+		save();
+	}
+
+	/** Whether waypoints from other dimensions of the world show in the list, and in the world when they convert. */
+	public boolean waypointShowOtherDimensions() {
+		return waypointShowOtherDimensions != null && waypointShowOtherDimensions;
+	}
+
+	public void setWaypointShowOtherDimensions(boolean show) {
+		waypointShowOtherDimensions = show;
+		save();
+	}
+
 	public int waypointDefaultDeathColor() {
 		return waypointDefaultDeathColor == null ? 0xFFFF5555 : waypointDefaultDeathColor;
 	}
@@ -2944,6 +2967,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointMaxDistance = 0;
 		waypointFont = HudFont.MINECRAFT.name();
 		waypointLabelBackground = 0;
+		waypointSort = WaypointSort.DISTANCE.name();
+		waypointShowOtherDimensions = Boolean.FALSE;
 		save();
 	}
 

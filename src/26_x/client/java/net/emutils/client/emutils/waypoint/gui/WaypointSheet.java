@@ -28,8 +28,9 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Add Waypoint form as a sheet over the waypoints list (#103): a name, the coordinates (your
- * position to start with), one of the preset colors or any other from the color picker, and the beacon.
+ * The Add Waypoint form as a sheet over the waypoints list (#103): a name, the set it is grouped in (#105),
+ * the coordinates (your position to start with), one of the preset colors or any other from the color
+ * picker, and the beacon.
  * Given a waypoint it edits that one instead (#105), starting from its values. Enter adds or saves, Esc
  * cancels, Tab moves between the fields.
  */
@@ -45,6 +46,7 @@ final class WaypointSheet {
 	private static final int SWATCH = 16;
 	private static final int SWATCH_GAP = 6;
 	private static final int ICON_BUTTON = 20;
+	private static final int SET_WIDTH = 96;
 
 	private final Font font;
 	private final UiAnim anim;
@@ -53,13 +55,16 @@ final class WaypointSheet {
 	/** The id of the waypoint being edited, or null when adding a new one. */
 	private final @Nullable String editingId;
 	private final String titleKey;
+	/** The dimension the edited waypoint was made in when that isn't the one you are in, whose coordinates it has. */
+	private final @Nullable String otherDimension;
 	private final UiTextField name = new UiTextField(this, 32);
+	private final UiTextField set = new UiTextField(this, 32);
 	private final UiTextField[] coords = {
 		new UiTextField(this, 9, WaypointSheet::coordinateChar),
 		new UiTextField(this, 9, WaypointSheet::coordinateChar),
 		new UiTextField(this, 9, WaypointSheet::coordinateChar)
 	};
-	private final List<UiTextField> fields = List.of(name, coords[0], coords[1], coords[2]);
+	private final List<UiTextField> fields = List.of(name, set, coords[0], coords[1], coords[2]);
 	private int color;
 	private boolean beacon;
 	private @Nullable UiColorPicker colorPicker;
@@ -79,6 +84,8 @@ final class WaypointSheet {
 	private int cancelX;
 	private int cancelWidth;
 	private int locateX;
+	private int setX;
+	private int pickX;
 
 	/**
 	 * {@code editing} is the waypoint to change, or null to add a new one. {@code onClose} runs as soon as
@@ -92,10 +99,15 @@ final class WaypointSheet {
 		this.editingId = editing == null ? null : editing.id();
 		this.titleKey = editing == null ? EMUtilsTexts.SCREEN_ADD_WAYPOINT : EMUtilsTexts.SCREEN_EDIT_WAYPOINT;
 		if (editing == null) {
+			this.otherDimension = null;
 			this.color = 0xFF000000 | EMUtilsClient.config().waypointDefaultCustomColor();
 			useMyPosition();
 		} else {
+			Minecraft client = Minecraft.getInstance();
+			String current = client.level == null ? null : client.level.dimension().identifier().toString();
+			this.otherDimension = editing.dimension() != null && !editing.dimension().equals(current) ? editing.dimension() : null;
 			this.color = 0xFF000000 | editing.color();
+			set.setText(editing.set());
 			this.beacon = editing.beaconEnabled();
 			name.setText(editing.label() == null ? "" : editing.label());
 			coords[0].setText(String.valueOf(editing.x()));
@@ -112,6 +124,22 @@ final class WaypointSheet {
 
 	private static boolean coordinateChar(int codepoint) {
 		return Character.isDigit(codepoint) || codepoint == '-';
+	}
+
+	/** Fills the set field with the next set already in use, and with nothing after the last one. */
+	private void pickSet() {
+		List<String> sets = EMUtilsClient.waypoint().setsForCurrentWorld(Minecraft.getInstance());
+		if (sets.isEmpty()) {
+			return;
+		}
+		String current = set.text().trim();
+		int index = -1;
+		for (int i = 0; i < sets.size(); i++) {
+			if (sets.get(i).equalsIgnoreCase(current)) {
+				index = i;
+			}
+		}
+		set.setText(index + 1 >= sets.size() ? "" : sets.get(index + 1));
 	}
 
 	private void useMyPosition() {
@@ -197,8 +225,8 @@ final class WaypointSheet {
 			label = "Waypoint";
 		}
 		boolean saved = editingId == null
-			? EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon)
-			: EMUtilsClient.waypoint().update(editingId, label, coordinate(0), coordinate(1), coordinate(2), color, beacon);
+			? EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon, set.text().trim())
+				: EMUtilsClient.waypoint().update(editingId, label, coordinate(0), coordinate(1), coordinate(2), color, beacon, set.text().trim());
 		if (!saved) {
 			saveFailed = true;
 			return;
@@ -225,6 +253,8 @@ final class WaypointSheet {
 		x = (screenWidth - WIDTH) / 2;
 		y = (screenHeight - height) / 2;
 		coordWidth = (WIDTH - PADDING * 2 - ICON_BUTTON - 6 - 12) / 3;
+		pickX = x + WIDTH - PADDING - ICON_BUTTON;
+		setX = pickX - 4 - SET_WIDTH;
 	}
 
 	void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
@@ -243,9 +273,20 @@ final class WaypointSheet {
 		UiText.draw(context, font, Component.translatable(titleKey), UiText.Size.HEADING, left, y + PADDING, theme.text());
 
 		label(context, theme, Component.translatable(EMUtilsTexts.UI_WAYPOINT_NAME), left, y + nameY);
-		field(context, theme, name, left, y + nameY, right - left, Component.translatable(EMUtilsTexts.WAYPOINT_LABEL_PLACEHOLDER), false);
+		field(context, theme, name, left, y + nameY, setX - 8 - left, Component.translatable(EMUtilsTexts.WAYPOINT_LABEL_PLACEHOLDER), false);
+		label(context, theme, Component.translatable(EMUtilsTexts.UI_WAYPOINT_SET), setX, y + nameY);
+		field(context, theme, set, setX, y + nameY, SET_WIDTH, Component.translatable(EMUtilsTexts.UI_WAYPOINT_SET_PLACEHOLDER), false);
+		// Picks one of the sets you already use, so the same set isn't typed two ways.
+		boolean hasSets = !EMUtilsClient.waypoint().setsForCurrentWorld(Minecraft.getInstance()).isEmpty();
+		float pickHover = hasSets && contains(hoverX, hoverY, pickX, y + nameY, ICON_BUTTON, ICON_BUTTON) ? 1.0F : 0.0F;
+		UiWidgets.ghostIconButton(context, theme, pickX, y + nameY, ICON_BUTTON, HubIcons.CHEVRON_DOWN, hasSets ? theme.textSecondary() : UiTheme.fade(theme.muted(), 0.5F), pickHover);
 
 		label(context, theme, Component.translatable(EMUtilsTexts.UI_WAYPOINT_POSITION), left, y + coordsY);
+		if (otherDimension != null) {
+			// The list can show a waypoint at converted coordinates, so say which ones these are.
+			Component note = UiText.ellipsize(font, Component.translatable(EMUtilsTexts.UI_WAYPOINT_COORDS_IN, WaypointsScreen.dimensionName(otherDimension)), UiText.Size.SMALL, right - left - 70);
+			UiText.draw(context, font, note, UiText.Size.SMALL, right - UiText.width(font, note, UiText.Size.SMALL), y + coordsY - UiText.lineHeight(font, UiText.Size.SMALL) - 6, theme.warning());
+		}
 		String[] axes = {"X", "Y", "Z"};
 		for (int i = 0; i < 3; i++) {
 			int fieldX = left + i * (coordWidth + 6);
@@ -297,6 +338,8 @@ final class WaypointSheet {
 			colorPicker.render(context, font, theme);
 		} else if (locateHover > 0.0F) {
 			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_USE_MY_POSITION), mouseX, mouseY, screenWidth, screenHeight);
+		} else if (pickHover > 0.0F) {
+			UiWidgets.tooltip(context, font, theme, Component.translatable(EMUtilsTexts.UI_WAYPOINT_SET_PICK), mouseX, mouseY, screenWidth, screenHeight);
 		}
 		frame.end();
 	}
@@ -344,9 +387,14 @@ final class WaypointSheet {
 		}
 		int left = x + PADDING;
 		int right = x + WIDTH - PADDING;
-		if (contains(mouseX, mouseY, left, y + nameY, right - left, FIELD_HEIGHT)) {
+		if (contains(mouseX, mouseY, left, y + nameY, setX - 8 - left, FIELD_HEIGHT)) {
 			focus(name);
 			name.click(font, mouseX, false);
+			return;
+		}
+		if (contains(mouseX, mouseY, setX, y + nameY, SET_WIDTH, FIELD_HEIGHT)) {
+			focus(set);
+			set.click(font, mouseX, false);
 			return;
 		}
 		for (int i = 0; i < 3; i++) {
@@ -360,6 +408,10 @@ final class WaypointSheet {
 		focus(null);
 		if (contains(mouseX, mouseY, locateX, y + coordsY, ICON_BUTTON, ICON_BUTTON)) {
 			useMyPosition();
+			return;
+		}
+		if (contains(mouseX, mouseY, pickX, y + nameY, ICON_BUTTON, ICON_BUTTON)) {
+			pickSet();
 			return;
 		}
 		for (int i = 0; i <= PRESET_COLORS.length; i++) {

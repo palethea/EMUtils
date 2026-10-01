@@ -175,6 +175,18 @@ public final class EMUtilsTexts {
     public static final String UI_CLEAR_WAYPOINTS_TITLE = "emutils.ui.waypoint.clear_title";
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE = "emutils.ui.waypoint.clear_message";
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE_ONE = "emutils.ui.waypoint.clear_message_one";
+    public static final String UI_WAYPOINT_SEARCH = "emutils.ui.waypoint.search";
+    public static final String UI_WAYPOINT_NO_MATCH = "emutils.ui.waypoint.no_match";
+    public static final String UI_WAYPOINT_SORT = "emutils.ui.waypoint.sort";
+    public static final String UI_WAYPOINT_OTHER_DIMENSIONS = "emutils.ui.waypoint.other_dimensions";
+    public static final String UI_WAYPOINT_OTHER_DIMENSIONS_DESC = "emutils.ui.waypoint.other_dimensions.desc";
+    public static final String UI_WAYPOINT_FROM = "emutils.ui.waypoint.from";
+    public static final String UI_WAYPOINT_SET = "emutils.ui.waypoint.set";
+    public static final String UI_WAYPOINT_SET_PLACEHOLDER = "emutils.ui.waypoint.set_placeholder";
+    public static final String UI_WAYPOINT_SET_PICK = "emutils.ui.waypoint.set_pick";
+    public static final String UI_WAYPOINT_UNGROUPED = "emutils.ui.waypoint.ungrouped";
+    public static final String UI_WAYPOINT_COORDS_IN = "emutils.ui.waypoint.coords_in";
+    public static final String OPTION_WAYPOINT_SHOW_OTHER_DIMENSIONS = "emutils.option.waypoint_show_other_dimensions";
     public static final String HUB_ACTION_UNAVAILABLE =
         "emutils.hub.action.unavailable";
     public static final String HUB_OPEN_PACK_MANAGER =

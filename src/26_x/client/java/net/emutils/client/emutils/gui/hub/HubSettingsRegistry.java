@@ -273,6 +273,7 @@ public final class HubSettingsRegistry {
 		));
 		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_WAYPOINTS_SECTION_DISPLAY));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_EDGE_PIN, config::waypointEdgePin, config::setWaypointEdgePin));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_SHOW_OTHER_DIMENSIONS, config::waypointShowOtherDimensions, config::setWaypointShowOtherDimensions));
 		rows.add(new HubSettingRow.Cycle<>(
 			EMUtilsTexts.OPTION_WAYPOINT_MAX_DISTANCE,
 			config::waypointMaxDistance,

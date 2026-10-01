@@ -1,6 +1,5 @@
 package net.emutils.client.emutils.waypoint;
 
-import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
@@ -36,18 +35,18 @@ public final class WaypointRenderer {
 			return;
 		}
 
-		List<Waypoint> waypoints = manager.waypointsForCurrentWorld(client);
-		for (Waypoint waypoint : waypoints) {
+		for (WaypointEntry entry : manager.renderEntries(client)) {
+			Waypoint waypoint = entry.waypoint();
 			if (waypoint.hidden()) {
 				continue;
 			}
 			if (waypoint.beaconEnabled()) {
-				renderBeacon(context, waypoint);
+				renderBeacon(context, waypoint, entry);
 			}
 		}
 	}
 
-	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint) {
+	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint, WaypointEntry entry) {
 		Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(context.gameRenderer());
 		SubmitNodeCollector collector = context.submitNodeCollector();
 		PoseStack matrices = context.poseStack();
@@ -56,9 +55,9 @@ public final class WaypointRenderer {
 		double cameraY = camera.position().y;
 		double cameraZ = camera.position().z;
 
-		double x = waypoint.x() + 0.5 - cameraX;
-		double y = waypoint.y() - cameraY;
-		double z = waypoint.z() + 0.5 - cameraZ;
+		double x = entry.x() + 0.5 - cameraX;
+		double y = entry.y() - cameraY;
+		double z = entry.z() + 0.5 - cameraZ;
 
 		int color = waypoint.color();
 		int r = (color >> 16) & 0xFF;

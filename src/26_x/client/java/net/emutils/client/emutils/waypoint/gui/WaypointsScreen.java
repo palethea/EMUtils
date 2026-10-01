@@ -2,7 +2,12 @@ package net.emutils.client.emutils.waypoint.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiConfirmDialog;
@@ -11,11 +16,15 @@ import net.emutils.client.emutils.gui.ui.UiPanelScreen;
 import net.emutils.client.emutils.gui.ui.UiScrollArea;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
+import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.WaypointEntry;
+import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.waypoint.WaypointType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -27,24 +36,33 @@ import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The waypoints of the current world and dimension (#103): each one with its color,
- * name, type, coordinates and distance, and buttons to edit it, copy the coordinates, hide it, toggle
- * its beacon or delete it. Clicking a row edits it too. Waypoints are added and edited in a sheet over the list.
+ * The waypoints of the current world (#103, #105): each one with its color, name, type, coordinates and
+ * distance, and buttons to edit it, copy the coordinates, hide it, toggle its beacon or delete it. A search
+ * narrows the list, it can be sorted by distance, name or age, and waypoints in sets are grouped under
+ * headers that collapse. It lists this dimension's waypoints, and with Other dimensions on, the rest of the
+ * world's too. Clicking a row edits it; waypoints are added and edited in a sheet over the list.
  */
 public final class WaypointsScreen extends UiPanelScreen {
 	private static final int PADDING = 16;
 	private static final int HEADER_BUTTON_HEIGHT = 20;
+	private static final int TOOLBAR_HEIGHT = 20;
 	private static final int ROW_HEIGHT = 44;
 	private static final int ROW_GAP = 8;
+	private static final int GROUP_HEIGHT = 24;
+	private static final int GROUP_GAP = 6;
 	private static final int ROW_RADIUS = 9;
 	private static final int ROW_PADDING = 12;
 	private static final int ACTION = 20;
 	private static final int ACTION_GAP = 2;
 	private static final int ACTION_COUNT = 5;
 	private static final int FADE_HEIGHT = 12;
+	/** The sets that are folded up, by lowercase name; "" is the waypoints in no set. Kept while the game runs. */
+	private static final Set<String> COLLAPSED = new HashSet<>();
 
 	private final UiScrollArea scroll = new UiScrollArea();
+	private final UiTextField search = new UiTextField(this, 64);
 	private final List<RowBox> rows = new ArrayList<>();
+	private final List<GroupBox> groups = new ArrayList<>();
 	/** Opened by the Add Waypoint keybind: the screen closes together with the add sheet. */
 	private final boolean addOnly;
 	private @Nullable WaypointSheet sheet;
@@ -54,6 +72,12 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private int clearX;
 	private int clearWidth;
 	private int headerButtonsY;
+	private int toolbarY;
+	private int searchWidth;
+	private int sortX;
+	private int sortWidth;
+	private int dimensionsX;
+	private int dimensionsWidth;
 	private @Nullable Component tooltip;
 	private int tooltipX;
 	private int tooltipY;
@@ -65,6 +89,10 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private WaypointsScreen(@Nullable Screen parent, boolean addOnly) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_CURRENT_WAYPOINTS), parent);
 		this.addOnly = addOnly;
+		// Typing goes to the search, unless the screen only opens the add sheet or there is no world to search in.
+		if (!addOnly && Minecraft.getInstance().level != null) {
+			search.setFocused(true);
+		}
 	}
 
 	/** Opens straight into the add sheet, for the Add Waypoint keybind; closing it closes the screen too. */
@@ -83,15 +111,43 @@ public final class WaypointsScreen extends UiPanelScreen {
 		int subtitleHeight = UiText.lineHeight(font, UiText.Size.BODY);
 		int headerHeight = titleHeight + 6 + subtitleHeight;
 		headerButtonsY = panelY + PADDING + (headerHeight - HEADER_BUTTON_HEIGHT) / 2;
-		int bodyY = panelY + PADDING + headerHeight + 12;
-		scroll.setBounds(panelX + PADDING, bodyY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - bodyY);
+		toolbarY = panelY + PADDING + headerHeight + 12;
+		int listY = toolbarY + TOOLBAR_HEIGHT + 10;
+		scroll.setBounds(panelX + PADDING, listY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - listY);
 		if (addOnly && sheet == null && !closing()) {
 			openAddSheet();
 		}
+		if (sheet == null) {
+			search.restoreFocus();
+		}
 	}
 
+	/** The waypoints made in this dimension, which is what Clear all deletes. */
 	private List<Waypoint> waypoints() {
 		return EMUtilsClient.waypoint().waypointsForCurrentWorld(minecraft);
+	}
+
+	/** What the list shows, before the search: this dimension's waypoints and, with Other dimensions on, the rest of the world's. */
+	private List<WaypointEntry> allEntries() {
+		return EMUtilsClient.waypoint().entriesForCurrentWorld(minecraft, EMUtilsClient.config().waypointShowOtherDimensions());
+	}
+
+	/** The entries that match the search, in the chosen order. */
+	private List<WaypointEntry> shownEntries() {
+		String query = search.text().trim().toLowerCase(Locale.ROOT);
+		List<WaypointEntry> entries = new ArrayList<>();
+		for (WaypointEntry entry : allEntries()) {
+			if (query.isEmpty() || matches(entry.waypoint(), query)) {
+				entries.add(entry);
+			}
+		}
+		entries.sort(EMUtilsClient.config().waypointSort().comparator(entry -> minecraft.player == null ? 0.0D : EMUtilsClient.waypoint().distance(minecraft, entry)));
+		return entries;
+	}
+
+	private static boolean matches(Waypoint waypoint, String query) {
+		String label = waypoint.label() == null ? "" : waypoint.label();
+		return label.toLowerCase(Locale.ROOT).contains(query) || waypoint.set().toLowerCase(Locale.ROOT).contains(query);
 	}
 
 	/** Waypoints belong to a world; the screen can also be opened from the title screen, through the settings. */
@@ -108,6 +164,8 @@ public final class WaypointsScreen extends UiPanelScreen {
 		if (!inWorld()) {
 			return;
 		}
+		// The sheet's fields take the typing, so the search lets go of it until the sheet closes.
+		search.setFocused(false);
 		sheet = new WaypointSheet(font, anim, editing, added -> {
 			if (addOnly) {
 				onClose();
@@ -116,9 +174,9 @@ public final class WaypointsScreen extends UiPanelScreen {
 	}
 
 	private void openEditSheet(String id) {
-		for (Waypoint waypoint : waypoints()) {
-			if (waypoint.id().equals(id)) {
-				openSheet(waypoint);
+		for (WaypointEntry entry : allEntries()) {
+			if (entry.waypoint().id().equals(id)) {
+				openSheet(entry.waypoint());
 				return;
 			}
 		}
@@ -132,12 +190,15 @@ public final class WaypointsScreen extends UiPanelScreen {
 		boolean interactive = sheet == null && dialog == null && !closing();
 		int hoverX = interactive ? mouseX : Integer.MIN_VALUE / 2;
 		int hoverY = interactive ? mouseY : Integer.MIN_VALUE / 2;
-		List<Waypoint> waypoints = waypoints();
-		drawHeader(context, theme, waypoints.size(), hoverX, hoverY);
-		drawRows(context, theme, waypoints, hoverX, hoverY);
+		List<WaypointEntry> entries = shownEntries();
+		drawHeader(context, theme, entries.size(), waypoints().size(), hoverX, hoverY);
+		if (inWorld()) {
+			drawToolbar(context, theme, hoverX, hoverY);
+		}
+		drawRows(context, theme, entries, hoverX, hoverY);
 	}
 
-	private void drawHeader(GuiGraphicsExtractor context, UiTheme theme, int count, int mouseX, int mouseY) {
+	private void drawHeader(GuiGraphicsExtractor context, UiTheme theme, int count, int clearable, int mouseX, int mouseY) {
 		int left = panelX + PADDING;
 		int top = panelY + PADDING;
 		UiText.draw(context, font, title, UiText.Size.HEADING, left, top, theme.text());
@@ -172,40 +233,173 @@ public final class WaypointsScreen extends UiPanelScreen {
 		Component clear = Component.translatable(EMUtilsTexts.UI_CLEAR_ALL);
 		clearWidth = UiWidgets.buttonWidth(font, clear) + 4;
 		clearX = addX - 6 - clearWidth;
-		boolean canClear = count > 0;
+		boolean canClear = clearable > 0;
 		float clearHover = canClear && contains(mouseX, mouseY, clearX, headerButtonsY, clearWidth, HEADER_BUTTON_HEIGHT) ? 1.0F : 0.0F;
 		UiShapes.roundedRect(context, clearX, headerButtonsY, clearWidth, HEADER_BUTTON_HEIGHT, 8, UiTheme.fade(theme.hover(), clearHover));
 		UiText.drawCentered(context, font, clear, UiText.Size.LABEL, clearX + (clearWidth - UiText.width(font, clear, UiText.Size.LABEL)) / 2, headerButtonsY + HEADER_BUTTON_HEIGHT / 2, canClear ? theme.textSecondary() : UiTheme.fade(theme.muted(), 0.5F));
 	}
 
-	private void drawRows(GuiGraphicsExtractor context, UiTheme theme, List<Waypoint> waypoints, int mouseX, int mouseY) {
-		scroll.setContentHeight(waypoints.isEmpty() ? 0 : waypoints.size() * (ROW_HEIGHT + ROW_GAP) - ROW_GAP + FADE_HEIGHT);
+	/** The search, the sort and the Other dimensions switch, in one row under the header. */
+	private void drawToolbar(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		int left = panelX + PADDING;
+		int right = panelX + panelWidth - PADDING;
+		int center = toolbarY + TOOLBAR_HEIGHT / 2;
+
+		// The switch is at the right, the sort beside it, and the search takes what is left.
+		Component dimensions = Component.translatable(EMUtilsTexts.UI_WAYPOINT_OTHER_DIMENSIONS);
+		dimensionsWidth = UiText.width(font, dimensions, UiText.Size.LABEL) + 8 + UiWidgets.SWITCH_WIDTH;
+		dimensionsX = right - dimensionsWidth;
+		boolean showOther = EMUtilsClient.config().waypointShowOtherDimensions();
+		boolean dimensionsHovered = contains(mouseX, mouseY, dimensionsX, toolbarY, dimensionsWidth, TOOLBAR_HEIGHT);
+		UiText.drawCentered(context, font, dimensions, UiText.Size.LABEL, dimensionsX, center, showOther ? theme.text() : theme.textSecondary());
+		float on = anim.transition("waypoint-other-dimensions", showOther, 0.18F);
+		UiWidgets.toggle(context, theme, right - UiWidgets.SWITCH_WIDTH, center - UiWidgets.SWITCH_HEIGHT / 2, on, dimensionsHovered ? 1.0F : 0.0F);
+		if (dimensionsHovered) {
+			tooltip = Component.translatable(EMUtilsTexts.UI_WAYPOINT_OTHER_DIMENSIONS_DESC);
+			tooltipX = mouseX;
+			tooltipY = mouseY;
+		}
+
+		// The button is as wide as the longest sort name, so it doesn't change size as the sort does.
+		int widest = 0;
+		for (WaypointSort option : WaypointSort.values()) {
+			widest = Math.max(widest, UiText.width(font, sortLabel(option), UiText.Size.LABEL));
+		}
+		sortWidth = widest + 20;
+		sortX = dimensionsX - 10 - sortWidth;
+		Component sort = sortLabel(EMUtilsClient.config().waypointSort());
+		float sortHover = anim.towards("waypoint-sort", contains(mouseX, mouseY, sortX, toolbarY, sortWidth, TOOLBAR_HEIGHT), 16.0F);
+		UiShapes.roundedRect(context, sortX, toolbarY, sortWidth, TOOLBAR_HEIGHT, 8, UiTheme.mix(theme.segmentBackground(), theme.hover(), sortHover));
+		UiText.drawCentered(context, font, sort, UiText.Size.LABEL, sortX + (sortWidth - UiText.width(font, sort, UiText.Size.LABEL)) / 2, center, theme.textSecondary());
+
+		searchWidth = Math.max(60, sortX - 8 - left);
+		UiShapes.borderedRect(context, left, toolbarY, searchWidth, TOOLBAR_HEIGHT, 8, theme.surface(), search.focused() ? theme.accent() : theme.line());
+		UiIcons.draw(context, HubIcons.SEARCH, left + 9, center - 5, 10, theme.textSecondary());
+		boolean clearable = !search.text().isEmpty();
+		search.draw(context, font, theme, left + 26, center, searchWidth - 26 - (clearable ? 26 : 10), Component.translatable(EMUtilsTexts.UI_WAYPOINT_SEARCH));
+		if (clearable) {
+			boolean xHovered = contains(mouseX, mouseY, left + searchWidth - 22, toolbarY + 2, 16, 16);
+			UiIcons.draw(context, HubIcons.X, left + searchWidth - 19, center - 5, 10, xHovered ? theme.text() : theme.muted());
+		}
+	}
+
+	private static Component sortLabel(WaypointSort sort) {
+		return Component.translatable(EMUtilsTexts.UI_WAYPOINT_SORT, Component.translatable(sort.labelKey()));
+	}
+
+	/** What the list is made of: the waypoints, and above each set's waypoints the set's header when any set is in use. */
+	private List<Item> buildItems(List<WaypointEntry> entries) {
+		boolean searching = !search.text().isBlank();
+		Map<String, List<WaypointEntry>> bySet = new LinkedHashMap<>();
+		Map<String, String> titles = new LinkedHashMap<>();
+		boolean anySet = false;
+		for (WaypointEntry entry : entries) {
+			String set = entry.waypoint().set();
+			anySet |= !set.isEmpty();
+			String key = set.toLowerCase(Locale.ROOT);
+			bySet.computeIfAbsent(key, k -> new ArrayList<>()).add(entry);
+			titles.putIfAbsent(key, set);
+		}
+		List<Item> items = new ArrayList<>();
+		if (!anySet) {
+			for (WaypointEntry entry : entries) {
+				items.add(new EntryItem(entry));
+			}
+			return items;
+		}
+		// Sets alphabetically, with the waypoints in none last.
+		List<String> keys = new ArrayList<>(bySet.keySet());
+		keys.sort((a, b) -> a.isEmpty() != b.isEmpty() ? (a.isEmpty() ? 1 : -1) : a.compareTo(b));
+		for (String key : keys) {
+			List<WaypointEntry> members = bySet.get(key);
+			// A search has to show what it finds, so it opens the folded sets.
+			boolean collapsed = COLLAPSED.contains(key) && !searching;
+			String title = key.isEmpty() ? Component.translatable(EMUtilsTexts.UI_WAYPOINT_UNGROUPED).getString() : titles.get(key);
+			items.add(new GroupItem(key, title, members.size(), collapsed));
+			if (!collapsed) {
+				for (WaypointEntry entry : members) {
+					items.add(new EntryItem(entry));
+				}
+			}
+		}
+		return items;
+	}
+
+	private static int itemHeight(Item item) {
+		return item instanceof GroupItem ? GROUP_HEIGHT : ROW_HEIGHT;
+	}
+
+	/** The space after an item: a little more before a set's header than between waypoints. */
+	private static int gapAfter(Item item, @Nullable Item next) {
+		if (item instanceof GroupItem) {
+			return GROUP_GAP;
+		}
+		return next instanceof GroupItem ? ROW_GAP + 6 : ROW_GAP;
+	}
+
+	private void drawRows(GuiGraphicsExtractor context, UiTheme theme, List<WaypointEntry> entries, int mouseX, int mouseY) {
+		List<Item> items = buildItems(entries);
+		int[] tops = new int[items.size()];
+		int total = 0;
+		for (int i = 0; i < items.size(); i++) {
+			tops[i] = total;
+			total += itemHeight(items.get(i)) + gapAfter(items.get(i), i + 1 < items.size() ? items.get(i + 1) : null);
+		}
+		int contentHeight = items.isEmpty() ? 0 : total - gapAfter(items.getLast(), null) + FADE_HEIGHT;
+		scroll.setContentHeight(contentHeight);
 		scroll.animate(anim, "waypoints-scroll", mouseX, mouseY);
 		rows.clear();
+		groups.clear();
 		boolean mouseInList = scroll.contains(mouseX, mouseY) && !scroll.dragging();
+		int hoverX = mouseInList ? mouseX : Integer.MIN_VALUE / 2;
 		scroll.begin(context);
 		context.pose().pushMatrix();
 		context.pose().translate(0.0F, scroll.offset() - scroll.exactOffset());
 		int width = scroll.contentWidth();
-		int y = scroll.y() + FADE_HEIGHT / 2 - scroll.offset();
-		for (Waypoint waypoint : waypoints) {
-			if (y + ROW_HEIGHT >= scroll.y() && y <= scroll.y() + scroll.height()) {
-				rows.add(drawRow(context, theme, waypoint, scroll.x(), y, width, mouseInList ? mouseX : Integer.MIN_VALUE / 2, mouseY));
+		int baseY = scroll.y() + FADE_HEIGHT / 2 - scroll.offset();
+		for (int i = 0; i < items.size(); i++) {
+			Item item = items.get(i);
+			int y = baseY + tops[i];
+			int height = itemHeight(item);
+			if (y + height < scroll.y() || y > scroll.y() + scroll.height()) {
+				continue;
 			}
-			y += ROW_HEIGHT + ROW_GAP;
+			if (item instanceof GroupItem group) {
+				drawGroup(context, theme, group, scroll.x(), y, width, hoverX, mouseY);
+				groups.add(new GroupBox(group.key(), scroll.x(), y, width));
+			} else if (item instanceof EntryItem entry) {
+				rows.add(drawRow(context, theme, entry.entry(), scroll.x(), y, width, hoverX, mouseY));
+			}
 		}
 		context.pose().popMatrix();
 		if (!inWorld()) {
 			drawNoWorld(context, theme, scroll.x() + width / 2, width);
-		} else if (waypoints.isEmpty()) {
+		} else if (entries.isEmpty()) {
 			int centerX = scroll.x() + width / 2;
 			int iconSize = 22;
 			int top = scroll.y() + Math.max(20, scroll.height() / 2 - 30);
-			UiIcons.draw(context, HubIcons.MAP_PIN, centerX - iconSize / 2, top, iconSize, theme.muted());
-			Component empty = Component.translatable(EMUtilsTexts.WAYPOINT_NONE_WORLD);
+			boolean searching = !search.text().isBlank();
+			UiIcons.draw(context, searching ? HubIcons.SEARCH : HubIcons.MAP_PIN, centerX - iconSize / 2, top, iconSize, theme.muted());
+			Component empty = searching
+				? Component.translatable(EMUtilsTexts.UI_WAYPOINT_NO_MATCH, search.text().trim())
+				: Component.translatable(EMUtilsTexts.WAYPOINT_NONE_WORLD);
+			empty = UiText.ellipsize(font, empty, UiText.Size.BODY, width - 20);
 			UiText.draw(context, font, empty, UiText.Size.BODY, centerX - UiText.width(font, empty, UiText.Size.BODY) / 2, top + iconSize + 10, theme.muted());
 		}
 		scroll.end(context, theme.panel(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
+	}
+
+	/** A set's header: a chevron that shows whether it is open, its name and how many waypoints it holds. */
+	private void drawGroup(GuiGraphicsExtractor context, UiTheme theme, GroupItem group, int x, int y, int width, int mouseX, int mouseY) {
+		boolean hovered = contains(mouseX, mouseY, x, y, width, GROUP_HEIGHT);
+		float hover = anim.towards("waypoint-group:" + group.key(), hovered, 16.0F);
+		UiShapes.roundedRect(context, x, y, width, GROUP_HEIGHT, 8, UiTheme.fade(theme.hover(), hover));
+		int center = y + GROUP_HEIGHT / 2;
+		UiIcons.draw(context, group.collapsed() ? HubIcons.CHEVRON_RIGHT : HubIcons.CHEVRON_DOWN, x + 8, center - 5, 10, theme.textSecondary());
+		Component title = UiText.ellipsize(font, Component.literal(group.title()), UiText.Size.BOLD, width - 24 - 40);
+		UiText.drawCentered(context, font, title, UiText.Size.BOLD, x + 26, center, group.key().isEmpty() ? theme.textSecondary() : theme.text());
+		Component count = Component.literal(String.valueOf(group.count()));
+		UiText.drawCentered(context, font, count, UiText.Size.LABEL, x + 26 + UiText.width(font, title, UiText.Size.BOLD) + 8, center, theme.muted());
 	}
 
 	/** Outside a world there's nothing to list or add, so the whole body says so. */
@@ -227,7 +421,8 @@ public final class WaypointsScreen extends UiPanelScreen {
 		}
 	}
 
-	private RowBox drawRow(GuiGraphicsExtractor context, UiTheme theme, Waypoint waypoint, int x, int y, int width, int mouseX, int mouseY) {
+	private RowBox drawRow(GuiGraphicsExtractor context, UiTheme theme, WaypointEntry entry, int x, int y, int width, int mouseX, int mouseY) {
+		Waypoint waypoint = entry.waypoint();
 		boolean hovered = contains(mouseX, mouseY, x, y, width, ROW_HEIGHT);
 		float hover = anim.towards("waypoint:" + waypoint.id(), hovered, 16.0F);
 		UiShapes.borderedRect(context, x, y, width, ROW_HEIGHT, ROW_RADIUS, UiTheme.mix(theme.surface(), theme.surfaceHover(), hover), theme.border());
@@ -271,24 +466,42 @@ public final class WaypointsScreen extends UiPanelScreen {
 				tooltipY = mouseY;
 			}
 		}
-		Component distance = minecraft.player == null ? Component.empty() : Component.translatable(EMUtilsTexts.UI_BLOCKS, EMUtilsClient.waypoint().distanceBlocks(minecraft, waypoint));
+		// A waypoint from a dimension that doesn't line up with this one has no distance from here.
+		Component distance = minecraft.player == null || !entry.placeable() ? Component.empty() : Component.translatable(EMUtilsTexts.UI_BLOCKS, EMUtilsClient.waypoint().distanceBlocks(minecraft, entry));
 		int distanceWidth = UiText.width(font, distance, UiText.Size.LABEL);
 		int distanceX = actionsX - 10 - distanceWidth;
 		UiText.drawCentered(context, font, distance, UiText.Size.LABEL, distanceX, y + ROW_HEIGHT / 2, theme.muted());
 
-		// Left side: name and type, coordinates below.
-		Component type = Component.translatable(waypoint.type().labelKey());
-		int badgeWidth = UiText.width(font, type, UiText.Size.SMALL) + 8;
+		// Left side: name and badges, coordinates below.
+		// Only the unusual ones get a badge: a death waypoint, and one from another dimension.
+		Component type = waypoint.type() == WaypointType.DEATH ? Component.translatable(waypoint.type().labelKey()) : null;
+		Component origin = entry.sameDimension() ? null : originLabel(entry);
+		int badgesWidth = 0;
+		for (Component badge : new Component[] {type, origin}) {
+			if (badge != null) {
+				badgesWidth += 6 + UiText.width(font, badge, UiText.Size.SMALL) + 8 + (badgesWidth > 0 ? -2 : 0);
+			}
+		}
 		int textRight = distanceX - 10;
-		Component name = UiText.ellipsize(font, Component.literal(waypoint.label()), UiText.Size.BOLD, textRight - nameX - badgeWidth - 6);
+		Component name = UiText.ellipsize(font, Component.literal(waypoint.label()), UiText.Size.BOLD, textRight - nameX - badgesWidth);
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, nameCenter, UiTheme.fade(theme.text(), shown));
 		int badgeX = nameX + UiText.width(font, name, UiText.Size.BOLD) + 6;
 		int badgeY = nameCenter - (UiText.lineHeight(font, UiText.Size.SMALL) + 5) / 2;
-		boolean death = waypoint.type() == WaypointType.DEATH;
-		UiWidgets.badge(context, font, badgeX, badgeY, type, death ? UiTheme.fade(theme.warning(), 0.16F) : theme.segmentBackground(), death ? theme.warning() : theme.textSecondary());
-		Component coords = Component.literal("X " + waypoint.x() + "   Y " + waypoint.y() + "   Z " + waypoint.z());
+		if (type != null) {
+			badgeX += UiWidgets.badge(context, font, badgeX, badgeY, type, UiTheme.fade(theme.warning(), 0.16F), theme.warning()) + 4;
+		}
+		if (origin != null) {
+			UiWidgets.badge(context, font, badgeX, badgeY, origin, UiTheme.fade(theme.accent(), 0.16F), theme.accent());
+		}
+		Component coords = Component.literal("X " + entry.x() + "   Y " + entry.y() + "   Z " + entry.z());
 		UiText.drawCentered(context, font, coords, UiText.Size.BODY, nameX, y + ROW_HEIGHT - ROW_PADDING - 4, UiTheme.fade(theme.muted(), shown));
-		return new RowBox(waypoint.id(), x, y, width, actionsX, actionY);
+		return new RowBox(entry, x, y, width, actionsX, actionY);
+	}
+
+	/** Where a waypoint from another dimension comes from: "From Nether" if it is converted, else the dimension's name. */
+	private static Component originLabel(WaypointEntry entry) {
+		Component dimension = dimensionName(entry.waypoint().dimension());
+		return entry.placeable() ? Component.translatable(EMUtilsTexts.UI_WAYPOINT_FROM, dimension) : dimension;
 	}
 
 	@Override
@@ -300,6 +513,10 @@ public final class WaypointsScreen extends UiPanelScreen {
 			sheet.render(context, theme, mouseX, mouseY, width, height);
 			if (sheet.isClosed()) {
 				sheet = null;
+				// Typing goes back to the search.
+				if (!addOnly && inWorld()) {
+					search.setFocused(true);
+				}
 			}
 		}
 		if (dialog != null) {
@@ -350,14 +567,23 @@ public final class WaypointsScreen extends UiPanelScreen {
 			openClearDialog(() -> EMUtilsClient.waypoint().clearForCurrentWorld(minecraft));
 			return true;
 		}
+		if (inWorld() && clickToolbar(mouseX, mouseY, click.hasShiftDown())) {
+			return true;
+		}
 		if (scroll.mouseClicked(mouseX, mouseY)) {
 			return true;
 		}
 		if (scroll.contains(mouseX, mouseY)) {
+			for (GroupBox group : groups) {
+				if (contains(mouseX, mouseY, group.x(), group.y(), group.width(), GROUP_HEIGHT)) {
+					toggleGroup(group.key());
+					return true;
+				}
+			}
 			for (RowBox row : rows) {
 				for (int i = 0; i < ACTION_COUNT; i++) {
 					if (contains(mouseX, mouseY, row.actionsX() + i * (ACTION + ACTION_GAP), row.actionY(), ACTION, ACTION)) {
-						runAction(row.id(), i);
+						runAction(row, i);
 						return true;
 					}
 				}
@@ -371,10 +597,47 @@ public final class WaypointsScreen extends UiPanelScreen {
 		return super.mouseClicked(click, doubled);
 	}
 
-	private void runAction(String id, int action) {
+	/** Clicks on the search, the sort and the Other dimensions switch; true when one was used. */
+	private boolean clickToolbar(double mouseX, double mouseY, boolean shift) {
+		int left = panelX + PADDING;
+		boolean onSearch = contains(mouseX, mouseY, left, toolbarY, searchWidth, TOOLBAR_HEIGHT);
+		if (onSearch) {
+			if (!search.text().isEmpty() && contains(mouseX, mouseY, left + searchWidth - 22, toolbarY + 2, 16, 16)) {
+				search.setText("");
+				search.select(0, 0);
+				scroll.reset();
+			} else {
+				search.setFocused(true);
+				search.click(font, mouseX, shift);
+			}
+			return true;
+		}
+		search.setFocused(false);
+		if (contains(mouseX, mouseY, sortX, toolbarY, sortWidth, TOOLBAR_HEIGHT)) {
+			EMUtilsClient.config().setWaypointSort(EMUtilsClient.config().waypointSort().next());
+			scroll.reset();
+			return true;
+		}
+		if (contains(mouseX, mouseY, dimensionsX, toolbarY, dimensionsWidth, TOOLBAR_HEIGHT)) {
+			EMUtilsClient.config().setWaypointShowOtherDimensions(!EMUtilsClient.config().waypointShowOtherDimensions());
+			scroll.reset();
+			return true;
+		}
+		return false;
+	}
+
+	private static void toggleGroup(String key) {
+		if (!COLLAPSED.remove(key)) {
+			COLLAPSED.add(key);
+		}
+	}
+
+	private void runAction(RowBox row, int action) {
+		String id = row.id();
 		switch (action) {
 			case 0 -> openEditSheet(id);
-			case 1 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, id);
+			// A converted waypoint is shown at its converted coordinates, so those are the ones to copy.
+			case 1 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, row.entry().x(), row.entry().y(), row.entry().z());
 			case 2 -> EMUtilsClient.waypoint().toggleHidden(id);
 			case 3 -> EMUtilsClient.waypoint().toggleBeacon(id);
 			default -> EMUtilsClient.waypoint().clear(minecraft, id);
@@ -416,6 +679,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 	}
 
+	/** Esc clears the search first, then closes; typing anywhere goes to the search. */
 	@Override
 	public boolean keyPressed(KeyEvent input) {
 		if (closing()) {
@@ -427,6 +691,15 @@ public final class WaypointsScreen extends UiPanelScreen {
 		}
 		if (sheet != null) {
 			sheet.keyPressed(input);
+			return true;
+		}
+		if (input.isEscape() && !search.text().isEmpty()) {
+			search.setText("");
+			search.select(0, 0);
+			scroll.reset();
+			return true;
+		}
+		if (!input.isEscape() && search.keyPressed(input, scroll::reset)) {
 			return true;
 		}
 		return super.keyPressed(input);
@@ -441,6 +714,14 @@ public final class WaypointsScreen extends UiPanelScreen {
 			sheet.charTyped(input);
 			return true;
 		}
+		if (dialog == null && inWorld()) {
+			if (!search.focused()) {
+				search.setFocused(true);
+			}
+			if (search.charTyped(input, scroll::reset)) {
+				return true;
+			}
+		}
 		return super.charTyped(input);
 	}
 
@@ -449,15 +730,16 @@ public final class WaypointsScreen extends UiPanelScreen {
 		if (sheet != null) {
 			sheet.close();
 		}
+		search.setFocused(false);
 		super.onClose();
 	}
 
-	/** Opens the add sheet; used by UI snapshots. */
 	/** Whether the add sheet is open; used by UI snapshots. */
 	public boolean sheetOpenForSnapshot() {
 		return sheet != null;
 	}
 
+	/** Opens the add sheet; used by UI snapshots. */
 	public void openAddSheetForSnapshot() {
 		openAddSheet();
 	}
@@ -473,6 +755,36 @@ public final class WaypointsScreen extends UiPanelScreen {
 	/** The name in the open sheet, or null when none is open; used by UI snapshots. */
 	public @Nullable String sheetNameForSnapshot() {
 		return sheet == null ? null : sheet.nameForSnapshot();
+	}
+
+	/** Types into the search, as the player would; used by UI snapshots. */
+	public void searchForSnapshot(String text) {
+		search.setText(text);
+		search.select(text.length(), text.length());
+		scroll.reset();
+	}
+
+	/** Folds or unfolds a set ("" is the waypoints in none); used by UI snapshots. */
+	public static void setCollapsedForSnapshot(String set, boolean collapsed) {
+		String key = set.toLowerCase(Locale.ROOT);
+		if (collapsed) {
+			COLLAPSED.add(key);
+		} else {
+			COLLAPSED.remove(key);
+		}
+	}
+
+	/** What the list shows, top to bottom: a set's header as "# name", a waypoint as its name; used by UI snapshots. */
+	public List<String> shownForSnapshot() {
+		List<String> shown = new ArrayList<>();
+		for (Item item : buildItems(shownEntries())) {
+			if (item instanceof GroupItem group) {
+				shown.add("# " + group.title());
+			} else if (item instanceof EntryItem entry) {
+				shown.add(entry.entry().waypoint().label());
+			}
+		}
+		return shown;
 	}
 
 	/** Opens the clear-all confirmation without clearing on confirm; used by UI snapshots. */
@@ -494,6 +806,22 @@ public final class WaypointsScreen extends UiPanelScreen {
 		);
 	}
 
-	private record RowBox(String id, int x, int y, int width, int actionsX, int actionY) {
+	/** One line of the list: a set's header or a waypoint. */
+	private sealed interface Item permits GroupItem, EntryItem {
+	}
+
+	private record GroupItem(String key, String title, int count, boolean collapsed) implements Item {
+	}
+
+	private record EntryItem(WaypointEntry entry) implements Item {
+	}
+
+	private record GroupBox(String key, int x, int y, int width) {
+	}
+
+	private record RowBox(WaypointEntry entry, int x, int y, int width, int actionsX, int actionY) {
+		String id() {
+			return entry.waypoint().id();
+		}
 	}
 }
