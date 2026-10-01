@@ -61,14 +61,22 @@ public final class WaypointChatShare {
 
 	/** Reads {@code text}; {@code deferred} puts the offer after the message it is for, which the client does when the message is shown. */
 	private static void receive(Minecraft client, String text, @Nullable String knownSender, boolean deferred) {
-		SharedWaypoint shared = WaypointShare.parse(text);
-		if (shared == null) {
+		SharedWaypoint found = WaypointShare.parse(text);
+		if (found == null) {
 			return;
 		}
 		String senderName = knownSender != null ? knownSender : guessSender(client, text);
+		if (senderName == null) {
+			// Nobody said it: a game message such as command feedback ("Changed the block at 1, 2, 3") counts only in the stricter forms.
+			found = WaypointShare.parse(text, false);
+			if (found == null) {
+				return;
+			}
+		}
 		if (senderName != null && senderName.equalsIgnoreCase(client.getUser().getName())) {
 			return;
 		}
+		SharedWaypoint shared = found;
 		if (deferred) {
 			client.execute(() -> present(client, shared, senderName));
 		} else {
@@ -95,7 +103,10 @@ public final class WaypointChatShare {
 		return newest;
 	}
 
-	/** For a message without a sender: the first online player whose name is in it. */
+	/**
+	 * For a message without a sender: the first online player who is speaking in it. A name written like a chat
+	 * prefix ("<Alex>", "Alex:", "[Rank] Alex »") speaks; one that is only mentioned ("Teleported Alex to 1, 2, 3") doesn't.
+	 */
 	private static @Nullable String guessSender(Minecraft client, String text) {
 		if (client.getConnection() == null) {
 			return null;
@@ -107,13 +118,23 @@ public final class WaypointChatShare {
 			if (name == null || name.isEmpty()) {
 				continue;
 			}
-			java.util.regex.Matcher matcher = Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(name) + "(?![A-Za-z0-9_])", Pattern.CASE_INSENSITIVE).matcher(text);
+			java.util.regex.Matcher matcher = speaking(name).matcher(text);
 			if (matcher.find() && (matcher.start() < foundAt || (matcher.start() == foundAt && name.length() > found.length()))) {
 				found = name;
 				foundAt = matcher.start();
 			}
 		}
 		return found;
+	}
+
+	/** A player's name followed by what ends a chat prefix: "<Alex>", "Alex:", "Alex »", "Alex >". */
+	private static Pattern speaking(String name) {
+		return Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(name) + "(?![A-Za-z0-9_])\\s*[>)\\]]?\\s*[:»›>|]", Pattern.CASE_INSENSITIVE);
+	}
+
+	/** Whether {@code name} is speaking in {@code text}; for UI snapshots. */
+	public static boolean speaksForSnapshot(String text, String name) {
+		return speaking(name).matcher(text).find();
 	}
 
 	private static void present(Minecraft client, SharedWaypoint shared, @Nullable String senderName) {

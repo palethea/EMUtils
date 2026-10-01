@@ -55,6 +55,15 @@ public final class WaypointShare {
 
 	/** The location in {@code text}, or null when there is none. The first form that matches wins. */
 	public static @Nullable SharedWaypoint parse(String text) {
+		return parse(text, true);
+	}
+
+	/**
+	 * The location in {@code text}. Without {@code allowTrailing}, three bare numbers ending the message don't
+	 * count: that is for a message a player wrote, since command feedback such as "Changed the block at 1, 2, 3"
+	 * ends the same way.
+	 */
+	public static @Nullable SharedWaypoint parse(String text, boolean allowTrailing) {
 		if (text == null || text.isBlank()) {
 			return null;
 		}
@@ -78,7 +87,7 @@ public final class WaypointShare {
 		if (labeled.find()) {
 			return plain(labeled.group(1), labeled.group(2), labeled.group(3), labeled.group(4) == null ? null : journeyMapDimension(labeled.group(4)), true);
 		}
-		for (Pattern pattern : new Pattern[] {BRACKETED, KEYWORD, TRAILING}) {
+		for (Pattern pattern : allowTrailing ? new Pattern[] {BRACKETED, KEYWORD, TRAILING} : new Pattern[] {BRACKETED, KEYWORD}) {
 			Matcher matcher = pattern.matcher(text);
 			if (matcher.find()) {
 				SharedWaypoint found = plain(matcher.group(1), matcher.group(2), matcher.group(3), null, false);
