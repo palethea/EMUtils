@@ -61,14 +61,22 @@ public final class WaypointChatShare {
 
 	/** Reads {@code text}; {@code deferred} puts the offer after the message it is for, which the client does when the message is shown. */
 	private static void receive(Minecraft client, String text, @Nullable String knownSender, boolean deferred) {
-		SharedWaypoint shared = WaypointShare.parse(text);
-		if (shared == null) {
+		SharedWaypoint found = WaypointShare.parse(text);
+		if (found == null) {
 			return;
 		}
 		String senderName = knownSender != null ? knownSender : guessSender(client, text);
+		if (senderName == null) {
+			// Nobody said it: a game message such as command feedback ("Changed the block at 1, 2, 3") counts only in the stricter forms.
+			found = WaypointShare.parse(text, false);
+			if (found == null) {
+				return;
+			}
+		}
 		if (senderName != null && senderName.equalsIgnoreCase(client.getUser().getName())) {
 			return;
 		}
+		SharedWaypoint shared = found;
 		if (deferred) {
 			client.execute(() -> present(client, shared, senderName));
 		} else {

@@ -3635,6 +3635,14 @@ public final class UiSnapshotter {
 			check(WaypointShare.parse(text) == null, "no location in \"" + text + "\"");
 		}
 
+		// Command feedback that happens to end in three numbers (#201) is not someone sharing a location.
+		for (String feedback : new String[] {"Changed the block at -26, 7, 26", "Teleported Steve to 10.5, 64.0, -23.2", "Set the world spawn point to 100, 80, 200"}) {
+			check(WaypointShare.parse(feedback, true) != null && WaypointShare.parse(feedback, false) == null, "\"" + feedback + "\" counts only as something a player wrote");
+		}
+		for (String strict : new String[] {"xaero-waypoint:Home:H:10:64:-20:5:false:0:Internal-overworld-waypoints", "[name:Base, x:5, y:64, z:7]", "Base at x: 12, y: 64, z: -30", "coords: 100 64 -250", "(23 44 1)"}) {
+			check(WaypointShare.parse(strict, false) != null, "the stricter forms still count without a player: " + strict);
+		}
+
 		Waypoint sample = new Waypoint(12, 64, -30, nether, "snapshot", 0L, "Base", 0xFF55FF55, WaypointType.CUSTOM);
 		for (WaypointShareFormat format : WaypointShareFormat.values()) {
 			String written = WaypointShare.format(sample, format, overworld);
@@ -3649,6 +3657,8 @@ public final class UiSnapshotter {
 		EMUtilsConfig config = EMUtilsClient.config();
 		WaypointManager manager = EMUtilsClient.waypoint();
 		int before = WaypointChatShare.pendingCountForSnapshot();
+		WaypointChatShare.receiveForSnapshot(client, "Changed the block at 1234, 66, -2345", null);
+		check(WaypointChatShare.pendingCountForSnapshot() == before, "command feedback with no player in it gets no offer");
 		int waypointsBefore = manager.waypointsForCurrentWorld(client).size();
 		WaypointChatShare.receiveForSnapshot(client, "<Steve> base at (1234, 66, -2345)", "Steve");
 		check(WaypointChatShare.pendingCountForSnapshot() == before + 1 && !manager.hasWaypointAt(client, null, 1234, 66, -2345), "shared coordinates get an offer, and are not added by themselves");
