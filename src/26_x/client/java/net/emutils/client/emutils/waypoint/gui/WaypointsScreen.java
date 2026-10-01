@@ -473,19 +473,25 @@ public final class WaypointsScreen extends UiPanelScreen {
 		UiText.drawCentered(context, font, distance, UiText.Size.LABEL, distanceX, y + ROW_HEIGHT / 2, theme.muted());
 
 		// Left side: name and badges, coordinates below.
-		Component type = Component.translatable(waypoint.type().labelKey());
-		int badgeWidth = UiText.width(font, type, UiText.Size.SMALL) + 8;
+		// Only the unusual ones get a badge: a death waypoint, and one from another dimension.
+		Component type = waypoint.type() == WaypointType.DEATH ? Component.translatable(waypoint.type().labelKey()) : null;
 		Component origin = entry.sameDimension() ? null : originLabel(entry);
-		int originWidth = origin == null ? 0 : UiText.width(font, origin, UiText.Size.SMALL) + 8 + 4;
+		int badgesWidth = 0;
+		for (Component badge : new Component[] {type, origin}) {
+			if (badge != null) {
+				badgesWidth += 6 + UiText.width(font, badge, UiText.Size.SMALL) + 8 + (badgesWidth > 0 ? -2 : 0);
+			}
+		}
 		int textRight = distanceX - 10;
-		Component name = UiText.ellipsize(font, Component.literal(waypoint.label()), UiText.Size.BOLD, textRight - nameX - badgeWidth - originWidth - 6);
+		Component name = UiText.ellipsize(font, Component.literal(waypoint.label()), UiText.Size.BOLD, textRight - nameX - badgesWidth);
 		UiText.drawCentered(context, font, name, UiText.Size.BOLD, nameX, nameCenter, UiTheme.fade(theme.text(), shown));
 		int badgeX = nameX + UiText.width(font, name, UiText.Size.BOLD) + 6;
 		int badgeY = nameCenter - (UiText.lineHeight(font, UiText.Size.SMALL) + 5) / 2;
-		boolean death = waypoint.type() == WaypointType.DEATH;
-		UiWidgets.badge(context, font, badgeX, badgeY, type, death ? UiTheme.fade(theme.warning(), 0.16F) : theme.segmentBackground(), death ? theme.warning() : theme.textSecondary());
+		if (type != null) {
+			badgeX += UiWidgets.badge(context, font, badgeX, badgeY, type, UiTheme.fade(theme.warning(), 0.16F), theme.warning()) + 4;
+		}
 		if (origin != null) {
-			UiWidgets.badge(context, font, badgeX + badgeWidth + 4, badgeY, origin, UiTheme.fade(theme.accent(), 0.16F), theme.accent());
+			UiWidgets.badge(context, font, badgeX, badgeY, origin, UiTheme.fade(theme.accent(), 0.16F), theme.accent());
 		}
 		Component coords = Component.literal("X " + entry.x() + "   Y " + entry.y() + "   Z " + entry.z());
 		UiText.drawCentered(context, font, coords, UiText.Size.BODY, nameX, y + ROW_HEIGHT - ROW_PADDING - 4, UiTheme.fade(theme.muted(), shown));

@@ -277,6 +277,7 @@ Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.
 View and manage saved waypoints for the current world or server.
 
 - Edit Waypoint: change a waypoint's name, set, position, color and beacon after creating it, with the pencil button or by clicking its row.
+- Tags: only the special waypoints are tagged, a death waypoint with "Death" and one from another dimension with where it comes from.
 - Search: type to narrow the list to waypoints whose name or set matches; Esc clears it.
 - Sort: order the list by distance (default), name or newest.
 - Sets: give a waypoint a set in the add and edit sheet, typing a name or picking one already in use. A list with sets shows them as headers, alphabetically, with the waypoints in no set last; click a header to fold it up. A search opens folded sets it finds something in.
