@@ -176,6 +176,13 @@ public final class EMUtilsTexts {
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE = "emutils.ui.waypoint.clear_message";
     public static final String UI_CLEAR_WAYPOINTS_MESSAGE_ONE = "emutils.ui.waypoint.clear_message_one";
     public static final String UI_WAYPOINT_SEARCH = "emutils.ui.waypoint.search";
+    public static final String SUFFIX_COUNT = "emutils.suffix.count";
+    public static final String WAYPOINT_REACHED_REMOVED = "emutils.waypoint.reached_removed";
+    public static final String WAYPOINT_REACH_REMOVE = "emutils.waypoint.reach.remove";
+    public static final String WAYPOINT_REACH_ASK = "emutils.waypoint.reach.ask";
+    public static final String WAYPOINT_REACH_KEEP = "emutils.waypoint.reach.keep";
+    public static final String OPTION_WAYPOINT_REACH_ACTION = "emutils.option.waypoint_reach_action";
+    public static final String OPTION_DEATH_WAYPOINT_KEEP = "emutils.option.death_waypoint_keep";
     public static final String UI_WAYPOINT_SHARE = "emutils.ui.waypoint.share";
     public static final String WAYPOINT_SHARED = "emutils.waypoint.shared";
     public static final String WAYPOINT_SHARED_PROMPT = "emutils.waypoint.shared_prompt";

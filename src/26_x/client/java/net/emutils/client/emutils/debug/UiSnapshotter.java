@@ -90,6 +90,7 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointType;
 import net.emutils.client.emutils.waypoint.SharedWaypoint;
 import net.emutils.client.emutils.waypoint.WaypointTarget;
@@ -3185,6 +3186,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 15, "add waypoint sheet from shared coordinates");
 			}
 			case 369 -> {
+				checkDeathWaypoints(client);
 				WaypointsScreen.setCollapsedForSnapshot("Far trips", false);
 				EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 				EMUtilsClient.config().resetDeathWaypointDefaults();
@@ -3504,6 +3506,69 @@ public final class UiSnapshotter {
 			} catch (IOException exception) {
 				EMUtilsClient.LOGGER.warn("Could not remove the blocking directory {}", blocker, exception);
 			}
+		}
+	}
+
+	/** Checks the death waypoints of #105: the history that is kept, and what reaching one does. Leaves waypoints behind for the cleanup. */
+	private static void checkDeathWaypoints(Minecraft client) {
+		if (client.player == null) {
+			return;
+		}
+		WaypointManager manager = EMUtilsClient.waypoint();
+		EMUtilsConfig config = EMUtilsClient.config();
+		BlockPos base = client.player.blockPosition();
+		manager.clearForCurrentWorld(client);
+
+		// Each death past the history drops the oldest, and never a waypoint that isn't a death.
+		config.setDeathWaypointKeep(2);
+		manager.addCustom(client, "Custom", base.getX(), base.getY(), base.getZ(), 0xFF55FF55, false, "");
+		for (int i = 0; i < 4; i++) {
+			manager.recordDeath(client, base.offset(100 + i * 50, 0, 0));
+			pause();
+		}
+		List<Waypoint> deaths = manager.waypointsForCurrentWorld(client).stream().filter(Waypoint::isDeath).sorted(Comparator.comparingLong(Waypoint::timestamp)).toList();
+		check(deaths.size() == 2 && deaths.get(0).x() == base.getX() + 200 && deaths.get(1).x() == base.getX() + 250, "with 2 deaths kept, the two newest stay: " + deaths.stream().map(Waypoint::x).toList());
+		check(manager.waypointsForCurrentWorld(client).stream().anyMatch(waypoint -> !waypoint.isDeath() && waypoint.label().equals("Custom")), "a custom waypoint is never dropped for a death");
+		manager.keep(client, deaths.get(0).id());
+		manager.recordDeath(client, base.offset(400, 0, 0));
+		long deathCount = manager.waypointsForCurrentWorld(client).stream().filter(Waypoint::isDeath).count();
+		check(deathCount == 3 && manager.waypointsForCurrentWorld(client).stream().anyMatch(waypoint -> waypoint.id().equals(deaths.get(0).id())), "a death waypoint you kept stays and isn't counted in the history (" + deathCount + " left)");
+		pause();
+
+		// Reaching one: only after you have been away from it, and only as the setting says.
+		manager.clearForCurrentWorld(client);
+		config.setWaypointReachAction(WaypointReachAction.REMOVE);
+		manager.recordDeath(client, base);
+		manager.recordDeath(client, base.offset(300, 0, 0));
+		pause();
+		check(deathCount(client) == 2, "two death waypoints to reach");
+		manager.checkReached(client, base.getX() + 0.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		check(deathCount(client) == 2, "a death waypoint you respawned next to isn't reached until you have been away from it");
+		manager.checkReached(client, base.getX() + 60.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		manager.checkReached(client, base.getX() + 8.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		check(deathCount(client) == 2, "getting near a death waypoint isn't reaching it with Remove on, only getting right up to it is");
+		manager.checkReached(client, base.getX() + 0.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		check(deathCount(client) == 1, "reaching a death waypoint after being away from it removes it");
+
+		config.setWaypointReachAction(WaypointReachAction.KEEP);
+		manager.checkReached(client, base.getX() + 360.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		manager.checkReached(client, base.getX() + 300.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		check(deathCount(client) == 1, "with Keep It, reaching a death waypoint leaves it");
+		config.setWaypointReachAction(WaypointReachAction.ASK);
+		manager.checkReached(client, base.getX() + 300.5D, base.getY() + 1.25D, base.getZ() + 0.5D);
+		check(deathCount(client) == 1, "with Ask in Chat, reaching a death waypoint asks instead of removing it");
+	}
+
+	private static long deathCount(Minecraft client) {
+		return EMUtilsClient.waypoint().waypointsForCurrentWorld(client).stream().filter(Waypoint::isDeath).count();
+	}
+
+	/** Waypoints are ordered by creation time in milliseconds, so keep each one's apart. */
+	private static void pause() {
+		try {
+			Thread.sleep(3);
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
 		}
 	}
 

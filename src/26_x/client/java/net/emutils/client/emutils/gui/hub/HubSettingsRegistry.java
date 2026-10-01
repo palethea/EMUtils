@@ -19,6 +19,7 @@ import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
+import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointShareFormat;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
@@ -236,6 +237,21 @@ public final class HubSettingsRegistry {
 			value -> Component.translatable(value.labelKey())
 		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_COPY_COORDINATES_FEEDBACK, config::copyCoordinatesFeedback, config::setCopyCoordinatesFeedback));
+		rows.add(HubSettingRow.Cycle.ofEnum(
+			EMUtilsTexts.OPTION_WAYPOINT_REACH_ACTION,
+			config::waypointReachAction,
+			config::setWaypointReachAction,
+			WaypointReachAction.class,
+			value -> Component.translatable(value.labelKey())
+		));
+		rows.add(new HubSettingRow.Slider(
+			EMUtilsTexts.OPTION_DEATH_WAYPOINT_KEEP,
+			EMUtilsTexts.SUFFIX_COUNT,
+			EMUtilsConfig.DEATH_WAYPOINT_KEEP_MIN,
+			EMUtilsConfig.DEATH_WAYPOINT_KEEP_MAX,
+			config::deathWaypointKeep,
+			config::setDeathWaypointKeep
+		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_CHAT_PROMPT, config::waypointChatPrompt, config::setWaypointChatPrompt));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_CHAT_AUTO_CREATE, config::waypointChatAutoCreate, config::setWaypointChatAutoCreate));
 		rows.add(HubSettingRow.Cycle.ofEnum(

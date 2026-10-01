@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.HudFont;
+import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointShareFormat;
 import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.hud.HudStyle;
@@ -62,6 +63,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int RECONNECT_MAX_TRIES_MAX = 15;
 	public static final int SCREENSHOT_MAX_COUNT_MIN = 50;
 	public static final int SCREENSHOT_MAX_COUNT_MAX = 500;
+	public static final int DEATH_WAYPOINT_KEEP_MIN = 1;
+	public static final int DEATH_WAYPOINT_KEEP_MAX = 10;
+	public static final int DEATH_WAYPOINT_KEEP_DEFAULT = 3;
 	public static final int DEATH_WAYPOINT_OPACITY_MIN = 25;
 	public static final int DEATH_WAYPOINT_OPACITY_MAX = 100;
 	public static final int DEATH_WAYPOINT_SIZE_MIN = 25;
@@ -284,6 +288,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer waypointLabelBackground = 0;
 	private String waypointSort = WaypointSort.DISTANCE.name();
 	private Boolean waypointShowOtherDimensions = Boolean.FALSE;
+	private Integer deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
+	private String waypointReachAction = WaypointReachAction.REMOVE.name();
 	private Boolean waypointChatPrompt = Boolean.TRUE;
 	private Boolean waypointChatAutoCreate = Boolean.FALSE;
 	private String waypointShareFormat = WaypointShareFormat.PLAIN.name();
@@ -2890,6 +2896,26 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** How many death waypoints a world keeps; each new death drops the oldest past this. */
+	public int deathWaypointKeep() {
+		return Math.clamp(deathWaypointKeep == null ? DEATH_WAYPOINT_KEEP_DEFAULT : deathWaypointKeep, DEATH_WAYPOINT_KEEP_MIN, DEATH_WAYPOINT_KEEP_MAX);
+	}
+
+	public void setDeathWaypointKeep(int count) {
+		deathWaypointKeep = Math.clamp(count, DEATH_WAYPOINT_KEEP_MIN, DEATH_WAYPOINT_KEEP_MAX);
+		save();
+	}
+
+	/** What happens to a death waypoint when you reach it. */
+	public WaypointReachAction waypointReachAction() {
+		return WaypointReachAction.fromName(waypointReachAction);
+	}
+
+	public void setWaypointReachAction(WaypointReachAction action) {
+		waypointReachAction = (action == null ? WaypointReachAction.REMOVE : action).name();
+		save();
+	}
+
 	/** Whether coordinates sent in chat get an offer to add a waypoint. */
 	public boolean waypointChatPrompt() {
 		return waypointChatPrompt == null || waypointChatPrompt;
@@ -3003,6 +3029,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointLabelBackground = 0;
 		waypointSort = WaypointSort.DISTANCE.name();
 		waypointShowOtherDimensions = Boolean.FALSE;
+		deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
+		waypointReachAction = WaypointReachAction.REMOVE.name();
 		waypointChatPrompt = Boolean.TRUE;
 		waypointChatAutoCreate = Boolean.FALSE;
 		waypointShareFormat = WaypointShareFormat.PLAIN.name();

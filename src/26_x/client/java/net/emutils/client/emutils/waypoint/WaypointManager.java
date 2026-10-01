@@ -35,6 +35,14 @@ public final class WaypointManager {
     private static final double NEAR_DISTANCE_BLOCKS = 10.0D;
     private static final double NEAR_DISTANCE_SQUARED =
         NEAR_DISTANCE_BLOCKS * NEAR_DISTANCE_BLOCKS;
+    /** How close you have to get to a death waypoint for it to count as reached and be removed. */
+    private static final double REACHED_DISTANCE_BLOCKS = 5.0D;
+    private static final double REACHED_DISTANCE_SQUARED =
+        REACHED_DISTANCE_BLOCKS * REACHED_DISTANCE_BLOCKS;
+    /** A death waypoint only counts as reached after you have been this far from it, so respawning next to it doesn't. */
+    private static final double ARM_DISTANCE_BLOCKS = 20.0D;
+    private static final double ARM_DISTANCE_SQUARED =
+        ARM_DISTANCE_BLOCKS * ARM_DISTANCE_BLOCKS;
     private static final long DUPLICATE_CAPTURE_WINDOW_MS = 1_000L;
     private static final int MAX_WAYPOINTS_PER_WORLD = 64;
 
@@ -45,6 +53,8 @@ public final class WaypointManager {
      * a restart clears, so an unanswered one is asked again next time; only an explicit Keep is saved.
      */
     private final Set<String> promptedThisSession = new HashSet<>();
+    /** Death waypoints you have been far enough from since the game started, so getting near them again counts as reaching them. */
+    private final Set<String> armedDeaths = new HashSet<>();
     /** The old death waypoint file is deleted once the waypoints have been written without it. */
     private boolean legacyDeathFilePending;
 
@@ -57,7 +67,15 @@ public final class WaypointManager {
             return;
         }
 
-        BlockPos blockPos = client.player.blockPosition();
+        recordDeath(client, client.player.blockPosition());
+    }
+
+    /** Adds a death waypoint at {@code blockPos} and drops the oldest ones past the history you keep (#105). */
+    public void recordDeath(Minecraft client, BlockPos blockPos) {
+        if (!enabled() || client == null || client.level == null) {
+            return;
+        }
+
         long timestamp = System.currentTimeMillis();
         String worldKey = worldKey(client);
         String dimension = dimensionId(client.level);
@@ -91,6 +109,7 @@ public final class WaypointManager {
             );
         waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
+        trimDeathHistory(client, worldKey);
         save();
 
         if (EMUtilsClient.config().waypointAutoCopyCoords()) {
@@ -231,26 +250,74 @@ public final class WaypointManager {
             return;
         }
 
-        Waypoint nearest = findNearestUnprompted(client);
-        if (nearest == null) {
+        checkReached(client, client.player.getX(), client.player.getY(), client.player.getZ());
+    }
+
+    /**
+     * Death waypoints in this dimension that you are at (#105): removed, or asked about in chat, as the When
+     * Reached setting says. One you haven't been far from since the game started, such as the one you respawned
+     * next to, doesn't count until you have; one you chose to keep or hid never does.
+     */
+    public void checkReached(Minecraft client, double x, double y, double z) {
+        WaypointReachAction action = EMUtilsClient.config().waypointReachAction();
+        for (Waypoint waypoint : waypointsForCurrentWorld(client)) {
+            if (!waypoint.isDeath() || waypoint.hidden() || waypoint.nearPromptShown() || promptedThisSession.contains(waypoint.id())) {
+                continue;
+            }
+
+            double distance = distanceSquared(x, y, z, waypoint);
+            if (distance > ARM_DISTANCE_SQUARED) {
+                armedDeaths.add(waypoint.id());
+                continue;
+            }
+            if (action == WaypointReachAction.KEEP || !armedDeaths.contains(waypoint.id())) {
+                continue;
+            }
+
+            if (action == WaypointReachAction.REMOVE) {
+                if (distance <= REACHED_DISTANCE_SQUARED) {
+                    clear(client, waypoint.id(), WaypointMessage::reachedRemoved);
+                }
+                continue;
+            }
+
+            if (distance > NEAR_DISTANCE_SQUARED) {
+                continue;
+            }
+            try {
+                WaypointChat.showNearPrompt(
+                    net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
+                    waypoint.id()
+                );
+                promptedThisSession.add(waypoint.id());
+            } catch (Throwable exception) {
+                EMUtilsClient.LOGGER.error(
+                    "Failed to show waypoint prompt.",
+                    exception
+                );
+            }
             return;
         }
+    }
 
-        if (distanceSquaredToPlayer(client, nearest) > NEAR_DISTANCE_SQUARED) {
-            return;
-        }
+    /**
+     * Keeps this world's newest death waypoints, as many as the Deaths to Keep setting says, and drops the
+     * older ones. A death waypoint you chose to keep is yours to delete: it stays and isn't counted.
+     */
+    private void trimDeathHistory(Minecraft client, String worldKey) {
+        List<Waypoint> deaths = waypoints
+            .stream()
+            .filter(wp -> wp.isDeath() && !wp.nearPromptShown() && wp.matchesWorldKey(worldKey))
+            .sorted(Comparator.comparingLong(Waypoint::timestamp))
+            .toList();
 
-        try {
-            WaypointChat.showNearPrompt(
-                net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client),
-                nearest.id()
-            );
-            promptedThisSession.add(nearest.id());
-        } catch (Throwable exception) {
-            EMUtilsClient.LOGGER.error(
-                "Failed to show waypoint prompt.",
-                exception
-            );
+        int excess = deaths.size() - EMUtilsClient.config().deathWaypointKeep();
+        for (int index = 0; index < excess; index++) {
+            Waypoint old = deaths.get(index);
+            waypoints.remove(old);
+            promptedThisSession.remove(old.id());
+            armedDeaths.remove(old.id());
+            removeWaypoint(client, old);
         }
     }
 
@@ -567,26 +634,6 @@ public final class WaypointManager {
     }
 
     @Nullable
-    private Waypoint findNearestUnprompted(Minecraft client) {
-        Waypoint nearest = null;
-        double nearestDistance = Double.MAX_VALUE;
-
-        for (Waypoint waypoint : waypointsForCurrentWorld(client)) {
-            if (waypoint.hidden() || !waypoint.isDeath() || waypoint.nearPromptShown() || promptedThisSession.contains(waypoint.id())) {
-                continue;
-            }
-
-            double distance = distanceSquaredToPlayer(client, waypoint);
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearest = waypoint;
-            }
-        }
-
-        return nearest;
-    }
-
-    @Nullable
     private Waypoint findById(String id) {
         for (Waypoint waypoint : waypoints) {
             if (waypoint.id().equals(id)) {
@@ -597,13 +644,10 @@ public final class WaypointManager {
         return null;
     }
 
-    private double distanceSquaredToPlayer(
-        Minecraft client,
-        Waypoint waypoint
-    ) {
-        double dx = client.player.getX() - renderX(waypoint);
-        double dy = client.player.getY() - renderY(waypoint);
-        double dz = client.player.getZ() - renderZ(waypoint);
+    private static double distanceSquared(double x, double y, double z, Waypoint waypoint) {
+        double dx = x - renderX(waypoint);
+        double dy = y - renderY(waypoint);
+        double dz = z - renderZ(waypoint);
         return dx * dx + dy * dy + dz * dz;
     }
 
