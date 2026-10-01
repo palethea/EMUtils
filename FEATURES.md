@@ -231,6 +231,8 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
 - Copy Coordinates: a keybind that copies your current position in the Coord Format, or the camera's position while Free Camera is active.
 - Copy Coords Feedback: show a chat message with the copied coordinates.
+- Deaths to Keep: how many death waypoints a world keeps, from 1 to 10 (3 by default). A new death drops the oldest ones past that, never a custom waypoint, and never a death waypoint you chose to Keep, which isn't counted.
+- When You Reach a Death Point: Ask in Chat (default) asks with Remove and Keep buttons when you get back to a death waypoint, Remove It removes it on its own once you are within 5 blocks, and Keep It leaves it. It counts only once you have been 20 blocks away from it, so respawning next to it doesn't trigger it, and hidden waypoints and ones you kept are left alone.
 - Add Waypoint at Crosshair: a keybind that opens Add Waypoint at the spot you are aiming at, up to 512 blocks away, ready to name.
 - Offer Shared Coordinates: when someone sends coordinates in chat, an offer under the message opens Add Waypoint with them filled in, named after the sender. On by default. Reads plain coordinates (`(23 44 1)`, `x: 123, y: 23, z: 54`, `x123 y23 z43`, `coords: 1 2 3`, a message ending in three numbers, a `/tp` command), Xaero's Minimap shares (`xaero-waypoint:...`) and JourneyMap's `[name:Home, x:1, y:2, z:3, dim:0]`. Xaero and JourneyMap shares keep their name, color and dimension. Your own messages and spots that already have a waypoint get no offer.
 - Auto-Add Shared Coordinates: skip the offer and add the waypoint at once, named after the sender (or the share's own name), with a Remove button in the message. Off by default.
@@ -287,7 +289,7 @@ View and manage saved waypoints for the current world or server.
 - Sort: order the list by distance (default), name or newest.
 - Sets: give a waypoint a set in the add and edit sheet, typing a name or picking one already in use. A list with sets shows them as headers, alphabetically, with the waypoints in no set last; click a header to fold it up. A search opens folded sets it finds something in.
 - Other Dimensions: a switch above the list (also in the Waypoints settings) that adds the waypoints made in the world's other dimensions. Overworld and Nether ones show at converted coordinates with a "From Nether" or "From Overworld" tag, copy those coordinates, and appear in the world; End and custom dimension ones show their own coordinates and dimension, without a distance. Editing such a waypoint shows the coordinates it was saved with. Clear all only deletes the current dimension's waypoints.
-- Nearby Removal Prompts: remove nearby waypoints quickly while playing.
+- Nearby Removal Prompts: with When You Reach a Death Point set to Ask in Chat, a death waypoint you get back to asks in chat whether to remove or keep it.
 - Coordinate Copying: copy waypoint coordinates in the configured format.
 - Waypoint Visibility: hide individual waypoints without deleting them.
 

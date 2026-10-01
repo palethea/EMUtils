@@ -50,6 +50,10 @@ public final class WaypointMessage {
 		return Component.translatable(EMUtilsTexts.WAYPOINT_NO_TARGET).withStyle(ChatFormatting.GRAY);
 	}
 
+	public static Component reachedRemoved() {
+		return Component.translatable(EMUtilsTexts.WAYPOINT_REACHED_REMOVED).withStyle(ChatFormatting.GREEN);
+	}
+
 	public static Component cleared() {
 		return Component.translatable(EMUtilsTexts.WAYPOINT_CLEARED).withStyle(ChatFormatting.GREEN);
 	}
