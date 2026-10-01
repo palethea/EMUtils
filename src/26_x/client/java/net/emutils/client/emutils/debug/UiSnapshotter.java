@@ -3643,6 +3643,14 @@ public final class UiSnapshotter {
 			check(WaypointShare.parse(strict, false) != null, "the stricter forms still count without a player: " + strict);
 		}
 
+		// A name only mentioned in feedback isn't someone speaking, so "Teleported Alex to ..." has no sender.
+		for (String spoken : new String[] {"<Alex> base 1 2 3", "Alex: base 1 2 3", "[VIP] Alex \u00bb base 1 2 3", "Alex > base 1 2 3"}) {
+			check(WaypointChatShare.speaksForSnapshot(spoken, "Alex"), "a name written like a chat prefix is speaking: " + spoken);
+		}
+		for (String mentioned : new String[] {"Teleported Alex to 1.0, 64.0, 2.0", "Gave 1 [Diamond] to Alex", "Alexander: base 1 2 3"}) {
+			check(!WaypointChatShare.speaksForSnapshot(mentioned, "Alex"), "a name that is only mentioned isn't speaking: " + mentioned);
+		}
+
 		Waypoint sample = new Waypoint(12, 64, -30, nether, "snapshot", 0L, "Base", 0xFF55FF55, WaypointType.CUSTOM);
 		for (WaypointShareFormat format : WaypointShareFormat.values()) {
 			String written = WaypointShare.format(sample, format, overworld);

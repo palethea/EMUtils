@@ -103,7 +103,10 @@ public final class WaypointChatShare {
 		return newest;
 	}
 
-	/** For a message without a sender: the first online player whose name is in it. */
+	/**
+	 * For a message without a sender: the first online player who is speaking in it. A name written like a chat
+	 * prefix ("<Alex>", "Alex:", "[Rank] Alex »") speaks; one that is only mentioned ("Teleported Alex to 1, 2, 3") doesn't.
+	 */
 	private static @Nullable String guessSender(Minecraft client, String text) {
 		if (client.getConnection() == null) {
 			return null;
@@ -115,13 +118,23 @@ public final class WaypointChatShare {
 			if (name == null || name.isEmpty()) {
 				continue;
 			}
-			java.util.regex.Matcher matcher = Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(name) + "(?![A-Za-z0-9_])", Pattern.CASE_INSENSITIVE).matcher(text);
+			java.util.regex.Matcher matcher = speaking(name).matcher(text);
 			if (matcher.find() && (matcher.start() < foundAt || (matcher.start() == foundAt && name.length() > found.length()))) {
 				found = name;
 				foundAt = matcher.start();
 			}
 		}
 		return found;
+	}
+
+	/** A player's name followed by what ends a chat prefix: "<Alex>", "Alex:", "Alex »", "Alex >". */
+	private static Pattern speaking(String name) {
+		return Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(name) + "(?![A-Za-z0-9_])\\s*[>)\\]]?\\s*[:»›>|]", Pattern.CASE_INSENSITIVE);
+	}
+
+	/** Whether {@code name} is speaking in {@code text}; for UI snapshots. */
+	public static boolean speaksForSnapshot(String text, String name) {
+		return speaking(name).matcher(text).find();
 	}
 
 	private static void present(Minecraft client, SharedWaypoint shared, @Nullable String senderName) {
