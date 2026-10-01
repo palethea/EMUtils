@@ -289,7 +289,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String waypointSort = WaypointSort.DISTANCE.name();
 	private Boolean waypointShowOtherDimensions = Boolean.FALSE;
 	private Integer deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
-	private String waypointReachAction = WaypointReachAction.REMOVE.name();
+	private String waypointReachAction = WaypointReachAction.ASK.name();
 	private Boolean waypointChatPrompt = Boolean.TRUE;
 	private Boolean waypointChatAutoCreate = Boolean.FALSE;
 	private String waypointShareFormat = WaypointShareFormat.PLAIN.name();
@@ -2912,7 +2912,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	}
 
 	public void setWaypointReachAction(WaypointReachAction action) {
-		waypointReachAction = (action == null ? WaypointReachAction.REMOVE : action).name();
+		waypointReachAction = (action == null ? WaypointReachAction.ASK : action).name();
 		save();
 	}
 
@@ -3030,7 +3030,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointSort = WaypointSort.DISTANCE.name();
 		waypointShowOtherDimensions = Boolean.FALSE;
 		deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
-		waypointReachAction = WaypointReachAction.REMOVE.name();
+		waypointReachAction = WaypointReachAction.ASK.name();
 		waypointChatPrompt = Boolean.TRUE;
 		waypointChatAutoCreate = Boolean.FALSE;
 		waypointShareFormat = WaypointShareFormat.PLAIN.name();

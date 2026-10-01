@@ -4,8 +4,8 @@ import net.emutils.client.emutils.util.EMUtilsTexts;
 
 /** What happens to a death waypoint when you reach it (#105). */
 public enum WaypointReachAction {
-	REMOVE(EMUtilsTexts.WAYPOINT_REACH_REMOVE),
 	ASK(EMUtilsTexts.WAYPOINT_REACH_ASK),
+	REMOVE(EMUtilsTexts.WAYPOINT_REACH_REMOVE),
 	KEEP(EMUtilsTexts.WAYPOINT_REACH_KEEP);
 
 	private final String labelKey;
@@ -27,6 +27,6 @@ public enum WaypointReachAction {
 			}
 		}
 
-		return REMOVE;
+		return ASK;
 	}
 }

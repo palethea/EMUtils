@@ -3517,6 +3517,8 @@ public final class UiSnapshotter {
 		WaypointManager manager = EMUtilsClient.waypoint();
 		EMUtilsConfig config = EMUtilsClient.config();
 		BlockPos base = client.player.blockPosition();
+		config.resetDeathWaypointDefaults();
+		check(config.waypointReachAction() == WaypointReachAction.ASK && config.deathWaypointKeep() == 3, "reaching a death waypoint asks in chat by default, and 3 deaths are kept");
 		manager.clearForCurrentWorld(client);
 
 		// Each death past the history drops the oldest, and never a waypoint that isn't a death.
