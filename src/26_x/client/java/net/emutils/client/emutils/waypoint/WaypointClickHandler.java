@@ -35,6 +35,11 @@ public final class WaypointClickHandler {
 			return true;
 		}
 
+		if (WaypointMessage.ADD_SHARED_WAYPOINT_ACTION.equals(actionId)) {
+			id.ifPresent(value -> WaypointChatShare.open(client, value));
+			return true;
+		}
+
 		return false;
 	}
 

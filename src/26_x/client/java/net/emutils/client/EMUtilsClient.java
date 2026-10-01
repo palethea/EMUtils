@@ -16,8 +16,11 @@ import net.emutils.client.emutils.debug.DebugGuiDumper;
 import net.emutils.client.emutils.debug.BackgroundLaunch;
 import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
 import net.emutils.client.emutils.debug.UiSnapshotter;
+import net.emutils.client.emutils.waypoint.SharedWaypoint;
+import net.emutils.client.emutils.waypoint.WaypointChatShare;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
+import net.emutils.client.emutils.waypoint.WaypointTarget;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.food.FoodHudRenderer;
 import net.emutils.client.emutils.food.FoodTooltipComponent;
@@ -99,6 +102,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping openHudLayoutEditorKeyMapping;
 	private static KeyMapping openWaypointsKeyMapping;
 	private static KeyMapping addWaypointKeyMapping;
+	private static KeyMapping addWaypointAtCrosshairKeyMapping;
 	private static KeyMapping copyCoordinatesKeyMapping;
 	private static KeyMapping massDropKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
@@ -128,6 +132,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> tweaksManager.tickAutoTool(client));
 		ClientTickEvents.END_CLIENT_TICK.register(EMUtilsClient::tickClient);
 		WaypointRenderer.register();
+		WaypointChatShare.register();
 		BeaconRadiusRenderer.register();
 		LightLevelOverlayRenderer.register();
 		registerHudLayoutElements();
@@ -263,6 +268,12 @@ public class EMUtilsClient implements ClientModInitializer {
 		));
 		addWaypointKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.add_waypoint",
+			VersionedInput.keyboardType(),
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
+		addWaypointAtCrosshairKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.add_waypoint_at_crosshair",
 			VersionedInput.keyboardType(),
 			InputConstants.UNKNOWN.getValue(),
 			category
@@ -406,6 +417,20 @@ public class EMUtilsClient implements ClientModInitializer {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 			if (!(current instanceof WaypointsScreen)) {
 				client.gui.setScreen(WaypointsScreen.addWaypoint(current));
+			}
+		}
+		while (addWaypointAtCrosshairKeyMapping != null && addWaypointAtCrosshairKeyMapping.consumeClick()) {
+			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			if (current instanceof WaypointsScreen || client.player == null || !waypointManager.enabled()) {
+				continue;
+			}
+			SharedWaypoint target = WaypointTarget.lookedAt(client);
+			if (target == null) {
+				net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client).addClientSystemMessage(
+					net.emutils.client.emutils.text.EmUtilsChatPrefix.chat(net.emutils.client.emutils.waypoint.WaypointMessage.noTarget())
+				);
+			} else {
+				client.gui.setScreen(WaypointsScreen.addShared(current, target));
 			}
 		}
 		while (copyCoordinatesKeyMapping != null && copyCoordinatesKeyMapping.consumeClick()) {

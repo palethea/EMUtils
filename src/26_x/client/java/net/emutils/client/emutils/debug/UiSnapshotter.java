@@ -90,6 +90,12 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.emutils.client.emutils.waypoint.WaypointType;
+import net.emutils.client.emutils.waypoint.SharedWaypoint;
+import net.emutils.client.emutils.waypoint.WaypointTarget;
+import net.emutils.client.emutils.waypoint.WaypointShareFormat;
+import net.emutils.client.emutils.waypoint.WaypointShare;
+import net.emutils.client.emutils.waypoint.WaypointChatShare;
 import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointEntry;
@@ -3088,6 +3094,9 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					setGuiScale(client, 3);
 					client.gui.setScreen(null);
+					// Start from none, so a run that stopped halfway doesn't leave waypoints behind for this one.
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 					seedWaypoints(client);
 					EMUtilsClient.waypoint().captureDeath(client);
 					command(client, "tp @s ~10 ~ ~10");
@@ -3165,7 +3174,17 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 10, "waypoints, sorted by name with a set folded up");
 			}
+			// Shared coordinates (#197): read from chat, offered as a waypoint, or added at once.
 			case 368 -> {
+				if (stepTicks == 1) {
+					String key = checkWaypointSharing(client);
+					setGuiScale(client, 2);
+					WaypointChatShare.open(client, key);
+					check(MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen && "Steve".equals(screen.sheetNameForSnapshot()), "the offer's button opens Add Waypoint named after the sender");
+				}
+				captureAfter(client, 15, "add waypoint sheet from shared coordinates");
+			}
+			case 369 -> {
 				WaypointsScreen.setCollapsedForSnapshot("Far trips", false);
 				EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 				EMUtilsClient.config().resetDeathWaypointDefaults();
@@ -3173,14 +3192,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			// Outside a world: the settings can be opened from the title screen, and so can their screens.
-			case 369 -> {
+			case 370 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 370 -> {
+			case 371 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3189,7 +3208,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 371 -> {
+			case 372 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3200,7 +3219,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 372 -> {
+			case 373 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3211,7 +3230,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 373 -> {
+			case 374 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -3488,6 +3507,79 @@ public final class UiSnapshotter {
 		}
 	}
 
+	private record ShareCase(String text, @Nullable String name, int x, @Nullable Integer y, int z, @Nullable String dimension) {
+	}
+
+	/** Checks reading and writing shared locations and what chat does with them; returns the key of the offer left open. */
+	private static String checkWaypointSharing(Minecraft client) {
+		String overworld = WaypointDimensions.OVERWORLD;
+		String nether = WaypointDimensions.NETHER;
+		ShareCase[] cases = {
+			new ShareCase("<Ann> base (23 44 1)", null, 23, 44, 1, null),
+			new ShareCase("x123, y23, z43", null, 123, 23, 43, null),
+			new ShareCase("(x: 123, y: 23, z:54)", null, 123, 23, 54, null),
+			new ShareCase("<Bob> my base is at x=-200 z=300", null, -200, null, 300, null),
+			new ShareCase("coords: 100 64 -250", null, 100, 64, -250, null),
+			new ShareCase("xaero-waypoint:Home:H:10:~:-20:5:false:0:Internal-overworld-waypoints", "Home", 10, null, -20, overworld),
+			new ShareCase("<Zed> xaero-waypoint:A^col^B:A:1:2:3:0:false:0", "A:B", 1, 2, 3, null),
+			new ShareCase("[name:Diamonds, x:5, y:-58, z:77, dim:-1]", "Diamonds", 5, -58, 77, nether),
+			new ShareCase("[x:5, z:77]", null, 5, null, 77, null),
+			new ShareCase("/execute in minecraft:the_nether run tp @s 10.5 64.0 -23.2 0.0 0.0", null, 10, 64, -24, nether),
+			new ShareCase("<Eve> meet me 120 70 -80", null, 120, 70, -80, null)
+		};
+		for (ShareCase expected : cases) {
+			SharedWaypoint found = WaypointShare.parse(expected.text());
+			boolean same = found != null && found.x() == expected.x() && java.util.Objects.equals(found.y(), expected.y()) && found.z() == expected.z()
+				&& java.util.Objects.equals(found.name(), expected.name()) && java.util.Objects.equals(found.dimension(), expected.dimension());
+			check(same, "reads a location from \"" + expected.text() + "\": " + found);
+		}
+		SharedWaypoint colored = WaypointShare.parse("xaero-waypoint:Home:H:10:64:-20:5:false:0:Internal-overworld-waypoints");
+		check(colored != null && colored.color() != null && colored.color() == 0xFFAA00AA, "Xaero's color number 5 is dark purple");
+		for (String text : new String[] {"I have 3 4 5 apples", "the time is 12:30:45", "<Bob> we got 1 2 3", "xaero_waypoint_add:Home:H:10:64:-20", "[Steve] hello", "plain chat with no numbers"}) {
+			check(WaypointShare.parse(text) == null, "no location in \"" + text + "\"");
+		}
+
+		Waypoint sample = new Waypoint(12, 64, -30, nether, "snapshot", 0L, "Base", 0xFF55FF55, WaypointType.CUSTOM);
+		for (WaypointShareFormat format : WaypointShareFormat.values()) {
+			String written = WaypointShare.format(sample, format, overworld);
+			SharedWaypoint read = WaypointShare.parse(written);
+			check(read != null && read.x() == 12 && Integer.valueOf(64).equals(read.y()) && read.z() == -30 && nether.equals(read.dimension()), format + " share reads back as the waypoint: " + written);
+			if (format != WaypointShareFormat.PLAIN) {
+				check(read != null && "Base".equals(read.name()), format + " share keeps the name");
+			}
+		}
+		check(WaypointShare.format(sample, WaypointShareFormat.XAERO, overworld).startsWith("xaero-waypoint:Base:B:12:64:-30:10:false:0:Internal-the_nether-waypoints"), "a Xaero share is written the way Xaero writes it");
+
+		EMUtilsConfig config = EMUtilsClient.config();
+		WaypointManager manager = EMUtilsClient.waypoint();
+		int before = WaypointChatShare.pendingCountForSnapshot();
+		int waypointsBefore = manager.waypointsForCurrentWorld(client).size();
+		WaypointChatShare.receiveForSnapshot(client, "<Steve> base at (1234, 66, -2345)", "Steve");
+		check(WaypointChatShare.pendingCountForSnapshot() == before + 1 && !manager.hasWaypointAt(client, null, 1234, 66, -2345), "shared coordinates get an offer, and are not added by themselves");
+		String key = WaypointChatShare.newestKeyForSnapshot();
+		WaypointChatShare.receiveForSnapshot(client, "<" + client.getUser().getName() + "> base at (1234, 66, -2345)", client.getUser().getName());
+		check(WaypointChatShare.pendingCountForSnapshot() == before + 1, "your own messages get no offer");
+
+		config.setWaypointChatAutoCreate(true);
+		WaypointChatShare.receiveForSnapshot(client, "<Alex> x: 500, y: 70, z: -300", "Alex");
+		check(manager.hasWaypointAt(client, null, 500, 70, -300) && manager.waypointsForCurrentWorld(client).stream().anyMatch(waypoint -> waypoint.label().equals("Alex")), "Auto-Add adds a waypoint named after the sender");
+		int afterAdd = manager.waypointsForCurrentWorld(client).size();
+		WaypointChatShare.receiveForSnapshot(client, "<Alex> x: 500, y: 70, z: -300", "Alex");
+		check(manager.waypointsForCurrentWorld(client).size() == afterAdd && afterAdd == waypointsBefore + 1, "the same coordinates sent again add nothing");
+		WaypointChatShare.receiveForSnapshot(client, "xaero-waypoint:Nether base:N:100:64:-50:3:false:0:Internal-the_nether-waypoints", "Zed");
+		check(manager.hasWaypointAt(client, nether, 100, 64, -50) && !manager.hasWaypointAt(client, null, 100, 64, -50), "a Xaero waypoint from the Nether is added in the Nether");
+		config.setWaypointChatAutoCreate(false);
+
+		if (client.player != null) {
+			float pitch = client.player.getXRot();
+			client.player.setXRot(90.0F);
+			SharedWaypoint target = WaypointTarget.lookedAt(client);
+			check(target != null && target.y() != null && target.y() <= client.player.getBlockY() + 2, "the crosshair aimed at the ground gives a spot on it: " + target);
+			client.player.setXRot(pitch);
+		}
+		return key == null ? "" : key;
+	}
+
 	/** Puts the seeded waypoints in sets and adds two from other dimensions, to show the organized list. */
 	private static void seedOrganization(Minecraft client) {
 		if (client.player == null) {
@@ -3512,8 +3604,8 @@ public final class UiSnapshotter {
 		// A Nether waypoint that lands about 320 blocks east of the player in the Overworld, and one in the End.
 		int netherX = Math.floorDiv(client.player.getBlockX(), 8) + 40;
 		int netherZ = Math.floorDiv(client.player.getBlockZ(), 8) - 10;
-		EMUtilsClient.waypoint().addInDimensionForSnapshot(client, WaypointDimensions.NETHER, "Nether hub", netherX, 70, netherZ, 0xFFFF5555, "Far trips");
-		EMUtilsClient.waypoint().addInDimensionForSnapshot(client, "minecraft:the_end", "End portal", 0, 64, 0, 0xFFAA55FF, "");
+		EMUtilsClient.waypoint().addCustom(client, WaypointDimensions.NETHER, "Nether hub", netherX, 70, netherZ, 0xFFFF5555, false, "Far trips");
+		EMUtilsClient.waypoint().addCustom(client, "minecraft:the_end", "End portal", 0, 64, 0, 0xFFAA55FF, false, "");
 	}
 
 	/** Checks the organized list of #105: other dimensions, sets, sort and search. */
@@ -3943,12 +4035,20 @@ public final class UiSnapshotter {
 		next();
 	}
 
+	private static boolean screenshotMessageChecked;
+
 	/** Saves a screenshot named after the step and {@code label}, replacing one from an earlier run. */
 	private static void grab(Minecraft client, String label) {
 		String slug = label.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
 		String name = String.format(Locale.ROOT, "%03d-%s.png", step, slug);
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {} ({})", label, name);
 		Screenshot.grab(client.gameDirectory, name, client.gameRenderer.mainRenderTarget(), 1, message -> {
+			// What the game would put in chat; the snapshots keep it out of the pictures. With the Screenshot Helper on it is EMUtils' own message with its buttons.
+			if (!screenshotMessageChecked) {
+				screenshotMessageChecked = true;
+				String text = message.getString();
+				check(EMUtilsClient.config().screenshotHelper() == text.contains("[Copy]"), "a screenshot's chat message is EMUtils' own, with its buttons, when the Screenshot Helper is on (" + text + ")");
+			}
 		});
 	}
 

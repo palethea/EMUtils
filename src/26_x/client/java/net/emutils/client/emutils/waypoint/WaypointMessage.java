@@ -14,6 +14,7 @@ import net.minecraft.resources.Identifier;
 public final class WaypointMessage {
 	public static final Identifier CLEAR_WAYPOINT_ACTION = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "clear_waypoint");
 	public static final Identifier KEEP_WAYPOINT_ACTION = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "keep_waypoint");
+	public static final Identifier ADD_SHARED_WAYPOINT_ACTION = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "add_shared_waypoint");
 
 	private WaypointMessage() {
 	}
@@ -25,6 +26,28 @@ public final class WaypointMessage {
 			.append(action(EMUtilsTexts.WAYPOINT_ACTION_REMOVE, ChatFormatting.RED, CLEAR_WAYPOINT_ACTION, id, EMUtilsTexts.WAYPOINT_HOVER_REMOVE))
 			.append(Component.literal(" "))
 			.append(action(EMUtilsTexts.WAYPOINT_ACTION_KEEP, ChatFormatting.AQUA, KEEP_WAYPOINT_ACTION, id, EMUtilsTexts.WAYPOINT_HOVER_KEEP));
+	}
+
+	/** The offer under someone's shared coordinates; its button opens Add Waypoint with them, by the key they are kept under. */
+	public static Component sharedPrompt(String sender, String coordinates, String key) {
+		return Component.empty()
+			.append(Component.translatable(EMUtilsTexts.WAYPOINT_SHARED_PROMPT, sender, coordinates).withStyle(ChatFormatting.GRAY))
+			.append(action(EMUtilsTexts.WAYPOINT_ACTION_ADD_SHARED, ChatFormatting.GREEN, ADD_SHARED_WAYPOINT_ACTION, key, EMUtilsTexts.WAYPOINT_HOVER_ADD_SHARED));
+	}
+
+	/** What Auto-Add says: the waypoint is there, with a button to take it back out. */
+	public static Component sharedAdded(String name, String coordinates, String id) {
+		return Component.empty()
+			.append(Component.translatable(EMUtilsTexts.WAYPOINT_SHARED_ADDED, name, coordinates).withStyle(ChatFormatting.GRAY))
+			.append(action(EMUtilsTexts.WAYPOINT_ACTION_REMOVE, ChatFormatting.RED, CLEAR_WAYPOINT_ACTION, id, EMUtilsTexts.WAYPOINT_HOVER_REMOVE));
+	}
+
+	public static Component sharedExpired() {
+		return Component.translatable(EMUtilsTexts.WAYPOINT_SHARED_EXPIRED).withStyle(ChatFormatting.GRAY);
+	}
+
+	public static Component noTarget() {
+		return Component.translatable(EMUtilsTexts.WAYPOINT_NO_TARGET).withStyle(ChatFormatting.GRAY);
 	}
 
 	public static Component cleared() {

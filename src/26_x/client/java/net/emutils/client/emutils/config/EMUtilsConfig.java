@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.HudFont;
+import net.emutils.client.emutils.waypoint.WaypointShareFormat;
 import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.hud.HudStyle;
 import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
@@ -283,6 +284,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer waypointLabelBackground = 0;
 	private String waypointSort = WaypointSort.DISTANCE.name();
 	private Boolean waypointShowOtherDimensions = Boolean.FALSE;
+	private Boolean waypointChatPrompt = Boolean.TRUE;
+	private Boolean waypointChatAutoCreate = Boolean.FALSE;
+	private String waypointShareFormat = WaypointShareFormat.PLAIN.name();
 	private Integer hudBackgroundOpacity = 100;
 	private Integer hudScale = 100;
 	private Boolean zoomEnabled = Boolean.TRUE;
@@ -2886,6 +2890,36 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether coordinates sent in chat get an offer to add a waypoint. */
+	public boolean waypointChatPrompt() {
+		return waypointChatPrompt == null || waypointChatPrompt;
+	}
+
+	public void setWaypointChatPrompt(boolean enabled) {
+		waypointChatPrompt = enabled;
+		save();
+	}
+
+	/** Whether coordinates sent in chat become a waypoint right away, without the offer. */
+	public boolean waypointChatAutoCreate() {
+		return waypointChatAutoCreate != null && waypointChatAutoCreate;
+	}
+
+	public void setWaypointChatAutoCreate(boolean enabled) {
+		waypointChatAutoCreate = enabled;
+		save();
+	}
+
+	/** How Share in chat writes a waypoint. */
+	public WaypointShareFormat waypointShareFormat() {
+		return WaypointShareFormat.fromName(waypointShareFormat);
+	}
+
+	public void setWaypointShareFormat(WaypointShareFormat format) {
+		waypointShareFormat = (format == null ? WaypointShareFormat.PLAIN : format).name();
+		save();
+	}
+
 	public int waypointDefaultDeathColor() {
 		return waypointDefaultDeathColor == null ? 0xFFFF5555 : waypointDefaultDeathColor;
 	}
@@ -2969,6 +3003,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointLabelBackground = 0;
 		waypointSort = WaypointSort.DISTANCE.name();
 		waypointShowOtherDimensions = Boolean.FALSE;
+		waypointChatPrompt = Boolean.TRUE;
+		waypointChatAutoCreate = Boolean.FALSE;
+		waypointShareFormat = WaypointShareFormat.PLAIN.name();
 		save();
 	}
 

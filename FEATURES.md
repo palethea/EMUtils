@@ -231,6 +231,10 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
 - Copy Coordinates: a keybind that copies your current position in the Coord Format, or the camera's position while Free Camera is active.
 - Copy Coords Feedback: show a chat message with the copied coordinates.
+- Add Waypoint at Crosshair: a keybind that opens Add Waypoint at the spot you are aiming at, up to 512 blocks away, ready to name.
+- Offer Shared Coordinates: when someone sends coordinates in chat, an offer under the message opens Add Waypoint with them filled in, named after the sender. On by default. Reads plain coordinates (`(23 44 1)`, `x: 123, y: 23, z: 54`, `x123 y23 z43`, `coords: 1 2 3`, a message ending in three numbers, a `/tp` command), Xaero's Minimap shares (`xaero-waypoint:...`) and JourneyMap's `[name:Home, x:1, y:2, z:3, dim:0]`. Xaero and JourneyMap shares keep their name, color and dimension. Your own messages and spots that already have a waypoint get no offer.
+- Auto-Add Shared Coordinates: skip the offer and add the waypoint at once, named after the sender (or the share's own name), with a Remove button in the message. Off by default.
+- Share Format: how Share in chat writes a waypoint: plain text (`Base (x: 12, y: 64, z: -30)`), Xaero's Minimap, or JourneyMap, which players of those mods can add with their own button.
 - Death Color: choose the default color for death waypoints.
 - Custom Waypoint Color: choose the default color for custom waypoints.
 - Waypoint Opacity: adjust how see-through markers and labels are.
@@ -277,6 +281,7 @@ Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.
 View and manage saved waypoints for the current world or server.
 
 - Edit Waypoint: change a waypoint's name, set, position, color and beacon after creating it, with the pencil button or by clicking its row.
+- Share in chat: the speech bubble button says the waypoint in chat in the chosen Share Format. Nothing is sent unless you press it.
 - Tags: only the special waypoints are tagged, a death waypoint with "Death" and one from another dimension with where it comes from.
 - Search: type to narrow the list to waypoints whose name or set matches; Esc clears it.
 - Sort: order the list by distance (default), name or newest.

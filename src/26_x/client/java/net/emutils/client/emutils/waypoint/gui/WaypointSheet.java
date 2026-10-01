@@ -16,6 +16,7 @@ import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.emutils.waypoint.SharedWaypoint;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -57,6 +58,8 @@ final class WaypointSheet {
 	private final String titleKey;
 	/** The dimension the edited waypoint was made in when that isn't the one you are in, whose coordinates it has. */
 	private final @Nullable String otherDimension;
+	/** The dimension a new waypoint is added in, when it is a shared one from another dimension; null for the one you are in. */
+	private final @Nullable String addDimension;
 	private final UiTextField name = new UiTextField(this, 32);
 	private final UiTextField set = new UiTextField(this, 32);
 	private final UiTextField[] coords = {
@@ -91,7 +94,7 @@ final class WaypointSheet {
 	 * {@code editing} is the waypoint to change, or null to add a new one. {@code onClose} runs as soon as
 	 * the sheet starts closing, with whether a waypoint was added or saved.
 	 */
-	WaypointSheet(Font font, UiAnim anim, @Nullable Waypoint editing, Consumer<Boolean> onClose) {
+	WaypointSheet(Font font, UiAnim anim, @Nullable Waypoint editing, @Nullable SharedWaypoint prefill, Consumer<Boolean> onClose) {
 		this.font = font;
 		this.anim = anim;
 		this.onClose = onClose;
@@ -99,10 +102,23 @@ final class WaypointSheet {
 		this.editingId = editing == null ? null : editing.id();
 		this.titleKey = editing == null ? EMUtilsTexts.SCREEN_ADD_WAYPOINT : EMUtilsTexts.SCREEN_EDIT_WAYPOINT;
 		if (editing == null) {
-			this.otherDimension = null;
-			this.color = 0xFF000000 | EMUtilsClient.config().waypointDefaultCustomColor();
-			useMyPosition();
+			Minecraft client = Minecraft.getInstance();
+			String current = client.level == null ? null : client.level.dimension().identifier().toString();
+			this.addDimension = prefill != null && prefill.dimension() != null && !prefill.dimension().equals(current) ? prefill.dimension() : null;
+			this.otherDimension = addDimension;
+			this.color = 0xFF000000 | (prefill != null && prefill.color() != null ? prefill.color() : EMUtilsClient.config().waypointDefaultCustomColor());
+			if (prefill == null) {
+				useMyPosition();
+			} else {
+				if (prefill.name() != null) {
+					name.setText(prefill.name());
+				}
+				coords[0].setText(String.valueOf(prefill.x()));
+				coords[1].setText(String.valueOf(prefill.y() != null ? prefill.y() : client.player == null ? 64 : client.player.getBlockY()));
+				coords[2].setText(String.valueOf(prefill.z()));
+			}
 		} else {
+			this.addDimension = null;
 			Minecraft client = Minecraft.getInstance();
 			String current = client.level == null ? null : client.level.dimension().identifier().toString();
 			this.otherDimension = editing.dimension() != null && !editing.dimension().equals(current) ? editing.dimension() : null;
@@ -225,7 +241,7 @@ final class WaypointSheet {
 			label = "Waypoint";
 		}
 		boolean saved = editingId == null
-			? EMUtilsClient.waypoint().addCustom(client, label, coordinate(0), coordinate(1), coordinate(2), color, beacon, set.text().trim())
+			? EMUtilsClient.waypoint().addCustom(client, addDimension, label, coordinate(0), coordinate(1), coordinate(2), color, beacon, set.text().trim()) != null
 				: EMUtilsClient.waypoint().update(editingId, label, coordinate(0), coordinate(1), coordinate(2), color, beacon, set.text().trim());
 		if (!saved) {
 			saveFailed = true;
