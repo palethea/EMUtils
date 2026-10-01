@@ -1,7 +1,6 @@
 package net.emutils.client.emutils.compat;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,6 +9,7 @@ import net.emutils.client.emutils.render.BeaconRadiusRenderer.MapRect;
 import net.emutils.client.emutils.render.MapLineClip;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
 import xaero.common.graphics.renderer.multitexture.MultiTextureRenderTypeRendererProvider;
 import xaero.hud.minimap.element.render.MinimapElementGraphics;
@@ -29,6 +29,8 @@ import xaero.lib.client.graphics.XaeroBufferProvider;
  */
 final class BeaconXaeroElementRenderer extends MinimapElementRenderer<BeaconXaeroElementRenderer.Dot, Object> {
 	private static final Object CONTEXT = new Object();
+	/** Turns a line to its direction; PoseStack's rotation methods differ between versions, multiplying by a matrix doesn't. */
+	private static final Matrix4f ROTATION = new Matrix4f();
 	/** The side of a dot, in the map's pixels. */
 	private static final int DOT_PIXELS = 2;
 	/** Where the zoom is unknown (the World Map, which doesn't tell elements its scale): a dot every half block, as close as its zoom needs. */
@@ -215,7 +217,7 @@ final class BeaconXaeroElementRenderer extends MinimapElementRenderer<BeaconXaer
 				pose.pushPose();
 				try {
 					pose.translate(lines[at], lines[at + 1], depth);
-					pose.rotate(Axis.ZP, (float) Math.atan2(dy, dx));
+					pose.mulPose(ROTATION.rotationZ((float) Math.atan2(dy, dx)));
 					graphics.fill(0, -1, length, 1, (int) lines[at + 4]);
 				} finally {
 					pose.popPose();
