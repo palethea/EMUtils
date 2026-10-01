@@ -3094,6 +3094,9 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					setGuiScale(client, 3);
 					client.gui.setScreen(null);
+					// Start from none, so a run that stopped halfway doesn't leave waypoints behind for this one.
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 					seedWaypoints(client);
 					EMUtilsClient.waypoint().captureDeath(client);
 					command(client, "tp @s ~10 ~ ~10");
