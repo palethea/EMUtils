@@ -19,6 +19,7 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreeCameraHudMode;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -52,12 +53,12 @@ public final class HubFeatureCatalog {
 			leaf("freelook", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_FREELOOK, EMUtilsTexts.HUB_FEATURE_FREELOOK_DESC, HubFeature.Icon.EYE, toggle(config::tweakFreelook, config::setTweakFreelook), List.of(
 				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_FREELOOK_KEEP_PERSPECTIVE, config::freelookKeepPerspective, config::setFreelookKeepPerspective)
 			), config::resetFreelookDefaults).keys("key.emutils.freelook"),
-			leaf("beacon_radius_outline", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, HubFeature.Icon.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline), List.of(
+			leaf("beacon_radius_outline", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_BEACON_RADIUS_OUTLINE, EMUtilsTexts.HUB_FEATURE_BEACON_RADIUS_DESC, HubFeature.Icon.SPARKLES, toggle(config::beaconRadiusOutline, config::setBeaconRadiusOutline), withXaeroRow(config, List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_RANGE, EMUtilsTexts.SUFFIX_CHUNKS, EMUtilsConfig.BEACON_RADIUS_RANGE_MIN, EMUtilsConfig.BEACON_RADIUS_RANGE_MAX, config::beaconRadiusRange, config::setBeaconRadiusRange),
 				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BEACON_RADIUS_ACTIVE_ONLY, config::beaconRadiusActiveOnly, config::setBeaconRadiusActiveOnly),
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_GRID_SPACING, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.BEACON_RADIUS_GRID_SPACING_MIN, EMUtilsConfig.BEACON_RADIUS_GRID_SPACING_MAX, config::beaconRadiusGridSpacing, config::setBeaconRadiusGridSpacing),
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_BEACON_RADIUS_LINE_WIDTH, EMUtilsTexts.SUFFIX_PIXELS, EMUtilsConfig.BEACON_RADIUS_LINE_WIDTH_MIN, EMUtilsConfig.BEACON_RADIUS_LINE_WIDTH_MAX, config::beaconRadiusLineWidth, config::setBeaconRadiusLineWidth)
-			), config::resetBeaconRadiusDefaults).keys("key.emutils.beacon_radius_outline"),
+			)), config::resetBeaconRadiusDefaults).keys("key.emutils.beacon_radius_outline"),
 			leaf("light_level_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_LIGHT_LEVEL_OVERLAY, EMUtilsTexts.HUB_FEATURE_LIGHT_LEVEL_OVERLAY_DESC, HubFeature.Icon.SUN, toggle(config::lightLevelOverlay, config::setLightLevelOverlay), List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_LIGHT_LEVEL_RANGE, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.LIGHT_LEVEL_RANGE_MIN, EMUtilsConfig.LIGHT_LEVEL_RANGE_MAX, config::lightLevelRange, config::setLightLevelRange),
 				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LIGHT_LEVEL_SPAWNABLE_ONLY, config::lightLevelSpawnableOnly, config::setLightLevelSpawnableOnly)
@@ -377,5 +378,16 @@ public final class HubFeatureCatalog {
 
 	private static HubFeature.Toggle toggle(Supplier<Boolean> getter, Consumer<Boolean> setter) {
 		return new HubFeature.Toggle(getter::get, setter);
+	}
+
+	/** The Beacon Radius Outline's rows, with the Xaero Map Integration switch when a Xaero map mod is installed. */
+	private static List<HubSettingRow> withXaeroRow(EMUtilsConfig config, List<HubSettingRow> rows) {
+		FabricLoader loader = FabricLoader.getInstance();
+		if (!loader.isModLoaded("xaerominimap") && !loader.isModLoaded("xaeroworldmap")) {
+			return rows;
+		}
+		List<HubSettingRow> all = new ArrayList<>(rows);
+		all.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_BEACON_RADIUS_XAERO, config::beaconRadiusXaero, config::setBeaconRadiusXaero));
+		return all;
 	}
 }

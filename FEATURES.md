@@ -46,7 +46,7 @@ Toggle small rendering changes without installing separate single-purpose mods.
   - Grid Spacing: how many blocks apart the grid lines are (4 to 32, default 16).
   - Line Width: how thick the grid lines are (1 to 5 px); the cage's edges are drawn a bit thicker.
   - Only Active Beacons: only outline beacons that give an effect, skipping ones where no effect has been picked. A beacon you set up shows right away; the server doesn't tell clients when someone else picks an effect, so their newly set up beacons show once the chunk reloads.
-  - Xaero Map Integration: show the same colored beacon boundary on Xaero's Minimap and World Map when those optional mods are installed.
+  - Xaero Map Integration: show the same colored beacon boundary on Xaero's Minimap and World Map when those optional mods are installed, on by default. On the minimap each cage is a few lines that follow its zoom and rotation, so it costs next to nothing; turn it off to leave the maps alone. The switch only shows when a Xaero map mod is installed.
 - Light Level Overlay: show fixed north-facing Minecraft-font block-light numbers on nearby spawnable floors, with yellow or red square markers only at block light level 0; the loaded-chunk scan and geometry are cached and the overlay is toggleable with a configurable keybind.
   - Range: how many blocks around you are scanned (8 to 32, default 24).
   - Only Spawnable Spots: only mark spots at block light 0, where hostile mobs can spawn.
