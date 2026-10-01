@@ -4032,12 +4032,20 @@ public final class UiSnapshotter {
 		next();
 	}
 
+	private static boolean screenshotMessageChecked;
+
 	/** Saves a screenshot named after the step and {@code label}, replacing one from an earlier run. */
 	private static void grab(Minecraft client, String label) {
 		String slug = label.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
 		String name = String.format(Locale.ROOT, "%03d-%s.png", step, slug);
 		EMUtilsClient.LOGGER.info("EMUtils UI snapshot: {} ({})", label, name);
 		Screenshot.grab(client.gameDirectory, name, client.gameRenderer.mainRenderTarget(), 1, message -> {
+			// What the game would put in chat; the snapshots keep it out of the pictures. With the Screenshot Helper on it is EMUtils' own message with its buttons.
+			if (!screenshotMessageChecked) {
+				screenshotMessageChecked = true;
+				String text = message.getString();
+				check(EMUtilsClient.config().screenshotHelper() == text.contains("[Copy]"), "a screenshot's chat message is EMUtils' own, with its buttons, when the Screenshot Helper is on (" + text + ")");
+			}
 		});
 	}
 
