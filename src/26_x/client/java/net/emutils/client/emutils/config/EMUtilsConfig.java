@@ -331,6 +331,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean beaconRadiusActiveOnly = Boolean.FALSE;
 	private Integer beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
 	private Integer beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
+	private Boolean beaconRadiusXaero = Boolean.TRUE;
 	private Boolean lightLevelOverlay = Boolean.FALSE;
 	private Integer lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
 	private Boolean lightLevelSpawnableOnly = Boolean.FALSE;
@@ -1561,12 +1562,23 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether the beacon outline also shows on Xaero's Minimap and World Map when they are installed. */
+	public boolean beaconRadiusXaero() {
+		return beaconRadiusXaero == null || beaconRadiusXaero;
+	}
+
+	public void setBeaconRadiusXaero(boolean enabled) {
+		beaconRadiusXaero = enabled;
+		save();
+	}
+
 	public void resetBeaconRadiusDefaults() {
 		beaconRadiusOutline = Boolean.FALSE;
 		beaconRadiusRange = BEACON_RADIUS_RANGE_MAX;
 		beaconRadiusActiveOnly = Boolean.FALSE;
 		beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
 		beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
+		beaconRadiusXaero = Boolean.TRUE;
 		save();
 	}
 
@@ -3633,6 +3645,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		beaconRadiusActiveOnly = Boolean.FALSE;
 		beaconRadiusGridSpacing = BEACON_RADIUS_GRID_SPACING_DEFAULT;
 		beaconRadiusLineWidth = BEACON_RADIUS_LINE_WIDTH_MIN;
+		beaconRadiusXaero = Boolean.TRUE;
 		lightLevelOverlay = Boolean.FALSE;
 		lightLevelRange = LIGHT_LEVEL_RANGE_DEFAULT;
 		lightLevelSpawnableOnly = Boolean.FALSE;

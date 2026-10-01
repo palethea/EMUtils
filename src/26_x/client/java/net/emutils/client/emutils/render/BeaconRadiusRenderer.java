@@ -35,7 +35,6 @@ public final class BeaconRadiusRenderer {
 	private static final int SCAN_INTERVAL_TICKS = 40;
 	/** The cage's edges are drawn this much wider than its grid lines. */
 	private static final float EDGE_WIDTH_SCALE = 1.5F;
-	private static final double MAP_POINT_SPACING = 0.5D;
 	private static final boolean XAERO_MINIMAP_LOADED = FabricLoader.getInstance().isModLoaded("xaerominimap");
 
 	@Nullable
@@ -48,7 +47,7 @@ public final class BeaconRadiusRenderer {
 	private static final WorldLines.Batch LINES = new WorldLines.Batch();
 
 	private static List<WorldLines.Line> cachedLines = List.of();
-	private static List<BeaconMapPoint> cachedMapPoints = List.of();
+	private static List<MapRect> cachedMapRects = List.of();
 	@Nullable
 	private static ClientLevel cachedLevel;
 	private static int nextScanTick;
@@ -59,6 +58,7 @@ public final class BeaconRadiusRenderer {
 	private static boolean cachedActiveOnly;
 	private static int cachedGridSpacing;
 	private static int cachedLineWidth;
+	private static boolean cachedXaero;
 	/** The beacon last right-clicked, so an effect picked in its screen can be applied to the client's copy. */
 	@Nullable
 	private static BlockPos openBeacon;
@@ -87,7 +87,7 @@ public final class BeaconRadiusRenderer {
 		Minecraft client = Minecraft.getInstance();
 		if (!EMUtilsClient.config().beaconRadiusOutline() || client.level == null || client.player == null) {
 			cachedLines = List.of();
-			cachedMapPoints = List.of();
+			cachedMapRects = List.of();
 			beaconCount = 0;
 			cachedLevel = client.level;
 			nextScanTick = 0;
@@ -96,10 +96,11 @@ public final class BeaconRadiusRenderer {
 		if (cachedRange != EMUtilsClient.config().beaconRadiusRange()
 			|| cachedActiveOnly != EMUtilsClient.config().beaconRadiusActiveOnly()
 			|| cachedGridSpacing != EMUtilsClient.config().beaconRadiusGridSpacing()
-			|| cachedLineWidth != EMUtilsClient.config().beaconRadiusLineWidth()) {
+			|| cachedLineWidth != EMUtilsClient.config().beaconRadiusLineWidth()
+			|| cachedXaero != XaeroMapIntegration.isWanted()) {
 			nextScanTick = 0;
 		}
-		if (cachedLevel != client.level || cachedLines.isEmpty() || client.player.tickCount >= nextScanTick) {
+		if (cachedLevel != client.level || client.player.tickCount >= nextScanTick) {
 			refreshCache(client);
 		}
 	}
@@ -136,15 +137,19 @@ public final class BeaconRadiusRenderer {
 			}
 		}
 		List<WorldLines.Line> lines = new ArrayList<>();
-		List<BeaconMapPoint> mapPoints = new ArrayList<>();
+		boolean xaero = XaeroMapIntegration.isWanted();
+		List<MapRect> mapRects = new ArrayList<>();
 		int[] colors = colors(outlines);
 		for (int i = 0; i < outlines.size(); i++) {
 			AABB bounds = outlines.get(i).bounds();
 			addGridOutline(lines, bounds, colors[i], gridSpacing, lineWidth);
-			addMapPoints(mapPoints, bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, outlines.get(i).pos().getY(), 0xCC000000 | (colors[i] & 0x00FFFFFF));
+			if (xaero) {
+				mapRects.add(new MapRect(bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ, outlines.get(i).pos().getY(), 0xCC000000 | (colors[i] & 0x00FFFFFF)));
+			}
 		}
 		cachedLines = List.copyOf(lines);
-		cachedMapPoints = List.copyOf(mapPoints);
+		cachedMapRects = List.copyOf(mapRects);
+		cachedXaero = xaero;
 		cachedLevel = client.level;
 		cachedRange = range;
 		beaconCount = outlines.size();
@@ -180,8 +185,9 @@ public final class BeaconRadiusRenderer {
 		}
 	}
 
-	public static List<BeaconMapPoint> mapPoints() {
-		return cachedMapPoints;
+	/** The cages' outlines as rectangles on the map, for Xaero's maps; empty unless Xaero Map Integration is on. */
+	public static List<MapRect> mapRects() {
+		return cachedMapRects;
 	}
 
 	/** How many lines the outline currently draws, for UI snapshot checks. */
@@ -279,25 +285,6 @@ public final class BeaconRadiusRenderer {
 		return colors;
 	}
 
-	private static void addMapPoints(
-		List<BeaconMapPoint> mapPoints,
-		double minX,
-		double maxX,
-		double minZ,
-		double maxZ,
-		double y,
-		int color
-	) {
-		for (double x = minX; x <= maxX + 0.001D; x += MAP_POINT_SPACING) {
-			mapPoints.add(new BeaconMapPoint(x, y, minZ, color));
-			mapPoints.add(new BeaconMapPoint(x, y, maxZ, color));
-		}
-		for (double z = minZ + MAP_POINT_SPACING; z < maxZ - 0.001D; z += MAP_POINT_SPACING) {
-			mapPoints.add(new BeaconMapPoint(minX, y, z, color));
-			mapPoints.add(new BeaconMapPoint(maxX, y, z, color));
-		}
-	}
-
 	private static void addGridOutline(
 		List<WorldLines.Line> lines,
 		AABB box,
@@ -354,7 +341,8 @@ public final class BeaconRadiusRenderer {
 		lines.add(new WorldLines.Line(x1, y1, z1, x2, y2, z2, color, width));
 	}
 
-	public record BeaconMapPoint(double x, double y, double z, int color) {
+	/** A cage seen from above: the outline of {@code minX..maxX} by {@code minZ..maxZ} at the beacon's height {@code y}. */
+	public record MapRect(double minX, double maxX, double minZ, double maxZ, double y, int color) {
 	}
 
 	private record Outline(BlockPos pos, AABB bounds, int rgb) {

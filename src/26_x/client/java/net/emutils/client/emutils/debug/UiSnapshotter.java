@@ -90,6 +90,9 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
 import net.emutils.client.emutils.waypoint.Waypoint;
+import net.fabricmc.loader.api.FabricLoader;
+import net.emutils.client.emutils.compat.XaeroMapIntegration;
+import net.emutils.client.emutils.render.MapLineClip;
 import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointType;
 import net.emutils.client.emutils.waypoint.SharedWaypoint;
@@ -1689,6 +1692,7 @@ public final class UiSnapshotter {
 				if (step != 270) {
 					List<Integer> colors = BeaconRadiusRenderer.outlineColorsForSnapshot();
 					check(colors.contains(0xFFFFFFFF) && colors.contains(0xFFB4B4B4), "of two touching beacons without an effect, one cage is white and the other light gray: " + hexColors(colors));
+					checkXaeroMapIntegration();
 				}
 			}
 			case 271 -> {
@@ -3572,6 +3576,31 @@ public final class UiSnapshotter {
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	/** Checks the Xaero map side of the beacon outline (#188): trimming lines to the map, and the setting that switches it off. */
+	private static void checkXaeroMapIntegration() {
+		double[] inside = MapLineClip.toRectangle(-10.0D, 0.0D, 10.0D, 5.0D, 20.0D, 20.0D);
+		check(inside != null && inside[0] == -10.0D && inside[3] == 5.0D, "a line inside the map is drawn whole");
+		double[] cut = MapLineClip.toRectangle(-50.0D, 0.0D, 50.0D, 0.0D, 20.0D, 10.0D);
+		check(cut != null && cut[0] == -20.0D && cut[2] == 20.0D, "a line across the map is cut at its edges");
+		check(MapLineClip.toRectangle(30.0D, -5.0D, 30.0D, 5.0D, 20.0D, 20.0D) == null, "a line outside the map isn't drawn");
+		double[] chord = MapLineClip.toCircle(-50.0D, 0.0D, 50.0D, 0.0D, 20.0D);
+		check(chord != null && Math.abs(chord[0] + 20.0D) < 1.0E-9D && Math.abs(chord[2] - 20.0D) < 1.0E-9D, "a line across a round map is cut where it leaves the circle");
+		check(MapLineClip.toCircle(15.0D, 15.0D, 40.0D, 15.0D, 20.0D) == null, "a line past a round map's corner isn't drawn");
+
+		EMUtilsConfig config = EMUtilsClient.config();
+		boolean setting = config.beaconRadiusXaero();
+		boolean xaero = FabricLoader.getInstance().isModLoaded("xaerominimap");
+		check(XaeroMapIntegration.isWanted() == (xaero && setting), "the outline is on Xaero's maps only when Xaero is installed and the setting is on");
+		config.setBeaconRadiusXaero(false);
+		BeaconRadiusRenderer.tick();
+		check(BeaconRadiusRenderer.mapRects().isEmpty() && !XaeroMapIntegration.isWanted(), "with Xaero Map Integration off no map outlines are built");
+		config.setBeaconRadiusXaero(true);
+		BeaconRadiusRenderer.tick();
+		int expected = xaero ? BeaconRadiusRenderer.outlinedBeaconsForSnapshot() : 0;
+		check(BeaconRadiusRenderer.mapRects().size() == expected, "with it on, every outlined beacon has a map outline when Xaero is installed (" + BeaconRadiusRenderer.mapRects().size() + " of " + expected + ")");
+		config.setBeaconRadiusXaero(setting);
 	}
 
 	private record ShareCase(String text, @Nullable String name, int x, @Nullable Integer y, int z, @Nullable String dimension) {
