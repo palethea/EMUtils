@@ -112,13 +112,31 @@ public final class WaypointManager {
         boolean beacon,
         String set
     ) {
+        return addCustom(client, null, label, x, y, z, color, beacon, set) != null;
+    }
+
+    /**
+     * Adds a custom waypoint in the current world, in {@code inDimension} or, when that is null, the one you
+     * are in (#105; a shared location can be from another dimension). Returns it, or null when nothing was kept.
+     */
+    public @Nullable Waypoint addCustom(
+        Minecraft client,
+        @Nullable String inDimension,
+        String label,
+        int x,
+        int y,
+        int z,
+        int color,
+        boolean beacon,
+        String set
+    ) {
         if (!enabled() || client == null || client.level == null) {
-            return false;
+            return null;
         }
 
         long timestamp = System.currentTimeMillis();
         String worldKey = worldKey(client);
-        String dimension = dimensionId(client.level);
+        String dimension = inDimension == null || inDimension.isBlank() ? dimensionId(client.level) : inDimension;
 
         Waypoint waypoint = new Waypoint(
             x,
@@ -141,9 +159,9 @@ public final class WaypointManager {
             // Not written, so it wouldn't survive a restart; don't pretend it was added.
             waypoints.clear();
             waypoints.addAll(before);
-            return false;
+            return null;
         }
-        return true;
+        return waypoint;
     }
 
     /**
@@ -440,17 +458,6 @@ public final class WaypointManager {
             .toList();
     }
 
-    /** Adds a waypoint as if it had been made in {@code dimension}, which isn't the one you are in; for UI snapshots. */
-    public void addInDimensionForSnapshot(Minecraft client, String dimension, String label, int x, int y, int z, int color, String set) {
-        if (client == null || client.level == null) {
-            return;
-        }
-        Waypoint waypoint = new Waypoint(x, y, z, dimension, worldKey(client), System.currentTimeMillis(), label, color, WaypointType.CUSTOM);
-        waypoint.setSet(set);
-        waypoints.add(waypoint);
-        save();
-    }
-
     /** Removes the waypoints of this world that were made in other dimensions; for UI snapshots. */
     public void clearOtherDimensionsForSnapshot(Minecraft client) {
         if (client == null || client.level == null) {
@@ -460,6 +467,46 @@ public final class WaypointManager {
         String dimension = dimensionId(client.level);
         if (waypoints.removeIf(waypoint -> waypoint.matchesWorldKey(worldKey) && !waypoint.matchesDimension(dimension))) {
             save();
+        }
+    }
+
+    /**
+     * Whether this world already has a waypoint at that block in {@code inDimension} (the one you are in when
+     * null). A null {@code y} matches any height.
+     */
+    public boolean hasWaypointAt(Minecraft client, @Nullable String inDimension, int x, @Nullable Integer y, int z) {
+        if (client == null || client.level == null) {
+            return false;
+        }
+        String worldKey = worldKey(client);
+        String dimension = inDimension == null || inDimension.isBlank() ? dimensionId(client.level) : inDimension;
+        for (Waypoint waypoint : waypoints) {
+            if (matchesWorld(waypoint, worldKey, dimension) && waypoint.x() == x && waypoint.z() == z && (y == null || waypoint.y() == y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Says the waypoint in chat, as the server's players will see it: only when the player asks for it (#105). */
+    public void shareInChat(Minecraft client, String id) {
+        Waypoint waypoint = findById(id);
+        if (waypoint == null || client == null || client.level == null || client.getConnection() == null) {
+            return;
+        }
+
+        String text = WaypointShare.format(waypoint, EMUtilsClient.config().waypointShareFormat(), dimensionId(client.level));
+        client.getConnection().sendChat(text);
+        if (client.gui != null) {
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
+                .addClientSystemMessage(
+                    EmUtilsChatPrefix.chat(
+                        Component.translatable(
+                            EMUtilsTexts.WAYPOINT_SHARED,
+                            waypoint.label()
+                        ).withStyle(ChatFormatting.GREEN)
+                    )
+                );
         }
     }
 

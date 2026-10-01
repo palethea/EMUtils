@@ -20,6 +20,7 @@ import net.emutils.client.emutils.gui.ui.UiTextField;
 import net.emutils.client.emutils.gui.ui.UiTheme;
 import net.emutils.client.emutils.gui.ui.UiWidgets;
 import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.emutils.waypoint.SharedWaypoint;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointEntry;
 import net.emutils.client.emutils.waypoint.WaypointSort;
@@ -54,7 +55,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private static final int ROW_PADDING = 12;
 	private static final int ACTION = 20;
 	private static final int ACTION_GAP = 2;
-	private static final int ACTION_COUNT = 5;
+	private static final int ACTION_COUNT = 6;
 	private static final int FADE_HEIGHT = 12;
 	/** The sets that are folded up, by lowercase name; "" is the waypoints in no set. Kept while the game runs. */
 	private static final Set<String> COLLAPSED = new HashSet<>();
@@ -65,6 +66,8 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private final List<GroupBox> groups = new ArrayList<>();
 	/** Opened by the Add Waypoint keybind: the screen closes together with the add sheet. */
 	private final boolean addOnly;
+	/** A shared or aimed-at location the add sheet starts from. */
+	private final @Nullable SharedWaypoint prefill;
 	private @Nullable WaypointSheet sheet;
 	private @Nullable UiConfirmDialog dialog;
 	private int addX;
@@ -83,12 +86,13 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private int tooltipY;
 
 	public WaypointsScreen(@Nullable Screen parent) {
-		this(parent, false);
+		this(parent, false, null);
 	}
 
-	private WaypointsScreen(@Nullable Screen parent, boolean addOnly) {
+	private WaypointsScreen(@Nullable Screen parent, boolean addOnly, @Nullable SharedWaypoint prefill) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_CURRENT_WAYPOINTS), parent);
 		this.addOnly = addOnly;
+		this.prefill = prefill;
 		// Typing goes to the search, unless the screen only opens the add sheet or there is no world to search in.
 		if (!addOnly && Minecraft.getInstance().level != null) {
 			search.setFocused(true);
@@ -97,7 +101,12 @@ public final class WaypointsScreen extends UiPanelScreen {
 
 	/** Opens straight into the add sheet, for the Add Waypoint keybind; closing it closes the screen too. */
 	public static WaypointsScreen addWaypoint(@Nullable Screen parent) {
-		return new WaypointsScreen(parent, true);
+		return new WaypointsScreen(parent, true, null);
+	}
+
+	/** Opens straight into the add sheet with a location filled in: one someone shared, or the block you aim at. */
+	public static WaypointsScreen addShared(@Nullable Screen parent, SharedWaypoint shared) {
+		return new WaypointsScreen(parent, true, shared);
 	}
 
 	@Override
@@ -166,7 +175,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		}
 		// The sheet's fields take the typing, so the search lets go of it until the sheet closes.
 		search.setFocused(false);
-		sheet = new WaypointSheet(font, anim, editing, added -> {
+		sheet = new WaypointSheet(font, anim, editing, editing == null ? prefill : null, added -> {
 			if (addOnly) {
 				onClose();
 			}
@@ -437,6 +446,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		Identifier[] icons = {
 			HubIcons.PENCIL,
 			HubIcons.COPY,
+			HubIcons.MESSAGE_SQUARE,
 			waypoint.hidden() ? HubIcons.EYE_OFF : HubIcons.EYE,
 			HubIcons.BEAM,
 			HubIcons.TRASH
@@ -444,6 +454,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		String[] tips = {
 			EMUtilsTexts.UI_WAYPOINT_EDIT,
 			EMUtilsTexts.UI_COPY_COORDINATES,
+			EMUtilsTexts.UI_WAYPOINT_SHARE,
 			waypoint.hidden() ? EMUtilsTexts.WAYPOINT_ACTION_SHOW : EMUtilsTexts.WAYPOINT_ACTION_HIDE,
 			waypoint.beaconEnabled() ? EMUtilsTexts.UI_BEACON_TURN_OFF : EMUtilsTexts.UI_BEACON_TURN_ON,
 			EMUtilsTexts.UI_DELETE
@@ -455,8 +466,8 @@ public final class WaypointsScreen extends UiPanelScreen {
 			int actionX = actionsX + i * (ACTION + ACTION_GAP);
 			boolean actionHovered = contains(mouseX, mouseY, actionX, actionY, ACTION, ACTION);
 			int color = switch (i) {
-				case 3 -> waypoint.beaconEnabled() ? theme.accent() : theme.muted();
-				case 4 -> actionHovered ? theme.warning() : theme.textSecondary();
+				case 4 -> waypoint.beaconEnabled() ? theme.accent() : theme.muted();
+				case 5 -> actionHovered ? theme.warning() : theme.textSecondary();
 				default -> theme.textSecondary();
 			};
 			UiWidgets.ghostIconButton(context, theme, actionX, actionY, ACTION, icons[i], color, actionHovered ? 1.0F : 0.0F);
@@ -638,8 +649,9 @@ public final class WaypointsScreen extends UiPanelScreen {
 			case 0 -> openEditSheet(id);
 			// A converted waypoint is shown at its converted coordinates, so those are the ones to copy.
 			case 1 -> EMUtilsClient.waypoint().copyCoordinates(minecraft, row.entry().x(), row.entry().y(), row.entry().z());
-			case 2 -> EMUtilsClient.waypoint().toggleHidden(id);
-			case 3 -> EMUtilsClient.waypoint().toggleBeacon(id);
+			case 2 -> EMUtilsClient.waypoint().shareInChat(minecraft, id);
+			case 3 -> EMUtilsClient.waypoint().toggleHidden(id);
+			case 4 -> EMUtilsClient.waypoint().toggleBeacon(id);
 			default -> EMUtilsClient.waypoint().clear(minecraft, id);
 		}
 	}
