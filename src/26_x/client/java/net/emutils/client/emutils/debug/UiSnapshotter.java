@@ -41,6 +41,12 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
+import net.emutils.client.emutils.map.MapBlockLook;
+import net.emutils.client.emutils.map.MapBlockLooks;
+import net.emutils.client.emutils.map.MapManager;
+import net.emutils.client.emutils.map.MinimapRenderer;
+import net.emutils.client.emutils.map.MinimapShape;
+import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
@@ -154,6 +160,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.Level;
@@ -219,6 +226,8 @@ public final class UiSnapshotter {
 		}
 		if (worldTicks == 40) {
 			clearOldSnapshots(client);
+			// The other snapshots show the HUD without the minimap (#212); its own steps turn it on.
+			EMUtilsClient.config().setMinimap(false);
 		}
 		stepTicks++;
 		if (step > LAST_STEP) {
@@ -3435,6 +3444,68 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 20, "settings, position not remembered");
 			}
+			// Minimap (#212): sampled chunks drawn with block textures, square and turning with you at first,
+			// then closer, north-up, round and far out, with waypoints on it and one pinned to its edge.
+			case 381 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					setGuiScale(client, 2);
+					command(client, "time set day");
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.resetMinimapDefaults();
+					config.setMinimap(true);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					int x = client.player.getBlockX();
+					int y = client.player.getBlockY();
+					int z = client.player.getBlockZ();
+					EMUtilsClient.waypoint().addCustom(client, "Home", x + 18, y, z - 12, 0xFFFF5555, false, "");
+					EMUtilsClient.waypoint().addCustom(client, "Mine", x - 14, y, z + 22, 0xFF5555FF, false, "");
+					EMUtilsClient.waypoint().addCustom(client, "Far away", x + 300, y, z + 40, 0xFFAA00AA, false, "");
+					client.player.setYRot(30.0F);
+					client.player.setXRot(20.0F);
+				}
+				if (stepTicks == 90) {
+					checkMinimap();
+				}
+				captureAfter(client, 100, "minimap, square, turning, 1x");
+			}
+			case 382 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMinimapZoom(MinimapZoom.FOUR);
+				}
+				captureAfter(client, 50, "minimap, 4x, block textures");
+			}
+			case 383 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMinimapZoom(MinimapZoom.EIGHT);
+					EMUtilsClient.config().setMinimapRotate(false);
+				}
+				captureAfter(client, 50, "minimap, 8x, north up");
+			}
+			case 384 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMinimapShape(MinimapShape.ROUND);
+					EMUtilsClient.config().setMinimapRotate(true);
+					EMUtilsClient.config().setMinimapZoom(MinimapZoom.HALF);
+				}
+				captureAfter(client, 60, "minimap, round, 0.5x");
+			}
+			case 385 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMinimapZoom(MinimapZoom.QUARTER);
+					// Far away is 300 blocks off, past the map's edge, so with pinning off it isn't drawn.
+					EMUtilsClient.config().setMinimapWaypointsPinned(false);
+				}
+				captureAfter(client, 80, "minimap, round, 0.25x, not pinned");
+			}
+			case 386 -> openSheetAndCapture(client, "minimap", "minimap sheet");
+			case 387 -> {
+				EMUtilsClient.config().resetMinimapDefaults();
+				EMUtilsClient.config().setMinimap(false);
+				EMUtilsClient.waypoint().clearForCurrentWorld(client);
+				client.gui.setScreen(null);
+				next();
+			}
 			default -> finish(client);
 		}
 	}
@@ -3461,6 +3532,36 @@ public final class UiSnapshotter {
 		boolean inRow = icon != null && others.stream().anyMatch(other -> other.getY() == icon.getY());
 		check(first && inRow, "the EMUtils icon is the first of the " + where + "'s icon buttons, without overlapping them");
 		check(!cornerButton, "no EMUtils button is left in the " + where + "'s top-left corner");
+	}
+
+	/**
+	 * The minimap sampled the loaded chunks and drew tiles for them, and blocks are classed the way the map
+	 * needs: grass and leaves cover their column (leaves with their holes filled), glass and plants show the
+	 * ground under them, and water is a fluid with the biome's color (#212).
+	 */
+	private static void checkMinimap() {
+		int[] counts = MapManager.countsForSnapshot();
+		check(counts[0] > 25, "the minimap sampled the loaded chunks (" + counts[0] + " sampled, " + counts[1] + " waiting)");
+		check(counts[2] > 0, "the minimap made tiles (" + counts[2] + ")");
+		checkMapLook(Blocks.GRASS_BLOCK.defaultBlockState(), MapBlockLook.Kind.OPAQUE, true);
+		checkMapLook(Blocks.OAK_LEAVES.defaultBlockState(), MapBlockLook.Kind.OPAQUE, true);
+		checkMapLook(Blocks.STONE.defaultBlockState(), MapBlockLook.Kind.OPAQUE, false);
+		checkMapLook(Blocks.GLASS.defaultBlockState(), MapBlockLook.Kind.SEE_THROUGH, false);
+		checkMapLook(Blocks.SHORT_GRASS.defaultBlockState(), MapBlockLook.Kind.SEE_THROUGH, true);
+		checkMapLook(Blocks.TORCH.defaultBlockState(), MapBlockLook.Kind.SEE_THROUGH, false);
+		checkMapLook(Blocks.WATER.defaultBlockState(), MapBlockLook.Kind.FLUID, true);
+		checkMapLook(Blocks.BARRIER.defaultBlockState(), MapBlockLook.Kind.INVISIBLE, false);
+		MapBlockLook slab = MapBlockLooks.ensure(Blocks.OAK_SLAB.defaultBlockState(), Block.getId(Blocks.OAK_SLAB.defaultBlockState()));
+		check(slab.kind() == MapBlockLook.Kind.OPAQUE && slab.side() != null, "an oak slab's top covers its column and it has a side (" + slab.kind() + ")");
+		// A tile's square cut to a turned square is the 8-sided overlap of the two.
+		float[] square = {0.0F, 0.0F, 10.0F, 0.0F, 10.0F, 10.0F, 0.0F, 10.0F};
+		float[] diamond = {5.0F, -2.0F, 12.0F, 5.0F, 5.0F, 12.0F, -2.0F, 5.0F};
+		check(MinimapRenderer.clip(square, diamond).length == 16, "clipping a square to a turned square leaves 8 corners (" + MinimapRenderer.clip(square, diamond).length / 2 + ")");
+	}
+
+	private static void checkMapLook(BlockState state, MapBlockLook.Kind kind, boolean tinted) {
+		MapBlockLook look = MapBlockLooks.ensure(state, Block.getId(state));
+		check(look.kind() == kind && (look.tint() != null) == tinted, state.getBlock() + " is " + kind + (tinted ? ", tinted" : "") + " on the map (" + look.kind() + ", tint " + look.tint() + ")");
 	}
 
 	private static void setGuiScale(Minecraft client, int guiScale) {

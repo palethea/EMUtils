@@ -37,6 +37,7 @@ public final class HubFeature {
 	public enum Icon {
 		CHAT(HubIcons.MESSAGE_SQUARE),
 		PIN(HubIcons.MAP_PIN),
+		MAP(HubIcons.MAP),
 		RECONNECT(HubIcons.REFRESH_CW),
 		IMAGE(HubIcons.IMAGE),
 		TOOL(HubIcons.FOLDER_COG),

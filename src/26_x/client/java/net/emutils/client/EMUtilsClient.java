@@ -40,6 +40,9 @@ import net.emutils.client.emutils.hud.InfoOverlayHudElement;
 import net.emutils.client.emutils.hud.ScoreboardHudElement;
 import net.emutils.client.emutils.hud.TabListHudElement;
 import net.emutils.client.emutils.hud.KeystrokesHudElement;
+import net.emutils.client.emutils.map.MapManager;
+import net.emutils.client.emutils.map.MinimapHudElement;
+import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.hud.LookAtInfoHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoRenderer;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -135,6 +138,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		WaypointChatShare.register();
 		BeaconRadiusRenderer.register();
 		LightLevelOverlayRenderer.register();
+		MapManager.register();
 		registerHudLayoutElements();
 		UiClosingScreens.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -181,6 +185,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudOverlayRenderer.tick(client);
 		LookAtInfoRenderer.tick(client);
 		ArmorStatusRenderer.tick(client);
+		MinimapRenderer.tick();
+		MapManager.tick(client);
 		tickSpotify(client);
 		BackgroundLaunch.tick(client);
 		UiFontRenderer.freeReleased();
@@ -228,6 +234,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		HudLayoutRegistry.register(MOD_ID, new LookAtInfoHudElement());
 		HudLayoutRegistry.register(MOD_ID, new KeystrokesHudElement());
 		HudLayoutRegistry.register(MOD_ID, new ArmorStatusHudElement());
+		// Minimap (#212).
+		HudLayoutRegistry.register(MOD_ID, new MinimapHudElement());
 		// Custom Scoreboard (#169): replaces the vanilla sidebar element while turned on.
 		HudLayoutRegistry.register(MOD_ID, new ScoreboardHudElement());
 		// Custom Tab List (#170): replaces the vanilla player list element while turned on.
@@ -351,6 +359,18 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.UNKNOWN.getValue(),
 			category
 		));
+		KeyMapping minimapZoomInKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.minimap_zoom_in",
+			VersionedInput.keyboardType(),
+			InputConstants.KEY_EQUALS,
+			category
+		));
+		KeyMapping minimapZoomOutKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.minimap_zoom_out",
+			VersionedInput.keyboardType(),
+			InputConstants.KEY_MINUS,
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			VersionedInput.keyboardType(),
@@ -376,6 +396,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		tweaksManager.setKeyMappings(freelookKey, placeBelowKey, lockedYPlacementKey, freeCameraKey);
 		BeaconRadiusRenderer.setKeyMapping(beaconRadiusKey);
 		LightLevelOverlayRenderer.setKeyMapping(lightLevelOverlayKey);
+		MinimapRenderer.setKeyMappings(minimapZoomInKey, minimapZoomOutKey);
 		inventoryToolsManager.setKeyMappings(slotLockKey, slotBindKey, quickStackKey);
 	}
 

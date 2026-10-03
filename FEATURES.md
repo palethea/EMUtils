@@ -151,6 +151,17 @@ Show your movement keys on screen as keys in the settings UI's look, lighting up
 - Use Menu Accent: held keys light up in the menus' accent color.
   - Pressed Color: with Use Menu Accent off, pick the color held keys light up in.
 
+### Minimap
+
+A map of the area around you in the top-right corner, drawn from each block's real textures, so it follows your resource pack. Close up, every block shows its top texture with its biome's grass, foliage and water colors; farther out the blocks blend into their average color. Height changes are shaded, and where a block stands above the ground south of it a strip of its side shows, giving the map a slight 3D look. Water gets darker the deeper it is. Plants, glass, fences and torches are drawn over the ground under them. The map fills in from the chunks you have loaded and updates as blocks change; the work happens a little at a time and the tiles are drawn on a background thread, so it doesn't stall the game. Your arrow sits in the middle, an N marks north, and your coordinates show under the map. It can be moved, resized and given an opacity in the HUD Layout Editor. On by default, unless Xaero's Minimap is installed. Its settings are split into Map and Show tabs.
+
+- Shape: a Square map, or a Round one.
+- Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
+- Zoom: from 0.25× to 8×. The Minimap Zoom In (`=`) and Minimap Zoom Out (`-`) keys change it too.
+- Coordinates: show your coordinates under the map.
+- Waypoints: show your waypoints with the same markers as in the world.
+  - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
+
 ### Armor Status
 
 Show your armor and held items in a card, each with how much durability it has left and a durability bar in the item's own durability color. Held items without durability show how many you carry when they stack, such as blocks and arrows. It sits at the right edge of the screen by default and can be moved, resized and given a background opacity in the HUD Layout Editor; in the lower half of the screen the card sticks to the bottom of its place, so it grows upward. Empty slots are left out. Off by default. Its settings are split into Items and Display tabs.

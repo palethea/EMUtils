@@ -24,6 +24,8 @@ import net.emutils.client.emutils.waypoint.WaypointShareFormat;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
+import net.emutils.client.emutils.map.MinimapShape;
+import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.hud.HudStyle;
 import net.emutils.client.emutils.hud.ScoreboardTitleAlignment;
@@ -51,6 +53,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.FOOD_HUD, HubSettingsRegistry::foodHudRows);
 		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
 		ROWS.put(HubCategory.KEYSTROKES, HubSettingsRegistry::keystrokesRows);
+		ROWS.put(HubCategory.MINIMAP, HubSettingsRegistry::minimapRows);
 		ROWS.put(HubCategory.ARMOR_STATUS, HubSettingsRegistry::armorStatusRows);
 		ROWS.put(HubCategory.SCOREBOARD, HubSettingsRegistry::scoreboardRows);
 		ROWS.put(HubCategory.TAB_LIST, HubSettingsRegistry::tabListRows);
@@ -96,6 +99,7 @@ public final class HubSettingsRegistry {
 			case FOOD_HUD -> config::resetFoodHudDefaults;
 			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
 			case KEYSTROKES -> config::resetKeystrokesDefaults;
+			case MINIMAP -> config::resetMinimapDefaults;
 			case ARMOR_STATUS -> config::resetArmorStatusDefaults;
 			case SCOREBOARD -> config::resetScoreboardDefaults;
 			case TAB_LIST -> config::resetTabListDefaults;
@@ -481,6 +485,33 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_HEALTH, config::lookAtInfoHealth, config::setLookAtInfoHealth));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_ARMOR, config::lookAtInfoArmor, config::setLookAtInfoArmor));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_LOOK_AT_INFO_EFFECTS, config::lookAtInfoEffects, config::setLookAtInfoEffects));
+		return rows;
+	}
+
+	/** Minimap (#212): how the map looks, then what it shows. */
+	private static List<HubSettingRow> minimapRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP, config::minimap, config::setMinimap));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MINIMAP_SECTION_MAP));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_HUD_LAYOUT_EDITOR),
+			() -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					HudLayoutManager.openEditor(EMUtilsClient.MOD_ID, client);
+				}
+			},
+			true
+		));
+		rows.add(divider());
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_MINIMAP_SHAPE, config::minimapShape, config::setMinimapShape, MinimapShape.class, shape -> Component.translatable(shape.labelKey())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_ROTATE, config::minimapRotate, config::setMinimapRotate));
+		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_MINIMAP_ZOOM, config::minimapZoom, config::setMinimapZoom, MinimapZoom.class, zoom -> Component.literal(zoom.label())));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MINIMAP_SECTION_SHOW));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_COORDINATES, config::minimapCoordinates, config::setMinimapCoordinates));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS, config::minimapWaypoints, config::setMinimapWaypoints));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS_PINNED, config::minimapWaypointsPinned, config::setMinimapWaypointsPinned));
 		return rows;
 	}
 

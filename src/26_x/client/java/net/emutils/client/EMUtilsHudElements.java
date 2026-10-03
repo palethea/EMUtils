@@ -12,6 +12,7 @@ public final class EMUtilsHudElements {
 	public static final HudElementId TAB_LIST = HudElementId.of("tab_list", EMUtilsTexts.HUD_ELEMENT_TAB_LIST);
 	public static final HudElementId KEYSTROKES = HudElementId.of("keystrokes", EMUtilsTexts.HUD_ELEMENT_KEYSTROKES);
 	public static final HudElementId LOOK_AT_INFO = HudElementId.of("look_at_info", EMUtilsTexts.HUD_ELEMENT_LOOK_AT_INFO);
+	public static final HudElementId MINIMAP = HudElementId.of("minimap", EMUtilsTexts.HUD_ELEMENT_MINIMAP);
 
 	private EMUtilsHudElements() {
 	}

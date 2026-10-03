@@ -63,6 +63,7 @@
 		"ScreenMixin",
 		"ScreenshotRecorderMixin",
 		"SodiumWorldRendererMixin",
+		"SpriteContentsAccessor",
 		"TitleScreenMixin",
 		"WeatherRenderingMixin"
 	],

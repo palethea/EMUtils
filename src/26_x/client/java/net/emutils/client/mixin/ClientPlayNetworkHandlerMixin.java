@@ -2,6 +2,7 @@ package net.emutils.client.mixin;
 
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.hud.HudTpsTracker;
+import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.versioned.VersionedPackets;
 import net.minecraft.client.Minecraft;
@@ -36,14 +37,17 @@ public abstract class ClientPlayNetworkHandlerMixin {
 	@Inject(method = "handleBlockUpdate", at = @At("RETURN"))
 	private void emutils$refreshLightOverlayAfterBlockUpdate(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
 		LightLevelOverlayRenderer.onChunkChanged(packet.getPos().getX() >> 4, packet.getPos().getZ() >> 4);
+		MapManager.onBlockChanged(packet.getPos().getX(), packet.getPos().getZ());
 	}
 
 	@Inject(method = "handleChunkBlocksUpdate", at = @At("RETURN"))
 	private void emutils$refreshLightOverlayAfterSectionUpdate(
 		ClientboundSectionBlocksUpdatePacket packet, CallbackInfo ci
 	) {
-		packet.runUpdates((pos, state) ->
-			LightLevelOverlayRenderer.onChunkChanged(pos.getX() >> 4, pos.getZ() >> 4));
+		packet.runUpdates((pos, state) -> {
+			LightLevelOverlayRenderer.onChunkChanged(pos.getX() >> 4, pos.getZ() >> 4);
+			MapManager.onBlockChanged(pos.getX(), pos.getZ());
+		});
 	}
 
 	@Inject(method = "handleLevelChunkWithLight", at = @At("RETURN"))

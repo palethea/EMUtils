@@ -230,6 +230,14 @@ public final class WaypointMarkerRenderer {
 		return fade;
 	}
 
+	/** Draws a waypoint's marker centered on the current origin, the same marker as in the world, for the EMUtils minimap (#212). */
+	public static void drawMapMarker(GuiGraphicsExtractor graphics, Waypoint waypoint, int size, float alpha) {
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(-size / 2.0F, -size / 2.0F);
+		drawMarker(graphics, Minecraft.getInstance().font, EMUtilsClient.config().waypointFont(), waypoint, size, alpha, size / (float) MARKER_SIZE);
+		graphics.pose().popMatrix();
+	}
+
 	/** Draws the marker with its top-left corner at the current origin. */
 	private static void drawMarker(GuiGraphicsExtractor graphics, Font font, HudFont fontMode, Waypoint waypoint, int size, float alpha, float scale) {
 		int color = waypoint.color();
