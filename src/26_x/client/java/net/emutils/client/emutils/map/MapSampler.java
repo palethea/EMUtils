@@ -43,6 +43,10 @@ final class MapSampler {
 				int floorId = MapChunk.NONE;
 				int columnFloorY = minY;
 				for (; y >= minY; y--) {
+					if (topId != MapChunk.NONE && columnTopY - y > MAX_FLOOR_DEPTH) {
+						// Glass over a ravine, or plants on an island over the void: no floor near enough.
+						break;
+					}
 					BlockState state = chunk.getBlockState(pos.set(x, y, z));
 					int id = Block.getId(state);
 					MapBlockLook.Kind kind = MapBlockLooks.ensure(state, id).kind();
@@ -60,9 +64,6 @@ final class MapSampler {
 					if (kind == MapBlockLook.Kind.OPAQUE) {
 						floorId = id;
 						columnFloorY = y;
-						break;
-					}
-					if (columnTopY - y > MAX_FLOOR_DEPTH) {
 						break;
 					}
 				}
