@@ -53,6 +53,11 @@ public final class EMUtilsPaths {
 		return configDir().resolve("mass-drop.json");
 	}
 
+	/** Where the map keeps what you explored (#215), per world and dimension. Game data, so it's beside the saves, not in the config. */
+	public static Path mapsDir() {
+		return FabricLoader.getInstance().getGameDir().resolve("emutils").resolve("maps");
+	}
+
 	public static Path debugDir() {
 		return configDir().resolve("debug");
 	}

@@ -44,9 +44,11 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
 import net.emutils.client.emutils.map.MapManager;
+import net.emutils.client.emutils.map.MapDraw;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
+import net.emutils.client.emutils.map.WorldMapScreen;
 import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
@@ -125,6 +127,7 @@ import net.minecraft.client.multiplayer.ServerList;
 import net.emutils.client.mixin.MouseAccess;
 import net.emutils.client.mixin.HandledScreenAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.Options;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -190,6 +193,8 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotTo=N} (Gradle property {@code emutilsUiSnapshotTo}) stops after step N. */
 	private static final int LAST_STEP = Integer.getInteger("emutils.uiSnapshotTo", Integer.MAX_VALUE);
 	private static int stepTicks;
+	/** The world map showing the Nether while the settings are open over it, in step 396. */
+	private static @Nullable WorldMapScreen netherMap;
 	/** The screenshots the gallery showed the first time it opened. */
 	private static List<Path> galleryShown = List.of();
 	private static long configModifiedBefore;
@@ -228,6 +233,7 @@ public final class UiSnapshotter {
 			clearOldSnapshots(client);
 			// The other snapshots show the HUD without the minimap (#212); its own steps turn it on.
 			EMUtilsClient.config().setMinimap(false);
+			EMUtilsClient.config().setWorldMap(false);
 		}
 		stepTicks++;
 		if (step > LAST_STEP) {
@@ -3502,11 +3508,152 @@ public final class UiSnapshotter {
 			case 387 -> {
 				EMUtilsClient.config().resetMinimapDefaults();
 				EMUtilsClient.config().setMinimap(false);
-				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				client.gui.setScreen(null);
 				next();
 			}
+			// World map (#215): what was sampled is saved and read back the same, the minimap grows into
+			// the world map, which shows the explored area with waypoints, zooms far out on the regions'
+			// overviews, and shrinks back into the minimap on closing.
+			case 388 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setMinimapShape(MinimapShape.ROUND);
+					config.setWorldMap(true);
+				}
+				if (stepTicks == 60) {
+					String problem = MapManager.roundTripForSnapshot(client);
+					check(problem.isEmpty(), "the region you stand in is saved and read back the same" + (problem.isEmpty() ? "" : " (" + problem + ")"));
+					WorldMapScreen.open(client, null);
+				}
+				captureAfter(client, 63, "world map opening out of the minimap");
+			}
+			case 389 -> captureAfter(client, 40, "world map");
+			// Right-click menu and the add sheet over the map, instead of the waypoint list.
+			case 390 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openMenuForSnapshot(map.width / 2 + 40, map.height / 2 - 30);
+				}
+				captureAfter(client, 10, "world map right-click menu");
+			}
+			case 391 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.addWaypointForSnapshot();
+				}
+				if (stepTicks == 30) {
+					check(MinecraftClientCompat.screen(client) instanceof WorldMapScreen, "adding a waypoint from the world map keeps the map open under the sheet");
+				}
+				captureAfter(client, 31, "world map add waypoint sheet");
+				if (step != 391) {
+					MinecraftClientCompat.screen(client).onClose();
+				}
+			}
+			case 392 -> {
+				// After the sheet's closing animation.
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.scrollForSnapshot(-14.0D);
+					check(map.zoomForSnapshot() < 0.1F, "scrolling out zooms the world map far out (" + map.zoomForSnapshot() + ")");
+				}
+				if (stepTicks == 119 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(!map.loadingForSnapshot(), "the world map zoomed far out finishes loading");
+				}
+				captureAfter(client, 120, "world map zoomed far out");
+			}
+			// Zooming straight back in: the far tiles stand in until the close ones are drawn, so there are no holes.
+			case 393 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.scrollForSnapshot(14.0D);
+				}
+				captureAfter(client, 8, "world map just after zooming back in");
+			}
+			case 394 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.onClose();
+				}
+				if (stepTicks == 25) {
+					check(!(MinecraftClientCompat.screen(client) instanceof WorldMapScreen), "the world map closed after its animation");
+				}
+				captureAfter(client, 26, "world map closed");
+			}
+			// Singleplayer chunks generated away from you, as Chunky makes them, come onto the map from the
+			// world's files: chunks 2000 blocks off are generated and saved by the server, never sent to the client.
+			case 395 -> {
+				int farX = client.player.getBlockX() + 2000;
+				int farZ = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					command(client, "forceload add " + (farX - 40) + " " + (farZ - 40) + " " + (farX + 40) + " " + (farZ + 40));
+				}
+				if (stepTicks == 80) {
+					check(saveServer(client), "the server wrote the generated chunks to disk");
+				}
+				if (stepTicks == 120) {
+					MapManager.rescanForSnapshot();
+				}
+				if (stepTicks == 220) {
+					check(MapManager.hasChunkForSnapshot(farX >> 4, farZ >> 4), "a chunk generated 2000 blocks away, never sent to the client, is on the map (" + MapManager.importedForSnapshot() + " imported)");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 240 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.centerForSnapshot(farX, farZ);
+				}
+				captureAfter(client, 300, "world map, chunks generated far away");
+			}
+			// Another dimension's map shows that dimension's waypoints, and still loads after coming back from
+			// the settings, which close it while they're open.
+			case 396 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					int x = client.player.getBlockX() / 8;
+					int z = client.player.getBlockZ() / 8;
+					EMUtilsClient.waypoint().addCustom(client, "minecraft:the_nether", "Nether hub", x + 6, 70, z - 4, 0xFFFF5555, false, "");
+					map.switchDimensionForSnapshot("minecraft:the_nether");
+					map.centerForSnapshot(x, z);
+				}
+				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(map.waypointsDrawnForSnapshot() > 0, "another dimension's map shows its waypoints (" + map.waypointsDrawnForSnapshot() + " drawn)");
+					client.gui.setScreen(new SettingsScreen(map));
+					netherMap = map;
+				}
+				if (stepTicks == 30 && netherMap != null) {
+					client.gui.setScreen(netherMap);
+					netherMap.centerForSnapshot(client.player.getBlockX() / 8 + 40, client.player.getBlockZ() / 8 + 300);
+				}
+				if (stepTicks == 90 && netherMap != null) {
+					check(!netherMap.loadingForSnapshot(), "another dimension's map still loads after coming back from the settings");
+					netherMap.centerForSnapshot(client.player.getBlockX() / 8, client.player.getBlockZ() / 8);
+					netherMap = null;
+				}
+				captureAfter(client, 93, "world map, the Nether from the Overworld");
+			}
+			case 397 -> {
+				if (stepTicks == 1) {
+					command(client, "forceload remove all");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
+				if (stepTicks == 21) {
+					EMUtilsClient.config().resetMinimapDefaults();
+					EMUtilsClient.config().setMinimap(false);
+					EMUtilsClient.config().setWorldMap(false);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
+					next();
+				}
+			}
 			default -> finish(client);
+		}
+	}
+
+	/** Has the singleplayer server save everything to disk, as /save-all flush would, and waits for it. */
+	private static boolean saveServer(Minecraft client) {
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server == null) {
+			return false;
+		}
+		try {
+			return server.submit(() -> server.saveEverything(true, true, true)).get(30L, java.util.concurrent.TimeUnit.SECONDS);
+		} catch (Exception exception) {
+			return false;
 		}
 	}
 
@@ -3556,7 +3703,7 @@ public final class UiSnapshotter {
 		// A tile's square cut to a turned square is the 8-sided overlap of the two.
 		float[] square = {0.0F, 0.0F, 10.0F, 0.0F, 10.0F, 10.0F, 0.0F, 10.0F};
 		float[] diamond = {5.0F, -2.0F, 12.0F, 5.0F, 5.0F, 12.0F, -2.0F, 5.0F};
-		check(MinimapRenderer.clip(square, diamond).length == 16, "clipping a square to a turned square leaves 8 corners (" + MinimapRenderer.clip(square, diamond).length / 2 + ")");
+		check(MapDraw.clip(square, diamond).length == 16, "clipping a square to a turned square leaves 8 corners (" + MapDraw.clip(square, diamond).length / 2 + ")");
 	}
 
 	private static void checkMapLook(BlockState state, MapBlockLook.Kind kind, boolean tinted) {

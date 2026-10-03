@@ -1,8 +1,5 @@
 package net.emutils.client.emutils.map;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.EMUtilsHudElements;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
@@ -25,7 +22,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
@@ -35,9 +31,7 @@ import org.jspecify.annotations.Nullable;
  * your arrow in the middle, a north marker, your waypoints (pinned to the edge when past it) and your
  * coordinates under it.
  *
- * <p>The map is drawn from tiles as triangles cut to the map's outline, so a turning or round map needs no
- * stencil or render target. Which tiles it uses depends on how many screen pixels a block covers: close up
- * each block shows its full texture, farther out the tiles with fewer pixels per block take over.
+ * <p>The tiles are drawn by {@link MapDraw}, which the world map shares.
  */
 public final class MinimapRenderer {
 	private static final Identifier ID = Identifier.fromNamespaceAndPath(EMUtilsClient.MOD_ID, "minimap");
@@ -54,8 +48,6 @@ public final class MinimapRenderer {
 	private static final int NORTH_SIZE = 10;
 	private static final int TEXT_COLOR = 0xFFFFFFFF;
 	private static final int TEXT_SHADOW = 0x99000000;
-	/** Below this many screen pixels per block, the next coarser tiles are used. */
-	private static final float[] DETAIL_BELOW = {6.0F, 1.5F};
 
 	private static @Nullable KeyMapping zoomInKey;
 	private static @Nullable KeyMapping zoomOutKey;
@@ -104,7 +96,7 @@ public final class MinimapRenderer {
 		if (config == null || client.player == null || client.level == null || !config.minimap()) {
 			return;
 		}
-		if (HudLayoutManager.isEditing() || MinecraftClientCompat.isHudHidden(client)) {
+		if (HudLayoutManager.isEditing() || MinecraftClientCompat.isHudHidden(client) || WorldMapScreen.isOpen(client)) {
 			return;
 		}
 		if (EMUtilsClient.zoom() != null && EMUtilsClient.zoom().shouldHideHud()) {
@@ -124,6 +116,32 @@ public final class MinimapRenderer {
 		}
 	}
 
+	/** Where the minimap is on screen and what it shows, for the world map to grow out of (#215). */
+	record Frame(float x, float y, float size, float scale, float zoom, float angle, boolean round) {
+	}
+
+	/** The minimap's frame on screen right now, or null when it isn't showing. */
+	static @Nullable Frame frame(Minecraft client) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		if (config == null || client.player == null || !config.minimap() || MinecraftClientCompat.isHudHidden(client)) {
+			return null;
+		}
+		int guiWidth = client.getWindow().getGuiScaledWidth();
+		int guiHeight = client.getWindow().getGuiScaledHeight();
+		HudLayoutManager.ResolvedLayout layout = HudLayoutManager.resolveLayout(EMUtilsHudElements.MINIMAP, config, guiWidth, guiHeight, client);
+		float yaw = client.player.getViewYRot(1.0F);
+		float angle = config.minimapRotate() ? (float) Math.toRadians(180.0F - yaw) : 0.0F;
+		return new Frame(
+			layout.position().x(),
+			layout.position().y(),
+			MAP_SIZE * layout.scaleFactor(),
+			layout.scaleFactor(),
+			config.minimapZoom().pixelsPerBlock(),
+			angle,
+			config.minimapShape() == MinimapShape.ROUND
+		);
+	}
+
 	/** Draws the minimap with its top-left corner at the current origin, {@link #MAP_SIZE} wide. */
 	static void drawMap(GuiGraphicsExtractor context, Minecraft client, EMUtilsConfig config, float layoutScale, int opacityPercent, float partialTick) {
 		LocalPlayer player = client.player;
@@ -139,17 +157,22 @@ public final class MinimapRenderer {
 		float yaw = player.getViewYRot(partialTick);
 		// Turns world offsets so the way you face points up; north-up when the map doesn't turn.
 		float angle = rotate ? (float) Math.toRadians(180.0F - yaw) : 0.0F;
-		View view = new View(centerX, centerZ, zoom, angle, half);
+		MapView view = new MapView(centerX, centerZ, zoom, angle, half, half);
 		float opacity = Math.clamp(opacityPercent / 100.0F, 0.0F, 1.0F);
-		float[] outline = outline(shape, half);
+		float[] outline = outline(shape);
 
 		if (shape == MinimapShape.ROUND) {
 			UiShapes.circle(context, -1, -1, MAP_SIZE + 2, fade(FRAME, opacity));
 		} else {
 			context.fill(-1, -1, MAP_SIZE + 1, MAP_SIZE + 1, fade(FRAME, opacity));
 		}
-		fillOutline(context, outline, fade(BACKGROUND, opacity));
-		drawTiles(context, client, view, outline, layoutScale, opacity);
+		MapDraw.fill(context, outline, fade(BACKGROUND, opacity));
+		MapWorld world = MapManager.world();
+		if (world != null) {
+			MapManager.tiles().beginFrame();
+			float screenPixelsPerBlock = zoom * layoutScale * (float) client.getWindow().getGuiScale();
+			MapDraw.tiles(context, world, MapManager.tiles(), view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1), fade(0xFFFFFFFF, opacity));
+		}
 		drawFrame(context, shape, opacity);
 		// Markers are placed exactly where the map puts them, not rounded to pixels, so they move with it.
 		drawNorth(context, client.font, view, shape, opacity);
@@ -162,226 +185,9 @@ public final class MinimapRenderer {
 		}
 	}
 
-	/** Maps world positions to the map: offsets from the center, scaled, turned, around the map's middle. */
-	private record View(double centerX, double centerZ, float zoom, float angle, float half) {
-		float screenX(double worldX, double worldZ) {
-			double dx = (worldX - centerX) * zoom;
-			double dz = (worldZ - centerZ) * zoom;
-			return (float) (dx * Math.cos(angle) - dz * Math.sin(angle)) + half;
-		}
-
-		float screenY(double worldX, double worldZ) {
-			double dx = (worldX - centerX) * zoom;
-			double dz = (worldZ - centerZ) * zoom;
-			return (float) (dx * Math.sin(angle) + dz * Math.cos(angle)) + half;
-		}
-
-		double worldX(float screenX, float screenY) {
-			double sx = screenX - half;
-			double sy = screenY - half;
-			return centerX + (sx * Math.cos(angle) + sy * Math.sin(angle)) / zoom;
-		}
-
-		double worldZ(float screenX, float screenY) {
-			double sx = screenX - half;
-			double sy = screenY - half;
-			return centerZ + (-sx * Math.sin(angle) + sy * Math.cos(angle)) / zoom;
-		}
-
-		/** How far from the center, in blocks, the map can show anything, corners included. */
-		double reach() {
-			return half * Math.sqrt(2.0D) / zoom;
-		}
-	}
-
-	/** The map's outline as x, y corners going clockwise: a square, or a circle of many sides. */
-	private static float[] outline(MinimapShape shape, float half) {
-		if (shape == MinimapShape.SQUARE) {
-			float size = half * 2.0F;
-			return new float[] {0.0F, 0.0F, size, 0.0F, size, size, 0.0F, size};
-		}
-		float[] points = new float[ROUND_SEGMENTS * 2];
-		for (int i = 0; i < ROUND_SEGMENTS; i++) {
-			double a = i * Math.PI * 2.0D / ROUND_SEGMENTS;
-			points[i * 2] = half + (float) Math.cos(a) * half;
-			points[i * 2 + 1] = half + (float) Math.sin(a) * half;
-		}
-		return points;
-	}
-
-	private static void fillOutline(GuiGraphicsExtractor context, float[] outline, int color) {
-		int corners = outline.length / 2;
-		float[] triangles = new float[(corners - 2) * 6];
-		for (int i = 1; i < corners - 1; i++) {
-			int t = (i - 1) * 6;
-			triangles[t] = outline[0];
-			triangles[t + 1] = outline[1];
-			triangles[t + 2] = outline[i * 2];
-			triangles[t + 3] = outline[i * 2 + 1];
-			triangles[t + 4] = outline[i * 2 + 2];
-			triangles[t + 5] = outline[i * 2 + 3];
-		}
-		VersionedGuiTriangles.colored(context, triangles, (corners - 2) * 3, color);
-	}
-
-	private static void drawTiles(GuiGraphicsExtractor context, Minecraft client, View view, float[] outline, float layoutScale, float opacity) {
-		MapWorld world = MapManager.world();
-		if (world == null) {
-			return;
-		}
-		MapTiles tiles = MapManager.tiles();
-		tiles.beginFrame();
-		float screenPixelsPerBlock = view.zoom() * layoutScale * (float) client.getWindow().getGuiScale();
-		int level = 0;
-		while (level < DETAIL_BELOW.length && screenPixelsPerBlock < DETAIL_BELOW[level]) {
-			level++;
-		}
-		int blocks = MapTileBaker.blocksPerTile(level);
-		double reach = view.reach();
-		int minTileX = (int) Math.floor((view.centerX() - reach) / blocks);
-		int maxTileX = (int) Math.floor((view.centerX() + reach) / blocks);
-		int minTileZ = (int) Math.floor((view.centerZ() - reach) / blocks);
-		int maxTileZ = (int) Math.floor((view.centerZ() + reach) / blocks);
-		int centerTileX = (int) Math.floor(view.centerX() / blocks);
-		int centerTileZ = (int) Math.floor(view.centerZ() / blocks);
-
-		// Nearest tiles first, so they are the first to be drawn when many are missing.
-		List<int[]> order = new ArrayList<>();
-		for (int tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
-			for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
-				order.add(new int[] {tileX, tileZ});
-			}
-		}
-		order.sort((a, b) -> Integer.compare(
-			Math.max(Math.abs(a[0] - centerTileX), Math.abs(a[1] - centerTileZ)),
-			Math.max(Math.abs(b[0] - centerTileX), Math.abs(b[1] - centerTileZ))
-		));
-		int color = fade(0xFFFFFFFF, opacity);
-		for (int[] tile : order) {
-			DynamicTexture texture = tiles.texture(world, level, tile[0], tile[1]);
-			if (texture == null && level < MapTileBaker.LEVELS - 1) {
-				// Until the detailed tile is ready, a coarser one fills in, so the map is never empty.
-				drawCoarserFallback(context, tiles, world, view, outline, level, tile[0], tile[1], color);
-				continue;
-			}
-			if (texture != null) {
-				drawTile(context, texture, view, outline, tile[0] * (double) blocks, tile[1] * (double) blocks, blocks, color);
-			}
-		}
-	}
-
-	/** Draws the part of a coarser tile that covers a missing detailed one. */
-	private static void drawCoarserFallback(GuiGraphicsExtractor context, MapTiles tiles, MapWorld world, View view, float[] outline, int level, int tileX, int tileZ, int color) {
-		int blocks = MapTileBaker.blocksPerTile(level);
-		int coarseBlocks = MapTileBaker.blocksPerTile(level + 1);
-		int coarseX = Math.floorDiv(tileX * blocks, coarseBlocks);
-		int coarseZ = Math.floorDiv(tileZ * blocks, coarseBlocks);
-		DynamicTexture coarse = tiles.texture(world, level + 1, coarseX, coarseZ);
-		if (coarse == null) {
-			return;
-		}
-		double x0 = tileX * (double) blocks;
-		double z0 = tileZ * (double) blocks;
-		float[] clip = clipToRect(outline, view, x0, z0, blocks);
-		drawClipped(context, coarse, view, clip, coarseX * (double) coarseBlocks, coarseZ * (double) coarseBlocks, coarseBlocks, color);
-	}
-
-	private static void drawTile(GuiGraphicsExtractor context, DynamicTexture texture, View view, float[] outline, double x0, double z0, int blocks, int color) {
-		float[] clip = clipToRect(outline, view, x0, z0, blocks);
-		drawClipped(context, texture, view, clip, x0, z0, blocks, color);
-	}
-
-	/** The map's outline cut down to the part where a tile from (x0, z0), {@code blocks} wide, lies. */
-	private static float[] clipToRect(float[] outline, View view, double x0, double z0, int blocks) {
-		float[] tile = {
-			view.screenX(x0, z0), view.screenY(x0, z0),
-			view.screenX(x0 + blocks, z0), view.screenY(x0 + blocks, z0),
-			view.screenX(x0 + blocks, z0 + blocks), view.screenY(x0 + blocks, z0 + blocks),
-			view.screenX(x0, z0 + blocks), view.screenY(x0, z0 + blocks)
-		};
-		return clip(outline, tile);
-	}
-
-	/** Draws a convex polygon in map space with the tile's texture, its texture coordinates worked out from the world position of each corner. */
-	private static void drawClipped(GuiGraphicsExtractor context, DynamicTexture texture, View view, float[] polygon, double x0, double z0, int blocks, int color) {
-		int corners = polygon.length / 2;
-		if (corners < 3) {
-			return;
-		}
-		float[] xy = new float[(corners - 2) * 6];
-		float[] uv = new float[(corners - 2) * 6];
-		for (int i = 1; i < corners - 1; i++) {
-			int t = (i - 1) * 6;
-			int[] picks = {0, i, i + 1};
-			for (int k = 0; k < 3; k++) {
-				float x = polygon[picks[k] * 2];
-				float y = polygon[picks[k] * 2 + 1];
-				xy[t + k * 2] = x;
-				xy[t + k * 2 + 1] = y;
-				uv[t + k * 2] = (float) ((view.worldX(x, y) - x0) / blocks);
-				uv[t + k * 2 + 1] = (float) ((view.worldZ(x, y) - z0) / blocks);
-			}
-		}
-		VersionedGuiTriangles.textured(context, texture, xy, uv, (corners - 2) * 3, color);
-	}
-
-	/**
-	 * Cuts a convex polygon down to another convex polygon (Sutherland-Hodgman). Both are x, y corners; the
-	 * clip polygon may go either way round.
-	 */
-	public static float[] clip(float[] subject, float[] clipper) {
-		float[] output = subject;
-		int clipCorners = clipper.length / 2;
-		float orientation = signedArea(clipper);
-		for (int e = 0; e < clipCorners && output.length >= 6; e++) {
-			float ax = clipper[e * 2];
-			float ay = clipper[e * 2 + 1];
-			float bx = clipper[(e + 1) % clipCorners * 2];
-			float by = clipper[(e + 1) % clipCorners * 2 + 1];
-			float[] input = output;
-			float[] next = new float[input.length + 4];
-			int count = 0;
-			int corners = input.length / 2;
-			for (int i = 0; i < corners; i++) {
-				float px = input[i * 2];
-				float py = input[i * 2 + 1];
-				float qx = input[(i + 1) % corners * 2];
-				float qy = input[(i + 1) % corners * 2 + 1];
-				float pSide = side(ax, ay, bx, by, px, py) * orientation;
-				float qSide = side(ax, ay, bx, by, qx, qy) * orientation;
-				if (pSide >= 0.0F) {
-					if (count + 2 > next.length) {
-						next = Arrays.copyOf(next, next.length * 2);
-					}
-					next[count++] = px;
-					next[count++] = py;
-				}
-				if ((pSide >= 0.0F) != (qSide >= 0.0F)) {
-					float t = pSide / (pSide - qSide);
-					if (count + 2 > next.length) {
-						next = Arrays.copyOf(next, next.length * 2);
-					}
-					next[count++] = px + (qx - px) * t;
-					next[count++] = py + (qy - py) * t;
-				}
-			}
-			output = Arrays.copyOf(next, count);
-		}
-		return output;
-	}
-
-	private static float side(float ax, float ay, float bx, float by, float px, float py) {
-		return (bx - ax) * (py - ay) - (by - ay) * (px - ax);
-	}
-
-	private static float signedArea(float[] polygon) {
-		float area = 0.0F;
-		int corners = polygon.length / 2;
-		for (int i = 0; i < corners; i++) {
-			int j = (i + 1) % corners;
-			area += polygon[i * 2] * polygon[j * 2 + 1] - polygon[j * 2] * polygon[i * 2 + 1];
-		}
-		return Math.signum(area);
+	/** The map's outline: a square, or a circle of many sides. */
+	static float[] outline(MinimapShape shape) {
+		return MapDraw.roundedRect(0.0F, 0.0F, MAP_SIZE, MAP_SIZE, shape == MinimapShape.ROUND ? MAP_SIZE / 2.0F : 0.0F, ROUND_SEGMENTS / 4);
 	}
 
 	private static void drawFrame(GuiGraphicsExtractor context, MinimapShape shape, float opacity) {
@@ -417,8 +223,8 @@ public final class MinimapRenderer {
 	}
 
 	/** An "N" on the map's edge where north is. */
-	private static void drawNorth(GuiGraphicsExtractor context, Font font, View view, MinimapShape shape, float opacity) {
-		float half = view.half();
+	private static void drawNorth(GuiGraphicsExtractor context, Font font, MapView view, MinimapShape shape, float opacity) {
+		float half = view.screenCenterX();
 		// North is the world's -z, turned like the rest of the map.
 		float dirX = (float) Math.sin(view.angle());
 		float dirY = (float) -Math.cos(view.angle());
@@ -461,12 +267,12 @@ public final class MinimapRenderer {
 		return dx * dx + dy * dy <= reach * reach;
 	}
 
-	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, View view, MinimapShape shape, float opacity, boolean pinned) {
+	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, MapView view, MinimapShape shape, float opacity, boolean pinned) {
 		WaypointManager manager = EMUtilsClient.waypoint();
 		if (manager == null || !manager.enabled()) {
 			return;
 		}
-		float half = view.half();
+		float half = view.screenCenterX();
 		float inset = MARKER_SIZE / 2.0F + 1.0F;
 		for (WaypointEntry entry : manager.renderEntries(client)) {
 			Waypoint waypoint = entry.waypoint();

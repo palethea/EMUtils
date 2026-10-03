@@ -29,13 +29,13 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The Add Waypoint form as a sheet over the waypoints list (#103): a name, the set it is grouped in (#105),
+ * The Add Waypoint form as a sheet over the waypoints list (#103) or the world map (#215): a name, the set it is grouped in (#105),
  * the coordinates (your position to start with), one of the preset colors or any other from the color
  * picker, and the beacon.
  * Given a waypoint it edits that one instead (#105), starting from its values. Enter adds or saves, Esc
  * cancels, Tab moves between the fields.
  */
-final class WaypointSheet {
+public final class WaypointSheet {
 	/** The preset colors; the default custom color is picked if it's one of them. */
 	private static final int[] PRESET_COLORS = {
 		0xFFFF5555, 0xFF55FF55, 0xFF5555FF, 0xFFFFFF55, 0xFF55FFFF, 0xFFFF55FF, 0xFFFFAA55, 0xFFFFFFFF, 0xFF555555
@@ -94,7 +94,7 @@ final class WaypointSheet {
 	 * {@code editing} is the waypoint to change, or null to add a new one. {@code onClose} runs as soon as
 	 * the sheet starts closing, with whether a waypoint was added or saved.
 	 */
-	WaypointSheet(Font font, UiAnim anim, @Nullable Waypoint editing, @Nullable SharedWaypoint prefill, Consumer<Boolean> onClose) {
+	public WaypointSheet(Font font, UiAnim anim, @Nullable Waypoint editing, @Nullable SharedWaypoint prefill, Consumer<Boolean> onClose) {
 		this.font = font;
 		this.anim = anim;
 		this.onClose = onClose;
@@ -209,12 +209,12 @@ final class WaypointSheet {
 		return null;
 	}
 
-	boolean isClosed() {
+	public boolean isClosed() {
 		return frame.isClosed();
 	}
 
 	/** Closes without adding, for example when the screen closes. */
-	void close() {
+	public void close() {
 		finish(false);
 	}
 
@@ -273,7 +273,7 @@ final class WaypointSheet {
 		setX = pickX - 4 - SET_WIDTH;
 	}
 
-	void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
+	public void render(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int screenWidth, int screenHeight) {
 		layout(screenWidth, screenHeight);
 		if (frame.firstFrame()) {
 			UiText.prepare(Component.translatable(titleKey), UiText.Size.HEADING);
@@ -379,7 +379,7 @@ final class WaypointSheet {
 
 	// ---- input ----------------------------------------------------------------------------------
 
-	void mouseClicked(double mouseX, double mouseY) {
+	public void mouseClicked(double mouseX, double mouseY) {
 		if (frame.closing()) {
 			return;
 		}
@@ -446,20 +446,20 @@ final class WaypointSheet {
 		}
 	}
 
-	void mouseDragged(double mouseX, double mouseY) {
+	public void mouseDragged(double mouseX, double mouseY) {
 		if (colorPicker != null) {
 			colorPicker.drag(mouseX, mouseY);
 		}
 	}
 
-	void mouseReleased() {
+	public void mouseReleased() {
 		if (colorPicker != null) {
 			colorPicker.release();
 		}
 	}
 
 	/** Enter adds, Esc closes the color picker or cancels, Tab moves between fields; the sheet takes every key. */
-	void keyPressed(KeyEvent input) {
+	public void keyPressed(KeyEvent input) {
 		if (frame.closing()) {
 			return;
 		}
@@ -502,7 +502,7 @@ final class WaypointSheet {
 		}
 	}
 
-	void charTyped(CharacterEvent input) {
+	public void charTyped(CharacterEvent input) {
 		if (colorPicker != null) {
 			colorPicker.charTyped(input);
 			return;
