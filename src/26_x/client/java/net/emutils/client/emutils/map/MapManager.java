@@ -1,8 +1,9 @@
 package net.emutils.client.emutils.map;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import net.emutils.client.EMUtilsClient;
@@ -37,6 +38,12 @@ public final class MapManager {
 	private static final int OVERVIEWS_EVERY_TICKS = 40;
 	/** A region's overview is redrawn at most this often while you explore it. */
 	private static final long OVERVIEW_MIN_MILLIS = 10_000L;
+	/** At most this many overviews are drawn at once, so the tiles on screen don't wait behind them. */
+	private static final int MAX_OVERVIEWS_BAKING = 2;
+	/** At most this many regions are read in per round to redraw an overview that's missing or outdated. */
+	private static final int REDRAW_LOADS_PER_ROUND = 2;
+	/** At most this long per tick is spent making the looks of blocks just read from disk. */
+	private static final long PREPARE_BUDGET_NANOS = 2_000_000L;
 
 	private static final LongLinkedOpenHashSet LOADED = new LongLinkedOpenHashSet();
 	private static final LongLinkedOpenHashSet PENDING = new LongLinkedOpenHashSet();
@@ -115,6 +122,7 @@ public final class MapManager {
 			for (MapRegion region : world.loadedRegions()) {
 				region.overviewStale = true;
 			}
+			world.packsChanged();
 		}
 		if (world == null || world.level() != level) {
 			if (world != null) {
@@ -144,9 +152,6 @@ public final class MapManager {
 		}
 
 		importSaved(world, TILES, deadline);
-		if (world.ticks % SAVE_EVERY_TICKS == 0) {
-			world.saveChanged();
-		}
 	}
 
 	/**
@@ -169,8 +174,8 @@ public final class MapManager {
 
 	/**
 	 * Keeps a map's regions ready to draw, once a tick: makes the looks of blocks just read from disk, has
-	 * the tiles of loaded regions drawn, redraws changed overviews and lets go of idle regions. The world map
-	 * calls it for another dimension's map it shows.
+	 * the tiles of loaded regions drawn, redraws changed overviews, saves and lets go of idle regions. The
+	 * world map calls it for another dimension's map it shows.
 	 */
 	static void prepare(MapWorld world, MapTiles tiles) {
 		prepareLoaded(world, tiles);
@@ -180,27 +185,34 @@ public final class MapManager {
 		if (world.ticks % OVERVIEWS_EVERY_TICKS == 0) {
 			redrawOverviews(world, tiles);
 		}
+		if (world.ticks % SAVE_EVERY_TICKS == 0) {
+			world.saveChanged();
+		}
 		if (world.ticks % UNLOAD_EVERY_TICKS == 0) {
 			world.unloadIdle();
 		}
 	}
 
-	/** Makes the looks of blocks in regions just read from disk, and has their tiles drawn. */
+	/**
+	 * Makes the looks of blocks in regions just read from disk, within a budget so a burst of regions doesn't
+	 * stall a frame, and has their tiles drawn once a region's looks are all made.
+	 */
 	private static void prepareLoaded(MapWorld world, MapTiles tiles) {
+		long deadline = System.nanoTime() + PREPARE_BUDGET_NANOS;
 		MapRegion region;
-		while ((region = world.pollLoaded()) != null) {
-			IntOpenHashSet states = new IntOpenHashSet();
-			for (int i = 0; i < MapRegion.CHUNKS * MapRegion.CHUNKS; i++) {
-				MapChunk chunk = region.chunk(i);
-				if (chunk == null) {
-					continue;
-				}
-				for (int c = 0; c < MapChunk.AREA; c++) {
-					states.add(chunk.top(c));
-					states.add(chunk.floor(c));
-				}
+		while (System.nanoTime() < deadline && (region = world.preparing != null ? world.preparing : world.pollLoaded()) != null) {
+			world.preparing = region;
+			int[] states = region.states;
+			while (states != null && world.preparingAt < states.length && System.nanoTime() < deadline) {
+				int id = states[world.preparingAt++];
+				MapBlockLooks.ensure(Block.stateById(id), id);
 			}
-			states.forEach(id -> MapBlockLooks.ensure(Block.stateById(id), id));
+			if (states != null && world.preparingAt < states.length) {
+				break;
+			}
+			region.states = null;
+			world.preparing = null;
+			world.preparingAt = 0;
 			tiles.markRegionDirty(region.regionX, region.regionZ);
 		}
 		while ((region = world.pollOverviewRead()) != null) {
@@ -211,20 +223,23 @@ public final class MapManager {
 		}
 	}
 
-	/** Redraws the overviews of regions that changed, or were drawn with other resource packs. */
+	/**
+	 * Redraws the overviews of regions that changed, have none, or were drawn with other resource packs, a few
+	 * at a time, and reads in far regions whose saved overview needs the same.
+	 */
 	private static void redrawOverviews(MapWorld world, MapTiles tiles) {
 		long now = System.currentTimeMillis();
-		if (now - world.lastOverviewRound < OVERVIEW_MIN_MILLIS) {
-			return;
-		}
-		world.lastOverviewRound = now;
 		int fingerprint = MapBlockLooks.fingerprint();
 		for (MapRegion region : world.loadedRegions()) {
-			if (region.loaded && region.count() > 0
-				&& (region.overviewStale || region.overview != null && region.overviewFingerprint != fingerprint)) {
+			if (tiles.overviewsBaking() >= MAX_OVERVIEWS_BAKING) {
+				return;
+			}
+			if (region.loaded && region.count() > 0 && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS
+				&& (region.overviewStale || region.overview == null || region.overviewFingerprint != fingerprint)) {
 				tiles.bakeOverview(world, region, fingerprint);
 			}
 		}
+		world.loadRedraws(REDRAW_LOADS_PER_ROUND);
 	}
 
 	private static void sample(ClientLevel level, int chunkX, int chunkZ) {
@@ -242,7 +257,12 @@ public final class MapManager {
 	 */
 	private static @Nullable Path folder(Minecraft client, ClientLevel level) {
 		Path world = worldFolder(client);
-		return world == null ? null : world.resolve(safeName(WaypointManager.dimensionId(level)));
+		return world == null ? null : dimensionFolder(world, WaypointManager.dimensionId(level));
+	}
+
+	/** The folder with the map of one dimension, in a world's map folder. */
+	static Path dimensionFolder(Path world, String dimension) {
+		return named(world, dimension);
 	}
 
 	/**
@@ -255,15 +275,42 @@ public final class MapManager {
 		if (server != null) {
 			Path save = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName();
 			if (save != null) {
-				return EMUtilsPaths.mapsDir().resolve(safeName("singleplayer_" + save));
+				return named(EMUtilsPaths.mapsDir(), "singleplayer_" + save);
 			}
 		}
 		String worldKey = WaypointManager.worldKey(client);
-		return worldKey.isBlank() ? null : EMUtilsPaths.mapsDir().resolve(safeName(worldKey));
+		return worldKey.isBlank() ? null : named(EMUtilsPaths.mapsDir(), worldKey);
 	}
 
-	/** A file name for any text: letters, digits, dots and dashes stay, everything else becomes an underscore. */
+	/**
+	 * The folder for a text in {@code parent}. A map kept under the name earlier builds gave it is moved
+	 * there, so it isn't lost.
+	 */
+	private static Path named(Path parent, String text) {
+		Path folder = parent.resolve(safeName(text));
+		Path legacy = parent.resolve(legacyName(text));
+		if (!legacy.equals(folder) && !Files.exists(folder) && Files.isDirectory(legacy)) {
+			try {
+				Files.move(legacy, folder);
+			} catch (IOException exception) {
+				EMUtilsClient.LOGGER.warn("EMUtils map couldn't move {} to {}", legacy, folder, exception);
+			}
+		}
+		return folder;
+	}
+
+	/**
+	 * A file name for any text: lowercase letters, digits, dots, dashes and underscores stay, everything else
+	 * becomes an underscore. Different texts could then come out the same ("World 1" and "World_1"), so a
+	 * name that had to change ends in a hash of the text.
+	 */
 	static String safeName(String text) {
+		String name = legacyName(text);
+		return name.equals(text) ? name : name + "-" + Integer.toHexString(text.hashCode());
+	}
+
+	/** The name earlier builds gave a folder, which could be the same for different texts. */
+	private static String legacyName(String text) {
 		String name = text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9.\\-]", "_");
 		// "." and ".." aren't folder names one can use.
 		return name.replace(".", "").isEmpty() ? "_" + name : name;

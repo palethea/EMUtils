@@ -3,7 +3,9 @@ package net.emutils.client.emutils.map;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +30,12 @@ public final class MapWorld {
 	/** Regions unused for this long are let go once saved. */
 	private static final long UNLOAD_AFTER_MILLIS = 45_000L;
 	/** At most this many regions keep their chunks in memory; the least used go first. */
-	private static final int MAX_LOADED_REGIONS = 48;
+	static final int MAX_LOADED_REGIONS = 48;
+	/**
+	 * At most this many overviews of regions without their chunks stay in memory, about 64 MB; the least
+	 * used go first and are read from their files again when needed.
+	 */
+	private static final int MAX_OVERVIEWS = 1024;
 	private static final String DIMENSION_FILE = "dimension.txt";
 	private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "EMUtils Map IO");
@@ -48,12 +55,18 @@ public final class MapWorld {
 	private final Set<Long> known = ConcurrentHashMap.newKeySet();
 	private final ConcurrentLinkedQueue<MapRegion> justLoaded = new ConcurrentLinkedQueue<>();
 	private final ConcurrentLinkedQueue<MapRegion> overviewsRead = new ConcurrentLinkedQueue<>();
+	/** Regions whose saved overview is missing or from other resource packs, to be read in full and drawn again. */
+	private final Set<Long> redraws = ConcurrentHashMap.newKeySet();
+	/** Regions already asked for again since the last resource pack change, so none is asked for twice. */
+	private final Set<Long> redrawn = ConcurrentHashMap.newKeySet();
 	private volatile boolean closed;
 	/** Brings in the chunks a singleplayer world generated away from you, or null elsewhere. */
 	@Nullable MapImporter importer;
 	/** When this map's overviews were last looked over for redrawing. */
-	long lastOverviewRound;
 	int ticks;
+	/** The region whose block looks the client thread is making, and how far it got. */
+	@Nullable MapRegion preparing;
+	int preparingAt;
 
 	/**
 	 * The map of the level you are in, saved in {@code folder} (nothing is saved without one).
@@ -131,18 +144,35 @@ public final class MapWorld {
 	}
 
 	private void load(MapRegion region) {
+		// Once closed, nothing waits for it; close() reads in the regions that hold new samples itself.
 		if (closed) {
+			return;
+		}
+		readInto(region);
+		justLoaded.add(region);
+	}
+
+	/** Reads a region's file into it, keeping what was sampled meanwhile, and marks it loaded. IO thread. */
+	private void readInto(MapRegion region) {
+		if (region.loaded) {
 			return;
 		}
 		try {
 			MapRegionFile.Contents contents = MapRegionFile.read(MapRegionFile.path(folder, region.regionX, region.regionZ), biomes);
 			if (contents != null) {
 				MapChunk[] chunks = contents.chunks();
+				IntOpenHashSet states = new IntOpenHashSet();
 				for (int i = 0; chunks != null && i < chunks.length; i++) {
 					if (chunks[i] != null) {
 						region.putLoaded(i, chunks[i]);
+						for (int c = 0; c < MapChunk.AREA; c++) {
+							states.add(chunks[i].top(c));
+							states.add(chunks[i].floor(c));
+						}
 					}
 				}
+				// Gathered here, so the client thread only makes the looks, a few at a time.
+				region.states = states.toIntArray();
 				if (region.overview == null && contents.overview() != null) {
 					region.overview = contents.overview();
 					region.overviewFingerprint = contents.overviewFingerprint();
@@ -154,7 +184,6 @@ public final class MapWorld {
 			EMUtilsClient.LOGGER.warn("EMUtils map couldn't read region {}, {}", region.regionX, region.regionZ, exception);
 		}
 		region.loaded = true;
-		justLoaded.add(region);
 	}
 
 	/**
@@ -172,6 +201,7 @@ public final class MapWorld {
 		}
 		MapRegion overviewOnly = overviews.get(key);
 		if (overviewOnly != null) {
+			overviewOnly.lastUsed = System.currentTimeMillis();
 			return overviewOnly;
 		}
 		MapRegion created = new MapRegion(regionX, regionZ);
@@ -191,6 +221,36 @@ public final class MapWorld {
 			});
 		}
 		return created;
+	}
+
+	/**
+	 * Asks for a region's overview to be drawn again from its chunks, because the saved one is missing or was
+	 * drawn with other resource packs. Each region is asked for once per pack change. Safe from any thread.
+	 */
+	void requestRedraw(int regionX, int regionZ) {
+		long key = MapRegion.key(regionX, regionZ);
+		if (known.contains(key) && redrawn.add(key)) {
+			redraws.add(key);
+		}
+	}
+
+	/** Reads in up to {@code max} regions asked for by {@link #requestRedraw}; their overviews are then redrawn. */
+	void loadRedraws(int max) {
+		Iterator<Long> iterator = redraws.iterator();
+		while (max > 0 && iterator.hasNext()) {
+			long key = iterator.next();
+			iterator.remove();
+			if (!regions.containsKey(key)) {
+				region((int) (key >> 32), (int) key);
+				max--;
+			}
+		}
+	}
+
+	/** New resource packs: every region may be asked for again. */
+	void packsChanged() {
+		redrawn.clear();
+		redraws.clear();
 	}
 
 	/** Some regions or overviews are still being read from disk. */
@@ -230,9 +290,14 @@ public final class MapWorld {
 		return new ArrayList<>(regions.values());
 	}
 
+	/** The map can be saved: it has a folder, and its bottom is known. */
+	private boolean writable() {
+		return folder != null && minY != Integer.MIN_VALUE;
+	}
+
 	/** Saves the regions that changed, in the background. */
 	void saveChanged() {
-		if (folder == null || minY == Integer.MIN_VALUE) {
+		if (!writable()) {
 			return;
 		}
 		for (MapRegion region : regions.values()) {
@@ -275,12 +340,17 @@ public final class MapWorld {
 		}
 	}
 
-	/** Lets go of regions that were saved and haven't been used for a while, and the least used past the limit. */
+	/**
+	 * Lets go of regions that were saved and haven't been used for a while, and the least used past the limit.
+	 * A map that's only read has nothing to save, so its regions go whether they changed or not. Overviews
+	 * past their limit go too, least used first.
+	 */
 	void unloadIdle() {
 		long now = System.currentTimeMillis();
+		boolean writable = writable();
 		List<MapRegion> idle = new ArrayList<>();
 		for (MapRegion region : regions.values()) {
-			if (region.loaded && !region.dirty) {
+			if (region.loaded && (!region.dirty || !writable)) {
 				idle.add(region);
 			}
 		}
@@ -303,6 +373,24 @@ public final class MapWorld {
 				}
 			}
 		}
+		if (overviews.size() > MAX_OVERVIEWS) {
+			List<MapRegion> old = new ArrayList<>();
+			for (MapRegion region : overviews.values()) {
+				if (region.loaded) {
+					old.add(region);
+				}
+			}
+			old.sort((a, b) -> Long.compare(a.lastUsed, b.lastUsed));
+			int overviewExcess = overviews.size() - MAX_OVERVIEWS;
+			for (MapRegion region : old) {
+				if (overviewExcess <= 0) {
+					break;
+				}
+				if (overviews.remove(MapRegion.key(region.regionX, region.regionZ), region)) {
+					overviewExcess--;
+				}
+			}
+		}
 	}
 
 	/** Saves everything that changed and stops loading; the map of another dimension or world takes over. */
@@ -310,8 +398,23 @@ public final class MapWorld {
 		if (importer != null) {
 			importer.stop();
 		}
-		saveChanged();
 		closed = true;
+		if (!writable()) {
+			return;
+		}
+		for (MapRegion region : regions.values()) {
+			if (region.dirty) {
+				region.dirty = false;
+				// A region still being read holds only what was sampled meanwhile, so its file is read in
+				// first; saving just the new samples would lose the rest.
+				IO.execute(() -> {
+					readInto(region);
+					if (region.count() > 0) {
+						save(region);
+					}
+				});
+			}
+		}
 	}
 
 	/** Waits until the saves queued so far are written, for when the game closes. */

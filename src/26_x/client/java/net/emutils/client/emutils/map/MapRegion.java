@@ -32,6 +32,10 @@ public final class MapRegion {
 	volatile int @Nullable [] overview;
 	/** The resource packs the overview was drawn with; another fingerprint means it is redrawn. */
 	volatile int overviewFingerprint;
+	/** When the overview was last drawn, so a region being explored isn't redrawn all the time. */
+	volatile long overviewBakedAt;
+	/** The block states of the chunks just read from disk, whose looks the client thread still has to make. */
+	volatile int @Nullable [] states;
 
 	MapRegion(int regionX, int regionZ) {
 		this.regionX = regionX;

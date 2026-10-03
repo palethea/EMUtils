@@ -108,6 +108,8 @@ public final class WorldMapScreen extends Screen {
 	private long closingAt = -1L;
 	private boolean dragging;
 	private @Nullable WaypointEntry hovered;
+	/** How many waypoints were drawn last frame, for UI snapshot checks. */
+	private int waypointsDrawn;
 	private @Nullable UiContextMenu menu;
 	private @Nullable WaypointSheet sheet;
 
@@ -144,8 +146,22 @@ public final class WorldMapScreen extends Screen {
 		if (openedAt < 0L) {
 			openedAt = System.nanoTime();
 		}
+		// Back from the settings or the waypoint list, which closed another dimension's map when they opened.
+		if (isOwnDimension()) {
+			MapWorld own = MapManager.world();
+			if (own != null && own != world) {
+				world = own;
+				tiles = MapManager.tiles();
+			}
+		} else if (otherTiles == null) {
+			openOther();
+		}
 		dimensions.clear();
-		dimensions.add(dimension);
+		// Yours first, also when another one is shown.
+		dimensions.add(minecraft.level == null ? dimension : WaypointManager.dimensionId(minecraft.level));
+		if (!dimensions.contains(dimension)) {
+			dimensions.add(dimension);
+		}
 		Path folder = MapManager.worldFolder(minecraft);
 		if (folder != null && Files.isDirectory(folder)) {
 			try (Stream<Path> children = Files.list(folder)) {
@@ -167,7 +183,8 @@ public final class WorldMapScreen extends Screen {
 		if (id != null) {
 			return id;
 		}
-		String name = folder.getFileName().toString();
+		// Without the hash a changed name ends in.
+		String name = folder.getFileName().toString().replaceFirst("-[0-9a-f]{1,8}$", "");
 		int colon = name.indexOf('_');
 		return colon > 0 ? name.substring(0, colon) + ":" + name.substring(colon + 1) : name;
 	}
@@ -290,8 +307,9 @@ public final class WorldMapScreen extends Screen {
 
 		boolean interactive = menu == null && sheet == null && progress >= 1.0F;
 		hovered = null;
+		// The waypoints of the dimension shown, also when it isn't yours; your arrow only in your own.
+		drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
 		if (ownDimension && player != null) {
-			drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
 			double px = player.xo + (player.getX() - player.xo) * delta;
 			double pz = player.zo + (player.getZ() - player.zo) * delta;
 			drawArrow(context, view.screenX(px, pz), view.screenY(px, pz), (float) Math.toRadians(yaw + 180.0F) + angle);
@@ -368,11 +386,12 @@ public final class WorldMapScreen extends Screen {
 	}
 
 	private void drawWaypoints(GuiGraphicsExtractor context, MapView view, int mouseX, int mouseY, float progress, boolean hover) {
+		waypointsDrawn = 0;
 		WaypointManager manager = EMUtilsClient.waypoint();
 		if (manager == null || !manager.enabled()) {
 			return;
 		}
-		for (WaypointEntry entry : manager.renderEntries(minecraft)) {
+		for (WaypointEntry entry : manager.renderEntries(minecraft, dimension)) {
 			Waypoint waypoint = entry.waypoint();
 			if (!entry.placeable()) {
 				continue;
@@ -387,6 +406,7 @@ public final class WorldMapScreen extends Screen {
 			// Hidden waypoints stay on the world map, faded, so they can be shown again from its menu.
 			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, waypoint.hidden() ? progress * HIDDEN_ALPHA : progress);
 			context.pose().popMatrix();
+			waypointsDrawn++;
 			if (hover && Math.abs(mouseX - sx) <= MARKER_SIZE / 2.0F && Math.abs(mouseY - sy) <= MARKER_SIZE / 2.0F) {
 				hovered = entry;
 			}
@@ -715,6 +735,21 @@ public final class WorldMapScreen extends Screen {
 		lookAt(anchorWorldX, anchorWorldZ);
 	}
 
+	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
+	public void switchDimensionForSnapshot(String id) {
+		switchDimension(id);
+	}
+
+	/** For UI snapshot checks: how many waypoints the map drew last frame. */
+	public int waypointsDrawnForSnapshot() {
+		return waypointsDrawn;
+	}
+
+	/** For UI snapshot checks: whether the map shown is still reading regions from disk. */
+	public boolean loadingForSnapshot() {
+		return world.busy();
+	}
+
 	/** For UI snapshot checks: the map's zoom in GUI pixels per block. */
 	public float zoomForSnapshot() {
 		return zoom;
@@ -757,20 +792,9 @@ public final class WorldMapScreen extends Screen {
 			}
 			return;
 		}
-		Path folder = MapManager.worldFolder(minecraft);
-		if (folder == null) {
+		if (!openOther()) {
 			return;
 		}
-		Identifier dimensionId = Identifier.tryParse(id);
-		ResourceKey<Level> key = dimensionId == null ? null : ResourceKey.create(Registries.DIMENSION, dimensionId);
-		// In singleplayer the dimension's bottom is known, so what's imported for it can be saved; elsewhere it's only read.
-		ServerLevel server = key == null ? null : MapImporter.serverLevel(minecraft, key);
-		world = new MapWorld(minecraft.level, folder.resolve(MapManager.safeName(id)), id, server == null ? Integer.MIN_VALUE : server.getMinY());
-		if (key != null) {
-			world.importer = MapImporter.start(minecraft, world, key);
-		}
-		otherTiles = new MapTiles();
-		tiles = otherTiles;
 		// The Nether is an eighth the size of the Overworld, so the view moves with the scale between them.
 		boolean toNether = id.equals("minecraft:the_nether");
 		boolean fromNether = previous.equals("minecraft:the_nether");
@@ -779,6 +803,28 @@ public final class WorldMapScreen extends Screen {
 		} else if (fromNether && !toNether) {
 			lookAt(centerX * 8.0D, centerZ * 8.0D);
 		}
+	}
+
+	/**
+	 * Opens the map of the dimension shown, which isn't yours: read from its files, with tiles of its own.
+	 * Returns false when this world keeps no maps.
+	 */
+	private boolean openOther() {
+		Path folder = MapManager.worldFolder(minecraft);
+		if (folder == null || minecraft.level == null) {
+			return false;
+		}
+		Identifier dimensionId = Identifier.tryParse(dimension);
+		ResourceKey<Level> key = dimensionId == null ? null : ResourceKey.create(Registries.DIMENSION, dimensionId);
+		// In singleplayer the dimension's bottom is known, so what's imported for it can be saved; elsewhere it's only read.
+		ServerLevel server = key == null ? null : MapImporter.serverLevel(minecraft, key);
+		world = new MapWorld(minecraft.level, MapManager.dimensionFolder(folder, dimension), dimension, server == null ? Integer.MIN_VALUE : server.getMinY());
+		if (key != null) {
+			world.importer = MapImporter.start(minecraft, world, key);
+		}
+		otherTiles = new MapTiles();
+		tiles = otherTiles;
+		return true;
 	}
 
 	private static float lerp(float from, float to, float t) {

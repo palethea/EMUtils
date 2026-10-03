@@ -497,9 +497,16 @@ public final class WaypointManager {
         if (client == null || client.level == null) {
             return List.of();
         }
+        return entriesIn(client, dimensionId(client.level), includeOtherDimensions);
+    }
+
+    /** Like {@link #entriesForCurrentWorld}, but as they are in {@code dimension}, which the world map may be showing. */
+    public List<WaypointEntry> entriesIn(Minecraft client, String dimension, boolean includeOtherDimensions) {
+        if (client == null || client.level == null) {
+            return List.of();
+        }
 
         String worldKey = worldKey(client);
-        String dimension = dimensionId(client.level);
         List<WaypointEntry> entries = new ArrayList<>();
         for (Waypoint waypoint : waypoints) {
             if (!waypoint.matchesWorldKey(worldKey)) {
@@ -520,6 +527,14 @@ public final class WaypointManager {
     /** The waypoints that have a place in the world you are in: this dimension's, plus converted ones if that's on. */
     public List<WaypointEntry> renderEntries(Minecraft client) {
         return entriesForCurrentWorld(client, EMUtilsClient.config().waypointShowOtherDimensions())
+            .stream()
+            .filter(WaypointEntry::placeable)
+            .toList();
+    }
+
+    /** The waypoints that have a place in {@code dimension}: its own, plus converted ones if that's on. */
+    public List<WaypointEntry> renderEntries(Minecraft client, String dimension) {
+        return entriesIn(client, dimension, EMUtilsClient.config().waypointShowOtherDimensions())
             .stream()
             .filter(WaypointEntry::placeable)
             .toList();

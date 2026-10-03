@@ -51,7 +51,7 @@ final class SavedChunk implements MapSampler.Columns {
 	}
 
 	/**
-	 * Unpacks a saved chunk, or returns null when it isn't fully generated or was saved by another game
+	 * Unpacks a saved chunk, or returns null when it isn't fully generated or wasn't upgraded to this game
 	 * version, whose layout may differ; those show up once you visit them.
 	 */
 	static @Nullable SavedChunk parse(CompoundTag tag, int dataVersion, int minY, int height, Registry<Biome> biomes) {

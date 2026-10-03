@@ -168,11 +168,11 @@ final class MapRegionFile {
 			for (int i = 0; i < present.length; i++) {
 				present[i] = in.readLong();
 			}
-			int[] blockPalette = new int[in.readInt()];
+			int[] blockPalette = new int[paletteSize(in)];
 			for (int i = 0; i < blockPalette.length; i++) {
 				blockPalette[i] = Block.getId(parseState(in.readUTF()));
 			}
-			int[] biomePalette = new int[in.readInt()];
+			int[] biomePalette = new int[paletteSize(in)];
 			for (int i = 0; i < biomePalette.length; i++) {
 				Identifier key = Identifier.tryParse(in.readUTF());
 				Biome biome = key == null ? null : biomes.getValue(key);
@@ -191,19 +191,19 @@ final class MapRegionFile {
 				short[] floorY = new short[MapChunk.AREA];
 				short[] biome = new short[MapChunk.AREA];
 				for (int c = 0; c < MapChunk.AREA; c++) {
-					top[c] = blockPalette[readIndex(in, wideBlocks)];
+					top[c] = blockPalette[readIndex(in, wideBlocks, blockPalette.length)];
 				}
 				for (int c = 0; c < MapChunk.AREA; c++) {
 					topY[c] = (short) (in.readUnsignedShort() + minY);
 				}
 				for (int c = 0; c < MapChunk.AREA; c++) {
-					floor[c] = blockPalette[readIndex(in, wideBlocks)];
+					floor[c] = blockPalette[readIndex(in, wideBlocks, blockPalette.length)];
 				}
 				for (int c = 0; c < MapChunk.AREA; c++) {
 					floorY[c] = (short) (topY[c] - in.readUnsignedByte());
 				}
 				for (int c = 0; c < MapChunk.AREA; c++) {
-					biome[c] = (short) biomePalette[readIndex(in, wideBiomes)];
+					biome[c] = (short) biomePalette[readIndex(in, wideBiomes, biomePalette.length)];
 				}
 				chunks[i] = new MapChunk(top, topY, floor, floorY, biome);
 			}
@@ -250,7 +250,20 @@ final class MapRegionFile {
 		out.write(index);
 	}
 
-	private static int readIndex(DataInputStream in, boolean wide) throws IOException {
-		return wide ? in.readUnsignedShort() : in.readUnsignedByte();
+	/** A palette's length, which a damaged file can't make larger than an index can point into. */
+	private static int paletteSize(DataInputStream in) throws IOException {
+		int size = in.readInt();
+		if (size < 0 || size > 1 << 16) {
+			throw new IOException("Damaged map region: palette of " + size);
+		}
+		return size;
+	}
+
+	private static int readIndex(DataInputStream in, boolean wide, int size) throws IOException {
+		int index = wide ? in.readUnsignedShort() : in.readUnsignedByte();
+		if (index >= size) {
+			throw new IOException("Damaged map region: palette index " + index + " of " + size);
+		}
+		return index;
 	}
 }

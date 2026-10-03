@@ -25,6 +25,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
@@ -54,6 +55,12 @@ public final class MapBlockLooks {
 
 	private record Generation(BlockStateModelSet models, AtomicReferenceArray<MapBlockLook> looks, int fingerprint) {
 	}
+
+	/** Common blocks whose colors go into the fingerprint, so a pack changed under the same name is noticed too. */
+	private static final Block[] FINGERPRINT_BLOCKS = {
+		Blocks.GRASS_BLOCK, Blocks.STONE, Blocks.DIRT, Blocks.SAND, Blocks.WATER, Blocks.OAK_LEAVES, Blocks.SPRUCE_LEAVES,
+		Blocks.OAK_LOG, Blocks.SNOW_BLOCK, Blocks.GRAVEL, Blocks.DEEPSLATE, Blocks.NETHERRACK, Blocks.END_STONE, Blocks.SHORT_GRASS
+	};
 
 	/**
 	 * Which resource packs the looks come from. Saved overviews remember it, so they are redrawn after a
@@ -101,8 +108,14 @@ public final class MapBlockLooks {
 		if (generation != null && generation.models() == models) {
 			return false;
 		}
+		AtomicReferenceArray<MapBlockLook> looks = new AtomicReferenceArray<>(Block.BLOCK_STATE_REGISTRY.size());
+		current = new Generation(models, looks, 0);
 		int fingerprint = client.getResourcePackRepository().getSelectedIds().hashCode() * 31 + Block.BLOCK_STATE_REGISTRY.size();
-		current = new Generation(models, new AtomicReferenceArray<>(Block.BLOCK_STATE_REGISTRY.size()), fingerprint == 0 ? 1 : fingerprint);
+		for (Block block : FINGERPRINT_BLOCKS) {
+			BlockState state = block.defaultBlockState();
+			fingerprint = fingerprint * 31 + ensure(state, Block.getId(state)).top().average();
+		}
+		current = new Generation(models, looks, fingerprint == 0 ? 1 : fingerprint);
 		return generation != null;
 	}
 

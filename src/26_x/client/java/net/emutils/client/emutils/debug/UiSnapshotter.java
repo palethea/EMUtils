@@ -127,6 +127,7 @@ import net.minecraft.client.multiplayer.ServerList;
 import net.emutils.client.mixin.MouseAccess;
 import net.emutils.client.mixin.HandledScreenAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.Options;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -192,6 +193,8 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotTo=N} (Gradle property {@code emutilsUiSnapshotTo}) stops after step N. */
 	private static final int LAST_STEP = Integer.getInteger("emutils.uiSnapshotTo", Integer.MAX_VALUE);
 	private static int stepTicks;
+	/** The world map showing the Nether while the settings are open over it, in step 396. */
+	private static @Nullable WorldMapScreen netherMap;
 	/** The screenshots the gallery showed the first time it opened. */
 	private static List<Path> galleryShown = List.of();
 	private static long configModifiedBefore;
@@ -3578,7 +3581,7 @@ public final class UiSnapshotter {
 					command(client, "forceload add " + (farX - 40) + " " + (farZ - 40) + " " + (farX + 40) + " " + (farZ + 40));
 				}
 				if (stepTicks == 80) {
-					command(client, "save-all flush");
+					check(saveServer(client), "the server wrote the generated chunks to disk");
 				}
 				if (stepTicks == 120) {
 					MapManager.rescanForSnapshot();
@@ -3592,7 +3595,33 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 300, "world map, chunks generated far away");
 			}
+			// Another dimension's map shows that dimension's waypoints, and still loads after coming back from
+			// the settings, which close it while they're open.
 			case 396 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					int x = client.player.getBlockX() / 8;
+					int z = client.player.getBlockZ() / 8;
+					EMUtilsClient.waypoint().addCustom(client, "minecraft:the_nether", "Nether hub", x + 6, 70, z - 4, 0xFFFF5555, false, "");
+					map.switchDimensionForSnapshot("minecraft:the_nether");
+					map.centerForSnapshot(x, z);
+				}
+				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(map.waypointsDrawnForSnapshot() > 0, "another dimension's map shows its waypoints (" + map.waypointsDrawnForSnapshot() + " drawn)");
+					client.gui.setScreen(new SettingsScreen(map));
+					netherMap = map;
+				}
+				if (stepTicks == 30 && netherMap != null) {
+					client.gui.setScreen(netherMap);
+					netherMap.centerForSnapshot(client.player.getBlockX() / 8 + 40, client.player.getBlockZ() / 8 + 300);
+				}
+				if (stepTicks == 90 && netherMap != null) {
+					check(!netherMap.loadingForSnapshot(), "another dimension's map still loads after coming back from the settings");
+					netherMap.centerForSnapshot(client.player.getBlockX() / 8, client.player.getBlockZ() / 8);
+					netherMap = null;
+				}
+				captureAfter(client, 93, "world map, the Nether from the Overworld");
+			}
+			case 397 -> {
 				if (stepTicks == 1) {
 					command(client, "forceload remove all");
 					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
@@ -3604,10 +3633,24 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);
 					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
 					next();
 				}
 			}
 			default -> finish(client);
+		}
+	}
+
+	/** Has the singleplayer server save everything to disk, as /save-all flush would, and waits for it. */
+	private static boolean saveServer(Minecraft client) {
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server == null) {
+			return false;
+		}
+		try {
+			return server.submit(() -> server.saveEverything(true, true, true)).get(30L, java.util.concurrent.TimeUnit.SECONDS);
+		} catch (Exception exception) {
+			return false;
 		}
 	}
 

@@ -155,6 +155,11 @@ final class MapTileBaker {
 					continue;
 				}
 				int[] overview = region.overview;
+				// A far region saved without an overview, or with one from other resource packs, is read in
+				// full and drawn again; the old picture shows meanwhile.
+				if (region.loaded && (overview == null || region.overviewFingerprint != MapBlockLooks.fingerprint())) {
+					world.requestRedraw(region.regionX, region.regionZ);
+				}
 				if (overview == null) {
 					complete &= region.loaded && !region.overviewStale;
 					continue;

@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import net.emutils.client.EMUtilsClient;
@@ -43,6 +44,7 @@ public final class MapTiles {
 	private final Map<Long, Tile> tiles = new LinkedHashMap<>(64, 0.75F, true);
 	private final ConcurrentLinkedQueue<Baked> baked = new ConcurrentLinkedQueue<>();
 	private final ConcurrentLinkedQueue<MapRegion> overviewsDone = new ConcurrentLinkedQueue<>();
+	private final AtomicInteger overviewsBaking = new AtomicInteger();
 	private int baking;
 	/** Tiles asked for this frame that aren't finished yet, for the world map's loading sign. */
 	private int waiting;
@@ -248,6 +250,8 @@ public final class MapTiles {
 	 */
 	public void bakeOverview(MapWorld world, MapRegion region, int fingerprint) {
 		region.overviewStale = false;
+		region.overviewBakedAt = System.currentTimeMillis();
+		overviewsBaking.incrementAndGet();
 		BAKER.execute(() -> {
 			try {
 				MapTileBaker.Result result = MapTileBaker.overview(world, region);
@@ -261,8 +265,15 @@ public final class MapTiles {
 				overviewsDone.add(region);
 			} catch (RuntimeException exception) {
 				EMUtilsClient.LOGGER.warn("EMUtils map couldn't draw a region overview", exception);
+			} finally {
+				overviewsBaking.decrementAndGet();
 			}
 		});
+	}
+
+	/** How many overviews are being drawn right now. */
+	int overviewsBaking() {
+		return overviewsBaking.get();
 	}
 
 	/** Regions whose overview was drawn since the last call. Render thread. */
