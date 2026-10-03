@@ -110,6 +110,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int BEACON_RADIUS_GRID_SPACING_MIN = 4;
 	public static final int BEACON_RADIUS_GRID_SPACING_MAX = 32;
 	public static final int BEACON_RADIUS_GRID_SPACING_DEFAULT = 16;
+	public static final int LOW_SHIELD_AMOUNT_MIN = 10;
+	public static final int LOW_SHIELD_AMOUNT_MAX = 100;
+	public static final int LOW_SHIELD_AMOUNT_DEFAULT = 40;
+	public static final int LOW_TOTEM_AMOUNT_MIN = 10;
+	public static final int LOW_TOTEM_AMOUNT_MAX = 100;
+	public static final int LOW_TOTEM_AMOUNT_DEFAULT = 40;
+	public static final int SMALL_TOTEM_SIZE_MIN = 20;
+	public static final int SMALL_TOTEM_SIZE_MAX = 80;
+	public static final int SMALL_TOTEM_SIZE_DEFAULT = 50;
 	public static final int BEACON_RADIUS_LINE_WIDTH_MIN = 1;
 	public static final int BEACON_RADIUS_LINE_WIDTH_MAX = 5;
 	public static final int LIGHT_LEVEL_RANGE_MIN = 8;
@@ -346,6 +355,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 	private Boolean tweakNoFireOverlay = Boolean.FALSE;
 	private Boolean tweakLowFireOverlay = Boolean.FALSE;
+	private Boolean tweakLowShield = Boolean.FALSE;
+	private Integer lowShieldAmount = LOW_SHIELD_AMOUNT_DEFAULT;
+	private Boolean tweakLowTotem = Boolean.FALSE;
+	private Integer lowTotemAmount = LOW_TOTEM_AMOUNT_DEFAULT;
+	private Boolean tweakSmallTotem = Boolean.FALSE;
+	private Integer smallTotemSize = SMALL_TOTEM_SIZE_DEFAULT;
 	private Boolean tweakNoNausea = Boolean.FALSE;
 	private Boolean tweakNoSpyglassOverlay = Boolean.FALSE;
 	private Boolean tweakNoPumpkinOverlay = Boolean.FALSE;
@@ -1720,6 +1735,84 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether the raised shield is drawn lower on screen in first person. */
+	public boolean tweakLowShield() {
+		return tweakLowShield != null && tweakLowShield;
+	}
+
+	public void setTweakLowShield(boolean enabled) {
+		tweakLowShield = enabled;
+		save();
+	}
+
+	/** How far the raised shield is lowered, in percent of the most it can be. */
+	public int lowShieldAmount() {
+		return clamp(lowShieldAmount == null ? LOW_SHIELD_AMOUNT_DEFAULT : lowShieldAmount, LOW_SHIELD_AMOUNT_MIN, LOW_SHIELD_AMOUNT_MAX);
+	}
+
+	public void setLowShieldAmount(int percent) {
+		lowShieldAmount = clamp(percent, LOW_SHIELD_AMOUNT_MIN, LOW_SHIELD_AMOUNT_MAX);
+		save();
+	}
+
+	public void resetLowShieldDefaults() {
+		tweakLowShield = Boolean.FALSE;
+		lowShieldAmount = LOW_SHIELD_AMOUNT_DEFAULT;
+		save();
+	}
+
+	/** Whether a Totem of Undying you hold is drawn lower on screen in first person. */
+	public boolean tweakLowTotem() {
+		return tweakLowTotem != null && tweakLowTotem;
+	}
+
+	public void setTweakLowTotem(boolean enabled) {
+		tweakLowTotem = enabled;
+		save();
+	}
+
+	/** How far the held totem is lowered, in percent of the most it can be. */
+	public int lowTotemAmount() {
+		return clamp(lowTotemAmount == null ? LOW_TOTEM_AMOUNT_DEFAULT : lowTotemAmount, LOW_TOTEM_AMOUNT_MIN, LOW_TOTEM_AMOUNT_MAX);
+	}
+
+	public void setLowTotemAmount(int percent) {
+		lowTotemAmount = clamp(percent, LOW_TOTEM_AMOUNT_MIN, LOW_TOTEM_AMOUNT_MAX);
+		save();
+	}
+
+	public void resetLowTotemDefaults() {
+		tweakLowTotem = Boolean.FALSE;
+		lowTotemAmount = LOW_TOTEM_AMOUNT_DEFAULT;
+		save();
+	}
+
+	/** Whether the Totem of Undying pop animation is drawn smaller. */
+	public boolean tweakSmallTotem() {
+		return tweakSmallTotem != null && tweakSmallTotem;
+	}
+
+	public void setTweakSmallTotem(boolean enabled) {
+		tweakSmallTotem = enabled;
+		save();
+	}
+
+	/** How big the totem animation is, in percent of its normal size. */
+	public int smallTotemSize() {
+		return clamp(smallTotemSize == null ? SMALL_TOTEM_SIZE_DEFAULT : smallTotemSize, SMALL_TOTEM_SIZE_MIN, SMALL_TOTEM_SIZE_MAX);
+	}
+
+	public void setSmallTotemSize(int percent) {
+		smallTotemSize = clamp(percent, SMALL_TOTEM_SIZE_MIN, SMALL_TOTEM_SIZE_MAX);
+		save();
+	}
+
+	public void resetSmallTotemDefaults() {
+		tweakSmallTotem = Boolean.FALSE;
+		smallTotemSize = SMALL_TOTEM_SIZE_DEFAULT;
+		save();
+	}
+
 	public boolean tweakNoNausea() {
 		return tweakNoNausea != null && tweakNoNausea;
 	}
@@ -2181,6 +2274,9 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 			|| tweakClearWeather()
 			|| tweakNoFireOverlay()
 			|| tweakLowFireOverlay()
+			|| tweakLowShield()
+			|| tweakLowTotem()
+			|| tweakSmallTotem()
 			|| tweakNoNausea()
 			|| tweakNoSpyglassOverlay()
 			|| tweakNoPumpkinOverlay()
@@ -3671,6 +3767,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tweakClearWeatherHideLightningBolts = Boolean.FALSE;
 		tweakNoFireOverlay = Boolean.FALSE;
 		tweakLowFireOverlay = Boolean.FALSE;
+		tweakLowShield = Boolean.FALSE;
+		lowShieldAmount = LOW_SHIELD_AMOUNT_DEFAULT;
+		tweakLowTotem = Boolean.FALSE;
+		lowTotemAmount = LOW_TOTEM_AMOUNT_DEFAULT;
+		tweakSmallTotem = Boolean.FALSE;
+		smallTotemSize = SMALL_TOTEM_SIZE_DEFAULT;
 		tweakNoNausea = Boolean.FALSE;
 		tweakNoSpyglassOverlay = Boolean.FALSE;
 		tweakNoPumpkinOverlay = Boolean.FALSE;
@@ -4168,6 +4270,24 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		}
 		if (tweakLowFireOverlay == null) {
 			tweakLowFireOverlay = Boolean.FALSE;
+		}
+		if (tweakLowShield == null) {
+			tweakLowShield = Boolean.FALSE;
+		}
+		if (lowShieldAmount == null) {
+			lowShieldAmount = LOW_SHIELD_AMOUNT_DEFAULT;
+		}
+		if (tweakLowTotem == null) {
+			tweakLowTotem = Boolean.FALSE;
+		}
+		if (lowTotemAmount == null) {
+			lowTotemAmount = LOW_TOTEM_AMOUNT_DEFAULT;
+		}
+		if (tweakSmallTotem == null) {
+			tweakSmallTotem = Boolean.FALSE;
+		}
+		if (smallTotemSize == null) {
+			smallTotemSize = SMALL_TOTEM_SIZE_DEFAULT;
 		}
 		if (tweakNoNausea == null) {
 			tweakNoNausea = Boolean.FALSE;

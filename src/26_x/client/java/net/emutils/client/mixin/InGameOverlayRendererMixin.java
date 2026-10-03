@@ -5,6 +5,8 @@ import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -39,5 +41,16 @@ public abstract class InGameOverlayRendererMixin {
 		}
 
 		InGameOverlayRendererAccessor.emutils$submitFire(matrices, submitNodeCollector, sprite);
+	}
+
+	/** Small Totem (#193): the totem pop is scaled once, to 0.8; the setting scales that down further. */
+	@WrapOperation(
+		method = "renderItemActivationAnimation",
+		at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;scale(FFF)V")
+	)
+	private void emutils$shrinkTotem(PoseStack matrices, float x, float y, float z, Operation<Void> original) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		float factor = config != null && config.tweakSmallTotem() ? config.smallTotemSize() / 100.0F : 1.0F;
+		original.call(matrices, x * factor, y * factor, z * factor);
 	}
 }

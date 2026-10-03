@@ -4,6 +4,7 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"CameraRenderStateMixin",
+		"FirstPersonHeldItemMixin",
 		"FogRendererMixin",
 		"HotbarDropMixin",
 		"MouseCursorMixin",
