@@ -166,6 +166,7 @@ public class EMUtilsClient implements ClientModInitializer {
 
 	private static void tickClient(Minecraft client) {
 		SettingsWarmup.tick(client);
+		EMUtilsCommand.tick(client);
 		MinescriptCompat.tickJobs();
 		minescriptKeybindManager.tick(client);
 		commandShortcutsManager.tick(client);

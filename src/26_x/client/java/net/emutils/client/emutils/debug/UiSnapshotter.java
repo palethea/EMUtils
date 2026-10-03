@@ -3394,8 +3394,21 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
-			// Remember last menu position (#192): category, scroll and open sheet come back; off forgets them.
 			case 379 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(new net.minecraft.client.gui.screens.ChatScreen("/emutils", false));
+				}
+				if (stepTicks == 5) {
+					Screen chat = MinecraftClientCompat.screen(client);
+					chat.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
+				}
+				if (stepTicks == 20) {
+					check(MinecraftClientCompat.screen(client) instanceof SettingsScreen, "typing /emutils in chat opens the menu, screen is " + MinecraftClientCompat.screen(client));
+				}
+				captureAfter(client, 21, "settings opened by the /emutils command");
+			}
+			// Remember last menu position (#192): category, scroll and open sheet come back; off forgets them.
+			case 380 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					EMUtilsClient.config().resetMenuSettings();

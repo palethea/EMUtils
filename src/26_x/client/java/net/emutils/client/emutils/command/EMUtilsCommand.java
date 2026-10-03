@@ -69,14 +69,22 @@ public final class EMUtilsCommand {
 		});
 	}
 
-	private static int openHub(CommandContext<FabricClientCommandSource> context) {
-		Minecraft client = Minecraft.getInstance();
-		if (client == null) {
-			return 0;
-		}
+	private static boolean openHubPending;
 
-		client.gui.setScreen(new SettingsScreen(MinecraftClientCompat.screen(client)));
+	/**
+	 * Opens the menu on the next tick: the chat screen closes itself right after the command runs,
+	 * which would close a menu opened straight away.
+	 */
+	private static int openHub(CommandContext<FabricClientCommandSource> context) {
+		openHubPending = true;
 		return 1;
+	}
+
+	public static void tick(Minecraft client) {
+		if (openHubPending) {
+			openHubPending = false;
+			client.gui.setScreen(new SettingsScreen(MinecraftClientCompat.screen(client)));
+		}
 	}
 
 	private static int toggle(CommandContext<FabricClientCommandSource> context) {
