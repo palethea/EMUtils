@@ -68,8 +68,6 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private final boolean addOnly;
 	/** A shared or aimed-at location the add sheet starts from. */
 	private final @Nullable SharedWaypoint prefill;
-	/** With {@link #addOnly}, the waypoint the screen opens straight into editing instead of adding one. */
-	private final @Nullable Waypoint editOnly;
 	private @Nullable WaypointSheet sheet;
 	private @Nullable UiConfirmDialog dialog;
 	private int addX;
@@ -88,14 +86,13 @@ public final class WaypointsScreen extends UiPanelScreen {
 	private int tooltipY;
 
 	public WaypointsScreen(@Nullable Screen parent) {
-		this(parent, false, null, null);
+		this(parent, false, null);
 	}
 
-	private WaypointsScreen(@Nullable Screen parent, boolean addOnly, @Nullable SharedWaypoint prefill, @Nullable Waypoint editOnly) {
+	private WaypointsScreen(@Nullable Screen parent, boolean addOnly, @Nullable SharedWaypoint prefill) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_CURRENT_WAYPOINTS), parent);
 		this.addOnly = addOnly;
 		this.prefill = prefill;
-		this.editOnly = editOnly;
 		// Typing goes to the search, unless the screen only opens the add sheet or there is no world to search in.
 		if (!addOnly && Minecraft.getInstance().level != null) {
 			search.setFocused(true);
@@ -104,17 +101,12 @@ public final class WaypointsScreen extends UiPanelScreen {
 
 	/** Opens straight into the add sheet, for the Add Waypoint keybind; closing it closes the screen too. */
 	public static WaypointsScreen addWaypoint(@Nullable Screen parent) {
-		return new WaypointsScreen(parent, true, null, null);
+		return new WaypointsScreen(parent, true, null);
 	}
 
 	/** Opens straight into the add sheet with a location filled in: one someone shared, or the block you aim at. */
 	public static WaypointsScreen addShared(@Nullable Screen parent, SharedWaypoint shared) {
-		return new WaypointsScreen(parent, true, shared, null);
-	}
-
-	/** Opens straight into editing one waypoint, as the world map does when you click one (#215); closing it closes the screen too. */
-	public static WaypointsScreen editWaypoint(@Nullable Screen parent, Waypoint waypoint) {
-		return new WaypointsScreen(parent, true, null, waypoint);
+		return new WaypointsScreen(parent, true, shared);
 	}
 
 	@Override
@@ -132,7 +124,7 @@ public final class WaypointsScreen extends UiPanelScreen {
 		int listY = toolbarY + TOOLBAR_HEIGHT + 10;
 		scroll.setBounds(panelX + PADDING, listY, panelWidth - PADDING * 2 + UiScrollArea.GUTTER, panelY + panelHeight - PADDING / 2 - listY);
 		if (addOnly && sheet == null && !closing()) {
-			openSheet(editOnly);
+			openAddSheet();
 		}
 		if (sheet == null) {
 			search.restoreFocus();

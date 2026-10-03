@@ -3526,21 +3526,41 @@ public final class UiSnapshotter {
 				captureAfter(client, 63, "world map opening out of the minimap");
 			}
 			case 389 -> captureAfter(client, 40, "world map");
+			// Right-click menu and the add sheet over the map, instead of the waypoint list.
 			case 390 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openMenuForSnapshot(map.width / 2 + 40, map.height / 2 - 30);
+				}
+				captureAfter(client, 10, "world map right-click menu");
+			}
+			case 391 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.addWaypointForSnapshot();
+				}
+				if (stepTicks == 30) {
+					check(MinecraftClientCompat.screen(client) instanceof WorldMapScreen, "adding a waypoint from the world map keeps the map open under the sheet");
+				}
+				captureAfter(client, 31, "world map add waypoint sheet");
+				if (step != 391) {
+					MinecraftClientCompat.screen(client).onClose();
+				}
+			}
+			case 392 -> {
+				// After the sheet's closing animation.
+				if (stepTicks == 15 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.scrollForSnapshot(-14.0D);
 					check(map.zoomForSnapshot() < 0.1F, "scrolling out zooms the world map far out (" + map.zoomForSnapshot() + ")");
 				}
 				captureAfter(client, 120, "world map zoomed far out");
 			}
-			case 391 -> {
+			case 393 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.scrollForSnapshot(14.0D);
 					map.onClose();
 				}
 				captureAfter(client, 3, "world map closing into the minimap");
 			}
-			case 392 -> {
+			case 394 -> {
 				if (stepTicks == 20) {
 					check(!(MinecraftClientCompat.screen(client) instanceof WorldMapScreen), "the world map closed after its animation");
 				}

@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.ui.UiContextMenu;
+import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTheme;
@@ -18,25 +21,29 @@ import net.emutils.client.emutils.waypoint.Waypoint;
 import net.emutils.client.emutils.waypoint.WaypointEntry;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
-import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
+import net.emutils.client.emutils.waypoint.gui.WaypointSheet;
 import net.emutils.client.versioned.VersionedGuiTriangles;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 /**
  * The full-screen world map (#215): everything you explored in a dimension, drawn like the minimap. Drag to
- * move, scroll to zoom around the cursor, right-click to add a waypoint there, click a waypoint to edit it.
- * The other explored dimensions of the world can be looked at too.
+ * move, scroll to zoom around the cursor. Right-click for a menu: add a waypoint there, or edit, share or
+ * delete the one under the cursor, teleport there when the server lets you, or copy the coordinates. Adding
+ * and editing open the waypoint sheet over the map. The other explored dimensions can be looked at too.
  *
  * <p>Opened while the minimap shows, the minimap grows out of its corner into the world map, turning
- * north-up and losing its round shape on the way, and shrinks back into it when closed.
+ * north-up and losing its round shape on the way, and shrinks back into it when closed. The map's panels
+ * fade and slide in with it.
  */
 public final class WorldMapScreen extends Screen {
 	private static final float MIN_ZOOM = 1.0F / 64.0F;
@@ -46,19 +53,28 @@ public final class WorldMapScreen extends Screen {
 	private static final long ANIMATION_NANOS = 280_000_000L;
 	private static final int BACKGROUND = 0xFF101216;
 	private static final int DIM = 0xA0000000;
-	private static final int BAR_HEIGHT = 22;
+	private static final int MARGIN = 8;
+	private static final int PANEL_HEIGHT = 26;
+	private static final int PANEL_RADIUS = 8;
+	private static final int CHIP_HEIGHT = 18;
 	private static final int MARKER_SIZE = 12;
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
-	private static final int CHIP_HEIGHT = 16;
+	/** The panels start appearing once the map is this far open, so they arrive with it rather than after it. */
+	private static final float PANELS_FROM = 0.35F;
+	private static final float PANEL_SLIDE = 6.0F;
 	/** Remembered while the game runs, so the map opens where you last left it zoomed. */
 	private static float lastZoom = DEFAULT_ZOOM;
 
+	private final UiAnim anim = new UiAnim();
 	private final @Nullable KeyMapping openKey;
 	/** The minimap's place on screen when the map opened, which the map grows from; null when it wasn't showing. */
 	private final MinimapRenderer.@Nullable Frame from;
 	private final List<String> dimensions = new ArrayList<>();
+	/** Each dimension chip's x and width, by the index of its dimension. */
 	private final List<int[]> dimensionChips = new ArrayList<>();
+	/** The panels' places on screen, x, y, width, height each, so clicks on them don't reach the map. */
+	private final List<int[]> panels = new ArrayList<>();
 	private String dimension;
 	private MapWorld world;
 	private MapTiles tiles;
@@ -70,7 +86,9 @@ public final class WorldMapScreen extends Screen {
 	private long openedAt = -1L;
 	private long closingAt = -1L;
 	private boolean dragging;
-	private @Nullable Waypoint hovered;
+	private @Nullable WaypointEntry hovered;
+	private @Nullable UiContextMenu menu;
+	private @Nullable WaypointSheet sheet;
 
 	private WorldMapScreen(@Nullable KeyMapping openKey, MinimapRenderer.@Nullable Frame from, MapWorld world, String dimension) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_WORLD_MAP));
@@ -109,7 +127,7 @@ public final class WorldMapScreen extends Screen {
 		if (folder != null && Files.isDirectory(folder)) {
 			try (Stream<Path> children = Files.list(folder)) {
 				children.filter(Files::isDirectory).sorted().forEach(path -> {
-					String id = unsafeName(path);
+					String id = dimensionOf(path);
 					if (!dimensions.contains(id)) {
 						dimensions.add(id);
 					}
@@ -121,7 +139,7 @@ public final class WorldMapScreen extends Screen {
 	}
 
 	/** The dimension id a folder was made for, as the map wrote it there, or a guess from the folder's name. */
-	private static String unsafeName(Path folder) {
+	private static String dimensionOf(Path folder) {
 		String id = MapWorld.dimensionOf(folder);
 		if (id != null) {
 			return id;
@@ -143,8 +161,29 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		// Esc closes what's over the map first.
+		if (sheet != null) {
+			sheet.close();
+			return;
+		}
+		if (menu != null) {
+			menu = null;
+			return;
+		}
 		if (closingAt < 0L) {
 			closingAt = System.nanoTime();
+		}
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		if (otherTiles != null) {
+			// Another dimension's regions load like yours, but nobody else prepares them.
+			MapManager.prepare(world, otherTiles);
+		}
+		if (closingAt >= 0L && progress() <= 0.0F) {
+			minecraft.gui.setScreen(null);
 		}
 	}
 
@@ -171,9 +210,10 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+		anim.frame();
 		float progress = progress();
 		LocalPlayer player = minecraft.player;
-		boolean ownDimension = minecraft.level != null && dimension.equals(WaypointManager.dimensionId(minecraft.level));
+		boolean ownDimension = isOwnDimension();
 		float yaw = player == null ? 180.0F : player.getViewYRot(delta);
 
 		// The map's frame, view and shape, from the minimap's to the full screen's.
@@ -215,19 +255,41 @@ public final class WorldMapScreen extends Screen {
 		float screenPixelsPerBlock = viewZoom * (float) minecraft.getWindow().getGuiScale();
 		MapDraw.tiles(context, world, tiles, view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.LEVELS - 1), tint);
 
+		boolean interactive = menu == null && sheet == null && progress >= 1.0F;
 		hovered = null;
 		if (ownDimension && player != null) {
-			drawWaypoints(context, view, mouseX, mouseY, progress);
+			drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
 			double px = player.xo + (player.getX() - player.xo) * delta;
 			double pz = player.zo + (player.getZ() - player.zo) * delta;
 			drawArrow(context, view.screenX(px, pz), view.screenY(px, pz), (float) Math.toRadians(yaw + 180.0F) + angle);
 		}
-		if (progress >= 1.0F) {
-			drawBars(context, view, mouseX, mouseY, ownDimension);
+
+		// The panels arrive with the map instead of popping in after it, and leave with it.
+		float panels = Math.clamp((progress - PANELS_FROM) / (1.0F - PANELS_FROM), 0.0F, 1.0F);
+		UiTheme theme = UiTheme.current();
+		if (panels > 0.0F) {
+			UiOpacity.set(panels);
+			drawPanels(context, theme, view, mouseX, mouseY, ownDimension, (1.0F - panels) * PANEL_SLIDE, interactive);
+			UiOpacity.reset();
+		}
+		if (interactive && hovered != null && hovered.waypoint().label() != null) {
+			context.setTooltipForNextFrame(Component.literal(hovered.waypoint().label()), mouseX, mouseY);
+		}
+		if (menu != null) {
+			menu.render(context, theme, mouseX, mouseY, width, height);
+			if (menu.isClosed()) {
+				menu = null;
+			}
+		}
+		if (sheet != null) {
+			sheet.render(context, theme, mouseX, mouseY, width, height);
+			if (sheet.isClosed()) {
+				sheet = null;
+			}
 		}
 	}
 
-	private void drawWaypoints(GuiGraphicsExtractor context, MapView view, int mouseX, int mouseY, float progress) {
+	private void drawWaypoints(GuiGraphicsExtractor context, MapView view, int mouseX, int mouseY, float progress, boolean hover) {
 		WaypointManager manager = EMUtilsClient.waypoint();
 		if (manager == null || !manager.enabled()) {
 			return;
@@ -246,12 +308,9 @@ public final class WorldMapScreen extends Screen {
 			context.pose().translate(sx, sy);
 			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, progress);
 			context.pose().popMatrix();
-			if (Math.abs(mouseX - sx) <= MARKER_SIZE / 2.0F && Math.abs(mouseY - sy) <= MARKER_SIZE / 2.0F) {
-				hovered = waypoint;
+			if (hover && Math.abs(mouseX - sx) <= MARKER_SIZE / 2.0F && Math.abs(mouseY - sy) <= MARKER_SIZE / 2.0F) {
+				hovered = entry;
 			}
-		}
-		if (hovered != null && progress >= 1.0F && hovered.label() != null) {
-			context.setTooltipForNextFrame(Component.literal(hovered.label()), mouseX, mouseY);
 		}
 	}
 
@@ -266,39 +325,78 @@ public final class WorldMapScreen extends Screen {
 		context.pose().popMatrix();
 	}
 
-	/** The title and dimension chips along the top, and the coordinates under the cursor with the controls along the bottom. */
-	private void drawBars(GuiGraphicsExtractor context, MapView view, int mouseX, int mouseY, boolean ownDimension) {
-		UiTheme theme = UiTheme.current();
-		context.fill(0, 0, width, BAR_HEIGHT, 0xB0000000);
-		context.fill(0, height - BAR_HEIGHT, width, height, 0xB0000000);
-		int textTop = (BAR_HEIGHT - UiText.lineHeight(font, UiText.Size.LABEL)) / 2;
-		UiText.draw(context, font, title, UiText.Size.LABEL, 8, textTop, 0xFFFFFFFF);
-
+	/**
+	 * Floating panels in the menus' look: the title with the dimension chips at the top left, the coordinates
+	 * under the cursor at the bottom left, and what the mouse does at the bottom right. {@code slide} moves
+	 * them towards the screen's edge while they come in.
+	 */
+	private void drawPanels(GuiGraphicsExtractor context, UiTheme theme, MapView view, int mouseX, int mouseY, boolean ownDimension, float slide, boolean interactive) {
+		panels.clear();
 		dimensionChips.clear();
-		int chipX = 8 + UiText.width(font, title, UiText.Size.LABEL) + 12;
-		int chipY = (BAR_HEIGHT - CHIP_HEIGHT) / 2;
-		for (int i = 0; i < dimensions.size(); i++) {
-			Component label = Component.literal(dimensionName(dimensions.get(i)));
-			int chipWidth = UiText.width(font, label, UiText.Size.SMALL) + 12;
-			boolean selected = dimensions.get(i).equals(dimension);
-			boolean hover = mouseX >= chipX && mouseX < chipX + chipWidth && mouseY >= chipY && mouseY < chipY + CHIP_HEIGHT;
-			int fill = selected ? theme.accent() : hover ? 0x60FFFFFF : 0x30FFFFFF;
-			UiShapes.roundedRect(context, chipX, chipY, chipWidth, CHIP_HEIGHT, CHIP_HEIGHT / 2, fill);
-			UiText.drawCentered(context, font, label, UiText.Size.SMALL, chipX + chipWidth / 2, chipY + CHIP_HEIGHT / 2, 0xFFFFFFFF);
-			dimensionChips.add(new int[] {chipX, chipWidth, i});
-			chipX += chipWidth + 4;
-		}
+		int panelColor = UiTheme.fade(theme.panel(), 0.94F);
 
+		// Top left: the title and a chip per explored dimension.
+		int titleWidth = UiText.width(font, title, UiText.Size.LABEL);
+		int chipsWidth = 0;
+		List<Component> labels = new ArrayList<>();
+		for (String id : dimensions) {
+			Component label = Component.literal(dimensionName(id));
+			labels.add(label);
+			chipsWidth += UiText.width(font, label, UiText.Size.SMALL) + 16;
+		}
+		chipsWidth += Math.max(0, labels.size() - 1) * 2;
+		int topWidth = 10 + titleWidth + 10 + chipsWidth + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
+		context.pose().pushMatrix();
+		context.pose().translate(0.0F, -slide);
+		drawPanel(context, theme, MARGIN, MARGIN, topWidth, panelColor);
+		UiText.drawCentered(context, font, title, UiText.Size.LABEL, MARGIN + 10, MARGIN + PANEL_HEIGHT / 2, theme.text());
+		int chipX = MARGIN + 10 + titleWidth + 10;
+		int chipY = MARGIN + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
+		for (int i = 0; i < labels.size(); i++) {
+			Component label = labels.get(i);
+			int labelWidth = UiText.width(font, label, UiText.Size.SMALL);
+			int chipWidth = labelWidth + 16;
+			boolean selected = dimensions.get(i).equals(dimension);
+			boolean hover = interactive && contains(mouseX, mouseY, chipX, chipY, chipWidth, CHIP_HEIGHT);
+			if (selected || hover) {
+				UiShapes.roundedRect(context, chipX, chipY, chipWidth, CHIP_HEIGHT, CHIP_HEIGHT / 2, selected ? theme.accent() : theme.hover());
+			}
+			int textColor = selected ? 0xFFFFFFFF : hover ? theme.text() : theme.textSecondary();
+			UiText.drawCentered(context, font, label, UiText.Size.SMALL, chipX + (chipWidth - labelWidth) / 2, chipY + CHIP_HEIGHT / 2, textColor);
+			dimensionChips.add(new int[] {chipX, chipWidth});
+			chipX += chipWidth + 2;
+		}
+		context.pose().popMatrix();
+		panels.add(new int[] {MARGIN, MARGIN, topWidth, PANEL_HEIGHT});
+
+		// Bottom left: where the cursor points, with the ground's height when the map knows it.
 		int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
 		int blockZ = (int) Math.floor(view.worldZ(mouseX, mouseY));
-		MapChunk chunk = mouseY > BAR_HEIGHT && mouseY < height - BAR_HEIGHT ? world.chunk(blockX >> 4, blockZ >> 4) : null;
-		String position = chunk == null
+		MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
+		Component position = Component.literal(chunk == null
 			? blockX + ", " + blockZ
-			: blockX + ", " + chunk.topY(MapChunk.index(blockX & 15, blockZ & 15)) + ", " + blockZ;
-		int bottomTop = height - BAR_HEIGHT + textTop;
-		UiText.draw(context, font, Component.literal(position), UiText.Size.LABEL, 8, bottomTop, 0xFFFFFFFF);
+			: blockX + ", " + chunk.topY(MapChunk.index(blockX & 15, blockZ & 15)) + ", " + blockZ);
+		int positionWidth = UiText.width(font, position, UiText.Size.LABEL) + 20;
+		int bottomY = height - MARGIN - PANEL_HEIGHT;
+		context.pose().pushMatrix();
+		context.pose().translate(0.0F, slide);
+		drawPanel(context, theme, MARGIN, bottomY, positionWidth, panelColor);
+		UiText.drawCentered(context, font, position, UiText.Size.LABEL, MARGIN + 10, bottomY + PANEL_HEIGHT / 2, theme.text());
+
+		// Bottom right: what the mouse does.
 		Component hint = Component.translatable(ownDimension ? EMUtilsTexts.WORLD_MAP_HINT : EMUtilsTexts.WORLD_MAP_HINT_OTHER);
-		UiText.draw(context, font, hint, UiText.Size.SMALL, width - 8 - UiText.width(font, hint, UiText.Size.SMALL), bottomTop + 1, 0xB0FFFFFF);
+		int hintWidth = UiText.width(font, hint, UiText.Size.SMALL) + 20;
+		int hintX = width - MARGIN - hintWidth;
+		drawPanel(context, theme, hintX, bottomY, hintWidth, panelColor);
+		UiText.drawCentered(context, font, hint, UiText.Size.SMALL, hintX + 10, bottomY + PANEL_HEIGHT / 2, theme.textSecondary());
+		context.pose().popMatrix();
+		panels.add(new int[] {MARGIN, bottomY, positionWidth, PANEL_HEIGHT});
+		panels.add(new int[] {hintX, bottomY, hintWidth, PANEL_HEIGHT});
+	}
+
+	private static void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int color) {
+		UiShapes.shadow(context, x, y, width, PANEL_HEIGHT, PANEL_RADIUS, 10, theme.shadow());
+		UiShapes.borderedRect(context, x, y, width, PANEL_HEIGHT, PANEL_RADIUS, color, theme.line());
 	}
 
 	private static String dimensionName(String id) {
@@ -310,6 +408,21 @@ public final class WorldMapScreen extends Screen {
 		};
 	}
 
+	private boolean overPanel(double mouseX, double mouseY) {
+		for (int[] panel : panels) {
+			if (contains(mouseX, mouseY, panel[0], panel[1], panel[2], panel[3])) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean contains(double mouseX, double mouseY, int x, int y, int width, int height) {
+		return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+	}
+
+	// ---- input ----------------------------------------------------------------------------------
+
 	@Override
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		if (closingAt >= 0L || progress() < 1.0F) {
@@ -317,49 +430,123 @@ public final class WorldMapScreen extends Screen {
 		}
 		double mouseX = click.x();
 		double mouseY = click.y();
-		if (click.button() == InputConstants.MOUSE_BUTTON_LEFT && mouseY < BAR_HEIGHT) {
-			int chipY = (BAR_HEIGHT - CHIP_HEIGHT) / 2;
-			for (int[] chip : dimensionChips) {
-				if (mouseX >= chip[0] && mouseX < chip[0] + chip[1] && mouseY >= chipY && mouseY < chipY + CHIP_HEIGHT) {
-					switchDimension(dimensions.get(chip[2]));
-					return true;
+		boolean left = click.button() == InputConstants.MOUSE_BUTTON_LEFT;
+		if (sheet != null) {
+			if (left) {
+				sheet.mouseClicked(mouseX, mouseY);
+			}
+			return true;
+		}
+		if (menu != null) {
+			boolean onMenu = menu.contains(mouseX, mouseY);
+			menu.mouseClicked(mouseX, mouseY);
+			menu = null;
+			// A click beside the menu only closes it.
+			if (onMenu || !left) {
+				return true;
+			}
+		}
+		if (overPanel(mouseX, mouseY)) {
+			if (left) {
+				int chipY = MARGIN + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
+				for (int i = 0; i < dimensionChips.size(); i++) {
+					int[] chip = dimensionChips.get(i);
+					if (contains(mouseX, mouseY, chip[0], chipY, chip[1], CHIP_HEIGHT)) {
+						switchDimension(dimensions.get(i));
+						break;
+					}
 				}
 			}
 			return true;
 		}
-		if (mouseY < BAR_HEIGHT || mouseY >= height - BAR_HEIGHT) {
-			return true;
-		}
-		if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+		if (left) {
 			if (hovered != null) {
-				minecraft.gui.setScreen(WaypointsScreen.editWaypoint(this, hovered));
+				openSheet(hovered.waypoint(), null);
 				return true;
 			}
 			dragging = true;
 			return true;
 		}
-		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT && isOwnDimension()) {
-			MapView view = fullView();
-			int blockX = (int) Math.floor(view.worldX((float) mouseX, (float) mouseY));
-			int blockZ = (int) Math.floor(view.worldZ((float) mouseX, (float) mouseY));
-			MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
-			int blockY = chunk != null
-				? chunk.topY(MapChunk.index(blockX & 15, blockZ & 15)) + 1
-				: minecraft.player == null ? 64 : minecraft.player.getBlockY();
-			minecraft.gui.setScreen(WaypointsScreen.addShared(this, SharedWaypoint.at(blockX, blockY, blockZ)));
+		if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
+			openMenu((int) mouseX, (int) mouseY);
 			return true;
 		}
 		return super.mouseClicked(click, doubled);
 	}
 
+	/** The right-click menu, for the waypoint under the cursor or the spot on the map. */
+	private void openMenu(int mouseX, int mouseY) {
+		List<UiContextMenu.Item> items = new ArrayList<>();
+		boolean teleport = canTeleport();
+		WaypointEntry entry = hovered;
+		if (entry != null) {
+			String id = entry.waypoint().id();
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_EDIT_WAYPOINT), () -> openSheet(entry.waypoint(), null)));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT), teleport, false, () -> teleport(entry.x(), entry.y(), entry.z())));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, entry.x(), entry.y(), entry.z())));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE), () -> EMUtilsClient.waypoint().shareInChat(minecraft, id)));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_DELETE), true, true, () -> EMUtilsClient.waypoint().clear(minecraft, id)));
+		} else {
+			MapView view = fullView();
+			int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
+			int blockZ = (int) Math.floor(view.worldZ(mouseX, mouseY));
+			int blockY = groundY(blockX, blockZ);
+			String other = isOwnDimension() ? null : dimension;
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_ADD_WAYPOINT), () -> openSheet(null, new SharedWaypoint(null, blockX, blockY, blockZ, other, null))));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT), teleport, false, () -> teleport(blockX, blockY, blockZ)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
+		}
+		menu = new UiContextMenu(font, anim, mouseX, mouseY, items);
+	}
+
+	/** The waypoint sheet over the map: editing {@code editing}, or adding one at {@code prefill}. */
+	private void openSheet(@Nullable Waypoint editing, @Nullable SharedWaypoint prefill) {
+		menu = null;
+		dragging = false;
+		sheet = new WaypointSheet(font, anim, editing, prefill, saved -> { });
+	}
+
+	/** Standing height at a spot: one above the ground the map knows, or your own height when it doesn't. */
+	private int groundY(int blockX, int blockZ) {
+		MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
+		if (chunk != null && chunk.top(MapChunk.index(blockX & 15, blockZ & 15)) != MapChunk.NONE) {
+			return chunk.topY(MapChunk.index(blockX & 15, blockZ & 15)) + 1;
+		}
+		return minecraft.player == null ? 64 : minecraft.player.getBlockY();
+	}
+
+	/** The server sends only the commands you may use, so /tp being among them means you can teleport. */
+	private boolean canTeleport() {
+		ClientPacketListener connection = minecraft.getConnection();
+		return connection != null && connection.getCommands().getRoot().getChild("tp") != null;
+	}
+
+	private void teleport(int x, int y, int z) {
+		ClientPacketListener connection = minecraft.getConnection();
+		if (connection == null) {
+			return;
+		}
+		String tp = "tp @s " + x + " " + y + " " + z;
+		connection.sendCommand(isOwnDimension() ? tp : "execute in " + dimension + " run " + tp);
+		closingAt = System.nanoTime();
+	}
+
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
 		dragging = false;
+		if (sheet != null) {
+			sheet.mouseReleased();
+			return true;
+		}
 		return super.mouseReleased(click);
 	}
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent click, double dx, double dy) {
+		if (sheet != null) {
+			sheet.mouseDragged(click.x(), click.y());
+			return true;
+		}
 		if (dragging) {
 			centerX -= dx / zoom;
 			centerZ -= dy / zoom;
@@ -370,9 +557,10 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (scrollY == 0.0D || closingAt >= 0L) {
+		if (scrollY == 0.0D || closingAt >= 0L || sheet != null) {
 			return true;
 		}
+		menu = null;
 		// The block under the cursor stays under it while zooming.
 		MapView before = fullView();
 		double worldX = before.worldX((float) mouseX, (float) mouseY);
@@ -385,7 +573,12 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (sheet != null) {
+			sheet.keyPressed(event);
+			return true;
+		}
 		if (openKey != null && openKey.matches(event)) {
+			menu = null;
 			onClose();
 			return true;
 		}
@@ -397,6 +590,15 @@ public final class WorldMapScreen extends Screen {
 		return super.keyPressed(event);
 	}
 
+	@Override
+	public boolean charTyped(CharacterEvent event) {
+		if (sheet != null) {
+			sheet.charTyped(event);
+			return true;
+		}
+		return super.charTyped(event);
+	}
+
 	/** For UI snapshot checks: zooms by scroll steps around the middle of the screen. */
 	public void scrollForSnapshot(double steps) {
 		mouseScrolled(width / 2.0D, height / 2.0D, 0.0D, steps);
@@ -405,6 +607,19 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: the map's zoom in GUI pixels per block. */
 	public float zoomForSnapshot() {
 		return zoom;
+	}
+
+	/** For UI snapshot checks: opens the right-click menu at a point, as a right-click there would. */
+	public void openMenuForSnapshot(int x, int y) {
+		openMenu(x, y);
+	}
+
+	/** For UI snapshot checks: opens the add sheet at the middle of the map, as the menu's first item does. */
+	public void addWaypointForSnapshot() {
+		MapView view = fullView();
+		int blockX = (int) Math.floor(view.worldX(width / 2.0F, height / 2.0F));
+		int blockZ = (int) Math.floor(view.worldZ(width / 2.0F, height / 2.0F));
+		openSheet(null, new SharedWaypoint(null, blockX, groundY(blockX, blockZ), blockZ, null, null));
 	}
 
 	private MapView fullView() {
@@ -424,6 +639,7 @@ public final class WorldMapScreen extends Screen {
 			otherTiles.clear();
 			otherTiles = null;
 		}
+		String previous = dimension;
 		dimension = id;
 		if (isOwnDimension() && MapManager.world() != null) {
 			world = MapManager.world();
@@ -443,25 +659,13 @@ public final class WorldMapScreen extends Screen {
 		tiles = otherTiles;
 		// The Nether is an eighth the size of the Overworld, so the view moves with the scale between them.
 		boolean toNether = id.equals("minecraft:the_nether");
-		boolean fromNether = WaypointManager.dimensionId(minecraft.level).equals("minecraft:the_nether");
+		boolean fromNether = previous.equals("minecraft:the_nether");
 		if (toNether && !fromNether) {
 			centerX /= 8.0D;
 			centerZ /= 8.0D;
 		} else if (fromNether && !toNether) {
 			centerX *= 8.0D;
 			centerZ *= 8.0D;
-		}
-	}
-
-	@Override
-	public void tick() {
-		super.tick();
-		if (otherTiles != null) {
-			// Another dimension's regions load like yours, but nobody else prepares them.
-			MapManager.prepare(world, otherTiles);
-		}
-		if (closingAt >= 0L && progress() <= 0.0F) {
-			minecraft.gui.setScreen(null);
 		}
 	}
 

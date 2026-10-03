@@ -969,6 +969,11 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_OVERWORLD = "emutils.world_map.overworld";
     public static final String WORLD_MAP_NETHER = "emutils.world_map.nether";
     public static final String WORLD_MAP_END = "emutils.world_map.end";
+    public static final String WORLD_MAP_ADD_WAYPOINT = "emutils.world_map.add_waypoint";
+    public static final String WORLD_MAP_EDIT_WAYPOINT = "emutils.world_map.edit_waypoint";
+    public static final String WORLD_MAP_TELEPORT = "emutils.world_map.teleport";
+    public static final String WORLD_MAP_COPY_COORDINATES = "emutils.world_map.copy_coordinates";
+    public static final String WORLD_MAP_SHARE = "emutils.world_map.share";
     public static final String HUD_LOOK_AT_POSITION = "emutils.hud.look_at.position";
     public static final String HUD_LOOK_AT_HARDNESS = "emutils.hud.look_at.hardness";
     public static final String HUD_LOOK_AT_BREAK_TIME = "emutils.hud.look_at.break_time";
