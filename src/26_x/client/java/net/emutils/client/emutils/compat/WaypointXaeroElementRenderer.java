@@ -21,7 +21,7 @@ import xaero.hud.minimap.element.render.MinimapElementRenderer;
 import xaero.lib.client.graphics.XaeroBufferProvider;
 
 /**
- * Draws EMUtils waypoints on Xaero's Minimap and World Map (#185) as the same rounded colored marker with the
+ * Draws EMUtils waypoints on Xaero's Minimap (#185; the World Map has {@link WaypointWorldMapElementRenderer}) as the same rounded colored marker with the
  * waypoint's initial (a cross for deaths) that Xaero draws for its own waypoints, at the same size. Xaero does
  * the placing: it puts each element where it is on the map and pins the ones past the minimap's edge to it, like
  * its own waypoints, so the renderer only draws a marker at the origin it is given.
@@ -135,7 +135,7 @@ final class WaypointXaeroElementRenderer extends MinimapElementRenderer<Waypoint
 	@Override
 	public boolean shouldRender(MinimapElementRenderLocation location) {
 		return XaeroMapIntegration.waypointsWanted()
-			&& (location == MinimapElementRenderLocation.OVER_MINIMAP || location == MinimapElementRenderLocation.WORLD_MAP);
+			&& location == MinimapElementRenderLocation.OVER_MINIMAP;
 	}
 
 	/** The waypoints that have a place in the dimension the map shows, taken once a frame. */

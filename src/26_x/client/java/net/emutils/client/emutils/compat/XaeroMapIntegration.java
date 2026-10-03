@@ -34,22 +34,25 @@ public final class XaeroMapIntegration {
 		final String name;
 		final BooleanSupplier wanted;
 		final Supplier<Object> renderer;
+		/** Makes the World Map's own kind of element renderer, or is null to put {@code renderer} through Xaero's wrapper; it gives null while Xaero isn't ready. */
+		final @Nullable Supplier<Object> worldMapRenderer;
 		final int order;
 		final Set<Object> minimapHandlers = Collections.newSetFromMap(new IdentityHashMap<>());
 		final Set<Object> worldMapHandlers = Collections.newSetFromMap(new IdentityHashMap<>());
 		boolean minimapFailureLogged;
 		boolean worldMapFailureLogged;
 
-		Attachment(String name, BooleanSupplier wanted, Supplier<Object> renderer, int order) {
+		Attachment(String name, BooleanSupplier wanted, Supplier<Object> renderer, @Nullable Supplier<Object> worldMapRenderer, int order) {
 			this.name = name;
 			this.wanted = wanted;
 			this.renderer = renderer;
+			this.worldMapRenderer = worldMapRenderer;
 			this.order = order;
 		}
 	}
 
-	private static final Attachment BEACONS = new Attachment("beacon boundaries", XaeroMapIntegration::beaconsWanted, XaeroMapIntegration::newBeaconRenderer, -100);
-	private static final Attachment WAYPOINTS = new Attachment("waypoints", XaeroMapIntegration::waypointsWanted, XaeroMapIntegration::newWaypointRenderer, 90);
+	private static final Attachment BEACONS = new Attachment("beacon boundaries", XaeroMapIntegration::beaconsWanted, XaeroMapIntegration::newBeaconRenderer, null, -100);
+	private static final Attachment WAYPOINTS = new Attachment("waypoints", XaeroMapIntegration::waypointsWanted, XaeroMapIntegration::newWaypointRenderer, XaeroMapIntegration::newWaypointWorldMapRenderer, 90);
 	private static final Attachment[] ATTACHMENTS = {BEACONS, WAYPOINTS};
 	private static int cooldown;
 
@@ -93,6 +96,10 @@ public final class XaeroMapIntegration {
 
 	private static Object newWaypointRenderer() {
 		return new WaypointXaeroElementRenderer();
+	}
+
+	private static @Nullable Object newWaypointWorldMapRenderer() {
+		return WaypointWorldMapElementRenderer.create();
 	}
 
 	/** Whether the outline should be on Xaero's maps: Xaero is installed, and the outline and its Xaero setting are on. */
@@ -246,6 +253,16 @@ public final class XaeroMapIntegration {
 				return false;
 			}
 			if (attachment.worldMapHandlers.contains(handler)) {
+				return true;
+			}
+			if (attachment.worldMapRenderer != null) {
+				// The World Map's own kind of element, for what Xaero draws itself on that map.
+				Object own = attachment.worldMapRenderer.get();
+				if (own == null) {
+					return false;
+				}
+				handler.getClass().getMethod("add", Class.forName("xaero.map.element.render.ElementRenderer")).invoke(handler, own);
+				attachment.worldMapHandlers.add(handler);
 				return true;
 			}
 
