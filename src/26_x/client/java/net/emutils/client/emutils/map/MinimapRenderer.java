@@ -50,8 +50,8 @@ public final class MinimapRenderer {
 	private static final int FRAME_LIGHT = 0x40FFFFFF;
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
-	private static final int MARKER_SIZE = 9;
-	private static final int NORTH_SIZE = 9;
+	private static final int MARKER_SIZE = 10;
+	private static final int NORTH_SIZE = 10;
 	private static final int TEXT_COLOR = 0xFFFFFFFF;
 	private static final int TEXT_SHADOW = 0x99000000;
 	/** Below this many screen pixels per block, the next coarser tiles are used. */
@@ -151,9 +151,11 @@ public final class MinimapRenderer {
 		fillOutline(context, outline, fade(BACKGROUND, opacity));
 		drawTiles(context, client, view, outline, layoutScale, opacity);
 		drawFrame(context, shape, opacity);
-		drawNorth(context, client.font, view, shape, opacity);
+		// Markers move with the map by fractions of a GUI pixel; whole physical pixels keep them steady and sharp.
+		float pixels = layoutScale * (float) client.getWindow().getGuiScale();
+		drawNorth(context, client.font, view, shape, opacity, pixels);
 		if (config.minimapWaypoints()) {
-			drawWaypoints(context, client, view, shape, opacity);
+			drawWaypoints(context, client, view, shape, opacity, pixels);
 		}
 		drawArrow(context, half, rotate ? 0.0F : (float) Math.toRadians(yaw + 180.0F), opacity);
 		if (config.minimapCoordinates()) {
@@ -416,17 +418,17 @@ public final class MinimapRenderer {
 	}
 
 	/** An "N" on the map's edge where north is. */
-	private static void drawNorth(GuiGraphicsExtractor context, Font font, View view, MinimapShape shape, float opacity) {
+	private static void drawNorth(GuiGraphicsExtractor context, Font font, View view, MinimapShape shape, float opacity, float pixels) {
 		float half = view.half();
 		// North is the world's -z, turned like the rest of the map.
 		float dirX = (float) Math.sin(view.angle());
 		float dirY = (float) -Math.cos(view.angle());
 		float[] at = edgePoint(shape, half, dirX, dirY, NORTH_SIZE / 2.0F + 1.0F);
-		int size = NORTH_SIZE;
-		UiShapes.circle(context, Math.round(at[0] - size / 2.0F), Math.round(at[1] - size / 2.0F), size, fade(0xE0101010, opacity));
 		Component north = Component.translatable(EMUtilsTexts.HUD_MINIMAP_NORTH);
 		context.pose().pushMatrix();
-		context.pose().translate(Math.round(at[0]), Math.round(at[1]));
+		// The circle and the letter share one center.
+		context.pose().translate(snap(at[0], pixels), snap(at[1], pixels));
+		UiShapes.circle(context, -NORTH_SIZE / 2, -NORTH_SIZE / 2, NORTH_SIZE, fade(0xE0101010, opacity));
 		UiText.drawInkCentered(context, font, north, UiText.Size.SMALL, 0.0F, 0.0F, fade(TEXT_COLOR, opacity));
 		context.pose().popMatrix();
 	}
@@ -460,7 +462,7 @@ public final class MinimapRenderer {
 		return dx * dx + dy * dy <= reach * reach;
 	}
 
-	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, View view, MinimapShape shape, float opacity) {
+	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, View view, MinimapShape shape, float opacity, float pixels) {
 		WaypointManager manager = EMUtilsClient.waypoint();
 		if (manager == null || !manager.enabled()) {
 			return;
@@ -480,7 +482,7 @@ public final class MinimapRenderer {
 				y = pinned[1];
 			}
 			context.pose().pushMatrix();
-			context.pose().translate(Math.round(x), Math.round(y));
+			context.pose().translate(snap(x, pixels), snap(y, pixels));
 			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, opacity);
 			context.pose().popMatrix();
 		}
@@ -507,6 +509,11 @@ public final class MinimapRenderer {
 		float offset = 1.0F / (float) (Minecraft.getInstance().getWindow().getGuiScale() * UiRasterScale.get());
 		UiText.drawExact(context, font, text, UiText.Size.SMALL, x + offset, top + offset, fade(TEXT_SHADOW, opacity));
 		UiText.draw(context, font, text, UiText.Size.SMALL, x, top, fade(TEXT_COLOR, opacity));
+	}
+
+	/** {@code value} moved to the nearest physical pixel, with {@code pixels} physical pixels per GUI pixel. */
+	private static float snap(float value, float pixels) {
+		return pixels <= 0.0F ? value : Math.round(value * pixels) / pixels;
 	}
 
 	private static int fade(int color, float opacity) {
