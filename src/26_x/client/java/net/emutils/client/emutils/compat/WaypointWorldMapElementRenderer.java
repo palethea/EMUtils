@@ -126,6 +126,12 @@ final class WaypointWorldMapElementRenderer extends ElementRenderer<Waypoint, Wa
 		public int getColor() {
 			return key.color() & 0x00FFFFFF;
 		}
+
+		@Override
+		public boolean isDisabled() {
+			// Xaero's hide key flips this on its own waypoint objects; hiding is done in EMUtils, so it must not stick here.
+			return false;
+		}
 	}
 
 	/** What a waypoint looks like on the map; the same waypoint keeps its Xaero object, and with it its hover animation, while this stays the same. */

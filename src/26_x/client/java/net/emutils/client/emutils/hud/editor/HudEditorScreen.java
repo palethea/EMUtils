@@ -190,6 +190,18 @@ public final class HudEditorScreen extends Screen {
 		return hits.isEmpty() ? null : hits.getFirst();
 	}
 
+	/**
+	 * What a press at this spot grabs: the selected element if it is one of those under the mouse, so it can be
+	 * dragged and clicking it again (see {@link #selectNextUnder}) goes on from it; otherwise the smallest one.
+	 */
+	private @Nullable HudElementId pickAt(double mouseX, double mouseY) {
+		List<HudElementId> hits = elementsAt(mouseX, mouseY);
+		if (hits.isEmpty()) {
+			return null;
+		}
+		return selected != null && hits.contains(selected) ? selected : hits.getFirst();
+	}
+
 	private static boolean isHidden(HudElementId id) {
 		return HIDDEN.contains(id);
 	}
@@ -518,8 +530,10 @@ public final class HudEditorScreen extends Screen {
 		int buttonY = toolbarY + TOOLBAR_HEIGHT / 2 - TOOLBAR_BUTTON / 2;
 		if (menuOpen) {
 			layoutMenu();
-			if (left && contains(mouseX, mouseY, menuX, menuY, menuWidth, menuHeight)) {
-				clickMenu(mouseX, mouseY);
+			if (contains(mouseX, mouseY, menuX, menuY, menuWidth, menuHeight)) {
+				if (left) {
+					clickMenu(mouseX, mouseY);
+				}
 				return true;
 			}
 			// Any other click closes the menu; one on the Show button itself only closes it.
@@ -554,7 +568,7 @@ public final class HudEditorScreen extends Screen {
 			return true;
 		}
 
-		HudElementId hit = selected != null && onResizeHandle(selected, mouseX, mouseY) ? selected : elementAt(mouseX, mouseY);
+		HudElementId hit = selected != null && onResizeHandle(selected, mouseX, mouseY) ? selected : pickAt(mouseX, mouseY);
 		if (hit == null) {
 			selected = null;
 			return true;
@@ -832,6 +846,47 @@ public final class HudEditorScreen extends Screen {
 			}
 		}
 		return pairs == 0 ? "no two elements overlap in the editor" : null;
+	}
+
+	/**
+	 * Checks that pressing where several elements overlap picks the smallest, keeps the selected one, and that
+	 * clicking the selected one again goes through every element there; returns what went wrong, or null. Used by UI snapshots.
+	 */
+	public @Nullable String cycleProblemForSnapshot() {
+		HudElementId before = selected;
+		try {
+			for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+				HudLayoutDraft draft = draft(element.id());
+				HudOverlayPlacement.PanelDimensions panel = dimensions.get(element.id());
+				if (draft == null || panel == null) {
+					continue;
+				}
+				int x = draft.x() + panel.width() / 2;
+				int y = draft.y() + panel.height() / 2;
+				List<HudElementId> hits = elementsAt(x, y);
+				if (hits.size() < 3) {
+					continue;
+				}
+				selected = null;
+				if (!hits.getFirst().equals(pickAt(x, y))) {
+					return "with nothing selected a press doesn't pick the smallest element";
+				}
+				selected = hits.get(1);
+				if (!hits.get(1).equals(pickAt(x, y))) {
+					return "a press doesn't keep the selected element";
+				}
+				selected = hits.getFirst();
+				Set<HudElementId> seen = new HashSet<>();
+				for (int i = 0; i < hits.size(); i++) {
+					seen.add(selected);
+					selectNextUnder(x, y);
+				}
+				return seen.size() == hits.size() && hits.getFirst().equals(selected) ? null : "clicking again visited " + seen.size() + " of " + hits.size() + " elements";
+			}
+			return "no spot has three overlapping elements in the editor";
+		} finally {
+			selected = before;
+		}
 	}
 
 	/** Checks that a hidden element can't be picked and can again once shown; used by UI snapshots. */
