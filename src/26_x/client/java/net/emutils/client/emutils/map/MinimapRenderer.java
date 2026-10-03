@@ -151,11 +151,10 @@ public final class MinimapRenderer {
 		fillOutline(context, outline, fade(BACKGROUND, opacity));
 		drawTiles(context, client, view, outline, layoutScale, opacity);
 		drawFrame(context, shape, opacity);
-		// Markers move with the map by fractions of a GUI pixel; whole physical pixels keep them steady and sharp.
-		float pixels = layoutScale * (float) client.getWindow().getGuiScale();
-		drawNorth(context, client.font, view, shape, opacity, pixels);
+		// Markers are placed exactly where the map puts them, not rounded to pixels, so they move with it.
+		drawNorth(context, client.font, view, shape, opacity);
 		if (config.minimapWaypoints()) {
-			drawWaypoints(context, client, view, shape, opacity, pixels);
+			drawWaypoints(context, client, view, shape, opacity, config.minimapWaypointsPinned());
 		}
 		drawArrow(context, half, rotate ? 0.0F : (float) Math.toRadians(yaw + 180.0F), opacity);
 		if (config.minimapCoordinates()) {
@@ -418,7 +417,7 @@ public final class MinimapRenderer {
 	}
 
 	/** An "N" on the map's edge where north is. */
-	private static void drawNorth(GuiGraphicsExtractor context, Font font, View view, MinimapShape shape, float opacity, float pixels) {
+	private static void drawNorth(GuiGraphicsExtractor context, Font font, View view, MinimapShape shape, float opacity) {
 		float half = view.half();
 		// North is the world's -z, turned like the rest of the map.
 		float dirX = (float) Math.sin(view.angle());
@@ -427,7 +426,7 @@ public final class MinimapRenderer {
 		Component north = Component.translatable(EMUtilsTexts.HUD_MINIMAP_NORTH);
 		context.pose().pushMatrix();
 		// The circle and the letter share one center.
-		context.pose().translate(snap(at[0], pixels), snap(at[1], pixels));
+		context.pose().translate(at[0], at[1]);
 		UiShapes.circle(context, -NORTH_SIZE / 2, -NORTH_SIZE / 2, NORTH_SIZE, fade(0xE0101010, opacity));
 		UiText.drawInkCentered(context, font, north, UiText.Size.SMALL, 0.0F, 0.0F, fade(TEXT_COLOR, opacity));
 		context.pose().popMatrix();
@@ -462,7 +461,7 @@ public final class MinimapRenderer {
 		return dx * dx + dy * dy <= reach * reach;
 	}
 
-	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, View view, MinimapShape shape, float opacity, float pixels) {
+	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, View view, MinimapShape shape, float opacity, boolean pinned) {
 		WaypointManager manager = EMUtilsClient.waypoint();
 		if (manager == null || !manager.enabled()) {
 			return;
@@ -477,12 +476,15 @@ public final class MinimapRenderer {
 			float x = view.screenX(entry.renderX(), entry.renderZ());
 			float y = view.screenY(entry.renderX(), entry.renderZ());
 			if (!inside(shape, half, x, y, inset)) {
-				float[] pinned = edgePoint(shape, half, x - half, y - half, inset);
-				x = pinned[0];
-				y = pinned[1];
+				if (!pinned) {
+					continue;
+				}
+				float[] edge = edgePoint(shape, half, x - half, y - half, inset);
+				x = edge[0];
+				y = edge[1];
 			}
 			context.pose().pushMatrix();
-			context.pose().translate(snap(x, pixels), snap(y, pixels));
+			context.pose().translate(x, y);
 			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, opacity);
 			context.pose().popMatrix();
 		}
@@ -509,11 +511,6 @@ public final class MinimapRenderer {
 		float offset = 1.0F / (float) (Minecraft.getInstance().getWindow().getGuiScale() * UiRasterScale.get());
 		UiText.drawExact(context, font, text, UiText.Size.SMALL, x + offset, top + offset, fade(TEXT_SHADOW, opacity));
 		UiText.draw(context, font, text, UiText.Size.SMALL, x, top, fade(TEXT_COLOR, opacity));
-	}
-
-	/** {@code value} moved to the nearest physical pixel, with {@code pixels} physical pixels per GUI pixel. */
-	private static float snap(float value, float pixels) {
-		return pixels <= 0.0F ? value : Math.round(value * pixels) / pixels;
 	}
 
 	private static int fade(int color, float opacity) {

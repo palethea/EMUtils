@@ -159,7 +159,8 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
 - Zoom: from 0.25× to 8×. The Minimap Zoom In (`=`) and Minimap Zoom Out (`-`) keys change it too.
 - Coordinates: show your coordinates under the map.
-- Waypoints: show your waypoints with the same markers as in the world. Ones past the map's edge stay pinned to it, in their direction.
+- Waypoints: show your waypoints with the same markers as in the world.
+  - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
 
 ### Armor Status
 

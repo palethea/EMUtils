@@ -3493,8 +3493,10 @@ public final class UiSnapshotter {
 			case 385 -> {
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setMinimapZoom(MinimapZoom.QUARTER);
+					// Far away is 300 blocks off, past the map's edge, so with pinning off it isn't drawn.
+					EMUtilsClient.config().setMinimapWaypointsPinned(false);
 				}
-				captureAfter(client, 80, "minimap, round, 0.25x");
+				captureAfter(client, 80, "minimap, round, 0.25x, not pinned");
 			}
 			case 386 -> openSheetAndCapture(client, "minimap", "minimap sheet");
 			case 387 -> {

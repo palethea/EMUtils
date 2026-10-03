@@ -246,6 +246,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String minimapZoom = MinimapZoom.ONE.name();
 	private Boolean minimapCoordinates = Boolean.TRUE;
 	private Boolean minimapWaypoints = Boolean.TRUE;
+	private Boolean minimapWaypointsPinned = Boolean.TRUE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3786,6 +3787,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Waypoints past the minimap's edge stay on it, pinned to the edge in their direction; off leaves them out. */
+	public boolean minimapWaypointsPinned() {
+		return minimapWaypointsPinned == null || minimapWaypointsPinned;
+	}
+
+	public void setMinimapWaypointsPinned(boolean enabled) {
+		minimapWaypointsPinned = enabled;
+		save();
+	}
+
 	/** The minimap (#212): its settings and its place in the HUD layout. */
 	public void resetMinimapDefaults() {
 		minimap = null;
@@ -3794,6 +3805,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapZoom = MinimapZoom.ONE.name();
 		minimapCoordinates = Boolean.TRUE;
 		minimapWaypoints = Boolean.TRUE;
+		minimapWaypointsPinned = Boolean.TRUE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}
