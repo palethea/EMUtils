@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.emutils.client.emutils.tweaks.LowShield;
+import net.emutils.client.emutils.tweaks.LowTotem;
 import net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState;
@@ -12,7 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 
-/** Low Shield (#193): moves the hand that holds a raised shield down. Minecraft 26.3's first-person renderer. */
+/** Low Shield and Low Totem (#193): moves the hand that holds a raised shield, or a totem, down. Minecraft 26.3's first-person renderer. */
 @Mixin(FirstPersonHandsAndItemsRenderer.class)
 public abstract class FirstPersonShieldMixin {
 	@WrapMethod(method = "submitArmWithItem")
@@ -30,7 +31,7 @@ public abstract class FirstPersonShieldMixin {
 		int lightCoords,
 		Operation<Void> original
 	) {
-		float offset = LowShield.offset(hand, itemStack);
+		float offset = LowShield.offset(hand, itemStack) + LowTotem.offset(itemStack);
 		if (offset <= 0.0F) {
 			original.call(playerState, state, partialTicks, xRot, hand, attack, itemStack, inverseArmHeight, poseStack, submitNodeCollector, lightCoords);
 			return;

@@ -3317,9 +3317,24 @@ public final class UiSnapshotter {
 				if (stepTicks == 110) {
 					grab(client, "totem pop, smallest");
 				}
-				if (stepTicks >= 140) {
+				if (stepTicks == 140) {
 					EMUtilsClient.config().resetSmallTotemDefaults();
 					command(client, "effect clear @s");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:totem_of_undying");
+					command(client, "item replace entity @s weapon.offhand with minecraft:totem_of_undying");
+				}
+				if (stepTicks == 155) {
+					grab(client, "totems held, normal");
+					EMUtilsClient.config().setTweakLowTotem(true);
+				}
+				if (stepTicks == 165) {
+					grab(client, "totems held, low totem");
+					EMUtilsClient.config().setLowTotemAmount(100);
+				}
+				if (stepTicks == 175) {
+					grab(client, "totems held, low totem at the most");
+					EMUtilsClient.config().resetLowTotemDefaults();
+					command(client, "item replace entity @s weapon.mainhand with minecraft:air");
 					command(client, "item replace entity @s weapon.offhand with minecraft:air");
 					next();
 				}

@@ -42,6 +42,9 @@ public final class HubFeatureCatalog {
 			leaf("low_shield", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD, EMUtilsTexts.HUB_FEATURE_LOW_SHIELD_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakLowShield, config::setTweakLowShield), List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD_AMOUNT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.LOW_SHIELD_AMOUNT_MIN, EMUtilsConfig.LOW_SHIELD_AMOUNT_MAX, config::lowShieldAmount, config::setLowShieldAmount)
 			), config::resetLowShieldDefaults),
+			leaf("low_totem", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_TOTEM, EMUtilsTexts.HUB_FEATURE_LOW_TOTEM_DESC, HubFeature.Icon.SPARKLES, toggle(config::tweakLowTotem, config::setTweakLowTotem), List.of(
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_LOW_TOTEM_AMOUNT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.LOW_TOTEM_AMOUNT_MIN, EMUtilsConfig.LOW_TOTEM_AMOUNT_MAX, config::lowTotemAmount, config::setLowTotemAmount)
+			), config::resetLowTotemDefaults),
 			leaf("small_totem", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM, EMUtilsTexts.HUB_FEATURE_SMALL_TOTEM_DESC, HubFeature.Icon.SPARKLES, toggle(config::tweakSmallTotem, config::setTweakSmallTotem), List.of(
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM_SIZE, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.SMALL_TOTEM_SIZE_MIN, EMUtilsConfig.SMALL_TOTEM_SIZE_MAX, config::smallTotemSize, config::setSmallTotemSize)
 			), config::resetSmallTotemDefaults),

@@ -269,6 +269,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.low_fire_overlay.desc";
     public static final String HUB_FEATURE_LOW_SHIELD_DESC =
         "emutils.hub.feature.low_shield.desc";
+    public static final String HUB_FEATURE_LOW_TOTEM_DESC =
+        "emutils.hub.feature.low_totem.desc";
     public static final String HUB_FEATURE_SMALL_TOTEM_DESC =
         "emutils.hub.feature.small_totem.desc";
     public static final String HUB_FEATURE_NO_NAUSEA_DESC =
@@ -601,6 +603,10 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_low_shield";
     public static final String OPTION_TWEAK_LOW_SHIELD_AMOUNT =
         "emutils.option.tweak_low_shield_amount";
+    public static final String OPTION_TWEAK_LOW_TOTEM =
+        "emutils.option.tweak_low_totem";
+    public static final String OPTION_TWEAK_LOW_TOTEM_AMOUNT =
+        "emutils.option.tweak_low_totem_amount";
     public static final String OPTION_TWEAK_SMALL_TOTEM =
         "emutils.option.tweak_small_totem";
     public static final String OPTION_TWEAK_SMALL_TOTEM_SIZE =
