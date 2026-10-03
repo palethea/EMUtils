@@ -1432,6 +1432,7 @@ public final class EMUtilsTexts {
     public static final String UI_MENUS_PANEL_OPACITY = "emutils.ui.menus.panel_opacity";
     public static final String UI_MENUS_ROUNDNESS = "emutils.ui.menus.roundness";
     public static final String UI_MENUS_COMPACT_CARDS = "emutils.ui.menus.compact_cards";
+    public static final String UI_MENUS_REMEMBER_POSITION = "emutils.ui.menus.remember_position";
     public static final String UI_MENUS_CATEGORY_COLORS = "emutils.ui.menus.category_colors";
     public static final String UI_MENUS_HIGH_CONTRAST = "emutils.ui.menus.high_contrast";
 

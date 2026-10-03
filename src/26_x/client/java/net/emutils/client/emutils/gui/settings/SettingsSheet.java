@@ -109,6 +109,14 @@ final class SettingsSheet {
 		return HubSettingsRegistry.rows(feature.category(), () -> rowsDirty = true);
 	}
 
+	String featureId() {
+		return feature.id();
+	}
+
+	boolean isClosing() {
+		return frame.closing();
+	}
+
 	boolean isClosed() {
 		return frame.isClosed();
 	}

@@ -161,6 +161,7 @@ public final class HubSettingsRegistry {
 
 		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MENUS_SECTION_LAYOUT));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_COMPACT_CARDS, config::uiCompactCards, config::setUiCompactCards));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.UI_MENUS_REMEMBER_POSITION, config::uiRememberPosition, config::setUiRememberPosition));
 		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_ROUNDNESS, EMUtilsTexts.SUFFIX_PERCENT, 0, 100, config::uiCornerRoundness, config::setUiCornerRoundness));
 		rows.add(new HubSettingRow.Slider(EMUtilsTexts.UI_MENUS_PANEL_OPACITY, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.UI_PANEL_OPACITY_MIN, 100, config::uiPanelOpacity, config::setUiPanelOpacity));
 
