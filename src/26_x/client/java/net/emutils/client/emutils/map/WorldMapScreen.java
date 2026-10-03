@@ -135,7 +135,7 @@ public final class WorldMapScreen extends Screen {
 		}
 		WorldMapScreen screen = new WorldMapScreen(openKey, MinimapRenderer.frame(client), world, WaypointManager.dimensionId(client.level));
 		screen.centerX = client.player.getX();
-		screen.centerZ = client.player.getZ();
+		screen.centerZ = client.player.getZ() - MapManager.lift(world, client.player.getY());
 		screen.anchorWorldX = screen.centerX;
 		screen.anchorWorldZ = screen.centerZ;
 		client.gui.setScreen(screen);
@@ -290,7 +290,7 @@ public final class WorldMapScreen extends Screen {
 			angle = lerpAngle(from.angle(), 0.0F, progress);
 			viewZoom = (float) Math.exp(lerp((float) Math.log(from.zoom() * from.scale()), (float) Math.log(zoom), progress));
 			double px = player.xo + (player.getX() - player.xo) * delta;
-			double pz = player.zo + (player.getZ() - player.zo) * delta;
+			double pz = player.zo + (player.getZ() - player.zo) * delta - MapManager.lift(world, player.getY());
 			viewX = px + (centerX - px) * progress;
 			viewZ = pz + (centerZ - pz) * progress;
 		} else if (from == null && progress < 1.0F) {
@@ -316,7 +316,7 @@ public final class WorldMapScreen extends Screen {
 		drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
 		if (ownDimension && player != null) {
 			double px = player.xo + (player.getX() - player.xo) * delta;
-			double pz = player.zo + (player.getZ() - player.zo) * delta;
+			double pz = player.zo + (player.getZ() - player.zo) * delta - MapManager.lift(world, player.getY());
 			drawArrow(context, view.screenX(px, pz), view.screenY(px, pz), (float) Math.toRadians(yaw + 180.0F) + angle);
 		}
 
@@ -422,8 +422,9 @@ public final class WorldMapScreen extends Screen {
 			if (!entry.placeable()) {
 				continue;
 			}
-			float sx = view.screenX(entry.renderX(), entry.renderZ());
-			float sy = view.screenY(entry.renderX(), entry.renderZ());
+			double z = entry.renderZ() - MapManager.lift(world, entry.y());
+			float sx = view.screenX(entry.renderX(), z);
+			float sy = view.screenY(entry.renderX(), z);
 			if (sx < -MARKER_SIZE || sy < -MARKER_SIZE || sx > width + MARKER_SIZE || sy > height + MARKER_SIZE) {
 				continue;
 			}
@@ -496,7 +497,7 @@ public final class WorldMapScreen extends Screen {
 
 		// Bottom left: where the cursor points, with the ground's height when the map knows it.
 		int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
-		int blockZ = (int) Math.floor(view.worldZ(mouseX, mouseY));
+		int blockZ = groundZ(blockX, view.worldZ(mouseX, mouseY));
 		MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
 		Component position = Component.literal(chunk == null
 			? blockX + ", " + blockZ
@@ -621,7 +622,7 @@ public final class WorldMapScreen extends Screen {
 		} else {
 			MapView view = fullView();
 			int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
-			int blockZ = (int) Math.floor(view.worldZ(mouseX, mouseY));
+			int blockZ = groundZ(blockX, view.worldZ(mouseX, mouseY));
 			int blockY = groundY(blockX, blockZ);
 			String other = isOwnDimension() ? null : dimension;
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_ADD_WAYPOINT), () -> openSheet(null, new SharedWaypoint(null, blockX, blockY, blockZ, other, null))));
@@ -643,6 +644,38 @@ public final class WorldMapScreen extends Screen {
 		menu = null;
 		dragging = false;
 		sheet = new WaypointSheet(font, anim, editing, prefill, saved -> { });
+	}
+
+	/**
+	 * The block row a spot on the map shows. Top-down that's simply where it is; in the tilted view (#217)
+	 * it's the nearest column, from the south, whose lifted top or front wall covers the spot.
+	 */
+	private int groundZ(int blockX, double mapZ) {
+		if (!MapManager.tilted()) {
+			return (int) Math.floor(mapZ);
+		}
+		int nearest = (int) Math.floor(mapZ + MapTileBaker.TILT_UP);
+		int farthest = (int) Math.floor(mapZ - MapTileBaker.TILT_DOWN);
+		for (int z = nearest; z >= farthest; z--) {
+			Integer top = surfaceY(blockX, z);
+			if (top == null) {
+				continue;
+			}
+			Integer south = surfaceY(blockX, z + 1);
+			double lifted = z - MapManager.lift(world, top);
+			double front = z + 1 - MapManager.lift(world, south == null ? top : Math.min(top, south));
+			if (mapZ >= lifted && mapZ < Math.max(front, lifted + 1)) {
+				return z;
+			}
+		}
+		return (int) Math.floor(mapZ);
+	}
+
+	/** The height of the top of a column the map knows, or null. */
+	private @Nullable Integer surfaceY(int blockX, int blockZ) {
+		MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
+		int c = MapChunk.index(blockX & 15, blockZ & 15);
+		return chunk == null || chunk.top(c) == MapChunk.NONE ? null : (int) chunk.topY(c);
 	}
 
 	/** Standing height at a spot: one above the ground the map knows, or your own height when it doesn't. */
@@ -724,7 +757,7 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		if (event.key() == InputConstants.KEY_SPACE && minecraft.player != null && isOwnDimension()) {
-			lookAt(minecraft.player.getX(), minecraft.player.getZ());
+			lookAt(minecraft.player.getX(), minecraft.player.getZ() - MapManager.lift(world, minecraft.player.getY()));
 			return true;
 		}
 		return super.keyPressed(event);
@@ -776,6 +809,11 @@ public final class WorldMapScreen extends Screen {
 		return world.busy() || tiles.busy();
 	}
 
+	/** For UI snapshot checks: zooms to GUI pixels per block around the middle, at once. */
+	public void zoomToForSnapshot(float pixelsPerBlock) {
+		zoom = targetZoom = pixelsPerBlock;
+	}
+
 	/** For UI snapshot checks: the map's zoom in GUI pixels per block. */
 	public float zoomForSnapshot() {
 		return zoom;
@@ -790,7 +828,7 @@ public final class WorldMapScreen extends Screen {
 	public void addWaypointForSnapshot() {
 		MapView view = fullView();
 		int blockX = (int) Math.floor(view.worldX(width / 2.0F, height / 2.0F));
-		int blockZ = (int) Math.floor(view.worldZ(width / 2.0F, height / 2.0F));
+		int blockZ = groundZ(blockX, view.worldZ(width / 2.0F, height / 2.0F));
 		openSheet(null, new SharedWaypoint(null, blockX, groundY(blockX, blockZ), blockZ, null, null));
 	}
 
@@ -814,7 +852,7 @@ public final class WorldMapScreen extends Screen {
 			world = MapManager.world();
 			tiles = MapManager.tiles();
 			if (minecraft.player != null) {
-				lookAt(minecraft.player.getX(), minecraft.player.getZ());
+				lookAt(minecraft.player.getX(), minecraft.player.getZ() - MapManager.lift(world, minecraft.player.getY()));
 			}
 			return;
 		}

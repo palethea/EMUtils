@@ -249,6 +249,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean minimapCoordinates = Boolean.TRUE;
 	private Boolean minimapWaypoints = Boolean.TRUE;
 	private Boolean minimapWaypointsPinned = Boolean.TRUE;
+	private Boolean mapTilted = Boolean.FALSE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3799,6 +3800,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** The minimap and world map are seen slightly from the side, so heights stand out (#217); off by default. */
+	public boolean mapTilted() {
+		return mapTilted != null && mapTilted;
+	}
+
+	public void setMapTilted(boolean enabled) {
+		mapTilted = enabled;
+		save();
+	}
+
 	/** The EMUtils world map (#215): on by default, unless Xaero's World Map is installed. Also keeps the map saved while the minimap is off. */
 	public boolean worldMap() {
 		return worldMap == null ? !XaeroMapIntegration.worldMapLoaded() : worldMap;
@@ -3824,6 +3835,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapCoordinates = Boolean.TRUE;
 		minimapWaypoints = Boolean.TRUE;
 		minimapWaypointsPinned = Boolean.TRUE;
+		mapTilted = Boolean.FALSE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}
