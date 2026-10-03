@@ -420,6 +420,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean uiCompactCards = Boolean.FALSE;
 	private Boolean uiCategoryColors = Boolean.TRUE;
 	private Boolean uiHighContrast = Boolean.FALSE;
+	/** Remember last menu position (#192), and where the menu was left: category, scroll and open sheet. */
+	private Boolean uiRememberPosition = Boolean.FALSE;
+	private String uiLastGroup;
+	private Integer uiLastScroll;
+	private String uiLastSheet;
 	private Boolean packManagerShowShadersWithoutIris = Boolean.TRUE;
 	private Boolean packManagerReplaceResourcePacksButton = Boolean.FALSE;
 	private Boolean customCapes = Boolean.TRUE;
@@ -2443,6 +2448,42 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public boolean uiRememberPosition() {
+		return uiRememberPosition != null && uiRememberPosition;
+	}
+
+	/** Turning it off forgets the saved position. */
+	public void setUiRememberPosition(boolean remember) {
+		uiRememberPosition = remember;
+		if (!remember) {
+			uiLastGroup = null;
+			uiLastScroll = null;
+			uiLastSheet = null;
+		}
+		save();
+	}
+
+	/** The hub category the menu was left on, or null for All. */
+	public @Nullable String uiLastGroup() {
+		return uiLastGroup;
+	}
+
+	public int uiLastScroll() {
+		return uiLastScroll == null ? 0 : Math.max(0, uiLastScroll);
+	}
+
+	/** The feature whose sheet was open when the menu was left, or null. */
+	public @Nullable String uiLastSheet() {
+		return uiLastSheet;
+	}
+
+	public void setUiLastPosition(@Nullable String group, int scroll, @Nullable String sheet) {
+		uiLastGroup = group;
+		uiLastScroll = Math.max(0, scroll);
+		uiLastSheet = sheet;
+		save();
+	}
+
 	public void resetMenuSettings() {
 		settingsUiDark = Boolean.TRUE;
 		uiAccent = UI_ACCENT_DEFAULT;
@@ -2459,6 +2500,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		uiCompactCards = Boolean.FALSE;
 		uiCategoryColors = Boolean.TRUE;
 		uiHighContrast = Boolean.FALSE;
+		uiRememberPosition = Boolean.FALSE;
+		uiLastGroup = null;
+		uiLastScroll = null;
+		uiLastSheet = null;
 		save();
 	}
 
@@ -2482,6 +2527,10 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		uiCompactCards = other.uiCompactCards();
 		uiCategoryColors = other.uiCategoryColors();
 		uiHighContrast = other.uiHighContrast();
+		uiRememberPosition = other.uiRememberPosition();
+		uiLastGroup = other.uiLastGroup();
+		uiLastScroll = other.uiLastScroll();
+		uiLastSheet = other.uiLastSheet();
 		save();
 	}
 

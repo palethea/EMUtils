@@ -78,6 +78,12 @@ public final class UiScrollArea {
 		target = 0.0;
 	}
 
+	/** Jumps to {@code position} at once, without easing. */
+	public void jumpTo(double position) {
+		target = Mth.clamp(position, 0.0, maxScroll());
+		offset = target;
+	}
+
 	/** Where the scroll is heading, which the smooth offset follows. */
 	public double target() {
 		return target;

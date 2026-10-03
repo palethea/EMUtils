@@ -86,15 +86,59 @@ public final class SettingsScreen extends UiPanelScreen {
 	private int titleY;
 	private boolean stackedHeader;
 	private boolean showTagline;
+	/** The remembered scroll (#192), applied once the list has a height; -1 when there is none. */
+	private int pendingScroll = -1;
+	private @Nullable String pendingSheet;
+	private boolean positionSaved;
 
 	public SettingsScreen(Screen parent) {
 		super(Component.translatable(EMUtilsTexts.HUB_MODERN_TITLE), parent);
 		this.features = HubFeatureCatalog.all();
 		this.featuresConfig = EMUtilsClient.config();
+		restorePosition();
+	}
+
+	/** Goes back to where the menu was left, if Remember last menu position is on (#192). */
+	private void restorePosition() {
+		if (!featuresConfig.uiRememberPosition()) {
+			return;
+		}
+		String groupName = featuresConfig.uiLastGroup();
+		if (groupName != null) {
+			for (HubFeature.Group group : HubFeature.Group.values()) {
+				if (group.name().equals(groupName)) {
+					selectedGroup = group;
+				}
+			}
+		}
+		pendingScroll = featuresConfig.uiLastScroll();
+		// The sheet needs the screen's font, which exists once it is shown.
+		pendingSheet = featuresConfig.uiLastSheet();
+	}
+
+	/** Remembers the category, scroll and open sheet when the menu is left. */
+	private void savePosition() {
+		if (positionSaved || !featuresConfig.uiRememberPosition()) {
+			return;
+		}
+		positionSaved = true;
+		boolean sheetOpen = sheet != null && !sheet.isClosing();
+		featuresConfig.setUiLastPosition(
+			selectedGroup == null ? null : selectedGroup.name(),
+			pendingScroll >= 0 ? pendingScroll : (int) Math.round(scroll.target()),
+			sheetOpen ? sheet.featureId() : null
+		);
+	}
+
+	@Override
+	public void removed() {
+		savePosition();
+		super.removed();
 	}
 
 	@Override
 	protected void layout() {
+		positionSaved = false;
 		// Category buttons decide how wide the search and category control is.
 		categoryButtons.clear();
 		int buttonsWidth = 0;
@@ -156,6 +200,11 @@ public final class SettingsScreen extends UiPanelScreen {
 	@Override
 	protected void beforeFrame() {
 		capture.frame();
+		if (pendingSheet != null) {
+			String sheetId = pendingSheet;
+			pendingSheet = null;
+			openSheet(sheetId);
+		}
 		// The features' switches and sheets point at the settings of the profile they were built for.
 		if (EMUtilsClient.config() != featuresConfig) {
 			features = HubFeatureCatalog.all();
@@ -339,6 +388,10 @@ public final class SettingsScreen extends UiPanelScreen {
 			contentHeight += (headings ? HEADING_HEIGHT : 0) + rows * cardHeight() + (rows - 1) * CARD_GAP + GROUP_GAP;
 		}
 		scroll.setContentHeight(Math.max(0, contentHeight - GROUP_GAP + FADE_HEIGHT));
+		if (pendingScroll >= 0) {
+			scroll.jumpTo(pendingScroll);
+			pendingScroll = -1;
+		}
 		scroll.animate(anim, "scroll", mouseX, mouseY);
 
 		cards.clear();
@@ -767,6 +820,7 @@ public final class SettingsScreen extends UiPanelScreen {
 	@Override
 	public void onClose() {
 		search.setFocused(false);
+		savePosition();
 		if (sheet != null) {
 			sheet.close();
 		}

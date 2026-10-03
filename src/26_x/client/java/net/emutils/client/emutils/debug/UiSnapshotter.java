@@ -3394,6 +3394,34 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
+			// Remember last menu position (#192): category, scroll and open sheet come back; off forgets them.
+			case 379 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					EMUtilsClient.config().resetMenuSettings();
+					EMUtilsClient.config().setUiRememberPosition(true);
+					SettingsScreen first = new SettingsScreen(null);
+					client.gui.setScreen(first);
+					first.openSheet("menus");
+				}
+				if (stepTicks == 5 && MinecraftClientCompat.screen(client) instanceof SettingsScreen first) {
+					check(first.sheetOpen(), "the menu settings sheet opens");
+					first.onClose();
+				}
+				if (stepTicks == 6) {
+					client.gui.setScreen(new SettingsScreen(null));
+				}
+				if (stepTicks == 12 && MinecraftClientCompat.screen(client) instanceof SettingsScreen again) {
+					check(again.sheetOpen(), "the open sheet is remembered");
+					again.onClose();
+					EMUtilsClient.config().setUiRememberPosition(false);
+					client.gui.setScreen(new SettingsScreen(null));
+				}
+				if (stepTicks == 18 && MinecraftClientCompat.screen(client) instanceof SettingsScreen off) {
+					check(!off.sheetOpen(), "turning the setting off forgets the position");
+				}
+				captureAfter(client, 20, "settings, position not remembered");
+			}
 			default -> finish(client);
 		}
 	}
