@@ -1,20 +1,25 @@
 package net.emutils.client.emutils.compat;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.entity.Entity;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Puts the Beacon Radius Outline on Xaero's Minimap and World Map (#188). Nothing is attached, built or looked
- * up while the outline or the Xaero Map Integration setting is off; once attached, the handlers are only
- * looked up again every second, with the reflection handles kept.
+ * Puts the Beacon Radius Outline (#188) and EMUtils waypoints (#185) on Xaero's Minimap and World Map. Nothing is
+ * attached, built or looked up for a feature while it or its Xaero setting is off; once attached, the handlers
+ * are only looked up again every second, with the reflection handles kept.
  */
 public final class XaeroMapIntegration {
 	private static final boolean MINIMAP_LOADED = FabricLoader.getInstance().isModLoaded("xaerominimap");
@@ -24,11 +29,29 @@ public final class XaeroMapIntegration {
 	/** How long to wait before trying again after Xaero's classes weren't there or didn't match. */
 	private static final int RETRY_TICKS = 200;
 
-	private static final Set<Object> MINIMAP_HANDLERS = Collections.newSetFromMap(new IdentityHashMap<>());
-	private static final Set<Object> WORLD_MAP_HANDLERS = Collections.newSetFromMap(new IdentityHashMap<>());
+	/** One kind of element EMUtils puts on the maps, with the handlers it has been attached to. */
+	private static final class Attachment {
+		final String name;
+		final BooleanSupplier wanted;
+		final Supplier<Object> renderer;
+		final int order;
+		final Set<Object> minimapHandlers = Collections.newSetFromMap(new IdentityHashMap<>());
+		final Set<Object> worldMapHandlers = Collections.newSetFromMap(new IdentityHashMap<>());
+		boolean minimapFailureLogged;
+		boolean worldMapFailureLogged;
+
+		Attachment(String name, BooleanSupplier wanted, Supplier<Object> renderer, int order) {
+			this.name = name;
+			this.wanted = wanted;
+			this.renderer = renderer;
+			this.order = order;
+		}
+	}
+
+	private static final Attachment BEACONS = new Attachment("beacon boundaries", XaeroMapIntegration::beaconsWanted, XaeroMapIntegration::newBeaconRenderer, -100);
+	private static final Attachment WAYPOINTS = new Attachment("waypoints", XaeroMapIntegration::waypointsWanted, XaeroMapIntegration::newWaypointRenderer, 90);
+	private static final Attachment[] ATTACHMENTS = {BEACONS, WAYPOINTS};
 	private static int cooldown;
-	private static boolean minimapFailureLogged;
-	private static boolean worldMapFailureLogged;
 
 	// Looked up once.
 	private static @Nullable Class<?> hudModClass;
@@ -63,22 +86,73 @@ public final class XaeroMapIntegration {
 	private XaeroMapIntegration() {
 	}
 
+	// The renderers extend Xaero's classes, so they are only created, and loaded, once Xaero is known to be there.
+	private static Object newBeaconRenderer() {
+		return new BeaconXaeroElementRenderer();
+	}
+
+	private static Object newWaypointRenderer() {
+		return new WaypointXaeroElementRenderer();
+	}
+
 	/** Whether the outline should be on Xaero's maps: Xaero is installed, and the outline and its Xaero setting are on. */
-	public static boolean isWanted() {
+	public static boolean beaconsWanted() {
 		EMUtilsConfig config = EMUtilsClient.config();
 		return MINIMAP_LOADED && config != null && config.beaconRadiusOutline() && config.beaconRadiusXaero();
 	}
 
+	/** Whether waypoints should be on Xaero's maps: Xaero is installed, and waypoints and their Xaero setting are on. */
+	public static boolean waypointsWanted() {
+		EMUtilsConfig config = EMUtilsClient.config();
+		return MINIMAP_LOADED && config != null && config.waypointEnabled() && config.waypointXaero();
+	}
+
 	public static void tick() {
-		if (!isWanted() || --cooldown > 0) {
+		if (!MINIMAP_LOADED) {
+			return;
+		}
+		boolean any = false;
+		for (Attachment attachment : ATTACHMENTS) {
+			any |= attachment.wanted.getAsBoolean();
+		}
+		if (!any || --cooldown > 0) {
 			return;
 		}
 
-		boolean attached = attachMinimapHandlers();
-		if (WORLD_MAP_LOADED) {
-			attached &= attachWorldMapHandler();
+		boolean attached = true;
+		for (Attachment attachment : ATTACHMENTS) {
+			if (!attachment.wanted.getAsBoolean()) {
+				continue;
+			}
+			attached &= attachMinimapHandlers(attachment);
+			if (WORLD_MAP_LOADED) {
+				attached &= attachWorldMapHandler(attachment);
+			}
 		}
 		cooldown = attached ? RECHECK_TICKS : RETRY_TICKS;
+	}
+
+	/** Whether waypoints have been added to Xaero's minimap and, if it is installed, its World Map; for UI snapshots. */
+	public static boolean waypointsAttachedForSnapshot() {
+		return !WAYPOINTS.minimapHandlers.isEmpty() && (!WORLD_MAP_LOADED || !WAYPOINTS.worldMapHandlers.isEmpty());
+	}
+
+	/** Xaero's World Map screen as its keybind opens it, or null when it isn't installed or can't be built; for UI snapshots. */
+	public static @Nullable Screen worldMapScreenForSnapshot(Minecraft client, @Nullable Screen parent) {
+		if (!WORLD_MAP_LOADED || client.player == null) {
+			return null;
+		}
+		try {
+			Class<?> sessionClass = Class.forName("xaero.map.WorldMapSession");
+			Object session = sessionClass.getMethod("getCurrentSession").invoke(null);
+			Object processor = sessionClass.getMethod("getMapProcessor").invoke(session);
+			Class<?> mapClass = Class.forName("xaero.map.gui.GuiMap");
+			Constructor<?> constructor = mapClass.getConstructor(Screen.class, Screen.class, Class.forName("xaero.map.MapProcessor"), Entity.class);
+			return (Screen) constructor.newInstance(parent, parent, processor, client.player);
+		} catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
+			EMUtilsClient.LOGGER.warn("Could not open Xaero's World Map for the UI snapshots.", exception);
+			return null;
+		}
 	}
 
 	/** What the minimap shows right now, or null when that can't be read (which only costs the trimming). The result is reused. */
@@ -106,7 +180,7 @@ public final class XaeroMapIntegration {
 		}
 	}
 
-	private static boolean attachMinimapHandlers() {
+	private static boolean attachMinimapHandlers(Attachment attachment) {
 		try {
 			if (hudModInstance == null) {
 				hudModClass = Class.forName("xaero.common.HudMod");
@@ -126,24 +200,27 @@ public final class XaeroMapIntegration {
 				getOverMapHandler = minimap.getClass().getMethod("getOverMapRendererHandler");
 			}
 
-			attachMinimapHandler(getOverMapHandler.invoke(minimap));
+			attachMinimapHandler(attachment, getOverMapHandler.invoke(minimap));
 			return true;
 		} catch (ReflectiveOperationException | LinkageError exception) {
-			if (!minimapFailureLogged) {
-				minimapFailureLogged = true;
-				EMUtilsClient.LOGGER.warn("Could not attach beacon boundaries to Xaero's Minimap.", exception);
+			if (!attachment.minimapFailureLogged) {
+				attachment.minimapFailureLogged = true;
+				EMUtilsClient.LOGGER.warn("Could not attach " + attachment.name + " to Xaero's Minimap.", exception);
 			}
 			return false;
 		}
 	}
 
-	private static void attachMinimapHandler(Object handler) throws ReflectiveOperationException {
-		if (handler == null || MINIMAP_HANDLERS.contains(handler)) {
+	private static void attachMinimapHandler(Attachment attachment, Object handler) throws ReflectiveOperationException {
+		if (handler == null || attachment.minimapHandlers.contains(handler)) {
 			return;
 		}
 		Method add = handler.getClass().getMethod("add", minimapRendererClass);
-		add.invoke(handler, new BeaconXaeroElementRenderer());
-		MINIMAP_HANDLERS.add(handler);
+		add.invoke(handler, attachment.renderer.get());
+		attachment.minimapHandlers.add(handler);
+		if (handler == overMapHandler && viewFields != null) {
+			return;
+		}
 		overMapHandler = handler;
 		try {
 			Field[] fields = new Field[VIEW_FIELD_NAMES.length];
@@ -159,7 +236,7 @@ public final class XaeroMapIntegration {
 		}
 	}
 
-	private static boolean attachWorldMapHandler() {
+	private static boolean attachWorldMapHandler(Attachment attachment) {
 		try {
 			if (worldMapHandlerField == null) {
 				worldMapHandlerField = Class.forName("xaero.map.WorldMap").getField("mapElementRenderHandler");
@@ -168,11 +245,11 @@ public final class XaeroMapIntegration {
 			if (handler == null) {
 				return false;
 			}
-			if (WORLD_MAP_HANDLERS.contains(handler)) {
+			if (attachment.worldMapHandlers.contains(handler)) {
 				return true;
 			}
 
-			BeaconXaeroElementRenderer renderer = new BeaconXaeroElementRenderer();
+			Object renderer = attachment.renderer.get();
 			Class<?> minimapRendererClass = Class.forName("xaero.hud.minimap.element.render.MinimapElementRenderer");
 			Class<?> builderClass = Class.forName("xaero.map.mods.minimap.element.MinimapElementRendererWrapper$Builder");
 			Object builder = builderClass.getMethod("begin", minimapRendererClass).invoke(null, renderer);
@@ -184,19 +261,19 @@ public final class XaeroMapIntegration {
 			}
 			Class<?> minimapApiClass = Class.forName("xaero.common.IXaeroMinimap");
 			builder = builderClass.getMethod("setModMain", minimapApiClass).invoke(builder, hudMod);
-			Supplier<Boolean> enabled = XaeroMapIntegration::isWanted;
+			Supplier<Boolean> enabled = attachment.wanted::getAsBoolean;
 			builder = builderClass.getMethod("setShouldRenderSupplier", Supplier.class).invoke(builder, enabled);
-			builder = builderClass.getMethod("setOrder", int.class).invoke(builder, -100);
+			builder = builderClass.getMethod("setOrder", int.class).invoke(builder, attachment.order);
 			Object wrapper = builderClass.getMethod("build").invoke(builder);
 
 			Class<?> worldRendererClass = Class.forName("xaero.map.element.render.ElementRenderer");
 			handler.getClass().getMethod("add", worldRendererClass).invoke(handler, wrapper);
-			WORLD_MAP_HANDLERS.add(handler);
+			attachment.worldMapHandlers.add(handler);
 			return true;
 		} catch (ReflectiveOperationException | LinkageError exception) {
-			if (!worldMapFailureLogged) {
-				worldMapFailureLogged = true;
-				EMUtilsClient.LOGGER.warn("Could not attach beacon boundaries to Xaero's World Map.", exception);
+			if (!attachment.worldMapFailureLogged) {
+				attachment.worldMapFailureLogged = true;
+				EMUtilsClient.LOGGER.warn("Could not attach " + attachment.name + " to Xaero's World Map.", exception);
 			}
 			return false;
 		}

@@ -97,7 +97,7 @@ public final class BeaconRadiusRenderer {
 			|| cachedActiveOnly != EMUtilsClient.config().beaconRadiusActiveOnly()
 			|| cachedGridSpacing != EMUtilsClient.config().beaconRadiusGridSpacing()
 			|| cachedLineWidth != EMUtilsClient.config().beaconRadiusLineWidth()
-			|| cachedXaero != XaeroMapIntegration.isWanted()) {
+			|| cachedXaero != XaeroMapIntegration.beaconsWanted()) {
 			nextScanTick = 0;
 		}
 		if (cachedLevel != client.level || client.player.tickCount >= nextScanTick) {
@@ -137,7 +137,7 @@ public final class BeaconRadiusRenderer {
 			}
 		}
 		List<WorldLines.Line> lines = new ArrayList<>();
-		boolean xaero = XaeroMapIntegration.isWanted();
+		boolean xaero = XaeroMapIntegration.beaconsWanted();
 		List<MapRect> mapRects = new ArrayList<>();
 		int[] colors = colors(outlines);
 		for (int i = 0; i < outlines.size(); i++) {

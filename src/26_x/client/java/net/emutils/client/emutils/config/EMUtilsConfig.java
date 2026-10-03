@@ -283,6 +283,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer waypointDefaultDeathColor = 0xFFFF5555;
 	private Integer waypointDefaultCustomColor = 0xFF55FF55;
 	private Boolean waypointEdgePin = Boolean.TRUE;
+	private Boolean waypointXaero = Boolean.TRUE;
 	private Integer waypointMaxDistance = 0;
 	private String waypointFont = HudFont.MINECRAFT.name();
 	private Integer waypointLabelBackground = 0;
@@ -2858,6 +2859,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** Whether waypoints also show on Xaero's Minimap and World Map when they are installed. */
+	public boolean waypointXaero() {
+		return waypointXaero == null || waypointXaero;
+	}
+
+	public void setWaypointXaero(boolean enabled) {
+		waypointXaero = enabled;
+		save();
+	}
+
 	/** The farthest a waypoint is still shown, in blocks; 0 for no limit. */
 	public int waypointMaxDistance() {
 		int value = waypointMaxDistance == null ? 0 : waypointMaxDistance;
@@ -3036,6 +3047,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		waypointDefaultDeathColor = 0xFFFF5555;
 		waypointDefaultCustomColor = 0xFF55FF55;
 		waypointEdgePin = Boolean.TRUE;
+		waypointXaero = Boolean.TRUE;
 		waypointMaxDistance = 0;
 		waypointFont = HudFont.MINECRAFT.name();
 		waypointLabelBackground = 0;

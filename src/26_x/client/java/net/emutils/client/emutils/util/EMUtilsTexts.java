@@ -455,6 +455,8 @@ public final class EMUtilsTexts {
         "emutils.option.waypoint_label_background";
     public static final String OPTION_WAYPOINT_EDGE_PIN =
         "emutils.option.waypoint_edge_pin";
+    public static final String OPTION_WAYPOINT_XAERO =
+        "emutils.option.waypoint_xaero";
     public static final String OPTION_WAYPOINT_MAX_DISTANCE =
         "emutils.option.waypoint_max_distance";
     public static final String OPTION_WAYPOINT_MAX_DISTANCE_UNLIMITED =

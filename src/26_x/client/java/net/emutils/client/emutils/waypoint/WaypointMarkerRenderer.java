@@ -331,7 +331,7 @@ public final class WaypointMarkerRenderer {
 		}
 	}
 
-	private static String initial(String label) {
+	public static String initial(String label) {
 		if (label != null) {
 			String trimmed = label.strip();
 			if (!trimmed.isEmpty()) {
@@ -342,7 +342,7 @@ public final class WaypointMarkerRenderer {
 	}
 
 	/** Whether dark text reads better than white on {@code color}. */
-	private static boolean isLight(int color) {
+	public static boolean isLight(int color) {
 		int red = (color >> 16) & 0xFF;
 		int green = (color >> 8) & 0xFF;
 		int blue = color & 0xFF;
