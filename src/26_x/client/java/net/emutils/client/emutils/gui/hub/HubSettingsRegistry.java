@@ -705,6 +705,10 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, config::tweakClearWeather, config::setTweakClearWeather));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, config::tweakNoFireOverlay, config::setTweakNoFireOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, config::tweakLowFireOverlay, config::setTweakLowFireOverlay));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD, config::tweakLowShield, config::setTweakLowShield));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD_AMOUNT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.LOW_SHIELD_AMOUNT_MIN, EMUtilsConfig.LOW_SHIELD_AMOUNT_MAX, config::lowShieldAmount, config::setLowShieldAmount));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM, config::tweakSmallTotem, config::setTweakSmallTotem));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM_SIZE, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.SMALL_TOTEM_SIZE_MIN, EMUtilsConfig.SMALL_TOTEM_SIZE_MAX, config::smallTotemSize, config::setSmallTotemSize));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, config::tweakNoNausea, config::setTweakNoNausea));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_SPYGLASS_OVERLAY, config::tweakNoSpyglassOverlay, config::setTweakNoSpyglassOverlay));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_NO_PUMPKIN_OVERLAY, config::tweakNoPumpkinOverlay, config::setTweakNoPumpkinOverlay));

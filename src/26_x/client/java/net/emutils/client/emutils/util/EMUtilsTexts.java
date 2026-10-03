@@ -267,6 +267,10 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.no_fire_overlay.desc";
     public static final String HUB_FEATURE_LOW_FIRE_OVERLAY_DESC =
         "emutils.hub.feature.low_fire_overlay.desc";
+    public static final String HUB_FEATURE_LOW_SHIELD_DESC =
+        "emutils.hub.feature.low_shield.desc";
+    public static final String HUB_FEATURE_SMALL_TOTEM_DESC =
+        "emutils.hub.feature.small_totem.desc";
     public static final String HUB_FEATURE_NO_NAUSEA_DESC =
         "emutils.hub.feature.no_nausea.desc";
     public static final String HUB_FEATURE_NO_SPYGLASS_OVERLAY_DESC =
@@ -593,6 +597,14 @@ public final class EMUtilsTexts {
         "emutils.option.tweak_no_fire_overlay";
     public static final String OPTION_TWEAK_LOW_FIRE_OVERLAY =
         "emutils.option.tweak_low_fire_overlay";
+    public static final String OPTION_TWEAK_LOW_SHIELD =
+        "emutils.option.tweak_low_shield";
+    public static final String OPTION_TWEAK_LOW_SHIELD_AMOUNT =
+        "emutils.option.tweak_low_shield_amount";
+    public static final String OPTION_TWEAK_SMALL_TOTEM =
+        "emutils.option.tweak_small_totem";
+    public static final String OPTION_TWEAK_SMALL_TOTEM_SIZE =
+        "emutils.option.tweak_small_totem_size";
     public static final String OPTION_TWEAK_NO_NAUSEA =
         "emutils.option.tweak_no_nausea";
     public static final String OPTION_TWEAK_NO_SPYGLASS_OVERLAY =

@@ -39,6 +39,12 @@ public final class HubFeatureCatalog {
 			leaf("clear_lava", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, HubFeature.Icon.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava), () -> config.setTweakClearLava(true)),
 			leaf("no_fire_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_FIRE_OVERLAY_DESC, HubFeature.Icon.FLAME, toggle(config::tweakNoFireOverlay, config::setTweakNoFireOverlay), () -> config.setTweakNoFireOverlay(false)),
 			leaf("low_fire_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_LOW_FIRE_OVERLAY_DESC, HubFeature.Icon.FLAME, toggle(config::tweakLowFireOverlay, config::setTweakLowFireOverlay), () -> config.setTweakLowFireOverlay(false)),
+			leaf("low_shield", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD, EMUtilsTexts.HUB_FEATURE_LOW_SHIELD_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakLowShield, config::setTweakLowShield), List.of(
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD_AMOUNT, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.LOW_SHIELD_AMOUNT_MIN, EMUtilsConfig.LOW_SHIELD_AMOUNT_MAX, config::lowShieldAmount, config::setLowShieldAmount)
+			), config::resetLowShieldDefaults),
+			leaf("small_totem", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM, EMUtilsTexts.HUB_FEATURE_SMALL_TOTEM_DESC, HubFeature.Icon.SPARKLES, toggle(config::tweakSmallTotem, config::setTweakSmallTotem), List.of(
+				new HubSettingRow.Slider(EMUtilsTexts.OPTION_TWEAK_SMALL_TOTEM_SIZE, EMUtilsTexts.SUFFIX_PERCENT, EMUtilsConfig.SMALL_TOTEM_SIZE_MIN, EMUtilsConfig.SMALL_TOTEM_SIZE_MAX, config::smallTotemSize, config::setSmallTotemSize)
+			), config::resetSmallTotemDefaults),
 			leaf("no_nausea", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_NAUSEA, EMUtilsTexts.HUB_FEATURE_NO_NAUSEA_DESC, HubFeature.Icon.EYE, toggle(config::tweakNoNausea, config::setTweakNoNausea), () -> config.setTweakNoNausea(false)),
 			leaf("hide_effects", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_HIDE_EFFECTS, EMUtilsTexts.HUB_FEATURE_HIDE_EFFECTS_DESC, HubFeature.Icon.EYE, toggle(config::tweakHideEffects, config::setTweakHideEffects), List.of(
 				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_HIDE_EFFECTS_HUD, config::tweakHideEffectsHud, config::setTweakHideEffectsHud),

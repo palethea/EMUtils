@@ -32,6 +32,10 @@ Toggle small rendering changes without installing separate single-purpose mods.
 - No Falling Leaf Particles: hide the leaf particles that drift down from leaves, such as oak, cherry, pale oak and the 26.3 poplar leaves; breaking leaves still shows particles.
 - No Fire Overlay: hide the first-person fire overlay while burning.
 - Low Fire: keep flames visible but lower on screen.
+- Low Shield: draw the shield lower on screen while you block with it, so it covers less of your view. Only the first-person drawing moves; blocking works the same. Off by default.
+  - Lowered By: how far down the shield goes, from 10% to 100% (40% by default).
+- Small Totem: draw the Totem of Undying pop smaller, so it covers less of the screen. The totem, its sound and its particles work the same; only the size of the animation changes. Off by default.
+  - Totem Size: how big the animation is compared to normal, from 20% to 80% (50% by default).
 - No Nausea: hide nausea and portal distortion effects.
 - No Spyglass Overlay: hide the spyglass scope overlay.
 - No Pumpkin Overlay: hide the carved pumpkin blur while wearing one.

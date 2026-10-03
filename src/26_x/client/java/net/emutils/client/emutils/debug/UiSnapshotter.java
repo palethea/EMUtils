@@ -3258,15 +3258,81 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Low Shield and Small Totem (#193): the same shield and totem pop, drawn normally and with the tweaks on.
 			case 372 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetLowShieldDefaults();
+					EMUtilsClient.config().resetSmallTotemDefaults();
+					setGuiScale(client, 2);
+					client.gui.setScreen(null);
+					command(client, "gamemode survival");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:shield");
+					command(client, "tp @s ~ ~ ~ -90 0");
+				}
+				if (stepTicks == 15) {
+					// Held down, or the game lets go of the shield again on the next tick.
+					client.options.keyUse.setDown(true);
+				}
+				if (stepTicks == 30) {
+					check(client.player.isUsingItem(), "the shield is raised for the Low Shield snapshots");
+					grab(client, "shield raised, normal");
+					EMUtilsClient.config().setTweakLowShield(true);
+				}
+				if (stepTicks == 40) {
+					grab(client, "shield raised, low shield");
+					EMUtilsClient.config().setLowShieldAmount(100);
+				}
+				if (stepTicks == 50) {
+					grab(client, "shield raised, low shield at the most");
+					client.options.keyUse.setDown(false);
+					EMUtilsClient.config().resetLowShieldDefaults();
+					command(client, "item replace entity @s weapon.offhand with minecraft:totem_of_undying");
+				}
+				if (stepTicks == 60) {
+					command(client, "damage @s 100 minecraft:generic");
+				}
+				if (stepTicks == 80) {
+					grab(client, "totem pop, normal");
+				}
+				if (stepTicks >= 130) {
+					command(client, "item replace entity @s weapon.offhand with minecraft:totem_of_undying");
+					EMUtilsClient.config().setTweakSmallTotem(true);
+					next();
+				}
+			}
+			case 373 -> {
+				if (stepTicks == 10) {
+					command(client, "damage @s 100 minecraft:generic");
+				}
+				if (stepTicks == 30) {
+					grab(client, "totem pop, small totem");
+					EMUtilsClient.config().setSmallTotemSize(20);
+				}
+				if (stepTicks == 80) {
+					command(client, "item replace entity @s weapon.offhand with minecraft:totem_of_undying");
+				}
+				if (stepTicks == 90) {
+					command(client, "damage @s 100 minecraft:generic");
+				}
+				if (stepTicks == 110) {
+					grab(client, "totem pop, smallest");
+				}
+				if (stepTicks >= 140) {
+					EMUtilsClient.config().resetSmallTotemDefaults();
+					command(client, "effect clear @s");
+					command(client, "item replace entity @s weapon.offhand with minecraft:air");
+					next();
+				}
+			}
+			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 374 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 373 -> {
+			case 375 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3275,7 +3341,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 374 -> {
+			case 376 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3286,7 +3352,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 375 -> {
+			case 377 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3297,7 +3363,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 376 -> {
+			case 378 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
