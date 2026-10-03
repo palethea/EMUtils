@@ -978,6 +978,8 @@ public final class UiSnapshotter {
 					if (stepTicks == 1) {
 						String problem = screen.hitOrderProblemForSnapshot();
 						check(problem == null, "a click picks the smallest element under the mouse" + (problem == null ? "" : ": " + problem));
+						String cycle = screen.cycleProblemForSnapshot();
+						check(cycle == null, "clicking the selected element again goes through the ones under it" + (cycle == null ? "" : ": " + cycle));
 						check(screen.hidingWorksForSnapshot(), "a hidden element can't be picked, and can again once shown");
 						screen.setMenuOpenForSnapshot(true);
 					}

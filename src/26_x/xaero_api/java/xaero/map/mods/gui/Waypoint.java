@@ -7,4 +7,8 @@ public class Waypoint {
 	public int getColor() {
 		return 0;
 	}
+
+	public boolean isDisabled() {
+		return false;
+	}
 }
