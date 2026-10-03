@@ -27,7 +27,7 @@ Most utility mods do one job. One zooms, one copies chat, one sorts your chests,
 | Category | Highlights |
 |---|---|
 | **Render** | Zoom, Freelook, Fullbright, Clear Weather, Light Level Overlay, Beacon Radius Outline, custom capes, and a stack of visual tweaks |
-| **HUD** | Info overlay with a drag-and-drop layout editor, Food HUD, Spotify now playing |
+| **HUD** | Minimap drawn with real block textures, Info overlay with a drag-and-drop layout editor, Food HUD, Spotify now playing |
 | **Utility** | Auto Reconnect, Screenshot Helper, death and custom Waypoints |
 | **Management** | Settings hub, Screenshot Gallery, Pack Manager with Modrinth search, Script Manager |
 | **QoL** | Chat copy and filters, Sort Buttons, Quick Stack, Slot Locking, Auto Tool, Auto Flight Gear, Free Camera, Safe Walk, Fast Place |

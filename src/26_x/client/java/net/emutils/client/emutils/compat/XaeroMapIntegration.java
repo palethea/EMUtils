@@ -102,6 +102,11 @@ public final class XaeroMapIntegration {
 		return WaypointWorldMapElementRenderer.create();
 	}
 
+	/** Xaero's Minimap is installed, so the EMUtils minimap starts off (#212). */
+	public static boolean minimapLoaded() {
+		return MINIMAP_LOADED;
+	}
+
 	/** Whether the outline should be on Xaero's maps: Xaero is installed, and the outline and its Xaero setting are on. */
 	public static boolean beaconsWanted() {
 		EMUtilsConfig config = EMUtilsClient.config();

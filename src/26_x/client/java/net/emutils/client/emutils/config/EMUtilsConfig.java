@@ -9,11 +9,14 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.chat.ChatFeaturesRefresher;
 import net.emutils.client.emutils.capes.CapeSource;
 import net.emutils.client.emutils.capes.CustomCapeManager;
+import net.emutils.client.emutils.compat.XaeroMapIntegration;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
+import net.emutils.client.emutils.map.MinimapShape;
+import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointShareFormat;
@@ -236,6 +239,13 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean keystrokesMenuAccent = Boolean.TRUE;
 	private String keystrokesStyle = KeystrokesStyle.ROUNDED.name();
 	private Integer keystrokesPressedColor = KEYSTROKES_PRESSED_COLOR_DEFAULT;
+	/** Null until changed: the minimap starts on, unless Xaero's Minimap is installed (#212). */
+	private Boolean minimap;
+	private String minimapShape = MinimapShape.SQUARE.name();
+	private Boolean minimapRotate = Boolean.TRUE;
+	private String minimapZoom = MinimapZoom.ONE.name();
+	private Boolean minimapCoordinates = Boolean.TRUE;
+	private Boolean minimapWaypoints = Boolean.TRUE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3716,6 +3726,76 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		tabListSort = TabListSort.VANILLA.name();
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.TAB_LIST.configKey());
+		}
+		save();
+	}
+
+	/** The EMUtils minimap (#212): on by default, unless Xaero's Minimap is installed. */
+	public boolean minimap() {
+		return minimap == null ? !XaeroMapIntegration.minimapLoaded() : minimap;
+	}
+
+	public void setMinimap(boolean enabled) {
+		minimap = enabled;
+		save();
+	}
+
+	public MinimapShape minimapShape() {
+		return MinimapShape.fromName(minimapShape);
+	}
+
+	public void setMinimapShape(MinimapShape shape) {
+		minimapShape = (shape == null ? MinimapShape.SQUARE : shape).name();
+		save();
+	}
+
+	/** The map turns with you, so the way you face is always up; off keeps north up. */
+	public boolean minimapRotate() {
+		return minimapRotate == null || minimapRotate;
+	}
+
+	public void setMinimapRotate(boolean enabled) {
+		minimapRotate = enabled;
+		save();
+	}
+
+	public MinimapZoom minimapZoom() {
+		return MinimapZoom.fromName(minimapZoom);
+	}
+
+	public void setMinimapZoom(MinimapZoom zoom) {
+		minimapZoom = (zoom == null ? MinimapZoom.ONE : zoom).name();
+		save();
+	}
+
+	public boolean minimapCoordinates() {
+		return minimapCoordinates == null || minimapCoordinates;
+	}
+
+	public void setMinimapCoordinates(boolean enabled) {
+		minimapCoordinates = enabled;
+		save();
+	}
+
+	public boolean minimapWaypoints() {
+		return minimapWaypoints == null || minimapWaypoints;
+	}
+
+	public void setMinimapWaypoints(boolean enabled) {
+		minimapWaypoints = enabled;
+		save();
+	}
+
+	/** The minimap (#212): its settings and its place in the HUD layout. */
+	public void resetMinimapDefaults() {
+		minimap = null;
+		minimapShape = MinimapShape.SQUARE.name();
+		minimapRotate = Boolean.TRUE;
+		minimapZoom = MinimapZoom.ONE.name();
+		minimapCoordinates = Boolean.TRUE;
+		minimapWaypoints = Boolean.TRUE;
+		if (hudCustomLayout != null) {
+			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}
 		save();
 	}
