@@ -87,17 +87,6 @@ public final class MapManager {
 		return TILES;
 	}
 
-	/** The maps are seen slightly from the side (#217). */
-	public static boolean tilted() {
-		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null && config.mapTilted();
-	}
-
-	/** How far up a map the tilted view lifts something at height {@code y}, in blocks; 0 when it's off. */
-	public static double lift(MapWorld world, double y) {
-		return tilted() ? MapTileBaker.lift(world.seaLevel(), y) : 0.0D;
-	}
-
 	/** The map of the level you are in, or null while no map is shown. */
 	public static @Nullable MapWorld world() {
 		return world;
@@ -184,9 +173,8 @@ public final class MapManager {
 		SavedChunk chunk;
 		while (System.nanoTime() < deadline && (chunk = importer.poll()) != null) {
 			if (world.chunk(chunk.chunkX, chunk.chunkZ) == null) {
-				MapChunk sampled = MapSampler.sample(chunk);
-				world.put(chunk.chunkX, chunk.chunkZ, sampled);
-				tiles.markDirty(world, chunk.chunkX, chunk.chunkZ, null, sampled);
+				world.put(chunk.chunkX, chunk.chunkZ, MapSampler.sample(chunk));
+				tiles.markDirty(chunk.chunkX, chunk.chunkZ);
 			}
 		}
 	}
@@ -197,7 +185,6 @@ public final class MapManager {
 	 * world map calls it for another dimension's map it shows.
 	 */
 	static void prepare(MapWorld world, MapTiles tiles) {
-		tiles.setTilted(tilted());
 		prepareLoaded(world, tiles);
 		// Tiles that missed these looks were left unfinished and are drawn again on their own.
 		MapBlockLooks.makeRequested();
@@ -271,10 +258,8 @@ public final class MapManager {
 		if (chunk == null || world == null) {
 			return;
 		}
-		MapChunk before = world.chunk(chunkX, chunkZ);
-		MapChunk sampled = MapSampler.sample(level, chunk, world.biomes());
-		world.put(chunkX, chunkZ, sampled);
-		TILES.markDirty(world, chunkX, chunkZ, before, sampled);
+		world.put(chunkX, chunkZ, MapSampler.sample(level, chunk, world.biomes()));
+		TILES.markDirty(chunkX, chunkZ);
 	}
 
 	/**

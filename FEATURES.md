@@ -158,7 +158,6 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Shape: a Square map, or a Round one.
 - Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
 - Zoom: from 0.25× to 8×. The Minimap Zoom In (`=`) and Minimap Zoom Out (`-`) keys change it too.
-- 3D View: see the minimap and the world map slightly from the side, like a tilted map, so hills, cliffs and tall trees stand out with their sides showing. Your arrow, the waypoints and the coordinates under the cursor follow the tilt. It takes more work to draw, so it's off by default; it reads best with Rotate with You off, and the world map stays flat when zoomed far out.
 - Coordinates: show your coordinates under the map.
 - Waypoints: show your waypoints with the same markers as in the world.
   - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.

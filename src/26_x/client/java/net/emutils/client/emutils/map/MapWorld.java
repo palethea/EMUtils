@@ -100,17 +100,6 @@ public final class MapWorld {
 		return biomes;
 	}
 
-	/**
-	 * The height of the dimension's sea, which the tilted view (#217) keeps in place: the level's own for
-	 * yours, and the usual one for another dimension the world map shows.
-	 */
-	int seaLevel() {
-		if (dimension.equals(WaypointManager.dimensionId(level))) {
-			return level.getSeaLevel();
-		}
-		return dimension.equals("minecraft:the_nether") ? 32 : 63;
-	}
-
 	/** The sampled or saved chunk, or null when there is none or its region is still loading. Safe from any thread. */
 	public @Nullable MapChunk chunk(int chunkX, int chunkZ) {
 		MapRegion region = region(chunkX >> MapRegion.SHIFT, chunkZ >> MapRegion.SHIFT);

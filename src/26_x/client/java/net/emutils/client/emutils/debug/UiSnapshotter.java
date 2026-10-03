@@ -3640,41 +3640,6 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			// 3D View (#217): the maps seen slightly from the side, heights lifting the ground with walls showing.
-			case 398 -> {
-				if (stepTicks == 1) {
-					EMUtilsConfig config = EMUtilsClient.config();
-					config.setMinimap(true);
-					config.setMinimapRotate(false);
-					config.setMinimapZoom(MinimapZoom.FOUR);
-					config.setWorldMap(true);
-					config.setMapTilted(true);
-				}
-				captureAfter(client, 100, "minimap, 3D view");
-			}
-			case 399 -> {
-				if (stepTicks == 1) {
-					WorldMapScreen.open(client, null);
-				}
-				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
-					map.zoomToForSnapshot(3.0F);
-				}
-				if (stepTicks == 119 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
-					check(!map.loadingForSnapshot(), "the world map in 3D finishes loading");
-				}
-				captureAfter(client, 120, "world map, 3D view");
-			}
-			case 400 -> {
-				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
-					map.onClose();
-				}
-				if (stepTicks == 21) {
-					EMUtilsClient.config().resetMinimapDefaults();
-					EMUtilsClient.config().setMinimap(false);
-					EMUtilsClient.config().setWorldMap(false);
-					next();
-				}
-			}
 			default -> finish(client);
 		}
 	}

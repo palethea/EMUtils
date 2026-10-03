@@ -13,7 +13,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 /**
  * Reads what the map shows of a chunk (#212): for each column the first block from the top that is drawn,
  * and when that one lets you see through it (water, glass, plants), the first solid block under it. Under a
- * tree's leaves, that's the ground or its trunk, so the tilted view (#217) can draw the canopy floating. Works on
+ * tree's leaves, that's the ground or its trunk, kept for a 3D view of the map (#218). Works on
  * chunks the client loaded and on chunks read from a singleplayer world's files (#215). Runs on the client
  * thread, which owns the block looks; the result is handed to the tile baker.
  */

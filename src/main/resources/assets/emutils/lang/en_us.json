@@ -956,8 +956,6 @@
   "emutils.option.minimap_coordinates.desc": "Show your coordinates under the map.",
   "emutils.option.minimap_waypoints": "Waypoints",
   "emutils.option.minimap_waypoints.desc": "Show your waypoints on the map.",
-  "emutils.option.map_tilted": "3D View",
-  "emutils.option.map_tilted.desc": "See the minimap and world map slightly from the side, so hills, cliffs and trees stand out. Drawing it takes more work, and it reads best with the minimap's Rotate off. Zoomed far out, the world map stays flat.",
   "emutils.option.minimap_waypoints_pinned": "Pin to Edge",
   "emutils.option.minimap_waypoints_pinned.desc": "Keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view, so many waypoints don't crowd the map.",
   "emutils.ui.minimap.section.map": "Map",

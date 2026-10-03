@@ -42,18 +42,6 @@ final class MapTileBaker {
 	private static final float PLANT_ALPHA = 0.55F;
 	/** The depth water is drawn at when its floor is too deep to be known. */
 	private static final int NO_FLOOR_DEPTH = 24;
-	/** How far up the map a block of height lifts a column in the tilted view, in blocks: looking from about 60 degrees up. */
-	static final double TILT = 0.6D;
-	/** The tilted view lifts columns at most this many blocks up the map, and sinks them at most this many. */
-	static final int TILT_UP = 128;
-	static final int TILT_DOWN = 32;
-	/** Tilted, the south faces that show are lit like the game lights them: a fifth darker than tops. */
-	private static final float SOUTH_FACE_LIGHT = 0.8F;
-	/** Tilted, ground at the foot of a wall or under a canopy is this much darker, like the game's smooth lighting. */
-	private static final float CONTACT_SHADE = 0.82F;
-	private static final float UNDER_CANOPY_SHADE = 0.78F;
-	/** Tilted, a tree's leaves are drawn this many blocks thick, floating over the ground the map found under them. */
-	private static final int CANOPY_DEPTH = 3;
 	/** A side strip is this much darker than the block's top, like a side facing away from the light. */
 	private static final float SIDE_SHADE = 0.68F;
 	/** The ground just south of a raised block is slightly darker, as if in its shadow. */
@@ -77,12 +65,8 @@ final class MapTileBaker {
 	record Result(int[] pixels, boolean complete) {
 	}
 
-	/** A tile, drawn top-down or, with {@code tilted}, seen slightly from the south (#217). */
-	static Result bake(MapWorld world, int level, int tileX, int tileZ, boolean tilted) {
-		if (level >= COLUMN_LEVELS) {
-			return bakeOverviews(world, level, tileX, tileZ);
-		}
-		return tilted ? bakeTilted(world, level, tileX, tileZ) : bakeColumns(world, level, tileX, tileZ, null);
+	static Result bake(MapWorld world, int level, int tileX, int tileZ) {
+		return level < COLUMN_LEVELS ? bakeColumns(world, level, tileX, tileZ, null) : bakeOverviews(world, level, tileX, tileZ);
 	}
 
 	/**
@@ -90,70 +74,16 @@ final class MapTileBaker {
 	 * neighbours' chunks at its border are used if they're in memory, as a region's overview needs.
 	 */
 	private static Result bakeColumns(MapWorld world, int level, int tileX, int tileZ, @Nullable MapRegion only) {
-		int blocks = blocksPerTile(level);
-		Flat flat = flat(world, level, tileX * blocks, tileZ * blocks, blocks, blocks, only, true);
-		int[] out = new int[TILE_PIXELS * TILE_PIXELS];
-		for (int i = 0; i < out.length; i++) {
-			int color = flat.pixels()[i];
-			out[i] = color == 0 ? 0 : toAbgr(color);
-		}
-		return new Result(out, flat.complete());
-	}
-
-	/**
-	 * Columns drawn top-down over an area {@code width} by {@code depth} blocks: the ARGB pixels of each
-	 * column's top, clear where nothing is known, and for the tilted view each block's height
-	 * ({@link Integer#MIN_VALUE} where nothing is known) and side. Under a tree's leaves, the ground or trunk
-	 * the map found there gets a picture, height and side of its own ({@code under}), so the canopy can float.
-	 */
-	private record Flat(
-		int[] pixels, int[] heights, MapBlockLook.@Nullable Layer[] sides, int[] sideTints,
-		int[] under, int[] underHeights, MapBlockLook.@Nullable Layer[] underSides, int[] underTints, boolean complete
-	) {
-	}
-
-	/**
-	 * The rows of the area a tilted tile shows, {@code from} to {@code to} (exclusive), counted from the
-	 * area's north edge: columns whose lifted top and front wall land elsewhere needn't be drawn.
-	 */
-	private record Window(int seaLevel, int from, int to) {
-		boolean shows(int row, int height, int lowest) {
-			double top = row - lift(seaLevel, height);
-			double bottom = row + 1 - lift(seaLevel, Math.min(height, lowest));
-			return bottom > from && top < to;
-		}
-	}
-
-	private static Flat flat(MapWorld world, int level, int originX, int originZ, int width, int depth, @Nullable MapRegion only, boolean strips) {
-		return flat(world, level, originX, originZ, width, depth, only, strips, null);
-	}
-
-	/**
-	 * Draws columns top-down. Without a {@code window}, it's the top-down view: heights are shaded as if lit
-	 * from the north-west, and a strip of a raised block's side and its shadow show south of it ({@code
-	 * strips}). With one, it's the input of the tilted view, which shows heights itself and lights faces like
-	 * the game does; only the columns the tile shows are drawn, though every height is known.
-	 */
-	private static Flat flat(MapWorld world, int level, int originX, int originZ, int width, int depth, @Nullable MapRegion only, boolean strips, @Nullable Window window) {
 		int res = pixelsPerBlock(level);
-		int rowPixels = width * res;
-		int blocks = width * depth;
-		Grid grid = new Grid(world, originX - 1, originZ - 1, width + 2, depth + 2, only);
+		int blocks = blocksPerTile(level);
+		int originX = tileX * blocks;
+		int originZ = tileZ * blocks;
+		Grid grid = new Grid(world, originX - 1, originZ - 1, blocks + 2, only);
 		Tints tints = new Tints(world, grid);
-		int[] out = new int[rowPixels * depth * res];
-		int[] heights = new int[blocks];
-		java.util.Arrays.fill(heights, Integer.MIN_VALUE);
-		MapBlockLook.Layer[] sides = new MapBlockLook.Layer[blocks];
-		int[] sideTints = new int[blocks];
-		boolean tilted = window != null;
-		int[] under = tilted ? new int[out.length] : new int[0];
-		int[] underHeights = new int[tilted ? blocks : 0];
-		java.util.Arrays.fill(underHeights, Integer.MIN_VALUE);
-		MapBlockLook.Layer[] underSides = new MapBlockLook.Layer[tilted ? blocks : 0];
-		int[] underTints = new int[tilted ? blocks : 0];
-		int stripMax = strips ? res / 4 + res / 8 : 0;
-		for (int bz = 0; bz < depth; bz++) {
-			for (int bx = 0; bx < width; bx++) {
+		int[] out = new int[TILE_PIXELS * TILE_PIXELS];
+		int stripMax = res / 4 + res / 8;
+		for (int bz = 0; bz < blocks; bz++) {
+			for (int bx = 0; bx < blocks; bx++) {
 				int g = grid.index(bx + 1, bz + 1);
 				if (!grid.present[g] || grid.top[g] == MapChunk.NONE) {
 					continue;
@@ -162,38 +92,15 @@ final class MapTileBaker {
 				if (top == null) {
 					continue;
 				}
-				int b = bz * width + bx;
-				int height = grid.shadeHeight(g, top);
-				heights[b] = height;
 				MapBlockLook floor = grid.floor[g] == MapChunk.NONE ? null : grid.look(grid.floor[g]);
-				boolean canopy = tilted && top.part() == MapBlockLook.Part.CANOPY && floor != null;
-				if (canopy) {
-					underHeights[b] = grid.floorY[g];
-				}
-				if (tilted) {
-					int south = grid.index(bx + 1, bz + 2);
-					int lowest = grid.present[south] ? grid.groundHeight(south) : height;
-					if (!window.shows(bz, height, canopy ? Math.min(lowest, grid.floorY[g]) : lowest)) {
-						continue;
-					}
-				}
 				int topTint = tints.color(top, grid.top[g], g);
 				int floorTint = floor == null ? 0xFFFFFFFF : tints.color(floor, grid.floor[g], g);
-				MapBlockLook standing = grid.shadeLook(g);
-				if (standing != null) {
-					sides[b] = standing.side() != null ? standing.side() : standing.top();
-					sideTints[b] = tints.color(standing, grid.shadeId(g), g);
-				}
-				if (canopy) {
-					underSides[b] = floor.side() != null ? floor.side() : floor.top();
-					underTints[b] = floorTint;
-				}
+				int height = grid.shadeHeight(g, top);
 				int north = grid.index(bx + 1, bz);
 				int west = grid.index(bx, bz + 1);
 				int northHeight = grid.present[north] ? grid.shadeHeight(north) : height;
 				int westHeight = grid.present[west] ? grid.shadeHeight(west) : height;
-				// Tilted, heights show for themselves; top-down, they're shaded as if lit from the north-west.
-				int slope = tilted ? 0 : Math.clamp((height - northHeight) + (height - westHeight), -MAX_SLOPE, MAX_SLOPE);
+				int slope = Math.clamp((height - northHeight) + (height - westHeight), -MAX_SLOPE, MAX_SLOPE);
 				float shade = 1.0F + slope * SLOPE_SHADE[level];
 
 				// A strip of the north neighbor's side where it stands above this column.
@@ -209,141 +116,30 @@ final class MapTileBaker {
 						sideTint = tints.color(northLook, grid.shadeId(north), north);
 					}
 				}
-				int shadowRows = rise > 0 && (strips || tilted) ? Math.max(1, res / 8) : 0;
-				// Tilted, the ground at the foot of a wall is a little darker, as the game's smooth lighting has it.
-				float shadow = tilted ? CONTACT_SHADE : SHADOW_SHADE;
-				// Ground the map found under leaves is in the canopy's shade, and its own foot by trunks too.
-				int groundRise = canopy && grid.present[north] ? grid.groundHeight(north) - grid.floorY[g] : 0;
-				int groundShadowRows = groundRise > 0 ? Math.max(1, res / 8) : 0;
+				int shadowRows = rise > 0 ? Math.max(1, res / 8) : 0;
 
-				int waterDepth = floor == null ? NO_FLOOR_DEPTH : grid.topY[g] - grid.floorY[g];
+				int depth = floor == null ? NO_FLOOR_DEPTH : grid.topY[g] - grid.floorY[g];
 				for (int py = 0; py < res; py++) {
 					for (int px = 0; px < res; px++) {
 						int p = py * res + px;
-						int color = surface(top, floor, level, p, topTint, floorTint, waterDepth);
+						int color = surface(top, floor, level, p, topTint, floorTint, depth);
 						if (py < strip && side != null) {
 							int sidePixel = pixel(side, level, py * res + px, sideTint);
 							if ((sidePixel >>> 24) != 0) {
 								color = scale(sidePixel, SIDE_SHADE);
 							}
 						} else if (py < strip + shadowRows) {
-							color = scale(color, shadow);
+							color = scale(color, SHADOW_SHADE);
 						}
 						color = scale(color, shade);
 						int x = bx * res + px;
 						int y = bz * res + py;
-						out[y * rowPixels + x] = color | 0xFF000000;
-						if (canopy) {
-							int ground = scale(pixel(floor.top(), level, p, floorTint), UNDER_CANOPY_SHADE);
-							under[y * rowPixels + x] = (py < groundShadowRows ? scale(ground, CONTACT_SHADE) : ground) | 0xFF000000;
-						}
+						out[y * TILE_PIXELS + x] = toAbgr(color);
 					}
 				}
 			}
 		}
-		return new Flat(out, heights, sides, sideTints, under, underHeights, underSides, underTints, grid.complete);
-	}
-
-	/**
-	 * A tile seen slightly from the south, like a map tilted in 3D (#217). Each surface is lifted up the screen
-	 * by its height above the sea: a column's top, and where ground rises toward the north, the raised block's
-	 * south face as a wall in its side's picture. Under a tree's leaves the map knows the ground or trunk, so
-	 * the canopy is drawn as a few blocks of leaves floating over them. Faces are lit like the game lights
-	 * them: tops in full, south faces a little darker.
-	 *
-	 * <p>Surfaces are drawn from the nearest (south) to the farthest, each pixel only where nothing nearer
-	 * covers it yet, so tall ground hides what's behind it and the ground shows under canopies. The area drawn
-	 * reaches past the tile, south for tall ground lifted into it and north for low ground sunk into it.
-	 */
-	private static Result bakeTilted(MapWorld world, int level, int tileX, int tileZ) {
-		int res = pixelsPerBlock(level);
-		int blocks = blocksPerTile(level);
-		int depth = TILT_DOWN + blocks + TILT_UP;
-		int base = world.seaLevel();
-		Flat flat = flat(world, level, tileX * blocks, tileZ * blocks - TILT_DOWN, blocks, depth, null, false, new Window(base, TILT_DOWN, TILT_DOWN + blocks));
-		int[] heights = flat.heights();
-		int[] underHeights = flat.underHeights();
-		int[] lifts = new int[heights.length];
-		int[] underLifts = new int[heights.length];
-		for (int i = 0; i < lifts.length; i++) {
-			lifts[i] = heights[i] == Integer.MIN_VALUE ? 0 : liftPixels(base, heights[i], res);
-			underLifts[i] = underHeights[i] == Integer.MIN_VALUE ? 0 : liftPixels(base, underHeights[i], res);
-		}
-		int rows = depth * res;
-		int[] out = new int[TILE_PIXELS * TILE_PIXELS];
-		boolean[] covered = new boolean[TILE_PIXELS];
-		for (int px = 0; px < TILE_PIXELS; px++) {
-			int bx = px / res;
-			java.util.Arrays.fill(covered, false);
-			int left = TILE_PIXELS;
-			for (int sy = rows - 1; sy >= 0 && left > 0; sy--) {
-				int block = (sy / res) * blocks + bx;
-				int color = flat.pixels()[sy * TILE_PIXELS + px];
-				if (color == 0 || heights[block] == Integer.MIN_VALUE) {
-					continue;
-				}
-				// Only a block's south edge row has a wall: its south face.
-				boolean edge = sy % res == res - 1;
-				int south = block + blocks;
-				boolean southKnown = south < heights.length && heights[south] != Integer.MIN_VALUE;
-				int southGround = !southKnown ? 0 : underHeights[south] != Integer.MIN_VALUE ? underLifts[south] : lifts[south];
-				int y = sy - TILT_DOWN * res;
-				if (underHeights[block] != Integer.MIN_VALUE) {
-					int canopyBottom = Math.max(underHeights[block] + 1, heights[block] - (CANOPY_DEPTH - 1));
-					int leaves = edge ? lifts[block] - liftPixels(base, canopyBottom - 1, res) : 0;
-					left -= span(out, covered, px, y - lifts[block], leaves, color, flat.sides()[block], flat.sideTints()[block], level, res, false);
-					int trunk = edge && southKnown ? Math.max(0, underLifts[block] - southGround) : 0;
-					left -= span(out, covered, px, y - underLifts[block], trunk, flat.under()[sy * TILE_PIXELS + px], flat.underSides()[block], flat.underTints()[block], level, res, true);
-				} else {
-					int wall = edge && southKnown ? Math.max(0, lifts[block] - southGround) : 0;
-					left -= span(out, covered, px, y - lifts[block], wall, color, flat.sides()[block], flat.sideTints()[block], level, res, true);
-				}
-			}
-		}
-		return new Result(out, flat.complete());
-	}
-
-	/**
-	 * Draws one surface of a tilted tile into a column of pixels where nothing nearer covers it: its top's
-	 * pixel at {@code y}, then {@code wall} rows of its south face, the side's picture repeating once per
-	 * block of height. The face is lit like the game lights a south face; a wall standing on the ground is a
-	 * little darker at its foot. Returns how many pixels it covered.
-	 */
-	private static int span(int[] out, boolean[] covered, int px, int y, int wall, int top, MapBlockLook.@Nullable Layer side, int sideTint, int level, int res, boolean grounded) {
-		int drawn = 0;
-		int last = Math.min(TILE_PIXELS - 1, y + wall);
-		int foot = Math.max(1, res / 4);
-		for (int row = Math.max(0, y); row <= last; row++) {
-			if (covered[row]) {
-				continue;
-			}
-			int shown = top;
-			if (row > y) {
-				int textureRow = (int) ((row - y - 1) / TILT) % res;
-				int sidePixel = side == null ? 0 : pixel(side, level, textureRow * res + px % res, sideTint);
-				float light = SOUTH_FACE_LIGHT;
-				if (grounded && y + wall - row < foot) {
-					light *= CONTACT_SHADE;
-				}
-				shown = scale((sidePixel >>> 24) == 0 ? top : sidePixel | 0xFF000000, light);
-			}
-			out[row * TILE_PIXELS + px] = toAbgr(shown);
-			covered[row] = true;
-			drawn++;
-		}
-		return drawn;
-	}
-
-	private static int liftPixels(int seaLevel, int height, int res) {
-		return (int) Math.round(lift(seaLevel, height) * res);
-	}
-
-	/**
-	 * How far the tilted view (#217) lifts something at height {@code y} up the map, in blocks, with the
-	 * sea's surface staying put. Tiles, waypoints and the player's arrow all use it.
-	 */
-	static double lift(int seaLevel, double y) {
-		return Math.clamp((y - seaLevel) * TILT, -TILT_DOWN, TILT_UP);
+		return new Result(out, grid.complete);
 	}
 
 	/** A far tile, put together from the overviews of the regions it covers, each shrunk to fit. */
@@ -539,9 +335,7 @@ final class MapTileBaker {
 	private static final class Grid {
 		final int originX;
 		final int originZ;
-		/** Columns across (west to east) and down (north to south). */
 		final int size;
-		final int depth;
 		final boolean[] present;
 		final int[] top;
 		final int[] topY;
@@ -551,12 +345,11 @@ final class MapTileBaker {
 		/** False when a chunk's region was still loading or a block had no look yet. */
 		boolean complete = true;
 
-		Grid(MapWorld world, int originX, int originZ, int size, int depth, @Nullable MapRegion only) {
+		Grid(MapWorld world, int originX, int originZ, int size, @Nullable MapRegion only) {
 			this.originX = originX;
 			this.originZ = originZ;
 			this.size = size;
-			this.depth = depth;
-			int area = size * depth;
+			int area = size * size;
 			present = new boolean[area];
 			top = new int[area];
 			topY = new int[area];
@@ -566,7 +359,7 @@ final class MapTileBaker {
 			int firstChunkX = Math.floorDiv(originX, MapChunk.SIZE);
 			int firstChunkZ = Math.floorDiv(originZ, MapChunk.SIZE);
 			int lastChunkX = Math.floorDiv(originX + size - 1, MapChunk.SIZE);
-			int lastChunkZ = Math.floorDiv(originZ + depth - 1, MapChunk.SIZE);
+			int lastChunkZ = Math.floorDiv(originZ + size - 1, MapChunk.SIZE);
 			for (int chunkZ = firstChunkZ; chunkZ <= lastChunkZ; chunkZ++) {
 				for (int chunkX = firstChunkX; chunkX <= lastChunkX; chunkX++) {
 					boolean outside = only != null && (chunkX >> MapRegion.SHIFT != only.regionX || chunkZ >> MapRegion.SHIFT != only.regionZ);
@@ -583,7 +376,7 @@ final class MapTileBaker {
 					int fromX = Math.max(originX, chunkX * MapChunk.SIZE);
 					int toX = Math.min(originX + size, chunkX * MapChunk.SIZE + MapChunk.SIZE);
 					int fromZ = Math.max(originZ, chunkZ * MapChunk.SIZE);
-					int toZ = Math.min(originZ + depth, chunkZ * MapChunk.SIZE + MapChunk.SIZE);
+					int toZ = Math.min(originZ + size, chunkZ * MapChunk.SIZE + MapChunk.SIZE);
 					for (int z = fromZ; z < toZ; z++) {
 						for (int x = fromX; x < toX; x++) {
 							int source = MapChunk.index(x - chunkX * MapChunk.SIZE, z - chunkZ * MapChunk.SIZE);
@@ -622,15 +415,6 @@ final class MapTileBaker {
 
 		@Nullable MapBlockLook shadeLook(int g) {
 			return look(shadeId(g));
-		}
-
-		/** The height of the ground at a column: under a tree's leaves, what the map found there. */
-		int groundHeight(int g) {
-			MapBlockLook look = look(top[g]);
-			if (look != null && look.part() == MapBlockLook.Part.CANOPY && floor[g] != MapChunk.NONE) {
-				return floorY[g];
-			}
-			return shadeHeight(g);
 		}
 
 		int shadeHeight(int g) {
@@ -693,7 +477,7 @@ final class MapTileBaker {
 				for (int dx = -1; dx <= 1; dx++) {
 					int x = centerX + dx;
 					int z = centerZ + dz;
-					if (x < 0 || z < 0 || x >= grid.size || z >= grid.depth) {
+					if (x < 0 || z < 0 || x >= grid.size || z >= grid.size) {
 						continue;
 					}
 					int index = grid.index(x, z);

@@ -154,11 +154,6 @@ public final class MinimapRenderer {
 		float half = MAP_SIZE / 2.0F;
 		double centerX = player.xo + (player.getX() - player.xo) * partialTick;
 		double centerZ = player.zo + (player.getZ() - player.zo) * partialTick;
-		MapWorld mapWorld = MapManager.world();
-		// In the tilted view (#217) you're drawn where your height lifts you, which stays in the middle.
-		if (mapWorld != null) {
-			centerZ -= MapManager.lift(mapWorld, player.getY());
-		}
 		float yaw = player.getViewYRot(partialTick);
 		// Turns world offsets so the way you face points up; north-up when the map doesn't turn.
 		float angle = rotate ? (float) Math.toRadians(180.0F - yaw) : 0.0F;
@@ -284,9 +279,8 @@ public final class MinimapRenderer {
 			if (waypoint.hidden() || !entry.placeable()) {
 				continue;
 			}
-			double z = entry.renderZ() - (MapManager.world() == null ? 0.0D : MapManager.lift(MapManager.world(), entry.y()));
-			float x = view.screenX(entry.renderX(), z);
-			float y = view.screenY(entry.renderX(), z);
+			float x = view.screenX(entry.renderX(), entry.renderZ());
+			float y = view.screenY(entry.renderX(), entry.renderZ());
 			if (!inside(shape, half, x, y, inset)) {
 				if (!pinned) {
 					continue;

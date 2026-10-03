@@ -208,9 +208,7 @@ public final class MapBlockLooks {
 		}
 		BlockTintSource tint = tintIndex >= 0 ? client.getBlockColors().getTintSource(state, tintIndex) : null;
 		boolean solid = fullBlock || (anyUp && open == 0.0F);
-		MapBlockLook.Part part = state.is(BlockTags.LEAVES) ? MapBlockLook.Part.CANOPY
-			: state.is(BlockTags.LOGS) ? MapBlockLook.Part.TRUNK
-			: MapBlockLook.Part.BLOCK;
+		MapBlockLook.Part part = state.is(BlockTags.LEAVES) ? MapBlockLook.Part.CANOPY : MapBlockLook.Part.BLOCK;
 		return new MapBlockLook(kind, top.layer(), anySide ? side.layer() : null, tint, solid, part);
 	}
 

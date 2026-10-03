@@ -54,8 +54,6 @@ public final class MapTiles {
 	private int emptyLastFrame;
 	/** Counts up whenever all tiles are dropped, so bakes started before that are thrown away. */
 	private int generation;
-	/** Tiles are drawn seen slightly from the side (#217). */
-	private boolean tilted;
 	private long frame;
 
 	/** One tile: its texture once drawn, and whether that picture is finished. */
@@ -157,11 +155,10 @@ public final class MapTiles {
 		tile.dirty = false;
 		baking++;
 		int startedIn = generation;
-		boolean tiltedNow = tilted;
 		BAKER.execute(() -> {
 			MapTileBaker.Result result = null;
 			try {
-				result = MapTileBaker.bake(world, tile.level, tile.tileX, tile.tileZ, tiltedNow);
+				result = MapTileBaker.bake(world, tile.level, tile.tileX, tile.tileZ);
 			} catch (RuntimeException exception) {
 				EMUtilsClient.LOGGER.warn("EMUtils map couldn't draw a tile", exception);
 			}
@@ -228,32 +225,13 @@ public final class MapTiles {
 		tile.bakedAt = System.currentTimeMillis();
 	}
 
-	/**
-	 * Marks the tiles showing a chunk, and the columns next to it, to be redrawn. Tilted (#217), that's also
-	 * the tiles its ground is lifted into, as it was {@code before} and is now.
-	 */
-	void markDirty(MapWorld world, int chunkX, int chunkZ, @Nullable MapChunk before, MapChunk after) {
+	/** Marks the tiles showing a chunk, and the columns next to it, to be redrawn. */
+	public void markDirty(int chunkX, int chunkZ) {
 		int minX = chunkX * MapChunk.SIZE;
 		int minZ = chunkZ * MapChunk.SIZE;
 		// The columns just east and south of the chunk are shaded by its heights, so their tiles change too.
 		int maxX = minX + MapChunk.SIZE;
 		int maxZ = minZ + MapChunk.SIZE;
-		if (tilted) {
-			int highest = Integer.MIN_VALUE;
-			int lowest = Integer.MAX_VALUE;
-			for (MapChunk chunk : new MapChunk[] {before, after}) {
-				for (int c = 0; chunk != null && c < MapChunk.AREA; c++) {
-					if (chunk.top(c) != MapChunk.NONE) {
-						highest = Math.max(highest, chunk.topY(c));
-						lowest = Math.min(lowest, chunk.topY(c));
-					}
-				}
-			}
-			if (highest != Integer.MIN_VALUE) {
-				minZ -= (int) Math.ceil(Math.max(0.0D, MapTileBaker.lift(world.seaLevel(), highest)));
-				maxZ += (int) Math.ceil(Math.max(0.0D, -MapTileBaker.lift(world.seaLevel(), lowest)));
-			}
-		}
 		for (int level = 0; level < MapTileBaker.COLUMN_LEVELS; level++) {
 			int blocks = MapTileBaker.blocksPerTile(level);
 			for (int tileZ = Math.floorDiv(minZ, blocks); tileZ <= Math.floorDiv(maxZ, blocks); tileZ++) {
@@ -313,14 +291,6 @@ public final class MapTiles {
 	/** Regions whose overview was drawn since the last call. Render thread. */
 	public @Nullable MapRegion pollOverviewDone() {
 		return overviewsDone.poll();
-	}
-
-	/** Draws tiles top-down or tilted (#217); switching draws them all again. Render thread. */
-	public void setTilted(boolean tilted) {
-		if (this.tilted != tilted) {
-			this.tilted = tilted;
-			clear();
-		}
 	}
 
 	/** Frees every tile, for a new world or a resource pack change. */

@@ -958,7 +958,6 @@ public final class EMUtilsTexts {
     public static final String OPTION_MINIMAP_COORDINATES = "emutils.option.minimap_coordinates";
     public static final String OPTION_MINIMAP_WAYPOINTS = "emutils.option.minimap_waypoints";
     public static final String OPTION_MINIMAP_WAYPOINTS_PINNED = "emutils.option.minimap_waypoints_pinned";
-    public static final String OPTION_MAP_TILTED = "emutils.option.map_tilted";
     public static final String UI_MINIMAP_SECTION_MAP = "emutils.ui.minimap.section.map";
     public static final String UI_MINIMAP_SECTION_SHOW = "emutils.ui.minimap.section.show";
     public static final String HUD_MINIMAP_NORTH = "emutils.hud.minimap.north";
