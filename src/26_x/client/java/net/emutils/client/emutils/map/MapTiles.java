@@ -262,14 +262,7 @@ public final class MapTiles {
 		overviewsBaking.incrementAndGet();
 		BAKER.execute(() -> {
 			try {
-				MapTileBaker.Result result = MapTileBaker.overview(world, region);
-				region.overview = result.pixels();
-				region.overviewFingerprint = fingerprint;
-				if (!result.complete()) {
-					region.overviewStale = true;
-				}
-				// Saved with the region, so the far zoom levels have it next time without the chunks.
-				region.dirty = true;
+				MapTileBaker.redrawOverview(world, region, fingerprint);
 				overviewsDone.add(region);
 			} catch (RuntimeException exception) {
 				EMUtilsClient.LOGGER.warn("EMUtils map couldn't draw a region overview", exception);

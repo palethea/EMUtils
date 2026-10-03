@@ -56,6 +56,9 @@ public final class MapBlockLooks {
 	private record Generation(BlockStateModelSet models, AtomicReferenceArray<MapBlockLook> looks, int fingerprint) {
 	}
 
+	/** Overviews saved by earlier builds could be unfinished without saying so; those are redrawn once. */
+	private static final int OVERVIEW_REVISION = 2;
+
 	/** Common blocks whose colors go into the fingerprint, so a pack changed under the same name is noticed too. */
 	private static final Block[] FINGERPRINT_BLOCKS = {
 		Blocks.GRASS_BLOCK, Blocks.STONE, Blocks.DIRT, Blocks.SAND, Blocks.WATER, Blocks.OAK_LEAVES, Blocks.SPRUCE_LEAVES,
@@ -115,6 +118,8 @@ public final class MapBlockLooks {
 			BlockState state = block.defaultBlockState();
 			fingerprint = fingerprint * 31 + ensure(state, Block.getId(state)).top().average();
 		}
+		// Raised when overviews are drawn differently, or were saved wrong, so the saved ones are redrawn.
+		fingerprint = fingerprint * 31 + OVERVIEW_REVISION;
 		current = new Generation(models, looks, fingerprint == 0 ? 1 : fingerprint);
 		return generation != null;
 	}

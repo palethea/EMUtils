@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -58,6 +59,8 @@ public final class MapWorld {
 	private final Set<Long> redraws = ConcurrentHashMap.newKeySet();
 	/** Regions already asked for again since the last resource pack change, so none is asked for twice. */
 	private final Set<Long> redrawn = ConcurrentHashMap.newKeySet();
+	/** Regions read in by {@link #loadRedraws} whose overview isn't redrawn yet. Client thread only. */
+	private final Set<Long> redrawing = new HashSet<>();
 	private volatile boolean closed;
 	/** Brings in the chunks a singleplayer world generated away from you, or null elsewhere. */
 	@Nullable MapImporter importer;
@@ -245,19 +248,29 @@ public final class MapWorld {
 	}
 
 	/**
-	 * Reads in up to {@code max} regions asked for by {@link #requestRedraw}; their overviews are then redrawn.
-	 * None while the map holds as many regions as it keeps, so they come in only as fast as they're drawn.
+	 * Reads in regions asked for by {@link #requestRedraw}; their overviews are then redrawn. At most
+	 * {@code max} are waiting for that at a time, on top of the regions the map keeps anyway, so they come in
+	 * only as fast as they're drawn.
 	 */
 	void loadRedraws(int max) {
-		if (regions.size() >= MAX_LOADED_REGIONS) {
-			return;
-		}
+		// The regions around you are redrawn all the time as you explore; only those read in here count.
+		redrawing.removeIf(key -> {
+			MapRegion region = regions.get(key);
+			if (region != null && region.loaded && !needsOverview(region)) {
+				// Saved right away, so it can be let go instead of waiting for the next save.
+				saveNow(region);
+				return true;
+			}
+			return region == null;
+		});
+		max -= redrawing.size();
 		Iterator<Long> iterator = redraws.iterator();
 		while (max > 0 && iterator.hasNext()) {
 			long key = iterator.next();
 			iterator.remove();
 			if (!regions.containsKey(key)) {
 				region((int) (key >> 32), (int) key);
+				redrawing.add(key);
 				max--;
 			}
 		}
@@ -267,6 +280,7 @@ public final class MapWorld {
 	void packsChanged() {
 		redrawn.clear();
 		redraws.clear();
+		redrawing.clear();
 	}
 
 	/** Some regions or overviews are still being read from disk. */
@@ -320,6 +334,16 @@ public final class MapWorld {
 				if (region.count() > 0) {
 					IO.execute(() -> save(region));
 				}
+			}
+		}
+	}
+
+	/** Saves one region now, in the background, if it changed. */
+	private void saveNow(MapRegion region) {
+		if (writable() && region.dirty && region.loaded) {
+			region.dirty = false;
+			if (region.count() > 0) {
+				IO.execute(() -> save(region));
 			}
 		}
 	}

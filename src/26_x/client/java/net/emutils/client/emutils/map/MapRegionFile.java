@@ -81,7 +81,9 @@ final class MapRegionFile {
 			int[] overview = region.overview;
 			out.writeBoolean(overview != null);
 			if (overview != null) {
-				out.writeInt(region.overviewFingerprint);
+				// An overview still to be redrawn is saved as drawn with no packs at all, so it's redrawn after
+				// loading too; its picture still shows meanwhile.
+				out.writeInt(region.overviewStale ? 0 : region.overviewFingerprint);
 				for (int pixel : overview) {
 					out.writeByte(pixel >>> 24);
 					out.writeByte(pixel >> 16);

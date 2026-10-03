@@ -47,8 +47,8 @@ public final class MapManager {
 	 * don't wait behind overviews.
 	 */
 	private static final int MAX_OVERVIEWS_BAKING = 2;
-	/** At most this many regions are read in per round to redraw an overview that's missing or outdated. */
-	private static final int REDRAW_LOADS_PER_ROUND = 2;
+	/** At most this many regions are read in at a time to redraw an overview that's missing or outdated. */
+	private static final int REDRAW_LOADS = 4;
 	/** At most this long per tick is spent making the looks of blocks just read from disk. */
 	private static final long PREPARE_BUDGET_NANOS = 2_000_000L;
 
@@ -237,7 +237,8 @@ public final class MapManager {
 		int fingerprint = MapBlockLooks.fingerprint();
 		List<MapRegion> waiting = new ArrayList<>();
 		for (MapRegion region : world.loadedRegions()) {
-			if (region.loaded && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS && MapWorld.needsOverview(region)) {
+			// Not before the looks of its blocks are made, or it would come out empty.
+			if (region.loaded && region.states == null && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS && MapWorld.needsOverview(region)) {
 				waiting.add(region);
 			}
 		}
@@ -249,7 +250,7 @@ public final class MapManager {
 			}
 			tiles.bakeOverview(world, region, fingerprint);
 		}
-		world.loadRedraws(REDRAW_LOADS_PER_ROUND);
+		world.loadRedraws(REDRAW_LOADS);
 	}
 
 	private static void sample(ClientLevel level, int chunkX, int chunkZ) {

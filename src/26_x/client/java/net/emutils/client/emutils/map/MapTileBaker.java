@@ -158,6 +158,10 @@ final class MapTileBaker {
 				if (region == null) {
 					continue;
 				}
+				// A region in memory with chunks but no overview yet gets one now, rather than leave a hole.
+				if (region.loaded && region.overview == null && region.states == null && region.count() > 0) {
+					redrawOverview(world, region, MapBlockLooks.fingerprint());
+				}
 				int[] overview = region.overview;
 				// A far region saved without an overview, or with one from other resource packs, is read in
 				// full and drawn again; the old picture shows meanwhile.
@@ -179,6 +183,32 @@ final class MapTileBaker {
 			}
 		}
 		return new Result(out, complete);
+	}
+
+	/**
+	 * Draws a region's overview and hands it to the region, to be saved with it. One that came out unfinished
+	 * keeps the old picture where the new one has nothing yet, and is drawn again soon. Baker thread.
+	 */
+	static void redrawOverview(MapWorld world, MapRegion region, int fingerprint) {
+		region.overviewStale = false;
+		Result result = overview(world, region);
+		int[] pixels = result.pixels();
+		int[] old = region.overview;
+		if (!result.complete()) {
+			if (old != null) {
+				for (int i = 0; i < pixels.length; i++) {
+					if ((pixels[i] >>> 24) == 0) {
+						pixels[i] = old[i];
+					}
+				}
+			}
+			region.overviewStale = true;
+			region.overviewBakedAt = 0L;
+		}
+		region.overview = pixels;
+		region.overviewFingerprint = fingerprint;
+		// Saved with the region, so the far zoom levels have it next time without the chunks.
+		region.dirty = true;
 	}
 
 	/**
