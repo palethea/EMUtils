@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiContextMenu;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
@@ -22,6 +23,7 @@ import net.emutils.client.emutils.waypoint.WaypointEntry;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.gui.WaypointSheet;
+import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.versioned.VersionedGuiTriangles;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -32,7 +34,12 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -58,6 +65,7 @@ public final class WorldMapScreen extends Screen {
 	private static final int PANEL_RADIUS = 8;
 	private static final int CHIP_HEIGHT = 18;
 	private static final int MARKER_SIZE = 12;
+	private static final float HIDDEN_ALPHA = 0.4F;
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
 	/** The panels start appearing once the map is this far open, so they arrive with it rather than after it. */
@@ -181,6 +189,7 @@ public final class WorldMapScreen extends Screen {
 		if (otherTiles != null) {
 			// Another dimension's regions load like yours, but nobody else prepares them.
 			MapManager.prepare(world, otherTiles);
+			MapManager.importSaved(world, otherTiles, System.nanoTime() + 2_000_000L);
 		}
 		if (closingAt >= 0L && progress() <= 0.0F) {
 			minecraft.gui.setScreen(null);
@@ -190,11 +199,19 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public void removed() {
 		lastZoom = zoom;
+		closeOther();
+		super.removed();
+	}
+
+	/** Lets go of another dimension's map: stops its importer and frees its tiles. */
+	private void closeOther() {
 		if (otherTiles != null) {
+			if (world != MapManager.world()) {
+				world.close();
+			}
 			otherTiles.clear();
 			otherTiles = null;
 		}
-		super.removed();
 	}
 
 	@Override
@@ -296,7 +313,7 @@ public final class WorldMapScreen extends Screen {
 		}
 		for (WaypointEntry entry : manager.renderEntries(minecraft)) {
 			Waypoint waypoint = entry.waypoint();
-			if (waypoint.hidden() || !entry.placeable()) {
+			if (!entry.placeable()) {
 				continue;
 			}
 			float sx = view.screenX(entry.renderX(), entry.renderZ());
@@ -306,7 +323,8 @@ public final class WorldMapScreen extends Screen {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(sx, sy);
-			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, progress);
+			// Hidden waypoints stay on the world map, faded, so they can be shown again from its menu.
+			WaypointMarkerRenderer.drawMapMarker(context, waypoint, MARKER_SIZE, waypoint.hidden() ? progress * HIDDEN_ALPHA : progress);
 			context.pose().popMatrix();
 			if (hover && Math.abs(mouseX - sx) <= MARKER_SIZE / 2.0F && Math.abs(mouseY - sy) <= MARKER_SIZE / 2.0F) {
 				hovered = entry;
@@ -438,9 +456,11 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		if (menu != null) {
-			boolean onMenu = menu.contains(mouseX, mouseY);
-			menu.mouseClicked(mouseX, mouseY);
+			// Cleared before the item runs, since an item may open a menu of its own (deleting asks first).
+			UiContextMenu clicked = menu;
 			menu = null;
+			boolean onMenu = clicked.contains(mouseX, mouseY);
+			clicked.mouseClicked(mouseX, mouseY);
 			// A click beside the menu only closes it.
 			if (onMenu || !left) {
 				return true;
@@ -481,11 +501,16 @@ public final class WorldMapScreen extends Screen {
 		WaypointEntry entry = hovered;
 		if (entry != null) {
 			String id = entry.waypoint().id();
+			boolean hidden = entry.waypoint().hidden();
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_EDIT_WAYPOINT), () -> openSheet(entry.waypoint(), null)));
-			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT), teleport, false, () -> teleport(entry.x(), entry.y(), entry.z())));
-			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, entry.x(), entry.y(), entry.z())));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_WAYPOINT), teleport, false, () -> teleport(entry.x(), entry.y(), entry.z())));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE), () -> EMUtilsClient.waypoint().shareInChat(minecraft, id)));
-			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_DELETE), true, true, () -> EMUtilsClient.waypoint().clear(minecraft, id)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, entry.x(), entry.y(), entry.z())));
+			items.add(UiContextMenu.Item.of(Component.translatable(hidden ? EMUtilsTexts.WORLD_MAP_SHOW_WAYPOINT : EMUtilsTexts.WORLD_MAP_HIDE_WAYPOINT), () -> EMUtilsClient.waypoint().toggleHidden(id)));
+			// Deleting asks once more in a menu of its own at the same spot, as it can't be undone.
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_DELETE), true, true, () -> menu = new UiContextMenu(font, anim, mouseX, mouseY, List.of(
+				new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_CONFIRM_DELETE), true, true, () -> EMUtilsClient.waypoint().clear(minecraft, id))
+			))));
 		} else {
 			MapView view = fullView();
 			int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
@@ -494,7 +519,14 @@ public final class WorldMapScreen extends Screen {
 			String other = isOwnDimension() ? null : dimension;
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_ADD_WAYPOINT), () -> openSheet(null, new SharedWaypoint(null, blockX, blockY, blockZ, other, null))));
 			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT), teleport, false, () -> teleport(blockX, blockY, blockZ)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE_LOCATION), () -> EMUtilsClient.waypoint().shareLocation(minecraft, Component.translatable(EMUtilsTexts.WORLD_MAP_LOCATION).getString(), blockX, blockY, blockZ, dimension)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> minecraft.gui.setScreen(new WaypointsScreen(this))));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_SETTINGS), () -> {
+				SettingsScreen settings = new SettingsScreen(this);
+				minecraft.gui.setScreen(settings);
+				settings.openSheet("minimap");
+			}));
 		}
 		menu = new UiContextMenu(font, anim, mouseX, mouseY, items);
 	}
@@ -599,6 +631,12 @@ public final class WorldMapScreen extends Screen {
 		return super.charTyped(event);
 	}
 
+	/** For UI snapshot checks: looks at a spot. */
+	public void centerForSnapshot(double x, double z) {
+		centerX = x;
+		centerZ = z;
+	}
+
 	/** For UI snapshot checks: zooms by scroll steps around the middle of the screen. */
 	public void scrollForSnapshot(double steps) {
 		mouseScrolled(width / 2.0D, height / 2.0D, 0.0D, steps);
@@ -635,10 +673,7 @@ public final class WorldMapScreen extends Screen {
 		if (id.equals(dimension) || minecraft.level == null) {
 			return;
 		}
-		if (otherTiles != null) {
-			otherTiles.clear();
-			otherTiles = null;
-		}
+		closeOther();
 		String previous = dimension;
 		dimension = id;
 		if (isOwnDimension() && MapManager.world() != null) {
@@ -654,7 +689,14 @@ public final class WorldMapScreen extends Screen {
 		if (folder == null) {
 			return;
 		}
-		world = new MapWorld(minecraft.level, folder.resolve(MapManager.safeName(id)));
+		Identifier dimensionId = Identifier.tryParse(id);
+		ResourceKey<Level> key = dimensionId == null ? null : ResourceKey.create(Registries.DIMENSION, dimensionId);
+		// In singleplayer the dimension's bottom is known, so what's imported for it can be saved; elsewhere it's only read.
+		ServerLevel server = key == null ? null : MapImporter.serverLevel(minecraft, key);
+		world = new MapWorld(minecraft.level, folder.resolve(MapManager.safeName(id)), id, server == null ? Integer.MIN_VALUE : server.getMinY());
+		if (key != null) {
+			world.importer = MapImporter.start(minecraft, world, key);
+		}
 		otherTiles = new MapTiles();
 		tiles = otherTiles;
 		// The Nether is an eighth the size of the Overworld, so the view moves with the scale between them.

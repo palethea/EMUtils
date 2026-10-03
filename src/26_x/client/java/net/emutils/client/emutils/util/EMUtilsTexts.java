@@ -974,6 +974,14 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_TELEPORT = "emutils.world_map.teleport";
     public static final String WORLD_MAP_COPY_COORDINATES = "emutils.world_map.copy_coordinates";
     public static final String WORLD_MAP_SHARE = "emutils.world_map.share";
+    public static final String WORLD_MAP_TELEPORT_WAYPOINT = "emutils.world_map.teleport_waypoint";
+    public static final String WORLD_MAP_HIDE_WAYPOINT = "emutils.world_map.hide_waypoint";
+    public static final String WORLD_MAP_SHOW_WAYPOINT = "emutils.world_map.show_waypoint";
+    public static final String WORLD_MAP_CONFIRM_DELETE = "emutils.world_map.confirm_delete";
+    public static final String WORLD_MAP_SHARE_LOCATION = "emutils.world_map.share_location";
+    public static final String WORLD_MAP_LOCATION = "emutils.world_map.location";
+    public static final String WORLD_MAP_OPEN_WAYPOINTS = "emutils.world_map.open_waypoints";
+    public static final String WORLD_MAP_OPEN_SETTINGS = "emutils.world_map.open_settings";
     public static final String HUD_LOOK_AT_POSITION = "emutils.hud.look_at.position";
     public static final String HUD_LOOK_AT_HARDNESS = "emutils.hud.look_at.hardness";
     public static final String HUD_LOOK_AT_BREAK_TIME = "emutils.hud.look_at.break_time";

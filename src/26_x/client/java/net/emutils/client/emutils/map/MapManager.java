@@ -122,6 +122,7 @@ public final class MapManager {
 			}
 			TILES.clear();
 			world = new MapWorld(level, folder(client, level));
+			world.importer = MapImporter.start(client, world, level.dimension());
 			if (level == loadedLevel) {
 				PENDING.addAll(LOADED);
 			}
@@ -142,8 +143,27 @@ public final class MapManager {
 			}
 		}
 
+		importSaved(world, TILES, deadline);
 		if (world.ticks % SAVE_EVERY_TICKS == 0) {
 			world.saveChanged();
+		}
+	}
+
+	/**
+	 * Samples chunks the importer read from a singleplayer world's files, with what's left of the tick's
+	 * time. Chunks the client loaded meanwhile were sampled live and are newer, so those are skipped.
+	 */
+	static void importSaved(MapWorld world, MapTiles tiles, long deadline) {
+		MapImporter importer = world.importer;
+		if (importer == null) {
+			return;
+		}
+		SavedChunk chunk;
+		while (System.nanoTime() < deadline && (chunk = importer.poll()) != null) {
+			if (world.chunk(chunk.chunkX, chunk.chunkZ) == null) {
+				world.put(chunk.chunkX, chunk.chunkZ, MapSampler.sample(chunk));
+				tiles.markDirty(chunk.chunkX, chunk.chunkZ);
+			}
 		}
 	}
 
@@ -285,6 +305,23 @@ public final class MapManager {
 			TILES.clear();
 			PENDING.addAll(LOADED);
 		}
+	}
+
+	/** For UI snapshot checks: has the importer look for new chunks in the world's files now. */
+	public static void rescanForSnapshot() {
+		if (world != null && world.importer != null) {
+			world.importer.rescanNow();
+		}
+	}
+
+	/** For UI snapshot checks: whether the map has a chunk. */
+	public static boolean hasChunkForSnapshot(int chunkX, int chunkZ) {
+		return world != null && world.chunk(chunkX, chunkZ) != null;
+	}
+
+	/** For UI snapshot checks: how many chunks the importer brought in from the world's files. */
+	public static int importedForSnapshot() {
+		return world == null || world.importer == null ? -1 : world.importer.importedCount();
 	}
 
 	/** For UI snapshot checks: saves the region you stand in and reads it back; empty when it matches. */

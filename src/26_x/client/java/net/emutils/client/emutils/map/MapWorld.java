@@ -37,6 +37,8 @@ public final class MapWorld {
 	});
 
 	private final ClientLevel level;
+	private final String dimension;
+	private final int minY;
 	private final Registry<Biome> biomes;
 	private final @Nullable Path folder;
 	private final ConcurrentHashMap<Long, MapRegion> regions = new ConcurrentHashMap<>();
@@ -47,12 +49,27 @@ public final class MapWorld {
 	private final ConcurrentLinkedQueue<MapRegion> justLoaded = new ConcurrentLinkedQueue<>();
 	private final ConcurrentLinkedQueue<MapRegion> overviewsRead = new ConcurrentLinkedQueue<>();
 	private volatile boolean closed;
+	/** Brings in the chunks a singleplayer world generated away from you, or null elsewhere. */
+	@Nullable MapImporter importer;
 	/** When this map's overviews were last looked over for redrawing. */
 	long lastOverviewRound;
 	int ticks;
 
+	/**
+	 * The map of the level you are in, saved in {@code folder} (nothing is saved without one).
+	 */
 	MapWorld(ClientLevel level, @Nullable Path folder) {
+		this(level, folder, WaypointManager.dimensionId(level), level.getMinY());
+	}
+
+	/**
+	 * The map of a dimension, which may be another one than yours, as the world map shows them. Its bottom is
+	 * needed to save its heights; without one ({@link Integer#MIN_VALUE}) the map is only read, never saved.
+	 */
+	MapWorld(ClientLevel level, @Nullable Path folder, String dimension, int minY) {
 		this.level = level;
+		this.dimension = dimension;
+		this.minY = minY;
 		this.biomes = level.registryAccess().lookupOrThrow(Registries.BIOME);
 		this.folder = folder;
 		if (folder != null) {
@@ -200,7 +217,7 @@ public final class MapWorld {
 
 	/** Saves the regions that changed, in the background. */
 	void saveChanged() {
-		if (folder == null) {
+		if (folder == null || minY == Integer.MIN_VALUE) {
 			return;
 		}
 		for (MapRegion region : regions.values()) {
@@ -217,7 +234,7 @@ public final class MapWorld {
 	private void save(MapRegion region) {
 		try {
 			writeDimension();
-			MapRegionFile.write(MapRegionFile.path(folder, region.regionX, region.regionZ), region, biomes, level.getMinY());
+			MapRegionFile.write(MapRegionFile.path(folder, region.regionX, region.regionZ), region, biomes, minY);
 		} catch (IOException | RuntimeException exception) {
 			region.dirty = true;
 			EMUtilsClient.LOGGER.warn("EMUtils map couldn't save region {}, {}", region.regionX, region.regionZ, exception);
@@ -229,7 +246,7 @@ public final class MapWorld {
 		Path file = folder.resolve(DIMENSION_FILE);
 		if (!Files.exists(file)) {
 			Files.createDirectories(folder);
-			Files.writeString(file, WaypointManager.dimensionId(level));
+			Files.writeString(file, dimension);
 		}
 	}
 
@@ -275,6 +292,9 @@ public final class MapWorld {
 
 	/** Saves everything that changed and stops loading; the map of another dimension or world takes over. */
 	void close() {
+		if (importer != null) {
+			importer.stop();
+		}
 		saveChanged();
 		closed = true;
 	}
@@ -299,7 +319,7 @@ public final class MapWorld {
 		}
 		try {
 			Path file = MapRegionFile.path(folder, regionX, regionZ);
-			MapRegionFile.write(file, region, biomes, level.getMinY());
+			MapRegionFile.write(file, region, biomes, minY);
 			MapRegionFile.Contents contents = MapRegionFile.read(file, biomes);
 			if (contents == null || contents.chunks() == null) {
 				return "the file couldn't be read back";

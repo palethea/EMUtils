@@ -3564,6 +3564,38 @@ public final class UiSnapshotter {
 				if (stepTicks == 20) {
 					check(!(MinecraftClientCompat.screen(client) instanceof WorldMapScreen), "the world map closed after its animation");
 				}
+				captureAfter(client, 21, "world map closed");
+			}
+			// Singleplayer chunks generated away from you, as Chunky makes them, come onto the map from the
+			// world's files: chunks 2000 blocks off are generated and saved by the server, never sent to the client.
+			case 395 -> {
+				int farX = client.player.getBlockX() + 2000;
+				int farZ = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					command(client, "forceload add " + (farX - 40) + " " + (farZ - 40) + " " + (farX + 40) + " " + (farZ + 40));
+				}
+				if (stepTicks == 80) {
+					command(client, "save-all flush");
+				}
+				if (stepTicks == 120) {
+					MapManager.rescanForSnapshot();
+				}
+				if (stepTicks == 220) {
+					check(MapManager.hasChunkForSnapshot(farX >> 4, farZ >> 4), "a chunk generated 2000 blocks away, never sent to the client, is on the map (" + MapManager.importedForSnapshot() + " imported)");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 240 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.centerForSnapshot(farX, farZ);
+				}
+				captureAfter(client, 300, "world map, chunks generated far away");
+			}
+			case 396 -> {
+				if (stepTicks == 1) {
+					command(client, "forceload remove all");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
 				if (stepTicks == 21) {
 					EMUtilsClient.config().resetMinimapDefaults();
 					EMUtilsClient.config().setMinimap(false);

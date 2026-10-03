@@ -577,6 +577,23 @@ public final class WaypointManager {
         }
     }
 
+    /** Says a spot in chat in the share format, as a waypoint named {@code label}; the world map's Share Location (#215). */
+    public void shareLocation(Minecraft client, String label, int x, int y, int z, String dimension) {
+        if (client == null || client.level == null || client.getConnection() == null) {
+            return;
+        }
+        Waypoint spot = new Waypoint(x, y, z, dimension, worldKey(client), System.currentTimeMillis(), label, EMUtilsClient.config().waypointDefaultCustomColor(), WaypointType.CUSTOM);
+        client.getConnection().sendChat(WaypointShare.format(spot, EMUtilsClient.config().waypointShareFormat(), dimensionId(client.level)));
+        if (client.gui != null) {
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
+                .addClientSystemMessage(
+                    EmUtilsChatPrefix.chat(
+                        Component.translatable(EMUtilsTexts.WAYPOINT_SHARED, label).withStyle(ChatFormatting.GREEN)
+                    )
+                );
+        }
+    }
+
     /** The names of the sets in use in this world, alphabetically. */
     public List<String> setsForCurrentWorld(Minecraft client) {
         return entriesForCurrentWorld(client, true)
