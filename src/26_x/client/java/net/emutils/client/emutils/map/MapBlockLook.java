@@ -27,13 +27,32 @@ public final class MapBlockLook {
 	private final @Nullable Layer side;
 	private final @Nullable BlockTintSource tint;
 	private final boolean solid;
+	private final Part part;
+
+	/** What a block is part of, for the tilted view (#217): trees' leaves float over the ground on their trunk. */
+	public enum Part {
+		BLOCK,
+		/** Leaves: the map looks past them for the ground under the tree. */
+		CANOPY,
+		/** Logs and stems, drawn as the trunk under a canopy. */
+		TRUNK
+	}
 
 	MapBlockLook(Kind kind, Layer top, @Nullable Layer side, @Nullable BlockTintSource tint, boolean solid) {
+		this(kind, top, side, tint, solid, Part.BLOCK);
+	}
+
+	MapBlockLook(Kind kind, Layer top, @Nullable Layer side, @Nullable BlockTintSource tint, boolean solid, Part part) {
 		this.kind = kind;
 		this.top = top;
 		this.side = side;
 		this.tint = tint;
 		this.solid = solid;
+		this.part = part;
+	}
+
+	public Part part() {
+		return part;
 	}
 
 	public Kind kind() {

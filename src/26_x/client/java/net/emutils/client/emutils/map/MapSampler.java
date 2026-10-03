@@ -12,7 +12,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Reads what the map shows of a chunk (#212): for each column the first block from the top that is drawn,
- * and when that one lets you see through it (water, glass, plants), the first solid block under it. Works on
+ * and when that one lets you see through it (water, glass, plants), the first solid block under it. Under a
+ * tree's leaves, that's the ground or its trunk, so the tilted view (#217) can draw the canopy floating. Works on
  * chunks the client loaded and on chunks read from a singleplayer world's files (#215). Runs on the client
  * thread, which owns the block looks; the result is handed to the tile baker.
  */
@@ -65,15 +66,16 @@ final class MapSampler {
 					if (kind == MapBlockLook.Kind.INVISIBLE) {
 						continue;
 					}
+					MapBlockLook.Part part = MapBlockLooks.ensure(state, id).part();
 					if (topId == MapChunk.NONE) {
 						topId = id;
 						columnTopY = y;
-						if (kind == MapBlockLook.Kind.OPAQUE) {
+						if (kind == MapBlockLook.Kind.OPAQUE && part != MapBlockLook.Part.CANOPY) {
 							break;
 						}
 						continue;
 					}
-					if (kind == MapBlockLook.Kind.OPAQUE) {
+					if (kind == MapBlockLook.Kind.OPAQUE && part != MapBlockLook.Part.CANOPY) {
 						floorId = id;
 						columnFloorY = y;
 						break;

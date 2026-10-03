@@ -24,6 +24,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -207,7 +208,10 @@ public final class MapBlockLooks {
 		}
 		BlockTintSource tint = tintIndex >= 0 ? client.getBlockColors().getTintSource(state, tintIndex) : null;
 		boolean solid = fullBlock || (anyUp && open == 0.0F);
-		return new MapBlockLook(kind, top.layer(), anySide ? side.layer() : null, tint, solid);
+		MapBlockLook.Part part = state.is(BlockTags.LEAVES) ? MapBlockLook.Part.CANOPY
+			: state.is(BlockTags.LOGS) ? MapBlockLook.Part.TRUNK
+			: MapBlockLook.Part.BLOCK;
+		return new MapBlockLook(kind, top.layer(), anySide ? side.layer() : null, tint, solid, part);
 	}
 
 	/** A 16 x 16 picture being drawn from a model's faces, keeping the highest face at each pixel. */
