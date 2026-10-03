@@ -66,15 +66,19 @@ final class MapTileBaker {
 	}
 
 	static Result bake(MapWorld world, int level, int tileX, int tileZ) {
-		return level < COLUMN_LEVELS ? bakeColumns(world, level, tileX, tileZ) : bakeOverviews(world, level, tileX, tileZ);
+		return level < COLUMN_LEVELS ? bakeColumns(world, level, tileX, tileZ, null) : bakeOverviews(world, level, tileX, tileZ);
 	}
 
-	private static Result bakeColumns(MapWorld world, int level, int tileX, int tileZ) {
+	/**
+	 * A tile drawn from columns. With {@code only}, just that region's chunks are read in and waited for; the
+	 * neighbours' chunks at its border are used if they're in memory, as a region's overview needs.
+	 */
+	private static Result bakeColumns(MapWorld world, int level, int tileX, int tileZ, @Nullable MapRegion only) {
 		int res = pixelsPerBlock(level);
 		int blocks = blocksPerTile(level);
 		int originX = tileX * blocks;
 		int originZ = tileZ * blocks;
-		Grid grid = new Grid(world, originX - 1, originZ - 1, blocks + 2);
+		Grid grid = new Grid(world, originX - 1, originZ - 1, blocks + 2, only);
 		Tints tints = new Tints(world, grid);
 		int[] out = new int[TILE_PIXELS * TILE_PIXELS];
 		int stripMax = res / 4 + res / 8;
@@ -188,7 +192,7 @@ final class MapTileBaker {
 		boolean complete = true;
 		for (int tz = 0; tz < tilesAcross; tz++) {
 			for (int tx = 0; tx < tilesAcross; tx++) {
-				Result tile = bakeColumns(world, 2, region.regionX * tilesAcross + tx, region.regionZ * tilesAcross + tz);
+				Result tile = bakeColumns(world, 2, region.regionX * tilesAcross + tx, region.regionZ * tilesAcross + tz, region);
 				complete &= tile.complete();
 				int[] argb = tile.pixels();
 				for (int i = 0; i < argb.length; i++) {
@@ -311,7 +315,7 @@ final class MapTileBaker {
 		/** False when a chunk's region was still loading or a block had no look yet. */
 		boolean complete = true;
 
-		Grid(MapWorld world, int originX, int originZ, int size) {
+		Grid(MapWorld world, int originX, int originZ, int size, @Nullable MapRegion only) {
 			this.originX = originX;
 			this.originZ = originZ;
 			this.size = size;
@@ -328,8 +332,12 @@ final class MapTileBaker {
 			int lastChunkZ = Math.floorDiv(originZ + size - 1, MapChunk.SIZE);
 			for (int chunkZ = firstChunkZ; chunkZ <= lastChunkZ; chunkZ++) {
 				for (int chunkX = firstChunkX; chunkX <= lastChunkX; chunkX++) {
-					MapChunk chunk = world.chunk(chunkX, chunkZ);
+					boolean outside = only != null && (chunkX >> MapRegion.SHIFT != only.regionX || chunkZ >> MapRegion.SHIFT != only.regionZ);
+					MapChunk chunk = outside ? world.loadedChunk(chunkX, chunkZ) : world.chunk(chunkX, chunkZ);
 					if (chunk == null) {
+						if (outside) {
+							continue;
+						}
 						if (world.loading(chunkX, chunkZ)) {
 							complete = false;
 						}

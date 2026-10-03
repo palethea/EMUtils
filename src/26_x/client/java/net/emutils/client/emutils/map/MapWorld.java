@@ -54,7 +54,6 @@ public final class MapWorld {
 	/** Every region with a file or with chunks, so the world map knows what was explored. */
 	private final Set<Long> known = ConcurrentHashMap.newKeySet();
 	private final ConcurrentLinkedQueue<MapRegion> justLoaded = new ConcurrentLinkedQueue<>();
-	private final ConcurrentLinkedQueue<MapRegion> overviewsRead = new ConcurrentLinkedQueue<>();
 	/** Regions whose saved overview is missing or from other resource packs, to be read in full and drawn again. */
 	private final Set<Long> redraws = ConcurrentHashMap.newKeySet();
 	/** Regions already asked for again since the last resource pack change, so none is asked for twice. */
@@ -103,6 +102,12 @@ public final class MapWorld {
 		MapRegion region = region(chunkX >> MapRegion.SHIFT, chunkZ >> MapRegion.SHIFT);
 		region.lastUsed = System.currentTimeMillis();
 		return region.chunk(MapRegion.index(chunkX, chunkZ));
+	}
+
+	/** The chunk if its region is in memory already, without reading the region in; null otherwise. Any thread. */
+	@Nullable MapChunk loadedChunk(int chunkX, int chunkZ) {
+		MapRegion region = regions.get(MapRegion.key(chunkX >> MapRegion.SHIFT, chunkZ >> MapRegion.SHIFT));
+		return region == null || !region.loaded ? null : region.chunk(MapRegion.index(chunkX, chunkZ));
 	}
 
 	/** True when the region of this chunk is still being read from disk, so a missing chunk may still come. */
@@ -217,7 +222,6 @@ public final class MapWorld {
 					EMUtilsClient.LOGGER.warn("EMUtils map couldn't read the overview of region {}, {}", regionX, regionZ, exception);
 				}
 				created.loaded = true;
-				overviewsRead.add(created);
 			});
 		}
 		return created;
@@ -229,13 +233,25 @@ public final class MapWorld {
 	 */
 	void requestRedraw(int regionX, int regionZ) {
 		long key = MapRegion.key(regionX, regionZ);
-		if (known.contains(key) && redrawn.add(key)) {
+		if (redrawn.add(key)) {
 			redraws.add(key);
 		}
 	}
 
-	/** Reads in up to {@code max} regions asked for by {@link #requestRedraw}; their overviews are then redrawn. */
+	/** Whether a region has chunks but no overview that's up to date with them and the resource packs. */
+	static boolean needsOverview(MapRegion region) {
+		return region.count() > 0
+			&& (region.overviewStale || region.overview == null || region.overviewFingerprint != MapBlockLooks.fingerprint());
+	}
+
+	/**
+	 * Reads in up to {@code max} regions asked for by {@link #requestRedraw}; their overviews are then redrawn.
+	 * None while the map holds as many regions as it keeps, so they come in only as fast as they're drawn.
+	 */
 	void loadRedraws(int max) {
+		if (regions.size() >= MAX_LOADED_REGIONS) {
+			return;
+		}
 		Iterator<Long> iterator = redraws.iterator();
 		while (max > 0 && iterator.hasNext()) {
 			long key = iterator.next();
@@ -273,9 +289,6 @@ public final class MapWorld {
 		return justLoaded.poll();
 	}
 
-	@Nullable MapRegion pollOverviewRead() {
-		return overviewsRead.poll();
-	}
 
 	boolean known(int regionX, int regionZ) {
 		return known.contains(MapRegion.key(regionX, regionZ));
@@ -350,7 +363,8 @@ public final class MapWorld {
 		boolean writable = writable();
 		List<MapRegion> idle = new ArrayList<>();
 		for (MapRegion region : regions.values()) {
-			if (region.loaded && (!region.dirty || !writable)) {
+			// One whose overview is still to be drawn stays until it is, or far away it would have none.
+			if (region.loaded && (!region.dirty || !writable) && !needsOverview(region)) {
 				idle.add(region);
 			}
 		}

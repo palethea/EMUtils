@@ -3554,6 +3554,9 @@ public final class UiSnapshotter {
 					map.scrollForSnapshot(-14.0D);
 					check(map.zoomForSnapshot() < 0.1F, "scrolling out zooms the world map far out (" + map.zoomForSnapshot() + ")");
 				}
+				if (stepTicks == 119 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(!map.loadingForSnapshot(), "the world map zoomed far out finishes loading");
+				}
 				captureAfter(client, 120, "world map zoomed far out");
 			}
 			// Zooming straight back in: the far tiles stand in until the close ones are drawn, so there are no holes.
@@ -3561,7 +3564,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.scrollForSnapshot(14.0D);
 				}
-				captureAfter(client, 3, "world map just after zooming back in");
+				captureAfter(client, 8, "world map just after zooming back in");
 			}
 			case 394 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {

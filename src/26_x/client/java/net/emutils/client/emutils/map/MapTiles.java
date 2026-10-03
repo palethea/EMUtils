@@ -46,7 +46,8 @@ public final class MapTiles {
 	private final ConcurrentLinkedQueue<MapRegion> overviewsDone = new ConcurrentLinkedQueue<>();
 	private final AtomicInteger overviewsBaking = new AtomicInteger();
 	private int baking;
-	/** Tiles asked for this frame that aren't finished yet, for the world map's loading sign. */
+	/** Tiles asked for this frame, and those of them that aren't finished yet, for the world map's loading sign. */
+	private int asked;
 	private int waiting;
 	/** Counts up whenever all tiles are dropped, so bakes started before that are thrown away. */
 	private int generation;
@@ -103,6 +104,7 @@ public final class MapTiles {
 	Tile tile(MapWorld world, int level, int tileX, int tileZ) {
 		Tile tile = tiles.computeIfAbsent(key(level, tileX, tileZ), key -> new Tile(level, tileX, tileZ));
 		tile.usedFrame = frame;
+		asked++;
 		long now = System.currentTimeMillis();
 		long wait = tile.complete ? REBAKE_MILLIS[level] : RETRY_MILLIS;
 		if (tile.dirty && !tile.baking && baking < MAX_BAKING && (tile.texture == null || now - tile.bakedAt >= wait)) {
@@ -131,7 +133,12 @@ public final class MapTiles {
 
 	/** Whether tiles shown this frame, or the regions under them, are still being drawn or read. */
 	public boolean busy() {
-		return waiting > 0 || baking > 0;
+		return waiting > 0;
+	}
+
+	/** How much of what was shown this frame is finished, 0 to 1. */
+	public float progress() {
+		return asked == 0 ? 1.0F : (asked - waiting) / (float) asked;
 	}
 
 	private void bake(MapWorld world, Tile tile) {
@@ -153,6 +160,7 @@ public final class MapTiles {
 	/** Uploads finished tiles and frees unused ones. Call once a frame before drawing, on the render thread. */
 	public void beginFrame() {
 		frame++;
+		asked = 0;
 		waiting = 0;
 		for (int i = 0; i < UPLOADS_PER_FRAME; i++) {
 			Baked done = baked.poll();
@@ -226,13 +234,13 @@ public final class MapTiles {
 		}
 	}
 
-	/** Marks every tile showing part of a region to be redrawn, at every level. */
-	public void markRegionDirty(int regionX, int regionZ) {
+	/** Marks every tile showing part of a region to be redrawn, from {@code fromLevel} to the coarsest. */
+	public void markRegionDirty(int regionX, int regionZ, int fromLevel) {
 		int minX = regionX * MapRegion.BLOCKS;
 		int minZ = regionZ * MapRegion.BLOCKS;
 		int maxX = minX + MapRegion.BLOCKS;
 		int maxZ = minZ + MapRegion.BLOCKS;
-		for (int level = 0; level < MapTileBaker.LEVELS; level++) {
+		for (int level = fromLevel; level < MapTileBaker.LEVELS; level++) {
 			int blocks = MapTileBaker.blocksPerTile(level);
 			for (Tile tile : tiles.values()) {
 				if (tile.level == level

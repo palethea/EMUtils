@@ -71,6 +71,8 @@ public final class WorldMapScreen extends Screen {
 	/** How quickly zooming glides to where the wheel asked, per second; higher is snappier. */
 	private static final float ZOOM_SPEED = 16.0F;
 	private static final int SPINNER_SIZE = 10;
+	private static final long LOADING_SHOW_AFTER_MILLIS = 250L;
+	private static final long LOADING_HIDE_AFTER_MILLIS = 600L;
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
 	/** The panels start appearing once the map is this far open, so they arrive with it rather than after it. */
@@ -104,6 +106,9 @@ public final class WorldMapScreen extends Screen {
 	private float anchorScreenX;
 	private float anchorScreenY;
 	private long lastFrame;
+	/** When the map started or stopped loading, so the loading sign doesn't flash for a moment's work. */
+	private long busySince = -1L;
+	private long idleSince = -1L;
 	private long openedAt = -1L;
 	private long closingAt = -1L;
 	private boolean dragging;
@@ -358,21 +363,42 @@ public final class WorldMapScreen extends Screen {
 	}
 
 	/**
-	 * A small sign at the bottom while tiles are being drawn or regions read, so a blank or blurry part
-	 * of the map reads as on its way rather than missing. Fades in and out.
+	 * A small sign at the bottom while tiles on screen are being drawn or the regions under them read, with
+	 * how much is done, so a blank or blurry part of the map reads as on its way rather than missing. It
+	 * shows only after a moment of loading and stays until loading has stopped for a moment, so short bursts
+	 * don't make it flash. Fades in and out.
 	 */
 	private void drawLoading(GuiGraphicsExtractor context, UiTheme theme, float panels) {
-		boolean busy = tiles.busy() || world.busy();
-		float shown = anim.towards("world-map-loading", busy && panels > 0.0F ? 1.0F : 0.0F, busy ? 6.0F : 3.0F) * panels;
+		long now = System.currentTimeMillis();
+		boolean loading = tiles.busy();
+		if (loading) {
+			idleSince = -1L;
+			if (busySince < 0L) {
+				busySince = now;
+			}
+		} else if (idleSince < 0L) {
+			idleSince = now;
+		}
+		boolean show = busySince >= 0L && now - busySince >= LOADING_SHOW_AFTER_MILLIS;
+		if (!loading && idleSince >= 0L && now - idleSince >= LOADING_HIDE_AFTER_MILLIS) {
+			busySince = -1L;
+			show = false;
+		}
+		float progress = loading ? tiles.progress() : 1.0F;
+		// Counts up smoothly while shown, and starts from nothing the next time.
+		float shownProgress = anim.towards("world-map-loading-progress", show ? progress : 0.0F, show ? 8.0F : 1000.0F);
+		float shown = anim.towards("world-map-loading", show && panels > 0.0F ? 1.0F : 0.0F, show ? 6.0F : 3.0F) * panels;
 		if (shown <= 0.01F) {
 			return;
 		}
-		Component text = Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING);
-		int textWidth = UiText.width(font, text, UiText.Size.SMALL);
+		Component text = Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING, Math.round(Math.clamp(shownProgress, 0.0F, 1.0F) * 100.0F) + "%");
+		// Sized for the widest percentage, so the sign doesn't change width as it counts.
+		int textWidth = UiText.width(font, Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING, "100%"), UiText.Size.SMALL);
 		int pillWidth = 10 + SPINNER_SIZE + 6 + textWidth + 12;
 		int pillHeight = 20;
 		int x = (width - pillWidth) / 2;
-		int y = height - MARGIN - (PANEL_HEIGHT + pillHeight) / 2;
+		// Just above the bottom panels, which can reach the middle on a narrow screen.
+		int y = height - MARGIN - PANEL_HEIGHT - 8 - pillHeight;
 		UiOpacity.set(shown);
 		UiShapes.shadow(context, x, y, pillWidth, pillHeight, pillHeight / 2, 8, theme.shadow());
 		UiShapes.borderedRect(context, x, y, pillWidth, pillHeight, pillHeight / 2, UiTheme.fade(theme.panel(), 0.94F), theme.line());
@@ -745,9 +771,9 @@ public final class WorldMapScreen extends Screen {
 		return waypointsDrawn;
 	}
 
-	/** For UI snapshot checks: whether the map shown is still reading regions from disk. */
+	/** For UI snapshot checks: whether the map shown is still reading regions or drawing tiles on screen. */
 	public boolean loadingForSnapshot() {
-		return world.busy();
+		return world.busy() || tiles.busy();
 	}
 
 	/** For UI snapshot checks: the map's zoom in GUI pixels per block. */

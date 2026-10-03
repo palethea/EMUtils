@@ -981,7 +981,7 @@
   "emutils.world_map.confirm_delete": "Confirm Delete",
   "emutils.world_map.share_location": "Share Location in Chat",
   "emutils.world_map.location": "Location",
-  "emutils.world_map.loading": "Loading map…",
+  "emutils.world_map.loading": "Loading map… %s",
   "emutils.world_map.open_waypoints": "Open Waypoints",
   "emutils.world_map.open_settings": "Map Settings",
   "emutils.hud.look_at.position": "Position",

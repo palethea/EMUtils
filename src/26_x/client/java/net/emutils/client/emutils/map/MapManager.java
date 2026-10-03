@@ -5,6 +5,9 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -34,11 +37,15 @@ public final class MapManager {
 	/** How many of the nearest waiting chunks are picked per pass. */
 	private static final int NEAREST_BATCH = 16;
 	private static final int SAVE_EVERY_TICKS = 600;
-	private static final int UNLOAD_EVERY_TICKS = 100;
-	private static final int OVERVIEWS_EVERY_TICKS = 40;
+	/** Often, so regions read in only to draw far tiles are let go soon after. */
+	private static final int UNLOAD_EVERY_TICKS = 20;
+	private static final int OVERVIEWS_EVERY_TICKS = 10;
 	/** A region's overview is redrawn at most this often while you explore it. */
 	private static final long OVERVIEW_MIN_MILLIS = 10_000L;
-	/** At most this many overviews are drawn at once, so the tiles on screen don't wait behind them. */
+	/**
+	 * At most this many overviews are drawn at once, and only one while tiles on screen are waiting, so they
+	 * don't wait behind overviews.
+	 */
 	private static final int MAX_OVERVIEWS_BAKING = 2;
 	/** At most this many regions are read in per round to redraw an overview that's missing or outdated. */
 	private static final int REDRAW_LOADS_PER_ROUND = 2;
@@ -195,7 +202,9 @@ public final class MapManager {
 
 	/**
 	 * Makes the looks of blocks in regions just read from disk, within a budget so a burst of regions doesn't
-	 * stall a frame, and has their tiles drawn once a region's looks are all made.
+	 * stall a frame, and has the far tiles redrawn for overviews just drawn. Tiles drawn while a region was
+	 * still being read were left unfinished and are drawn again on their own; finished ones aren't touched,
+	 * since reading a region in again changes nothing on them.
 	 */
 	private static void prepareLoaded(MapWorld world, MapTiles tiles) {
 		long deadline = System.nanoTime() + PREPARE_BUDGET_NANOS;
@@ -213,13 +222,9 @@ public final class MapManager {
 			region.states = null;
 			world.preparing = null;
 			world.preparingAt = 0;
-			tiles.markRegionDirty(region.regionX, region.regionZ);
-		}
-		while ((region = world.pollOverviewRead()) != null) {
-			tiles.markRegionDirty(region.regionX, region.regionZ);
 		}
 		while ((region = tiles.pollOverviewDone()) != null) {
-			tiles.markRegionDirty(region.regionX, region.regionZ);
+			tiles.markRegionDirty(region.regionX, region.regionZ, MapTileBaker.COLUMN_LEVELS);
 		}
 	}
 
@@ -230,14 +235,19 @@ public final class MapManager {
 	private static void redrawOverviews(MapWorld world, MapTiles tiles) {
 		long now = System.currentTimeMillis();
 		int fingerprint = MapBlockLooks.fingerprint();
+		List<MapRegion> waiting = new ArrayList<>();
 		for (MapRegion region : world.loadedRegions()) {
-			if (tiles.overviewsBaking() >= MAX_OVERVIEWS_BAKING) {
+			if (region.loaded && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS && MapWorld.needsOverview(region)) {
+				waiting.add(region);
+			}
+		}
+		// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
+		waiting.sort(Comparator.comparingInt(region -> region.overview == null ? 0 : region.overviewStale ? 1 : 2));
+		for (MapRegion region : waiting) {
+			if (tiles.overviewsBaking() >= (tiles.busy() ? 1 : MAX_OVERVIEWS_BAKING)) {
 				return;
 			}
-			if (region.loaded && region.count() > 0 && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS
-				&& (region.overviewStale || region.overview == null || region.overviewFingerprint != fingerprint)) {
-				tiles.bakeOverview(world, region, fingerprint);
-			}
+			tiles.bakeOverview(world, region, fingerprint);
 		}
 		world.loadRedraws(REDRAW_LOADS_PER_ROUND);
 	}
