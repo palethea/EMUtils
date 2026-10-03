@@ -102,6 +102,11 @@ public final class XaeroMapIntegration {
 		return WaypointWorldMapElementRenderer.create();
 	}
 
+	/** Xaero's World Map is installed, so the EMUtils world map starts off (#215). */
+	public static boolean worldMapLoaded() {
+		return WORLD_MAP_LOADED;
+	}
+
 	/** Xaero's Minimap is installed, so the EMUtils minimap starts off (#212). */
 	public static boolean minimapLoaded() {
 		return MINIMAP_LOADED;

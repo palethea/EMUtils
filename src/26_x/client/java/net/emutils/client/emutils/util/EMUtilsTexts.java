@@ -961,6 +961,14 @@ public final class EMUtilsTexts {
     public static final String UI_MINIMAP_SECTION_MAP = "emutils.ui.minimap.section.map";
     public static final String UI_MINIMAP_SECTION_SHOW = "emutils.ui.minimap.section.show";
     public static final String HUD_MINIMAP_NORTH = "emutils.hud.minimap.north";
+    public static final String OPTION_WORLD_MAP = "emutils.option.world_map";
+    public static final String HUB_FEATURE_WORLD_MAP_DESC = "emutils.hub.feature.world_map.desc";
+    public static final String SCREEN_WORLD_MAP = "emutils.screen.world_map";
+    public static final String WORLD_MAP_HINT = "emutils.world_map.hint";
+    public static final String WORLD_MAP_HINT_OTHER = "emutils.world_map.hint_other";
+    public static final String WORLD_MAP_OVERWORLD = "emutils.world_map.overworld";
+    public static final String WORLD_MAP_NETHER = "emutils.world_map.nether";
+    public static final String WORLD_MAP_END = "emutils.world_map.end";
     public static final String HUD_LOOK_AT_POSITION = "emutils.hud.look_at.position";
     public static final String HUD_LOOK_AT_HARDNESS = "emutils.hud.look_at.hardness";
     public static final String HUD_LOOK_AT_BREAK_TIME = "emutils.hud.look_at.break_time";

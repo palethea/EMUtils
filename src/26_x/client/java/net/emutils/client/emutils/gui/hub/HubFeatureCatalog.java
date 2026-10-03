@@ -88,6 +88,7 @@ public final class HubFeatureCatalog {
 			categoryFeature("spotify", HubCategory.SPOTIFY, HubFeature.Group.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, HubFeature.Icon.MUSIC, toggle(config::spotifyEnabled, config::setSpotifyEnabled)),
 			categoryFeature("auto_reconnect", HubCategory.AUTO_RECONNECT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, HubFeature.Icon.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			categoryFeature("screenshot_helper", HubCategory.SCREENSHOT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, HubFeature.Icon.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
+			leaf("world_map", HubFeature.Group.UTILITY, EMUtilsTexts.OPTION_WORLD_MAP, EMUtilsTexts.HUB_FEATURE_WORLD_MAP_DESC, HubFeature.Icon.MAP, toggle(config::worldMap, config::setWorldMap), config::resetWorldMapDefaults).keys("key.emutils.world_map"),
 			categoryFeature("waypoints", HubCategory.DEATH_WAYPOINTS, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, HubFeature.Icon.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)).keys("key.emutils.add_waypoint", "key.emutils.add_waypoint_at_crosshair", "key.emutils.copy_coordinates"),
 			new HubFeature(
 				"free_camera",

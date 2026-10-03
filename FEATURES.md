@@ -227,6 +227,10 @@ Show the current Spotify track, with its cover, artist and progress, in the paus
 
 ## Utility
 
+### World Map
+
+A full-screen map of everything you explored, drawn like the minimap, with block textures close up and colors far out. Open it with `M` (left unbound when Xaero's World Map is installed, which uses `M` too); with the minimap showing, the minimap grows into the world map and shrinks back when you close it. What the map sees is saved per world or server and per dimension in `.minecraft/emutils/maps`, so it remembers places you've been and the minimap shows them too. Drag to move, scroll to zoom around the cursor, and Space takes you back to where you are. The coordinates under the cursor show at the bottom. Your waypoints show on it: click one to edit it, or right-click anywhere to add one there. The other dimensions you explored can be looked at from the top bar. On by default, unless Xaero's World Map is installed.
+
 ### Auto Reconnect
 
 Reconnect to the last server after being kicked, with a countdown button on the disconnect screen.

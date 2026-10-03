@@ -23,11 +23,17 @@ import org.jspecify.annotations.Nullable;
  * it, a strip of its side shows, which gives the map a slight 3D look.
  *
  * <p>Tiles are always {@link #TILE_PIXELS} pixels square. The detail level sets how many pixels a block
- * gets: 16 (its full texture), 4, or 1 (its average color), so one tile covers 16, 64 or 256 blocks.
+ * gets: 16 (its full texture), 4, or 1 (its average color), so one tile covers 16, 64 or 256 blocks. The
+ * world map's far levels (#215) give a pixel to 4, 16 or 64 blocks and are put together from the regions'
+ * overviews instead of their columns.
  */
 final class MapTileBaker {
 	static final int TILE_PIXELS = 256;
-	static final int LEVELS = MapBlockLook.Layer.RESOLUTIONS.length;
+	/** The levels drawn from columns: 16, 4 and 1 pixels per block. */
+	static final int COLUMN_LEVELS = MapBlockLook.Layer.RESOLUTIONS.length;
+	/** Blocks a tile covers at each level; the last three are drawn from overviews. */
+	private static final int[] BLOCKS_PER_TILE = {16, 64, 256, 1024, 4096, 16384};
+	static final int LEVELS = BLOCKS_PER_TILE.length;
 	/** Where nothing is known under see-through blocks, such as the open ocean's floor. */
 	private static final int DEEP = 0xFF0B1426;
 	/** How strongly each block of height difference brightens or darkens a column, per detail level. */
@@ -49,11 +55,21 @@ final class MapTileBaker {
 	}
 
 	static int blocksPerTile(int level) {
-		return TILE_PIXELS / pixelsPerBlock(level);
+		return BLOCKS_PER_TILE[level];
 	}
 
-	/** The tile's pixels as ABGR, the byte order of a texture's memory, ready to upload. Missing columns are clear. */
-	static int[] bake(MapWorld world, int level, int tileX, int tileZ) {
+	/**
+	 * A drawn tile: its pixels as ABGR, the byte order of a texture's memory, ready to upload, with missing
+	 * columns clear. Not complete when some of what it shows was still loading; it is drawn again later.
+	 */
+	record Result(int[] pixels, boolean complete) {
+	}
+
+	static Result bake(MapWorld world, int level, int tileX, int tileZ) {
+		return level < COLUMN_LEVELS ? bakeColumns(world, level, tileX, tileZ) : bakeOverviews(world, level, tileX, tileZ);
+	}
+
+	private static Result bakeColumns(MapWorld world, int level, int tileX, int tileZ) {
 		int res = pixelsPerBlock(level);
 		int blocks = blocksPerTile(level);
 		int originX = tileX * blocks;
@@ -68,11 +84,11 @@ final class MapTileBaker {
 				if (!grid.present[g] || grid.top[g] == MapChunk.NONE) {
 					continue;
 				}
-				MapBlockLook top = MapBlockLooks.get(grid.top[g]);
+				MapBlockLook top = grid.look(grid.top[g]);
 				if (top == null) {
 					continue;
 				}
-				MapBlockLook floor = grid.floor[g] == MapChunk.NONE ? null : MapBlockLooks.get(grid.floor[g]);
+				MapBlockLook floor = grid.floor[g] == MapChunk.NONE ? null : grid.look(grid.floor[g]);
 				int topTint = tints.color(top, grid.top[g], g);
 				int floorTint = floor == null ? 0xFFFFFFFF : tints.color(floor, grid.floor[g], g);
 				int height = grid.shadeHeight(g, top);
@@ -119,7 +135,97 @@ final class MapTileBaker {
 				}
 			}
 		}
-		return out;
+		return new Result(out, grid.complete);
+	}
+
+	/** A far tile, put together from the overviews of the regions it covers, each shrunk to fit. */
+	private static Result bakeOverviews(MapWorld world, int level, int tileX, int tileZ) {
+		int blocks = blocksPerTile(level);
+		int regionsAcross = blocks / MapRegion.BLOCKS;
+		int regionPixels = TILE_PIXELS / regionsAcross;
+		int shrink = MapRegion.OVERVIEW_SIZE / regionPixels;
+		int firstRegionX = tileX * regionsAcross;
+		int firstRegionZ = tileZ * regionsAcross;
+		int[] out = new int[TILE_PIXELS * TILE_PIXELS];
+		boolean complete = true;
+		for (int rz = 0; rz < regionsAcross; rz++) {
+			for (int rx = 0; rx < regionsAcross; rx++) {
+				MapRegion region = world.overview(firstRegionX + rx, firstRegionZ + rz);
+				if (region == null) {
+					continue;
+				}
+				int[] overview = region.overview;
+				if (overview == null) {
+					complete &= region.loaded && !region.overviewStale;
+					continue;
+				}
+				for (int py = 0; py < regionPixels; py++) {
+					for (int px = 0; px < regionPixels; px++) {
+						int color = averageAt(overview, MapRegion.OVERVIEW_SIZE, px * shrink, py * shrink, shrink);
+						if ((color >>> 24) != 0) {
+							out[(rz * regionPixels + py) * TILE_PIXELS + rx * regionPixels + px] = toAbgr(color);
+						}
+					}
+				}
+			}
+		}
+		return new Result(out, complete);
+	}
+
+	/**
+	 * Draws a region's overview from its columns: a pixel per {@link MapRegion#OVERVIEW_BLOCKS} blocks, as
+	 * ARGB, clear where nothing was explored. Not complete while some of its looks were still missing.
+	 */
+	static Result overview(MapWorld world, MapRegion region) {
+		int[] out = new int[MapRegion.OVERVIEW_SIZE * MapRegion.OVERVIEW_SIZE];
+		int tilesAcross = MapRegion.BLOCKS / blocksPerTile(2);
+		int tilePixels = TILE_PIXELS / MapRegion.OVERVIEW_BLOCKS;
+		boolean complete = true;
+		for (int tz = 0; tz < tilesAcross; tz++) {
+			for (int tx = 0; tx < tilesAcross; tx++) {
+				Result tile = bakeColumns(world, 2, region.regionX * tilesAcross + tx, region.regionZ * tilesAcross + tz);
+				complete &= tile.complete();
+				int[] argb = tile.pixels();
+				for (int i = 0; i < argb.length; i++) {
+					argb[i] = fromAbgr(argb[i]);
+				}
+				for (int py = 0; py < tilePixels; py++) {
+					for (int px = 0; px < tilePixels; px++) {
+						int color = averageAt(argb, TILE_PIXELS, px * MapRegion.OVERVIEW_BLOCKS, py * MapRegion.OVERVIEW_BLOCKS, MapRegion.OVERVIEW_BLOCKS);
+						out[(tz * tilePixels + py) * MapRegion.OVERVIEW_SIZE + tx * tilePixels + px] = color;
+					}
+				}
+			}
+		}
+		return new Result(out, complete);
+	}
+
+	/** The average of a square of ARGB pixels; clear pixels are unexplored ground. */
+	private static int averageAt(int[] pixels, int width, int x, int y, int size) {
+		if (size == 1) {
+			return pixels[y * width + x];
+		}
+		long r = 0;
+		long g = 0;
+		long b = 0;
+		int count = 0;
+		for (int dy = 0; dy < size; dy++) {
+			for (int dx = 0; dx < size; dx++) {
+				int pixel = pixels[(y + dy) * width + x + dx];
+				if ((pixel >>> 24) == 0) {
+					continue;
+				}
+				r += (pixel >> 16) & 0xFF;
+				g += (pixel >> 8) & 0xFF;
+				b += pixel & 0xFF;
+				count++;
+			}
+		}
+		// Mostly unexplored squares stay clear, so the explored area keeps its edge instead of smearing.
+		if (count * 2 < size * size) {
+			return 0;
+		}
+		return 0xFF000000 | (int) (r / count) << 16 | (int) (g / count) << 8 | (int) (b / count);
 	}
 
 	/** A column's color at one pixel, before shading: its top over whatever shows under it. */
@@ -178,6 +284,14 @@ final class MapTileBaker {
 		return 0xFF000000 | (argb & 0xFF) << 16 | (argb & 0xFF00) | (argb >> 16) & 0xFF;
 	}
 
+	/** Back from a drawn pixel to ARGB; pixels that were never drawn stay clear. */
+	private static int fromAbgr(int abgr) {
+		if (abgr == 0) {
+			return 0;
+		}
+		return 0xFF000000 | (abgr & 0xFF) << 16 | (abgr & 0xFF00) | (abgr >> 16) & 0xFF;
+	}
+
 	/** The columns a tile needs, plus a one-block border for shading and side strips, copied from the chunks. */
 	private static final class Grid {
 		final int originX;
@@ -189,6 +303,8 @@ final class MapTileBaker {
 		final int[] floor;
 		final int[] floorY;
 		final int[] biome;
+		/** False when a chunk's region was still loading or a block had no look yet. */
+		boolean complete = true;
 
 		Grid(MapWorld world, int originX, int originZ, int size) {
 			this.originX = originX;
@@ -209,6 +325,9 @@ final class MapTileBaker {
 				for (int chunkX = firstChunkX; chunkX <= lastChunkX; chunkX++) {
 					MapChunk chunk = world.chunk(chunkX, chunkZ);
 					if (chunk == null) {
+						if (world.loading(chunkX, chunkZ)) {
+							complete = false;
+						}
 						continue;
 					}
 					int fromX = Math.max(originX, chunkX * MapChunk.SIZE);
@@ -235,18 +354,28 @@ final class MapTileBaker {
 			return z * size + x;
 		}
 
+		/** A state's look; one the map has no look for yet is asked for, and the tile is drawn again later. */
+		@Nullable MapBlockLook look(int stateId) {
+			MapBlockLook look = MapBlockLooks.get(stateId);
+			if (look == null && stateId != MapChunk.NONE) {
+				MapBlockLooks.request(stateId);
+				complete = false;
+			}
+			return look;
+		}
+
 		/** The id of the block whose height counts for shading: the top, unless it's a plant or torch standing on the floor. */
 		int shadeId(int g) {
-			MapBlockLook look = MapBlockLooks.get(top[g]);
+			MapBlockLook look = look(top[g]);
 			return look == null || usesTop(look) || floor[g] == MapChunk.NONE ? top[g] : floor[g];
 		}
 
 		@Nullable MapBlockLook shadeLook(int g) {
-			return MapBlockLooks.get(shadeId(g));
+			return look(shadeId(g));
 		}
 
 		int shadeHeight(int g) {
-			MapBlockLook look = MapBlockLooks.get(top[g]);
+			MapBlockLook look = look(top[g]);
 			return look == null ? topY[g] : shadeHeight(g, look);
 		}
 

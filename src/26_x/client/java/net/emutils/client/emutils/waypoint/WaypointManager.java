@@ -932,12 +932,14 @@ public final class WaypointManager {
         }
     }
 
-    private static String dimensionId(ClientLevel world) {
+    /** The dimension's id, such as {@code minecraft:overworld}; the map keys its files by it too (#215). */
+    public static String dimensionId(ClientLevel world) {
         ResourceKey<Level> key = world.dimension();
         return key.identifier().toString();
     }
 
-    private static String worldKey(Minecraft client) {
+    /** Which world or server you are in, as waypoints and the map (#215) store it; empty when in none. */
+    public static String worldKey(Minecraft client) {
         ServerData serverInfo = client.getCurrentServer();
         if (
             serverInfo != null &&

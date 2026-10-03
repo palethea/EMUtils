@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.NativeImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.mixin.SpriteContentsAccessor;
@@ -44,11 +46,40 @@ public final class MapBlockLooks {
 	private static final float HOLE_SHADE = 0.72F;
 
 	private static volatile @Nullable Generation current;
+	/** States the baker met without a look, made on the client thread at the next tick. */
+	private static final Set<Integer> REQUESTED = ConcurrentHashMap.newKeySet();
 
 	private MapBlockLooks() {
 	}
 
-	private record Generation(BlockStateModelSet models, AtomicReferenceArray<MapBlockLook> looks) {
+	private record Generation(BlockStateModelSet models, AtomicReferenceArray<MapBlockLook> looks, int fingerprint) {
+	}
+
+	/**
+	 * Which resource packs the looks come from. Saved overviews remember it, so they are redrawn after a
+	 * pack change. Safe from any thread.
+	 */
+	public static int fingerprint() {
+		Generation generation = current;
+		return generation == null ? 0 : generation.fingerprint();
+	}
+
+	/** Asks for a state's look to be made, for a state the map read from disk. Safe from any thread. */
+	static void request(int stateId) {
+		REQUESTED.add(stateId);
+	}
+
+	/** Makes the looks asked for since the last call; returns true when there were any. Client thread only. */
+	static boolean makeRequested() {
+		if (REQUESTED.isEmpty()) {
+			return false;
+		}
+		Integer[] ids = REQUESTED.toArray(new Integer[0]);
+		for (Integer id : ids) {
+			REQUESTED.remove(id);
+			ensure(Block.stateById(id), id);
+		}
+		return true;
 	}
 
 	/** The look of a block state id, or null when the map hasn't met that state yet. Safe from any thread. */
@@ -70,7 +101,8 @@ public final class MapBlockLooks {
 		if (generation != null && generation.models() == models) {
 			return false;
 		}
-		current = new Generation(models, new AtomicReferenceArray<>(Block.BLOCK_STATE_REGISTRY.size()));
+		int fingerprint = client.getResourcePackRepository().getSelectedIds().hashCode() * 31 + Block.BLOCK_STATE_REGISTRY.size();
+		current = new Generation(models, new AtomicReferenceArray<>(Block.BLOCK_STATE_REGISTRY.size()), fingerprint == 0 ? 1 : fingerprint);
 		return generation != null;
 	}
 

@@ -44,9 +44,11 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
 import net.emutils.client.emutils.map.MapManager;
+import net.emutils.client.emutils.map.MapDraw;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
+import net.emutils.client.emutils.map.WorldMapScreen;
 import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
@@ -228,6 +230,7 @@ public final class UiSnapshotter {
 			clearOldSnapshots(client);
 			// The other snapshots show the HUD without the minimap (#212); its own steps turn it on.
 			EMUtilsClient.config().setMinimap(false);
+			EMUtilsClient.config().setWorldMap(false);
 		}
 		stepTicks++;
 		if (step > LAST_STEP) {
@@ -3502,9 +3505,52 @@ public final class UiSnapshotter {
 			case 387 -> {
 				EMUtilsClient.config().resetMinimapDefaults();
 				EMUtilsClient.config().setMinimap(false);
-				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				client.gui.setScreen(null);
 				next();
+			}
+			// World map (#215): what was sampled is saved and read back the same, the minimap grows into
+			// the world map, which shows the explored area with waypoints, zooms far out on the regions'
+			// overviews, and shrinks back into the minimap on closing.
+			case 388 -> {
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setMinimapShape(MinimapShape.ROUND);
+					config.setWorldMap(true);
+				}
+				if (stepTicks == 60) {
+					String problem = MapManager.roundTripForSnapshot(client);
+					check(problem.isEmpty(), "the region you stand in is saved and read back the same" + (problem.isEmpty() ? "" : " (" + problem + ")"));
+					WorldMapScreen.open(client, null);
+				}
+				captureAfter(client, 63, "world map opening out of the minimap");
+			}
+			case 389 -> captureAfter(client, 40, "world map");
+			case 390 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.scrollForSnapshot(-14.0D);
+					check(map.zoomForSnapshot() < 0.1F, "scrolling out zooms the world map far out (" + map.zoomForSnapshot() + ")");
+				}
+				captureAfter(client, 120, "world map zoomed far out");
+			}
+			case 391 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.scrollForSnapshot(14.0D);
+					map.onClose();
+				}
+				captureAfter(client, 3, "world map closing into the minimap");
+			}
+			case 392 -> {
+				if (stepTicks == 20) {
+					check(!(MinecraftClientCompat.screen(client) instanceof WorldMapScreen), "the world map closed after its animation");
+				}
+				if (stepTicks == 21) {
+					EMUtilsClient.config().resetMinimapDefaults();
+					EMUtilsClient.config().setMinimap(false);
+					EMUtilsClient.config().setWorldMap(false);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
 			}
 			default -> finish(client);
 		}
@@ -3556,7 +3602,7 @@ public final class UiSnapshotter {
 		// A tile's square cut to a turned square is the 8-sided overlap of the two.
 		float[] square = {0.0F, 0.0F, 10.0F, 0.0F, 10.0F, 10.0F, 0.0F, 10.0F};
 		float[] diamond = {5.0F, -2.0F, 12.0F, 5.0F, 5.0F, 12.0F, -2.0F, 5.0F};
-		check(MinimapRenderer.clip(square, diamond).length == 16, "clipping a square to a turned square leaves 8 corners (" + MinimapRenderer.clip(square, diamond).length / 2 + ")");
+		check(MapDraw.clip(square, diamond).length == 16, "clipping a square to a turned square leaves 8 corners (" + MapDraw.clip(square, diamond).length / 2 + ")");
 	}
 
 	private static void checkMapLook(BlockState state, MapBlockLook.Kind kind, boolean tinted) {

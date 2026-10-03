@@ -26,7 +26,7 @@ public final class MapTiles {
 	private static final int MAX_BAKING = 3;
 	private static final int UPLOADS_PER_FRAME = 3;
 	/** How often a changed tile may be redrawn, per detail level: busy areas don't keep the baker busy. */
-	private static final long[] REBAKE_MILLIS = {150L, 500L, 2000L};
+	private static final long[] REBAKE_MILLIS = {150L, 500L, 2000L, 1000L, 1000L, 1000L};
 	private static final ExecutorService BAKER = Executors.newSingleThreadExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "EMUtils Map Baker");
 		thread.setDaemon(true);
@@ -36,6 +36,7 @@ public final class MapTiles {
 
 	private final Map<Long, Tile> tiles = new LinkedHashMap<>(64, 0.75F, true);
 	private final ConcurrentLinkedQueue<Baked> baked = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<MapRegion> overviewsDone = new ConcurrentLinkedQueue<>();
 	private int baking;
 	/** Counts up whenever all tiles are dropped, so bakes started before that are thrown away. */
 	private int generation;
@@ -59,7 +60,7 @@ public final class MapTiles {
 		}
 	}
 
-	private record Baked(Tile tile, int generation, int @Nullable [] pixels) {
+	private record Baked(Tile tile, int generation, MapTileBaker.@Nullable Result result) {
 	}
 
 	private static long key(int level, int tileX, int tileZ) {
@@ -87,13 +88,13 @@ public final class MapTiles {
 		baking++;
 		int startedIn = generation;
 		BAKER.execute(() -> {
-			int[] pixels = null;
+			MapTileBaker.Result result = null;
 			try {
-				pixels = MapTileBaker.bake(world, tile.level, tile.tileX, tile.tileZ);
+				result = MapTileBaker.bake(world, tile.level, tile.tileX, tile.tileZ);
 			} catch (RuntimeException exception) {
 				EMUtilsClient.LOGGER.warn("EMUtils map couldn't draw a tile", exception);
 			}
-			baked.add(new Baked(tile, startedIn, pixels));
+			baked.add(new Baked(tile, startedIn, result));
 		});
 	}
 
@@ -108,10 +109,14 @@ public final class MapTiles {
 			baking--;
 			Tile tile = done.tile();
 			tile.baking = false;
-			if (done.generation() != generation || done.pixels() == null) {
+			if (done.generation() != generation || done.result() == null) {
 				continue;
 			}
-			upload(tile, done.pixels());
+			upload(tile, done.result().pixels());
+			if (!done.result().complete()) {
+				// Drawn while some of it was still loading: drawn again once that had time to arrive.
+				tile.dirty = true;
+			}
 		}
 		if (tiles.size() > MAX_TILES) {
 			Iterator<Tile> oldest = tiles.values().iterator();
@@ -144,7 +149,7 @@ public final class MapTiles {
 		// The columns just east and south of the chunk are shaded by its heights, so their tiles change too.
 		int maxX = minX + MapChunk.SIZE;
 		int maxZ = minZ + MapChunk.SIZE;
-		for (int level = 0; level < MapTileBaker.LEVELS; level++) {
+		for (int level = 0; level < MapTileBaker.COLUMN_LEVELS; level++) {
 			int blocks = MapTileBaker.blocksPerTile(level);
 			for (int tileZ = Math.floorDiv(minZ, blocks); tileZ <= Math.floorDiv(maxZ, blocks); tileZ++) {
 				for (int tileX = Math.floorDiv(minX, blocks); tileX <= Math.floorDiv(maxX, blocks); tileX++) {
@@ -155,6 +160,52 @@ public final class MapTiles {
 				}
 			}
 		}
+	}
+
+	/** Marks every tile showing part of a region to be redrawn, at every level. */
+	public void markRegionDirty(int regionX, int regionZ) {
+		int minX = regionX * MapRegion.BLOCKS;
+		int minZ = regionZ * MapRegion.BLOCKS;
+		int maxX = minX + MapRegion.BLOCKS;
+		int maxZ = minZ + MapRegion.BLOCKS;
+		for (int level = 0; level < MapTileBaker.LEVELS; level++) {
+			int blocks = MapTileBaker.blocksPerTile(level);
+			for (Tile tile : tiles.values()) {
+				if (tile.level == level
+					&& (long) tile.tileX * blocks <= maxX && (long) (tile.tileX + 1) * blocks >= minX
+					&& (long) tile.tileZ * blocks <= maxZ && (long) (tile.tileZ + 1) * blocks >= minZ) {
+					tile.dirty = true;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Draws a region's overview on the baker thread and hands it to the region; {@code done} runs on the
+	 * render thread afterwards, through {@link #beginFrame}.
+	 */
+	public void bakeOverview(MapWorld world, MapRegion region, int fingerprint) {
+		region.overviewStale = false;
+		BAKER.execute(() -> {
+			try {
+				MapTileBaker.Result result = MapTileBaker.overview(world, region);
+				region.overview = result.pixels();
+				region.overviewFingerprint = fingerprint;
+				if (!result.complete()) {
+					region.overviewStale = true;
+				}
+				// Saved with the region, so the far zoom levels have it next time without the chunks.
+				region.dirty = true;
+				overviewsDone.add(region);
+			} catch (RuntimeException exception) {
+				EMUtilsClient.LOGGER.warn("EMUtils map couldn't draw a region overview", exception);
+			}
+		});
+	}
+
+	/** Regions whose overview was drawn since the last call. Render thread. */
+	public @Nullable MapRegion pollOverviewDone() {
+		return overviewsDone.poll();
 	}
 
 	/** Frees every tile, for a new world or a resource pack change. */
