@@ -3197,15 +3197,54 @@ public final class UiSnapshotter {
 				EMUtilsClient.waypoint().clearForCurrentWorld(client);
 				next();
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+						// EMUtils waypoints on Xaero's maps (#185), when Xaero is installed.
 			case 370 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().resetBeaconRadiusDefaults();
+					seedXaeroWaypoints(client);
+				}
+				if (!FabricLoader.getInstance().isModLoaded("xaerominimap")) {
+					check(!XaeroMapIntegration.waypointsWanted(), "without Xaero's Minimap no waypoints are put on the maps");
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+					next();
+				} else if (stepTicks > 20) {
+					check(XaeroMapIntegration.waypointsWanted(), "with Xaero's Minimap installed, waypoints are wanted on its maps");
+					check(XaeroMapIntegration.waypointsAttachedForSnapshot(), "waypoints are added to Xaero's minimap and world map");
+					grab(client, "waypoints on xaero's minimap");
+					next();
+				}
+			}
+			case 371 -> {
+				if (stepTicks == 1) {
+					setGuiScale(client, 2);
+					Screen map = XaeroMapIntegration.worldMapScreenForSnapshot(client, null);
+					check(map != null, "Xaero's World Map opens");
+					if (map != null) {
+						client.gui.setScreen(map);
+					}
+				}
+				if (stepTicks == 40) {
+					grab(client, "waypoints on xaero's world map");
+					client.gui.setScreen(null);
+					EMUtilsClient.config().setWaypointXaero(false);
+				}
+				if (stepTicks == 45) {
+					check(!XaeroMapIntegration.waypointsWanted(), "with Show on Xaero's Maps off, waypoints are not put on the maps");
+					EMUtilsClient.config().setWaypointXaero(true);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
+			}
+// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			case 372 -> {
 				EMUtilsClient.config().resetHudDefaults();
 				SmokeLaunchVerifier.stopEnteringTestWorld();
 				leftWorld = true;
 				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
 				next();
 			}
-			case 371 -> {
+			case 373 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
 					client.gui.setScreen(new WaypointsScreen(MinecraftClientCompat.screen(client)));
 					next();
@@ -3214,7 +3253,7 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			case 372 -> {
+			case 374 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WaypointsScreen screen) {
 					screen.openAddSheetForSnapshot();
 					check(!screen.sheetOpenForSnapshot(), "Add waypoint doesn't open outside a world");
@@ -3225,7 +3264,7 @@ public final class UiSnapshotter {
 				capture(client, "waypoints, not in a world");
 			}
 			// The EMUtils icon on the title screen (#160), first in the row of small icons.
-			case 373 -> {
+			case 375 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					client.gui.setScreen(new TitleScreen());
@@ -3236,7 +3275,7 @@ public final class UiSnapshotter {
 				captureAfter(client, 20, "title screen, EMUtils icon");
 			}
 			// Closing back to a vanilla screen shows it right away, with the panel fading out over it (#164).
-			case 374 -> {
+			case 376 -> {
 				if (stepTicks == 1) {
 					setGuiScale(client, 2);
 					TitleScreen title = new TitleScreen();
@@ -3592,10 +3631,10 @@ public final class UiSnapshotter {
 		EMUtilsConfig config = EMUtilsClient.config();
 		boolean setting = config.beaconRadiusXaero();
 		boolean xaero = FabricLoader.getInstance().isModLoaded("xaerominimap");
-		check(XaeroMapIntegration.isWanted() == (xaero && setting), "the outline is on Xaero's maps only when Xaero is installed and the setting is on");
+		check(XaeroMapIntegration.beaconsWanted() == (xaero && setting), "the outline is on Xaero's maps only when Xaero is installed and the setting is on");
 		config.setBeaconRadiusXaero(false);
 		BeaconRadiusRenderer.tick();
-		check(BeaconRadiusRenderer.mapRects().isEmpty() && !XaeroMapIntegration.isWanted(), "with Xaero Map Integration off no map outlines are built");
+		check(BeaconRadiusRenderer.mapRects().isEmpty() && !XaeroMapIntegration.beaconsWanted(), "with Xaero Map Integration off no map outlines are built");
 		config.setBeaconRadiusXaero(true);
 		BeaconRadiusRenderer.tick();
 		int expected = xaero ? BeaconRadiusRenderer.outlinedBeaconsForSnapshot() : 0;
@@ -3695,6 +3734,23 @@ public final class UiSnapshotter {
 	}
 
 	/** Puts the seeded waypoints in sets and adds two from other dimensions, to show the organized list. */
+	/** Waypoints around the player for the Xaero map snapshots: near ones, a death point, a hidden one and one far past the minimap's edge. */
+	private static void seedXaeroWaypoints(Minecraft client) {
+		if (client.player == null) {
+			return;
+		}
+		EMUtilsClient.waypoint().clearForCurrentWorld(client);
+		int x = client.player.getBlockX();
+		int y = client.player.getBlockY();
+		int z = client.player.getBlockZ();
+		EMUtilsClient.waypoint().addCustom(client, "Base", x + 12, y, z, 0xFFFF5555, false, "");
+		EMUtilsClient.waypoint().addCustom(client, "Mine", x - 20, y, z + 14, 0xFF5555FF, false, "");
+		EMUtilsClient.waypoint().addCustom(client, "Farm", x + 4, y, z - 30, 0xFF55FF55, false, "");
+		EMUtilsClient.waypoint().addCustom(client, "Yellow gate", x - 6, y, z - 9, 0xFFFFFF55, false, "");
+		EMUtilsClient.waypoint().addCustom(client, "Far away", x + 400, y, z + 60, 0xFFAA00AA, false, "");
+		EMUtilsClient.waypoint().recordDeath(client, new BlockPos(x + 16, y, z + 12));
+	}
+
 	private static void seedOrganization(Minecraft client) {
 		if (client.player == null) {
 			return;

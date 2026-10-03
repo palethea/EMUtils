@@ -106,7 +106,7 @@ final class BeaconXaeroElementRenderer extends MinimapElementRenderer<BeaconXaer
 
 	@Override
 	public boolean shouldRender(MinimapElementRenderLocation location) {
-		return XaeroMapIntegration.isWanted()
+		return XaeroMapIntegration.beaconsWanted()
 			&& (location == MinimapElementRenderLocation.OVER_MINIMAP || location == MinimapElementRenderLocation.WORLD_MAP);
 	}
 

@@ -177,6 +177,8 @@
   "emutils.option.waypoint_label_background.desc": "How dark the panel behind a waypoint's name and distance is. At 0% there is no panel.",
   "emutils.option.waypoint_edge_pin": "Pin to Screen Edge",
   "emutils.option.waypoint_edge_pin.desc": "Keep waypoints that are off-screen or behind you at the edge of the screen, pointing the way to them.",
+  "emutils.option.waypoint_xaero": "Show on Xaero's Maps",
+  "emutils.option.waypoint_xaero.desc": "Also show your waypoints on Xaero's Minimap and World Map, with the same colors and initials. Only used when one of those mods is installed.",
   "emutils.option.waypoint_max_distance": "Max Distance",
   "emutils.option.waypoint_max_distance.desc": "Hide waypoints farther away than this. They fade out over the last stretch.",
   "emutils.option.waypoint_max_distance.unlimited": "Unlimited",

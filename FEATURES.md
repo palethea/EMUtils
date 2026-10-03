@@ -246,6 +246,7 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Pin to Screen Edge: keep waypoints that are off-screen or behind you at the edge of the screen, with an arrow and their distance.
 - Max Distance: hide waypoints beyond a distance (unlimited by default); they fade out over the last fifth.
 - Show Other Dimensions: also show the world's waypoints from other dimensions, off by default. Overworld and Nether waypoints appear at the matching spot in the other one (Nether coordinates times eight, the same height), as markers and beacons. End and custom dimensions don't line up, so those stay in the list. The same switch sits in the Current Waypoints list.
+- Show on Xaero's Maps: also show the waypoints on Xaero's Minimap and World Map when those optional mods are installed, on by default. They look like Xaero's own waypoints: on the minimap a rounded colored marker with the initial (a cross for deaths) that pins to the edge when out of range, following Waypoint Opacity, Waypoint Size and Max Distance; on the World Map Xaero's own flag with the name that fades in under the cursor, following Xaero's waypoint scale, background and zoom settings. Hidden waypoints stay hidden, and with Show Other Dimensions on, Overworld and Nether waypoints also show at their converted spot. The switch only shows when a Xaero map mod is installed.
 
 ## Management
 
