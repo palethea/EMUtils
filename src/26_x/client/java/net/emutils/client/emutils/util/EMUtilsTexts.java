@@ -60,6 +60,10 @@ public final class EMUtilsTexts {
     public static final String UI_HUD_EDITOR_SIZE = "emutils.ui.hud_editor.size";
     public static final String UI_HUD_EDITOR_OPACITY = "emutils.ui.hud_editor.opacity";
     public static final String UI_HUD_EDITOR_RESET = "emutils.ui.hud_editor.reset";
+    public static final String UI_HUD_EDITOR_SHOW = "emutils.ui.hud_editor.show";
+    public static final String UI_HUD_EDITOR_SHOW_HIDDEN = "emutils.ui.hud_editor.show_hidden";
+    public static final String UI_HUD_EDITOR_SHOW_ALL = "emutils.ui.hud_editor.show_all";
+    public static final String UI_HUD_EDITOR_HIDE_ALL = "emutils.ui.hud_editor.hide_all";
     public static final String UI_MASS_DROP_COUNT = "emutils.ui.mass_drop.count";
     public static final String UI_MASS_DROP_COUNT_ONE = "emutils.ui.mass_drop.count_one";
     public static final String UI_MASS_DROP_SEARCH = "emutils.ui.mass_drop.search";

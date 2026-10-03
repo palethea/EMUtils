@@ -2,9 +2,13 @@ package net.emutils.client.emutils.hud.editor;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiShapes;
@@ -34,6 +38,11 @@ import org.jspecify.annotations.Nullable;
  * with a light outline; hovering or selecting one shows its name and a corner handle to resize it.
  * A selected element gets a card with Size and Opacity sliders. A toolbar at the top saves, cancels or
  * resets everything. Changes go to a draft layout in {@link HudLayoutManager} until they are saved.
+ *
+ * <p>A click picks the smallest element under the mouse, so a small element on top of or inside a big one (the
+ * Tab List) can be reached, and clicking the selected element again moves on to the one underneath (#204). The
+ * Show menu hides elements from the editor only, so what is under them can be reached; the HUD in the game and
+ * the saved layout don't change.
  */
 public final class HudEditorScreen extends Screen {
 	private static final int TOOLBAR_HEIGHT = 32;
@@ -45,6 +54,13 @@ public final class HudEditorScreen extends Screen {
 	private static final int RESET_HEIGHT = 18;
 	private static final int SCALE_SLIDER_MIN = 25;
 	private static final int SCALE_SLIDER_MAX = 300;
+	private static final int MENU_ROW = 20;
+	private static final int MENU_PADDING = 6;
+	/** How far the mouse has to move for a press to count as a drag rather than a click. */
+	private static final int CLICK_SLOP = 3;
+
+	/** Elements hidden in the editor, kept while the game runs; the HUD itself never reads this. */
+	private static final Set<HudElementId> HIDDEN = new HashSet<>();
 
 	private enum Drag {
 		NONE,
@@ -67,6 +83,18 @@ public final class HudEditorScreen extends Screen {
 	private int toolbarX;
 	private int toolbarY = TOOLBAR_MARGIN;
 	private int toolbarWidth;
+	private int showX;
+	private int showWidth;
+	private boolean menuOpen;
+	private int menuX;
+	private int menuY;
+	private int menuWidth;
+	private int menuHeight;
+	/** Set when a press lands on the element that was already selected, so releasing without dragging moves on to the next one under it. */
+	private boolean cycleOnRelease;
+	private int pressX;
+	private int pressY;
+	private boolean pressMoved;
 	private int resetX;
 	private int resetWidth;
 	private int cancelX;
@@ -134,17 +162,36 @@ public final class HudEditorScreen extends Screen {
 		return id == null ? null : HudLayoutManager.draftLayouts().get(id);
 	}
 
-	/** The element under the mouse; the one drawn last (on top) wins. */
-	private @Nullable HudElementId elementAt(double mouseX, double mouseY) {
-		HudElementId hit = null;
+	/** The elements under the mouse, smallest first (the one drawn on top first among equals); hidden ones don't count. */
+	private List<HudElementId> elementsAt(double mouseX, double mouseY) {
+		List<HudElementId> hits = new ArrayList<>();
 		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			if (isHidden(element.id())) {
+				continue;
+			}
 			HudLayoutDraft draft = draft(element.id());
 			HudOverlayPlacement.PanelDimensions panel = dimensions.get(element.id());
 			if (draft != null && panel != null && contains(mouseX, mouseY, draft.x() - 2, draft.y() - 2, panel.width() + 4, panel.height() + 4)) {
-				hit = element.id();
+				hits.add(element.id());
 			}
 		}
-		return hit;
+		// The sort is stable, so reversing first leaves the element drawn last first among ones of the same size.
+		Collections.reverse(hits);
+		hits.sort(Comparator.comparingLong(id -> {
+			HudOverlayPlacement.PanelDimensions panel = dimensions.get(id);
+			return panel == null ? 0L : (long) panel.width() * panel.height();
+		}));
+		return hits;
+	}
+
+	/** The element a click at this spot picks: the smallest one there. */
+	private @Nullable HudElementId elementAt(double mouseX, double mouseY) {
+		List<HudElementId> hits = elementsAt(mouseX, mouseY);
+		return hits.isEmpty() ? null : hits.getFirst();
+	}
+
+	private static boolean isHidden(HudElementId id) {
+		return HIDDEN.contains(id);
 	}
 
 	/** How much of the elements the rectangle covers, in square GUI pixels. */
@@ -153,7 +200,7 @@ public final class HudEditorScreen extends Screen {
 		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
 			HudLayoutDraft draft = draft(element.id());
 			HudOverlayPlacement.PanelDimensions panel = dimensions.get(element.id());
-			if (draft == null || panel == null) {
+			if (draft == null || panel == null || isHidden(element.id())) {
 				continue;
 			}
 			int overlapWidth = Math.min(x + width, draft.x() + panel.width()) - Math.max(x, draft.x());
@@ -212,7 +259,7 @@ public final class HudEditorScreen extends Screen {
 			HudElementId id = element.id();
 			HudLayoutDraft draft = draft(id);
 			HudOverlayPlacement.PanelDimensions panel = dimensions.get(id);
-			if (draft == null || panel == null || panel.width() <= 0 || panel.height() <= 0) {
+			if (draft == null || panel == null || panel.width() <= 0 || panel.height() <= 0 || isHidden(id)) {
 				continue;
 			}
 			element.renderPreview(context, draft.x(), draft.y(), config, minecraft, draft.scale());
@@ -223,6 +270,9 @@ public final class HudEditorScreen extends Screen {
 			drawCard(context, theme, mouseX, mouseY);
 		}
 		drawToolbar(context, theme, mouseX, mouseY);
+		if (menuOpen) {
+			drawMenu(context, theme, mouseX, mouseY);
+		}
 	}
 
 	/** The outline around an element, its name while hovered or selected, and the resize handle. */
@@ -260,13 +310,17 @@ public final class HudEditorScreen extends Screen {
 		Component titleText = title;
 		Component hint = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_HINT);
 		Component resetLabel = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_RESET_ALL);
+		Component showLabel = hiddenCount() == 0
+			? Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW)
+			: Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_HIDDEN, hiddenCount());
 		Component saveLabel = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SAVE);
+		showWidth = UiWidgets.buttonWidth(font, showLabel) + 4;
 		resetWidth = UiWidgets.buttonWidth(font, resetLabel) + 4;
 		cancelWidth = UiWidgets.buttonWidth(font, CommonComponents.GUI_CANCEL) + 4;
 		saveWidth = Math.max(56, UiWidgets.buttonWidth(font, saveLabel) + 12);
 		int titleWidth = UiText.width(font, titleText, UiText.Size.BOLD);
 		int hintWidth = UiText.width(font, hint, UiText.Size.BODY);
-		toolbarWidth = 12 + titleWidth + 12 + hintWidth + 16 + resetWidth + 4 + cancelWidth + 6 + saveWidth + 6;
+		toolbarWidth = 12 + titleWidth + 12 + hintWidth + 16 + showWidth + 4 + resetWidth + 4 + cancelWidth + 6 + saveWidth + 6;
 		toolbarX = (width - toolbarWidth) / 2;
 		// At the top, unless it would cover more of the elements there, such as Look-At Info (#45), than at
 		// the bottom. Only decided while nothing is dragged, so it doesn't jump away from under the mouse.
@@ -288,12 +342,108 @@ public final class HudEditorScreen extends Screen {
 		int buttonY = center - TOOLBAR_BUTTON / 2;
 		boolean interactive = drag == Drag.NONE;
 		resetX = toolbarX + toolbarWidth - 6 - saveWidth - 6 - cancelWidth - 4 - resetWidth;
+		showX = resetX - 4 - showWidth;
 		cancelX = resetX + resetWidth + 4;
 		saveX = cancelX + cancelWidth + 6;
+		UiWidgets.button(context, font, theme, showX, buttonY, showWidth, TOOLBAR_BUTTON, showLabel, menuOpen ? UiWidgets.ButtonStyle.OUTLINE : UiWidgets.ButtonStyle.GHOST, interactive && (menuOpen || contains(mouseX, mouseY, showX, buttonY, showWidth, TOOLBAR_BUTTON)) ? 1.0F : 0.0F);
 		UiWidgets.button(context, font, theme, resetX, buttonY, resetWidth, TOOLBAR_BUTTON, resetLabel, UiWidgets.ButtonStyle.GHOST, interactive && contains(mouseX, mouseY, resetX, buttonY, resetWidth, TOOLBAR_BUTTON) ? 1.0F : 0.0F);
 		UiWidgets.button(context, font, theme, cancelX, buttonY, cancelWidth, TOOLBAR_BUTTON, CommonComponents.GUI_CANCEL, UiWidgets.ButtonStyle.GHOST, interactive && contains(mouseX, mouseY, cancelX, buttonY, cancelWidth, TOOLBAR_BUTTON) ? 1.0F : 0.0F);
 		UiWidgets.button(context, font, theme, saveX, buttonY, saveWidth, TOOLBAR_BUTTON, saveLabel, UiWidgets.ButtonStyle.PRIMARY, interactive && contains(mouseX, mouseY, saveX, buttonY, saveWidth, TOOLBAR_BUTTON) ? 1.0F : 0.0F);
 		UiOpacity.reset();
+	}
+
+	private int hiddenCount() {
+		int count = 0;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			if (isHidden(element.id())) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/** Where the Show menu goes: under the Show button, or above it when the toolbar is at the bottom. */
+	private void layoutMenu() {
+		int rows = HudLayoutManager.editorElements().size() + 1;
+		int widest = 0;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			widest = Math.max(widest, UiText.width(font, Component.literal(label(element.id())), UiText.Size.BODY));
+		}
+		int allButtons = UiWidgets.buttonWidth(font, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_ALL)) + 4 + UiWidgets.buttonWidth(font, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_HIDE_ALL));
+		widest = Math.max(widest, allButtons - 12 - UiWidgets.SWITCH_WIDTH);
+		menuWidth = MENU_PADDING * 2 + 6 + widest + 12 + UiWidgets.SWITCH_WIDTH + 6;
+		menuHeight = MENU_PADDING * 2 + rows * MENU_ROW;
+		menuX = Math.clamp(showX + showWidth - menuWidth, 6, Math.max(6, width - menuWidth - 6));
+		boolean toolbarAtTop = toolbarY == TOOLBAR_MARGIN;
+		menuY = toolbarAtTop ? toolbarY + TOOLBAR_HEIGHT + 6 : Math.max(6, toolbarY - 6 - menuHeight);
+	}
+
+	/** The Show menu: Show all and Hide all, then a switch for each element. */
+	private void drawMenu(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
+		layoutMenu();
+		UiShapes.shadow(context, menuX, menuY, menuWidth, menuHeight, 10, 10, theme.shadow());
+		UiShapes.borderedRect(context, menuX, menuY, menuWidth, menuHeight, 10, theme.surface(), theme.line());
+		int rowX = menuX + MENU_PADDING;
+		int rowWidth = menuWidth - MENU_PADDING * 2;
+		int y = menuY + MENU_PADDING;
+		Component showAll = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_ALL);
+		Component hideAll = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_HIDE_ALL);
+		int hideWidth = UiWidgets.buttonWidth(font, hideAll);
+		int showAllWidth = UiWidgets.buttonWidth(font, showAll);
+		int hideX = rowX + rowWidth - hideWidth;
+		int showAllX = hideX - 4 - showAllWidth;
+		UiWidgets.button(context, font, theme, showAllX, y + 1, showAllWidth, MENU_ROW - 2, showAll, UiWidgets.ButtonStyle.GHOST, contains(mouseX, mouseY, showAllX, y + 1, showAllWidth, MENU_ROW - 2) ? 1.0F : 0.0F);
+		UiWidgets.button(context, font, theme, hideX, y + 1, hideWidth, MENU_ROW - 2, hideAll, UiWidgets.ButtonStyle.GHOST, contains(mouseX, mouseY, hideX, y + 1, hideWidth, MENU_ROW - 2) ? 1.0F : 0.0F);
+		y += MENU_ROW;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			HudElementId id = element.id();
+			boolean shown = !isHidden(id);
+			boolean hover = contains(mouseX, mouseY, rowX, y, rowWidth, MENU_ROW);
+			if (hover) {
+				UiShapes.roundedRect(context, rowX, y, rowWidth, MENU_ROW, 5, UiTheme.fade(theme.text(), 0.08F));
+			}
+			Component name = UiText.ellipsize(font, Component.literal(label(id)), UiText.Size.BODY, rowWidth - 12 - UiWidgets.SWITCH_WIDTH - 8);
+			UiText.drawCentered(context, font, name, UiText.Size.BODY, rowX + 6, y + MENU_ROW / 2, shown ? theme.text() : theme.muted());
+			float progress = anim.towards("hud-editor-show:" + id.configKey(), shown, 14.0F);
+			UiWidgets.toggle(context, theme, rowX + rowWidth - 6 - UiWidgets.SWITCH_WIDTH, y + (MENU_ROW - UiWidgets.SWITCH_HEIGHT) / 2, progress, hover ? 1.0F : 0.0F);
+			y += MENU_ROW;
+		}
+	}
+
+	/** A click in the Show menu: Show all, Hide all or an element's switch. */
+	private void clickMenu(double mouseX, double mouseY) {
+		int rowX = menuX + MENU_PADDING;
+		int rowWidth = menuWidth - MENU_PADDING * 2;
+		int y = menuY + MENU_PADDING;
+		int hideWidth = UiWidgets.buttonWidth(font, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_HIDE_ALL));
+		int showAllWidth = UiWidgets.buttonWidth(font, Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_ALL));
+		int hideX = rowX + rowWidth - hideWidth;
+		int showAllX = hideX - 4 - showAllWidth;
+		if (contains(mouseX, mouseY, showAllX, y + 1, showAllWidth, MENU_ROW - 2)) {
+			HIDDEN.clear();
+			return;
+		}
+		if (contains(mouseX, mouseY, hideX, y + 1, hideWidth, MENU_ROW - 2)) {
+			for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+				HIDDEN.add(element.id());
+			}
+			selected = null;
+			return;
+		}
+		y += MENU_ROW;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			if (contains(mouseX, mouseY, rowX, y, rowWidth, MENU_ROW)) {
+				HudElementId id = element.id();
+				if (!HIDDEN.remove(id)) {
+					HIDDEN.add(id);
+					if (id.equals(selected)) {
+						selected = null;
+					}
+				}
+				return;
+			}
+			y += MENU_ROW;
+		}
 	}
 
 	/** The selected element's card: its name, Size and Opacity sliders, and a reset for both. */
@@ -364,6 +514,21 @@ public final class HudEditorScreen extends Screen {
 		double mouseY = click.y();
 		boolean left = click.button() == InputConstants.MOUSE_BUTTON_LEFT;
 		int buttonY = toolbarY + TOOLBAR_HEIGHT / 2 - TOOLBAR_BUTTON / 2;
+		if (menuOpen) {
+			layoutMenu();
+			if (left && contains(mouseX, mouseY, menuX, menuY, menuWidth, menuHeight)) {
+				clickMenu(mouseX, mouseY);
+				return true;
+			}
+			// Any other click closes the menu; one on the Show button itself only closes it.
+			menuOpen = false;
+			if (contains(mouseX, mouseY, showX, buttonY, showWidth, TOOLBAR_BUTTON)) {
+				return true;
+			}
+		} else if (left && contains(mouseX, mouseY, showX, buttonY, showWidth, TOOLBAR_BUTTON)) {
+			menuOpen = true;
+			return true;
+		}
 		if (left && contains(mouseX, mouseY, toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT)) {
 			if (contains(mouseX, mouseY, saveX, buttonY, saveWidth, TOOLBAR_BUTTON)) {
 				save();
@@ -401,6 +566,10 @@ public final class HudEditorScreen extends Screen {
 		if (!left) {
 			return true;
 		}
+		cycleOnRelease = hit.equals(selected) && !onResizeHandle(hit, mouseX, mouseY);
+		pressX = (int) mouseX;
+		pressY = (int) mouseY;
+		pressMoved = false;
 		selected = hit;
 		dragging = hit;
 		HudLayoutDraft draft = draft(hit);
@@ -430,7 +599,12 @@ public final class HudEditorScreen extends Screen {
 					refreshDimensions();
 				}
 			}
-			case MOVE -> move((int) click.x() - grabX, (int) click.y() - grabY);
+			case MOVE -> {
+				if (Math.abs((int) click.x() - pressX) > CLICK_SLOP || Math.abs((int) click.y() - pressY) > CLICK_SLOP) {
+					pressMoved = true;
+				}
+				move((int) click.x() - grabX, (int) click.y() - grabY);
+			}
 			case NONE -> {
 			}
 		}
@@ -449,7 +623,7 @@ public final class HudEditorScreen extends Screen {
 			List<HudLayoutSnapping.Bounds> others = new ArrayList<>();
 			for (Map.Entry<HudElementId, HudLayoutDraft> entry : HudLayoutManager.draftLayouts().entrySet()) {
 				HudOverlayPlacement.PanelDimensions other = dimensions.get(entry.getKey());
-				if (!entry.getKey().equals(dragging) && other != null) {
+				if (!entry.getKey().equals(dragging) && other != null && !isHidden(entry.getKey())) {
 					others.add(new HudLayoutSnapping.Bounds(entry.getValue().x(), entry.getValue().y(), other.width(), other.height()));
 				}
 			}
@@ -486,17 +660,32 @@ public final class HudEditorScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
+		if (cycleOnRelease && !pressMoved && drag == Drag.MOVE) {
+			selectNextUnder(pressX, pressY);
+		}
+		cycleOnRelease = false;
 		drag = Drag.NONE;
 		dragging = null;
 		guides.clear();
 		return true;
 	}
 
+	/** Clicking the selected element again, without dragging it, selects the next one under that spot, going round. */
+	private void selectNextUnder(int mouseX, int mouseY) {
+		List<HudElementId> hits = elementsAt(mouseX, mouseY);
+		int index = hits.indexOf(selected);
+		if (hits.size() > 1 && index >= 0) {
+			selected = hits.get((index + 1) % hits.size());
+		}
+	}
+
 	/** Arrows nudge the selected element (Shift for 10 px), Enter saves, Esc deselects and then cancels. */
 	@Override
 	public boolean keyPressed(KeyEvent input) {
 		if (input.isEscape()) {
-			if (selected != null) {
+			if (menuOpen) {
+				menuOpen = false;
+			} else if (selected != null) {
 				selected = null;
 			} else {
 				cancel();
@@ -599,6 +788,81 @@ public final class HudEditorScreen extends Screen {
 	/** The selected element's draft layout; used by UI snapshots. */
 	public @Nullable HudLayoutDraft selectedDraftForSnapshot() {
 		return draft(selected);
+	}
+
+	/**
+	 * Checks that, where two elements overlap, a click picks the smaller one, and that clicking the selected one
+	 * again goes on to the other; returns what went wrong, or null. Used by UI snapshots.
+	 */
+	public @Nullable String hitOrderProblemForSnapshot() {
+		List<HudLayoutElement> elements = HudLayoutManager.editorElements();
+		int pairs = 0;
+		for (int i = 0; i < elements.size(); i++) {
+			for (int j = i + 1; j < elements.size(); j++) {
+				HudElementId a = elements.get(i).id();
+				HudElementId b = elements.get(j).id();
+				HudLayoutDraft draftA = draft(a);
+				HudLayoutDraft draftB = draft(b);
+				HudOverlayPlacement.PanelDimensions panelA = dimensions.get(a);
+				HudOverlayPlacement.PanelDimensions panelB = dimensions.get(b);
+				if (draftA == null || draftB == null || panelA == null || panelB == null) {
+					continue;
+				}
+				int left = Math.max(draftA.x(), draftB.x());
+				int right = Math.min(draftA.x() + panelA.width(), draftB.x() + panelB.width());
+				int top = Math.max(draftA.y(), draftB.y());
+				int bottom = Math.min(draftA.y() + panelA.height(), draftB.y() + panelB.height());
+				if (right - left < 2 || bottom - top < 2) {
+					continue;
+				}
+				pairs++;
+				List<HudElementId> hits = elementsAt((left + right) / 2.0D, (top + bottom) / 2.0D);
+				if (hits.size() < 2) {
+					return label(a) + " and " + label(b) + " overlap but only " + hits.size() + " can be hit there";
+				}
+				for (int k = 1; k < hits.size(); k++) {
+					HudOverlayPlacement.PanelDimensions first = dimensions.get(hits.get(k - 1));
+					HudOverlayPlacement.PanelDimensions next = dimensions.get(hits.get(k));
+					if ((long) first.width() * first.height() > (long) next.width() * next.height()) {
+						return label(hits.get(k - 1)) + " is picked before the smaller " + label(hits.get(k));
+					}
+				}
+			}
+		}
+		return pairs == 0 ? "no two elements overlap in the editor" : null;
+	}
+
+	/** Checks that a hidden element can't be picked and can again once shown; used by UI snapshots. */
+	public boolean hidingWorksForSnapshot() {
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			HudElementId id = element.id();
+			HudLayoutDraft draft = draft(id);
+			HudOverlayPlacement.PanelDimensions panel = dimensions.get(id);
+			if (draft == null || panel == null) {
+				continue;
+			}
+			double x = draft.x() + panel.width() / 2.0D;
+			double y = draft.y() + panel.height() / 2.0D;
+			HIDDEN.add(id);
+			boolean gone = !elementsAt(x, y).contains(id);
+			HIDDEN.remove(id);
+			return gone && elementsAt(x, y).contains(id);
+		}
+		return false;
+	}
+
+	/** Hides or shows an element in the editor, as its switch in the Show menu does; used by UI snapshots. */
+	public void setHiddenForSnapshot(HudElementId id, boolean hidden) {
+		if (hidden) {
+			HIDDEN.add(id);
+		} else {
+			HIDDEN.remove(id);
+		}
+	}
+
+	/** Opens or closes the Show menu; used by UI snapshots. */
+	public void setMenuOpenForSnapshot(boolean open) {
+		menuOpen = open;
 	}
 
 	private static boolean contains(double mouseX, double mouseY, int x, int y, int width, int height) {

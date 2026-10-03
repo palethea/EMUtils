@@ -973,13 +973,25 @@ public final class UiSnapshotter {
 			}
 			case 158 -> captureAfter(client, 10, "hud editor, resized");
 			case 159 -> {
-				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
+				if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen && stepTicks <= 12) {
+					// Picking the smallest element under the mouse, and the Show menu that hides elements in the editor (#204).
+					if (stepTicks == 1) {
+						String problem = screen.hitOrderProblemForSnapshot();
+						check(problem == null, "a click picks the smallest element under the mouse" + (problem == null ? "" : ": " + problem));
+						check(screen.hidingWorksForSnapshot(), "a hidden element can't be picked, and can again once shown");
+						screen.setMenuOpenForSnapshot(true);
+					}
+					if (stepTicks == 12) {
+						grab(client, "hud editor, show menu");
+						screen.setMenuOpenForSnapshot(false);
+					}
+				} else if (MinecraftClientCompat.screen(client) instanceof HudEditorScreen screen) {
 					press(screen, InputConstants.KEY_ESCAPE, 0);
 					check(MinecraftClientCompat.screen(client) instanceof HudEditorScreen, "Esc first deselects, keeping the editor open");
 					press(screen, InputConstants.KEY_ESCAPE, 0);
+					check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc again cancels and closes the editor");
+					next();
 				}
-				check(MinecraftClientCompat.screen(client) == null && !HudLayoutManager.isEditing(), "Esc again cancels and closes the editor");
-				next();
 			}
 			// The Spotify players (#129), with whatever the real Spotify app is playing on this machine.
 			case 160 -> {
