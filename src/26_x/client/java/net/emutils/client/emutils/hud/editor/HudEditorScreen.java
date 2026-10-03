@@ -314,7 +314,9 @@ public final class HudEditorScreen extends Screen {
 			? Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW)
 			: Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_HIDDEN, hiddenCount());
 		Component saveLabel = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SAVE);
-		showWidth = UiWidgets.buttonWidth(font, showLabel) + 4;
+		// As wide as its longest label (every element hidden), so the toolbar doesn't change size, and jump, when something is hidden.
+		Component longestShowLabel = Component.translatable(EMUtilsTexts.UI_HUD_EDITOR_SHOW_HIDDEN, HudLayoutManager.editorElements().size());
+		showWidth = Math.max(UiWidgets.buttonWidth(font, showLabel), UiWidgets.buttonWidth(font, longestShowLabel)) + 4;
 		resetWidth = UiWidgets.buttonWidth(font, resetLabel) + 4;
 		cancelWidth = UiWidgets.buttonWidth(font, CommonComponents.GUI_CANCEL) + 4;
 		saveWidth = Math.max(56, UiWidgets.buttonWidth(font, saveLabel) + 12);
@@ -858,6 +860,11 @@ public final class HudEditorScreen extends Screen {
 		} else {
 			HIDDEN.remove(id);
 		}
+	}
+
+	/** The toolbar's width as last drawn; used by UI snapshots. */
+	public int toolbarWidthForSnapshot() {
+		return toolbarWidth;
 	}
 
 	/** Opens or closes the Show menu; used by UI snapshots. */

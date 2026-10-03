@@ -981,6 +981,14 @@ public final class UiSnapshotter {
 						check(screen.hidingWorksForSnapshot(), "a hidden element can't be picked, and can again once shown");
 						screen.setMenuOpenForSnapshot(true);
 					}
+					if (stepTicks == 4) {
+						sliderCardX = screen.toolbarWidthForSnapshot();
+						screen.setHiddenForSnapshot(HudLayoutManager.editorElements().getFirst().id(), true);
+					}
+					if (stepTicks == 8) {
+						check(screen.toolbarWidthForSnapshot() == sliderCardX, "hiding an element doesn't change the toolbar's size (" + sliderCardX + " -> " + screen.toolbarWidthForSnapshot() + ")");
+						screen.setHiddenForSnapshot(HudLayoutManager.editorElements().getFirst().id(), false);
+					}
 					if (stepTicks == 12) {
 						grab(client, "hud editor, show menu");
 						screen.setMenuOpenForSnapshot(false);
