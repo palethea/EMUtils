@@ -86,6 +86,8 @@ Show third-party player capes from supported providers.
 Show a configurable info panel with icons and useful world or client stats, as a rounded card in the settings UI's dark or light theme with values lined up in a column. Its settings are split into General, World, Performance and Time tabs.
 
 - HUD Layout Editor: drag HUD elements into a custom layout, resize them from their corner, and set each one's size and opacity from a card next to it. Hold Ctrl to snap to edges and other elements; arrow keys nudge the selected element. The editor's toolbar moves to the bottom of the screen when it would cover more of the elements at the top.
+  - Picking Elements: a click picks the smallest element under the mouse, so a small one on top of or inside a big one (like the Tab List) can still be grabbed. Clicking the selected element again, without dragging, selects the next one under that spot.
+  - Show Menu: the Show button in the toolbar lists every element with a switch and Show all / Hide all. A hidden element disappears from the editor, can't be hit and doesn't pull others when snapping, so what is under it can be reached. It only changes the editor: the HUD in the game and the saved layout stay as they are.
 - Show Icons: show icons beside overlay values.
 - Hide With F3: hide the overlay when the debug screen is open.
 - Hide in Containers: hide the overlay while a chest, your inventory or another container is open. Off by default.
