@@ -193,6 +193,21 @@ public final class MapWorld {
 		return created;
 	}
 
+	/** Some regions or overviews are still being read from disk. */
+	boolean busy() {
+		for (MapRegion region : regions.values()) {
+			if (!region.loaded) {
+				return true;
+			}
+		}
+		for (MapRegion region : overviews.values()) {
+			if (!region.loaded) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Regions read from disk since the last call, for the client thread to prepare. */
 	@Nullable MapRegion pollLoaded() {
 		return justLoaded.poll();

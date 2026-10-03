@@ -49,8 +49,9 @@ public final class MapDraw {
 	}
 
 	/**
-	 * Draws the tiles that fall inside a convex outline. Missing tiles are asked for, and a coarser tile fills
-	 * in for one until it's ready, so the map is never empty while it loads.
+	 * Draws the tiles that fall inside a convex outline. Missing tiles are asked for. Until one is ready and
+	 * faded in, the nearest coarser tile that is drawn fills in under it, and the finer ones already drawn go
+	 * over that, as they are after zooming out, so the map never shows holes while it loads.
 	 */
 	public static void tiles(GuiGraphicsExtractor context, MapWorld world, MapTiles tiles, MapView view, float[] outline, int level, int color) {
 		int blocks = MapTileBaker.blocksPerTile(level);
@@ -84,43 +85,83 @@ public final class MapDraw {
 			Math.max(Math.abs(a[0] - centerTileX), Math.abs(a[1] - centerTileZ)),
 			Math.max(Math.abs(b[0] - centerTileX), Math.abs(b[1] - centerTileZ))
 		));
-		for (int[] tile : order) {
-			DynamicTexture texture = tiles.texture(world, level, tile[0], tile[1]);
-			if (texture == null && level < MapTileBaker.LEVELS - 1) {
-				drawCoarserFallback(context, tiles, world, view, outline, level, tile[0], tile[1], color);
-				continue;
+		for (int[] at : order) {
+			MapTiles.Tile tile = tiles.tile(world, level, at[0], at[1]);
+			double x0 = at[0] * (double) blocks;
+			double z0 = at[1] * (double) blocks;
+			float[] clip = null;
+			if (!tile.settled()) {
+				clip = clipToRect(outline, view, x0, z0, blocks);
+				drawStandIns(context, tiles, world, view, clip, level, at[0], at[1], color);
 			}
+			DynamicTexture texture = tile.texture();
 			if (texture != null) {
-				double x0 = tile[0] * (double) blocks;
-				double z0 = tile[1] * (double) blocks;
-				drawClipped(context, texture, view, clipToRect(outline, view, x0, z0, blocks), x0, z0, blocks, color);
+				if (clip == null) {
+					clip = clipToRect(outline, view, x0, z0, blocks);
+				}
+				drawClipped(context, texture, view, clip, x0, z0, blocks, fade(color, tile.fade()));
 			}
 		}
 	}
 
-	/** Draws the part of a coarser tile that covers a missing detailed one. */
-	private static void drawCoarserFallback(GuiGraphicsExtractor context, MapTiles tiles, MapWorld world, MapView view, float[] outline, int level, int tileX, int tileZ, int color) {
-		int blocks = MapTileBaker.blocksPerTile(level);
-		int coarseBlocks = MapTileBaker.blocksPerTile(level + 1);
-		int coarseX = Math.floorDiv(tileX * blocks, coarseBlocks);
-		int coarseZ = Math.floorDiv(tileZ * blocks, coarseBlocks);
-		DynamicTexture coarse = tiles.texture(world, level + 1, coarseX, coarseZ);
-		if (coarse == null) {
+	/**
+	 * Fills in for a tile that isn't ready: the nearest coarser tile that's drawn (the next coarser one is
+	 * asked for, so one is on its way), then the finer tiles that are drawn, which zooming out leaves behind.
+	 */
+	private static void drawStandIns(GuiGraphicsExtractor context, MapTiles tiles, MapWorld world, MapView view, float[] clip, int level, int tileX, int tileZ, int color) {
+		if (clip.length < 6) {
 			return;
 		}
-		float[] clip = clipToRect(outline, view, tileX * (double) blocks, tileZ * (double) blocks, blocks);
-		drawClipped(context, coarse, view, clip, coarseX * (double) coarseBlocks, coarseZ * (double) coarseBlocks, coarseBlocks, color);
+		int blocks = MapTileBaker.blocksPerTile(level);
+		if (level + 1 < MapTileBaker.LEVELS) {
+			int nextBlocks = MapTileBaker.blocksPerTile(level + 1);
+			tiles.tile(world, level + 1, Math.floorDiv(tileX * blocks, nextBlocks), Math.floorDiv(tileZ * blocks, nextBlocks));
+		}
+		for (int coarser = level + 1; coarser < MapTileBaker.LEVELS; coarser++) {
+			int coarseBlocks = MapTileBaker.blocksPerTile(coarser);
+			int coarseX = Math.floorDiv(tileX * blocks, coarseBlocks);
+			int coarseZ = Math.floorDiv(tileZ * blocks, coarseBlocks);
+			MapTiles.Tile coarse = tiles.drawn(coarser, coarseX, coarseZ);
+			if (coarse != null) {
+				drawClipped(context, coarse.texture(), view, clip, coarseX * (double) coarseBlocks, coarseZ * (double) coarseBlocks, coarseBlocks, color);
+				break;
+			}
+		}
+		if (level > 0) {
+			int fineBlocks = MapTileBaker.blocksPerTile(level - 1);
+			int across = blocks / fineBlocks;
+			for (int dz = 0; dz < across; dz++) {
+				for (int dx = 0; dx < across; dx++) {
+					int fineX = tileX * across + dx;
+					int fineZ = tileZ * across + dz;
+					MapTiles.Tile fine = tiles.drawn(level - 1, fineX, fineZ);
+					if (fine != null) {
+						double x0 = fineX * (double) fineBlocks;
+						double z0 = fineZ * (double) fineBlocks;
+						drawClipped(context, fine.texture(), view, clip(clip, rect(view, x0, z0, fineBlocks)), x0, z0, fineBlocks, color);
+					}
+				}
+			}
+		}
+	}
+
+	private static int fade(int color, float amount) {
+		return amount >= 1.0F ? color : Math.round((color >>> 24) * amount) << 24 | (color & 0x00FFFFFF);
 	}
 
 	/** The outline cut down to the part where a tile from (x0, z0), {@code blocks} wide, lies. */
 	private static float[] clipToRect(float[] outline, MapView view, double x0, double z0, int blocks) {
-		float[] tile = {
+		return clip(outline, rect(view, x0, z0, blocks));
+	}
+
+	/** A square of the world from (x0, z0), {@code blocks} wide, on screen. */
+	private static float[] rect(MapView view, double x0, double z0, int blocks) {
+		return new float[] {
 			view.screenX(x0, z0), view.screenY(x0, z0),
 			view.screenX(x0 + blocks, z0), view.screenY(x0 + blocks, z0),
 			view.screenX(x0 + blocks, z0 + blocks), view.screenY(x0 + blocks, z0 + blocks),
 			view.screenX(x0, z0 + blocks), view.screenY(x0, z0 + blocks)
 		};
-		return clip(outline, tile);
 	}
 
 	/** Draws a convex polygon with a tile's texture, its texture coordinates worked out from the world position of each corner. */

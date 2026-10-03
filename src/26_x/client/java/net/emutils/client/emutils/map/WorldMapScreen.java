@@ -11,7 +11,9 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiAnim;
+import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiContextMenu;
+import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
@@ -66,6 +68,9 @@ public final class WorldMapScreen extends Screen {
 	private static final int CHIP_HEIGHT = 18;
 	private static final int MARKER_SIZE = 12;
 	private static final float HIDDEN_ALPHA = 0.4F;
+	/** How quickly zooming glides to where the wheel asked, per second; higher is snappier. */
+	private static final float ZOOM_SPEED = 16.0F;
+	private static final int SPINNER_SIZE = 10;
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
 	/** The panels start appearing once the map is this far open, so they arrive with it rather than after it. */
@@ -91,6 +96,14 @@ public final class WorldMapScreen extends Screen {
 	private double centerX;
 	private double centerZ;
 	private float zoom = lastZoom;
+	/** The zoom the wheel asked for; {@link #zoom} glides to it. */
+	private float targetZoom = lastZoom;
+	/** The world spot that stays under the cursor while zooming glides, and where on screen it stays. */
+	private double anchorWorldX;
+	private double anchorWorldZ;
+	private float anchorScreenX;
+	private float anchorScreenY;
+	private long lastFrame;
 	private long openedAt = -1L;
 	private long closingAt = -1L;
 	private boolean dragging;
@@ -116,6 +129,8 @@ public final class WorldMapScreen extends Screen {
 		WorldMapScreen screen = new WorldMapScreen(openKey, MinimapRenderer.frame(client), world, WaypointManager.dimensionId(client.level));
 		screen.centerX = client.player.getX();
 		screen.centerZ = client.player.getZ();
+		screen.anchorWorldX = screen.centerX;
+		screen.anchorWorldZ = screen.centerZ;
 		client.gui.setScreen(screen);
 	}
 
@@ -198,7 +213,7 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	public void removed() {
-		lastZoom = zoom;
+		lastZoom = targetZoom;
 		closeOther();
 		super.removed();
 	}
@@ -228,6 +243,7 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
 		anim.frame();
+		glideZoom();
 		float progress = progress();
 		LocalPlayer player = minecraft.player;
 		boolean ownDimension = isOwnDimension();
@@ -289,6 +305,7 @@ public final class WorldMapScreen extends Screen {
 			drawPanels(context, theme, view, mouseX, mouseY, ownDimension, (1.0F - panels) * PANEL_SLIDE, interactive);
 			UiOpacity.reset();
 		}
+		drawLoading(context, theme, panels);
 		if (interactive && hovered != null && hovered.waypoint().label() != null) {
 			context.setTooltipForNextFrame(Component.literal(hovered.waypoint().label()), mouseX, mouseY);
 		}
@@ -304,6 +321,50 @@ public final class WorldMapScreen extends Screen {
 				sheet = null;
 			}
 		}
+	}
+
+	/** Moves the zoom a step closer to where the wheel asked, keeping the anchored spot under the cursor. */
+	private void glideZoom() {
+		long now = System.nanoTime();
+		float seconds = lastFrame == 0L ? 0.0F : Math.min(0.1F, (now - lastFrame) / 1.0E9F);
+		lastFrame = now;
+		if (zoom == targetZoom) {
+			return;
+		}
+		double logZoom = Math.log(zoom);
+		double logTarget = Math.log(targetZoom);
+		double step = 1.0D - Math.exp(-ZOOM_SPEED * seconds);
+		zoom = Math.abs(logTarget - logZoom) < 0.002D ? targetZoom : (float) Math.exp(logZoom + (logTarget - logZoom) * step);
+		centerX = anchorWorldX - (anchorScreenX - width / 2.0D) / zoom;
+		centerZ = anchorWorldZ - (anchorScreenY - height / 2.0D) / zoom;
+	}
+
+	/**
+	 * A small sign at the bottom while tiles are being drawn or regions read, so a blank or blurry part
+	 * of the map reads as on its way rather than missing. Fades in and out.
+	 */
+	private void drawLoading(GuiGraphicsExtractor context, UiTheme theme, float panels) {
+		boolean busy = tiles.busy() || world.busy();
+		float shown = anim.towards("world-map-loading", busy && panels > 0.0F ? 1.0F : 0.0F, busy ? 6.0F : 3.0F) * panels;
+		if (shown <= 0.01F) {
+			return;
+		}
+		Component text = Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING);
+		int textWidth = UiText.width(font, text, UiText.Size.SMALL);
+		int pillWidth = 10 + SPINNER_SIZE + 6 + textWidth + 12;
+		int pillHeight = 20;
+		int x = (width - pillWidth) / 2;
+		int y = height - MARGIN - (PANEL_HEIGHT + pillHeight) / 2;
+		UiOpacity.set(shown);
+		UiShapes.shadow(context, x, y, pillWidth, pillHeight, pillHeight / 2, 8, theme.shadow());
+		UiShapes.borderedRect(context, x, y, pillWidth, pillHeight, pillHeight / 2, UiTheme.fade(theme.panel(), 0.94F), theme.line());
+		context.pose().pushMatrix();
+		context.pose().translate(x + 10 + SPINNER_SIZE / 2.0F, y + pillHeight / 2.0F);
+		context.pose().rotate((float) ((System.nanoTime() / 1.0E9D * Math.PI * 2.0D) % (Math.PI * 2.0D)));
+		UiIcons.draw(context, HubIcons.REFRESH_CW, -SPINNER_SIZE / 2, -SPINNER_SIZE / 2, SPINNER_SIZE, theme.textSecondary());
+		context.pose().popMatrix();
+		UiText.drawCentered(context, font, text, UiText.Size.SMALL, x + 10 + SPINNER_SIZE + 6, y + pillHeight / 2, theme.textSecondary());
+		UiOpacity.reset();
 	}
 
 	private void drawWaypoints(GuiGraphicsExtractor context, MapView view, int mouseX, int mouseY, float progress, boolean hover) {
@@ -582,6 +643,8 @@ public final class WorldMapScreen extends Screen {
 		if (dragging) {
 			centerX -= dx / zoom;
 			centerZ -= dy / zoom;
+			anchorWorldX -= dx / zoom;
+			anchorWorldZ -= dy / zoom;
 			return true;
 		}
 		return super.mouseDragged(click, dx, dy);
@@ -593,13 +656,13 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		menu = null;
-		// The block under the cursor stays under it while zooming.
+		// The block under the cursor stays under it while the zoom glides there.
 		MapView before = fullView();
-		double worldX = before.worldX((float) mouseX, (float) mouseY);
-		double worldZ = before.worldZ((float) mouseX, (float) mouseY);
-		zoom = Math.clamp(zoom * (float) Math.pow(ZOOM_STEP, scrollY), MIN_ZOOM, MAX_ZOOM);
-		centerX = worldX - (mouseX - width / 2.0D) / zoom;
-		centerZ = worldZ - (mouseY - height / 2.0D) / zoom;
+		anchorWorldX = before.worldX((float) mouseX, (float) mouseY);
+		anchorWorldZ = before.worldZ((float) mouseX, (float) mouseY);
+		anchorScreenX = (float) mouseX;
+		anchorScreenY = (float) mouseY;
+		targetZoom = Math.clamp(targetZoom * (float) Math.pow(ZOOM_STEP, scrollY), MIN_ZOOM, MAX_ZOOM);
 		return true;
 	}
 
@@ -615,8 +678,7 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		if (event.key() == InputConstants.KEY_SPACE && minecraft.player != null && isOwnDimension()) {
-			centerX = minecraft.player.getX();
-			centerZ = minecraft.player.getZ();
+			lookAt(minecraft.player.getX(), minecraft.player.getZ());
 			return true;
 		}
 		return super.keyPressed(event);
@@ -631,15 +693,26 @@ public final class WorldMapScreen extends Screen {
 		return super.charTyped(event);
 	}
 
-	/** For UI snapshot checks: looks at a spot. */
-	public void centerForSnapshot(double x, double z) {
+	/** Puts a spot in the middle of the map, also for a zoom still gliding. */
+	private void lookAt(double x, double z) {
 		centerX = x;
 		centerZ = z;
+		anchorWorldX = x;
+		anchorWorldZ = z;
+		anchorScreenX = width / 2.0F;
+		anchorScreenY = height / 2.0F;
 	}
 
-	/** For UI snapshot checks: zooms by scroll steps around the middle of the screen. */
+	/** For UI snapshot checks: looks at a spot. */
+	public void centerForSnapshot(double x, double z) {
+		lookAt(x, z);
+	}
+
+	/** For UI snapshot checks: zooms by scroll steps around the middle of the screen, at once instead of gliding. */
 	public void scrollForSnapshot(double steps) {
 		mouseScrolled(width / 2.0D, height / 2.0D, 0.0D, steps);
+		zoom = targetZoom;
+		lookAt(anchorWorldX, anchorWorldZ);
 	}
 
 	/** For UI snapshot checks: the map's zoom in GUI pixels per block. */
@@ -680,8 +753,7 @@ public final class WorldMapScreen extends Screen {
 			world = MapManager.world();
 			tiles = MapManager.tiles();
 			if (minecraft.player != null) {
-				centerX = minecraft.player.getX();
-				centerZ = minecraft.player.getZ();
+				lookAt(minecraft.player.getX(), minecraft.player.getZ());
 			}
 			return;
 		}
@@ -703,11 +775,9 @@ public final class WorldMapScreen extends Screen {
 		boolean toNether = id.equals("minecraft:the_nether");
 		boolean fromNether = previous.equals("minecraft:the_nether");
 		if (toNether && !fromNether) {
-			centerX /= 8.0D;
-			centerZ /= 8.0D;
+			lookAt(centerX / 8.0D, centerZ / 8.0D);
 		} else if (fromNether && !toNether) {
-			centerX *= 8.0D;
-			centerZ *= 8.0D;
+			lookAt(centerX * 8.0D, centerZ * 8.0D);
 		}
 	}
 

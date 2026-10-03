@@ -980,6 +980,7 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_CONFIRM_DELETE = "emutils.world_map.confirm_delete";
     public static final String WORLD_MAP_SHARE_LOCATION = "emutils.world_map.share_location";
     public static final String WORLD_MAP_LOCATION = "emutils.world_map.location";
+    public static final String WORLD_MAP_LOADING = "emutils.world_map.loading";
     public static final String WORLD_MAP_OPEN_WAYPOINTS = "emutils.world_map.open_waypoints";
     public static final String WORLD_MAP_OPEN_SETTINGS = "emutils.world_map.open_settings";
     public static final String HUD_LOOK_AT_POSITION = "emutils.hud.look_at.position";

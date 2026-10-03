@@ -3553,18 +3553,21 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 120, "world map zoomed far out");
 			}
+			// Zooming straight back in: the far tiles stand in until the close ones are drawn, so there are no holes.
 			case 393 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.scrollForSnapshot(14.0D);
-					map.onClose();
 				}
-				captureAfter(client, 3, "world map closing into the minimap");
+				captureAfter(client, 3, "world map just after zooming back in");
 			}
 			case 394 -> {
-				if (stepTicks == 20) {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.onClose();
+				}
+				if (stepTicks == 25) {
 					check(!(MinecraftClientCompat.screen(client) instanceof WorldMapScreen), "the world map closed after its animation");
 				}
-				captureAfter(client, 21, "world map closed");
+				captureAfter(client, 26, "world map closed");
 			}
 			// Singleplayer chunks generated away from you, as Chunky makes them, come onto the map from the
 			// world's files: chunks 2000 blocks off are generated and saved by the server, never sent to the client.
