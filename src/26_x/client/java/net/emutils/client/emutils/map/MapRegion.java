@@ -25,6 +25,11 @@ public final class MapRegion {
 	volatile boolean loaded;
 	/** Some chunks changed since the last save. */
 	volatile boolean dirty;
+	/**
+	 * Its file exists but couldn't be read (locked, damaged): it's never saved over, so what's in it isn't
+	 * lost, and it's read again once let go.
+	 */
+	volatile boolean unreadable;
 	/** The overview no longer matches the chunks; set when a chunk is sampled or read without an overview. */
 	volatile boolean overviewStale;
 	volatile long lastUsed = System.currentTimeMillis();
@@ -32,6 +37,8 @@ public final class MapRegion {
 	volatile int @Nullable [] overview;
 	/** The resource packs the overview was drawn with; another fingerprint means it is redrawn. */
 	volatile int overviewFingerprint;
+	/** Some thread is drawing the overview right now; others leave it to that one. */
+	final java.util.concurrent.atomic.AtomicBoolean drawingOverview = new java.util.concurrent.atomic.AtomicBoolean();
 	/** When the overview was last drawn, so a region being explored isn't redrawn all the time. */
 	volatile long overviewBakedAt;
 	/** The block states of the chunks just read from disk, whose looks the client thread still has to make. */

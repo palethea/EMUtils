@@ -190,6 +190,18 @@ final class MapTileBaker {
 	 * keeps the old picture where the new one has nothing yet, and is drawn again soon. Baker thread.
 	 */
 	static void redrawOverview(MapWorld world, MapRegion region, int fingerprint) {
+		// Far tiles and the scheduled redraw can ask at the same time; one drawing is enough.
+		if (!region.drawingOverview.compareAndSet(false, true)) {
+			return;
+		}
+		try {
+			drawOverview(world, region, fingerprint);
+		} finally {
+			region.drawingOverview.set(false);
+		}
+	}
+
+	private static void drawOverview(MapWorld world, MapRegion region, int fingerprint) {
 		region.overviewStale = false;
 		Result result = overview(world, region);
 		int[] pixels = result.pixels();

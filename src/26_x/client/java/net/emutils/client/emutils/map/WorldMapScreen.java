@@ -224,6 +224,9 @@ public final class WorldMapScreen extends Screen {
 	public void tick() {
 		super.tick();
 		if (otherTiles != null) {
+			if (world.importer != null) {
+				world.importer.center(centerX, centerZ);
+			}
 			// Another dimension's regions load like yours, but nobody else prepares them.
 			MapManager.prepare(world, otherTiles);
 			MapManager.importSaved(world, otherTiles, System.nanoTime() + 2_000_000L);

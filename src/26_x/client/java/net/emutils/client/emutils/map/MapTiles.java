@@ -32,6 +32,8 @@ public final class MapTiles {
 	private static final long[] REBAKE_MILLIS = {150L, 500L, 2000L, 1000L, 1000L, 1000L};
 	/** An unfinished tile is tried again this soon, since what it waited for usually arrives quickly. */
 	private static final long RETRY_MILLIS = 250L;
+	/** A tile whose drawing failed is tried again this much later. */
+	private static final long FAILED_RETRY_MILLIS = 2000L;
 	/** How long a new tile takes to fade in over what stood in for it. */
 	private static final float FADE_MILLIS = 160.0F;
 	private static final ExecutorService BAKER = Executors.newFixedThreadPool(2, runnable -> {
@@ -67,6 +69,8 @@ public final class MapTiles {
 		boolean dirty = true;
 		/** The texture shows everything; false while some of it was still loading when it was drawn. */
 		boolean complete;
+		/** The last drawing failed; it's tried again a little later and doesn't count as waiting for a picture. */
+		boolean failed;
 		long bakedAt;
 		/** When the tile first got a picture, for its fade-in. */
 		long shownAt;
@@ -109,14 +113,14 @@ public final class MapTiles {
 		tile.usedFrame = frame;
 		asked++;
 		long now = System.currentTimeMillis();
-		long wait = tile.complete ? REBAKE_MILLIS[level] : RETRY_MILLIS;
+		long wait = tile.failed ? FAILED_RETRY_MILLIS : tile.complete ? REBAKE_MILLIS[level] : RETRY_MILLIS;
 		// Tiles with nothing to show yet go first; redrawing ones that have a picture waits for them.
 		boolean redraw = tile.texture != null && tile.complete;
-		if (tile.dirty && !tile.baking && baking < MAX_BAKING && (tile.texture == null || now - tile.bakedAt >= wait)
+		if (tile.dirty && !tile.baking && baking < MAX_BAKING && (tile.texture == null && !tile.failed || now - tile.bakedAt >= wait)
 			&& (!redraw || emptyLastFrame == 0)) {
 			bake(world, tile);
 		}
-		if (tile.texture == null) {
+		if (tile.texture == null && !tile.failed) {
 			empty++;
 		}
 		if (!tile.complete || tile.texture == null) {
@@ -181,9 +185,17 @@ public final class MapTiles {
 			baking--;
 			Tile tile = done.tile();
 			tile.baking = false;
-			if (done.generation() != generation || done.result() == null) {
+			if (done.generation() != generation) {
 				continue;
 			}
+			if (done.result() == null) {
+				// Drawing threw; tried again a little later instead of staying blank.
+				tile.failed = true;
+				tile.dirty = true;
+				tile.bakedAt = System.currentTimeMillis();
+				continue;
+			}
+			tile.failed = false;
 			boolean complete = done.result().complete();
 			if (!complete) {
 				// Drawn while some of it was still loading: drawn again once that had time to arrive.

@@ -189,7 +189,8 @@ public final class MapWorld {
 				region.overviewStale = region.dirty || contents.overview() == null;
 			}
 		} catch (IOException | RuntimeException exception) {
-			EMUtilsClient.LOGGER.warn("EMUtils map couldn't read region {}, {}", region.regionX, region.regionZ, exception);
+			region.unreadable = true;
+			EMUtilsClient.LOGGER.warn("EMUtils map couldn't read region {}, {}; it won't be saved over", region.regionX, region.regionZ, exception);
 		}
 		region.loaded = true;
 	}
@@ -330,6 +331,9 @@ public final class MapWorld {
 		for (MapRegion region : regions.values()) {
 			if (region.dirty && region.loaded) {
 				region.dirty = false;
+				if (region.unreadable) {
+					continue;
+				}
 				// Regions the map only looked into, with nothing explored, get no file.
 				if (region.count() > 0) {
 					IO.execute(() -> save(region));
@@ -342,7 +346,7 @@ public final class MapWorld {
 	private void saveNow(MapRegion region) {
 		if (writable() && region.dirty && region.loaded) {
 			region.dirty = false;
-			if (region.count() > 0) {
+			if (region.count() > 0 && !region.unreadable) {
 				IO.execute(() -> save(region));
 			}
 		}
@@ -447,7 +451,7 @@ public final class MapWorld {
 				// first; saving just the new samples would lose the rest.
 				IO.execute(() -> {
 					readInto(region);
-					if (region.count() > 0) {
+					if (region.count() > 0 && !region.unreadable) {
 						save(region);
 					}
 				});

@@ -65,6 +65,9 @@ final class MapImporter {
 	private volatile boolean stopped;
 	private volatile int imported;
 	private volatile @Nullable ScheduledFuture<?> nextScan;
+	/** The region the map is looking at, so the regions around it are imported first. */
+	private volatile int centerRegionX;
+	private volatile int centerRegionZ;
 
 	private MapImporter(MapWorld world, ServerLevel level, Path regionFolder) {
 		this.world = world;
@@ -93,6 +96,12 @@ final class MapImporter {
 
 	void stop() {
 		stopped = true;
+	}
+
+	/** Where you are, or where the world map looks, in blocks; the next scan starts around there. */
+	void center(double blockX, double blockZ) {
+		centerRegionX = (int) Math.floor(blockX) >> 9;
+		centerRegionZ = (int) Math.floor(blockZ) >> 9;
 	}
 
 	/** The next unpacked chunk for the client thread to sample, or null. */
@@ -138,7 +147,7 @@ final class MapImporter {
 		}
 	}
 
-	/** The world's region files, nearest the map's middle first, so what's around you comes in first. */
+	/** The world's region files, nearest where you are first, so what's around you comes in first. */
 	private List<Path> regionFiles() {
 		List<Path> files = new ArrayList<>();
 		if (!Files.isDirectory(regionFolder)) {
@@ -151,7 +160,7 @@ final class MapImporter {
 		}
 		files.sort(Comparator.comparingInt(path -> {
 			int[] at = regionCoordinates(path);
-			return at == null ? Integer.MAX_VALUE : Math.max(Math.abs(at[0]), Math.abs(at[1]));
+			return at == null ? Integer.MAX_VALUE : Math.max(Math.abs(at[0] - centerRegionX), Math.abs(at[1] - centerRegionZ));
 		}));
 		return files;
 	}

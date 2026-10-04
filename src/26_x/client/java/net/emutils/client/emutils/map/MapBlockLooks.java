@@ -113,11 +113,12 @@ public final class MapBlockLooks {
 			return false;
 		}
 		AtomicReferenceArray<MapBlockLook> looks = new AtomicReferenceArray<>(Block.BLOCK_STATE_REGISTRY.size());
-		current = new Generation(models, looks, 0);
+		// Made before the new looks are handed out, so other threads never see a fingerprint of nothing.
+		Generation pending = new Generation(models, looks, 0);
 		int fingerprint = client.getResourcePackRepository().getSelectedIds().hashCode() * 31 + Block.BLOCK_STATE_REGISTRY.size();
 		for (Block block : FINGERPRINT_BLOCKS) {
 			BlockState state = block.defaultBlockState();
-			fingerprint = fingerprint * 31 + ensure(state, Block.getId(state)).top().average();
+			fingerprint = fingerprint * 31 + ensure(pending, state, Block.getId(state)).top().average();
 		}
 		// Raised when overviews are drawn differently, or were saved wrong, so the saved ones are redrawn.
 		fingerprint = fingerprint * 31 + OVERVIEW_REVISION;
@@ -127,7 +128,10 @@ public final class MapBlockLooks {
 
 	/** The look of a block state, made now if the map hasn't met it yet. Client thread only. */
 	public static MapBlockLook ensure(BlockState state, int stateId) {
-		Generation generation = current;
+		return ensure(current, state, stateId);
+	}
+
+	private static MapBlockLook ensure(@Nullable Generation generation, BlockState state, int stateId) {
 		if (generation == null || stateId < 0 || stateId >= generation.looks().length()) {
 			return MapBlockLook.INVISIBLE;
 		}

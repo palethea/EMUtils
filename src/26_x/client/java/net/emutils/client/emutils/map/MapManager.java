@@ -158,6 +158,9 @@ public final class MapManager {
 			}
 		}
 
+		if (world.importer != null) {
+			world.importer.center(client.player.getX(), client.player.getZ());
+		}
 		importSaved(world, TILES, deadline);
 	}
 
@@ -260,9 +263,10 @@ public final class MapManager {
 			return;
 		}
 		MapChunk sampled = MapSampler.sample(level, chunk, world.biomes());
-		// An empty chunk shows nothing, and on servers whose worlds share a dimension (lobbies, SkyBlock
-		// islands) it's often another world's void over this one's map, so it's neither kept nor saved.
-		if (sampled.isEmpty()) {
+		// An empty chunk shows nothing, so it isn't kept where the map has nothing either. On a server whose
+		// worlds share a dimension (lobbies, SkyBlock islands) it's often another world's void over this one's
+		// map, so it doesn't replace what's there; in singleplayer it really was emptied, so it does.
+		if (sampled.isEmpty() && (world.chunk(chunkX, chunkZ) == null || Minecraft.getInstance().getSingleplayerServer() == null)) {
 			return;
 		}
 		world.put(chunkX, chunkZ, sampled);
