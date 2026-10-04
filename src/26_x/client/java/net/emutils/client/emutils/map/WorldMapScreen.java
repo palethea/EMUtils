@@ -81,9 +81,8 @@ public final class WorldMapScreen extends Screen {
 	private static final int CHEVRON_SIZE = 8;
 	/** How /tp teleports you, as the teleport command's prompt shows it (#227). */
 	private static final String DEFAULT_TELEPORT = "tp @s {x} {y} {z}";
-	/** A player's face on the radar (#224), and how much bigger mob dots are than on the minimap. */
-	private static final int RADAR_FACE = 10;
-	private static final float RADAR_DOT_SCALE = 1.2F;
+	/** How much bigger the radar's icons (#224) are than on the minimap. */
+	private static final int RADAR_EXTRA_SIZE = 2;
 	/** Mobs and items show from this zoom in, in GUI pixels per block. */
 	private static final float RADAR_MOBS_ZOOM = 0.5F;
 	/** How close the cursor has to be to an entity, in GUI pixels, to name it. */
@@ -623,19 +622,20 @@ public final class WorldMapScreen extends Screen {
 	 * far enough for them not to crowd around you.
 	 */
 	private void drawRadar(GuiGraphicsExtractor context, MapView view, float x, float y, float w, float h, int mouseX, int mouseY, float progress, float delta, boolean hover) {
-		LocalPlayer player = minecraft.player;
+		LocalPlayer self = minecraft.player;
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (player == null || !MapRadar.enabled(config)) {
+		if (self == null || !MapRadar.onWorldMap(config)) {
 			return;
 		}
+		int size = config.mapRadarIconSize() + RADAR_EXTRA_SIZE;
 		double reach = Math.max(w, h) / view.zoom();
-		double playerY = player.yo + (player.getY() - player.yo) * delta;
+		double playerY = self.yo + (self.getY() - self.yo) * delta;
 		boolean mobs = view.zoom() >= RADAR_MOBS_ZOOM;
 		float nearest = RADAR_HOVER;
 		List<MapRadar.Placed> placed = new ArrayList<>();
 		for (MapRadar.Blip blip : MapRadar.blips(minecraft, view.centerX(), view.centerZ(), reach, delta)) {
-			boolean face = blip.kind() == MapRadar.Kind.PLAYER;
-			if (!face && !mobs) {
+			boolean player = blip.group() == RadarGroup.PLAYERS;
+			if (!player && !mobs) {
 				continue;
 			}
 			float sx = view.screenX(blip.x(), blip.z());
@@ -645,7 +645,7 @@ public final class WorldMapScreen extends Screen {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(sx, sy);
-			MapRadar.draw(context, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarMobFaces(), progress);
+			MapRadar.draw(context, config, blip, playerY, size, progress);
 			context.pose().popMatrix();
 			placed.add(new MapRadar.Placed(blip, sx, sy));
 			float distance = Math.max(Math.abs(mouseX - sx), Math.abs(mouseY - sy));
@@ -654,9 +654,7 @@ public final class WorldMapScreen extends Screen {
 				hoveredBlip = blip;
 			}
 		}
-		if (config.mapRadarNames()) {
-			MapRadar.drawNames(context, font, placed, view.screenCenterX(), view.screenCenterY(), RADAR_FACE, playerY, progress);
-		}
+		MapRadar.drawNames(context, font, config, placed, view.screenCenterX(), view.screenCenterY(), size, playerY, progress);
 	}
 
 	private static void drawArrow(GuiGraphicsExtractor context, float x, float y, float angle) {

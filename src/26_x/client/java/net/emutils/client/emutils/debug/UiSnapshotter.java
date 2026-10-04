@@ -47,6 +47,7 @@ import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
 import net.emutils.client.emutils.map.MapExport;
 import net.emutils.client.emutils.map.MapRadar;
+import net.emutils.client.emutils.map.RadarGroup;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
@@ -3785,7 +3786,7 @@ public final class UiSnapshotter {
 					config.setWorldMap(true);
 					config.setMinimapRotate(false);
 					config.setMinimapZoom(MinimapZoom.FOUR);
-					config.setMapRadarItems(true);
+					config.setMapRadarShows(RadarGroup.ITEMS, true);
 					// Named, as the client doesn't know entity tags, so the check can tell them from the mobs about.
 					String still = "{NoAI:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
 					String floating = "{NoAI:1b,NoGravity:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
@@ -3812,8 +3813,13 @@ public final class UiSnapshotter {
 					check(overlap.isEmpty(), "players' names that would overlap one nearer the middle are left out" + (overlap.isEmpty() ? "" : " (" + overlap + ")"));
 					String faceless = MapRadar.facelessForSnapshot(client, "emradar_faces");
 					check(faceless.isEmpty(), "every mob of the lineup shows its face on the radar (" + faceless + ")");
+					// Hiding a group in the settings takes it off the radar.
+					EMUtilsClient.config().setMapRadarShows(RadarGroup.HOSTILE, false);
+					String withoutHostile = MapRadar.kindsForSnapshot(client, "emradar");
+					EMUtilsClient.config().setMapRadarShows(RadarGroup.HOSTILE, true);
+					check(!withoutHostile.contains("HOSTILE") && withoutHostile.contains("ANIMALS"), "hiding hostile mobs in the settings takes only them off the radar (" + withoutHostile + ")");
 					String seen = MapRadar.kindsForSnapshot(client, "emradar");
-					check(sortedKinds(seen).equals("FRIENDLY, HOSTILE, HOSTILE, ITEM, PLAYER"), "the radar shows the mobs, the item and a player, but not the invisible mob or the one far above (" + seen + ")");
+					check(sortedKinds(seen).equals("ANIMALS, HOSTILE, HOSTILE, ITEMS, PLAYERS"), "the radar shows the mobs, the item and a player, but not the invisible mob or the one far above (" + seen + ")");
 				}
 				captureAfter(client, 45, "minimap, entity radar");
 			}
@@ -3913,6 +3919,8 @@ public final class UiSnapshotter {
 				String server = WaypointManager.worldKey(client);
 				if (stepTicks == 1) {
 					EMUtilsClient.config().setMapTeleportCommand(server, "execute as @s run tp @s {x} {y} {z}");
+					// The teleport goes high up; falling back down mustn't end the run.
+					command(client, "effect give @s slow_falling 60 0 true");
 					WorldMapScreen.open(client, null);
 				}
 				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
@@ -3922,7 +3930,7 @@ public final class UiSnapshotter {
 					grab(client, "world map, right-click menu");
 				}
 				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
-					teleportFrom = new int[] {client.player.getBlockX(), client.player.getBlockZ()};
+					teleportFrom = new int[] {client.player.getBlockX(), client.player.getBlockZ(), client.player.getBlockY()};
 					check(map.teleportForSnapshot(teleportFrom[0] + 40, 120, teleportFrom[1] - 25), "Teleport is offered with the server's own command");
 				}
 				if (stepTicks == 60) {
@@ -3930,6 +3938,9 @@ public final class UiSnapshotter {
 					boolean moved = from != null && client.player.getBlockX() == from[0] + 40 && client.player.getBlockZ() == from[1] - 25;
 					check(moved, "the server's own teleport command takes you there (" + client.player.getBlockX() + ", " + client.player.getBlockZ() + ")");
 					EMUtilsClient.config().setMapTeleportCommand(server, null);
+					if (from != null) {
+						command(client, "tp @s " + from[0] + " " + from[2] + " " + from[1]);
+					}
 					EMUtilsClient.config().resetMinimapDefaults();
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);
@@ -3949,6 +3960,28 @@ public final class UiSnapshotter {
 					grab(client, "entity radar, every mob's face");
 				}
 				if (stepTicks == 35) {
+					client.gui.setScreen(null);
+					next();
+				}
+			}
+			// The Entity Radar settings (#224): a tab each for the groups shown, their icons, names, colors and display.
+			case 410 -> {
+				if (stepTicks == 1) {
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("entity_radar");
+				}
+				String[] tabs = {"entities", "icons", "names", "colors", "display"};
+				for (int i = 0; i < tabs.length; i++) {
+					int at = 20 + i * 20;
+					if (stepTicks == at && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.selectSheetSectionForSnapshot(i);
+					}
+					if (stepTicks == at + 12) {
+						grab(client, "entity radar settings, " + tabs[i]);
+					}
+				}
+				if (stepTicks == 20 + tabs.length * 20) {
 					client.gui.setScreen(null);
 					next();
 				}

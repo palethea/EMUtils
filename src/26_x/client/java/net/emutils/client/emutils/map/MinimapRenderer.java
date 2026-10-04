@@ -45,8 +45,6 @@ public final class MinimapRenderer {
 	private static final int ARROW = 0xFFFFFFFF;
 	private static final int ARROW_OUTLINE = 0xE0101010;
 	private static final int MARKER_SIZE = 10;
-	/** A player's face on the radar (#224). */
-	private static final int FACE_SIZE = 8;
 	private static final int NORTH_SIZE = 10;
 	private static final int TEXT_COLOR = 0xFFFFFFFF;
 	private static final int TEXT_SHADOW = 0x99000000;
@@ -280,9 +278,10 @@ public final class MinimapRenderer {
 	private static void drawRadar(GuiGraphicsExtractor context, Minecraft client, MapView view, MinimapShape shape, float opacity, float partialTick) {
 		LocalPlayer player = client.player;
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (player == null || !MapRadar.enabled(config)) {
+		if (player == null || !MapRadar.onMinimap(config)) {
 			return;
 		}
+		int size = config.mapRadarIconSize();
 		float half = view.screenCenterX();
 		// The map's corners are this far away when it turns.
 		double reach = half / view.zoom() * Math.sqrt(2.0D) + 1.0D;
@@ -291,18 +290,16 @@ public final class MinimapRenderer {
 		for (MapRadar.Blip blip : MapRadar.blips(client, view.centerX(), view.centerZ(), reach, partialTick)) {
 			float x = view.screenX(blip.x(), blip.z());
 			float y = view.screenY(blip.x(), blip.z());
-			if (!inside(shape, half, x, y, blip.kind() == MapRadar.Kind.PLAYER ? FACE_SIZE / 2.0F + 1.0F : 3.0F)) {
+			if (!inside(shape, half, x, y, size / 2.0F + 1.0F)) {
 				continue;
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(x, y);
-			MapRadar.draw(context, blip, playerY, FACE_SIZE, 1.0F, config.mapRadarMobFaces(), opacity);
+			MapRadar.draw(context, config, blip, playerY, size, opacity);
 			context.pose().popMatrix();
 			placed.add(new MapRadar.Placed(blip, x, y));
 		}
-		if (config.mapRadarNames()) {
-			MapRadar.drawNames(context, client.font, placed, half, half, FACE_SIZE, playerY, opacity);
-		}
+		MapRadar.drawNames(context, client.font, config, placed, half, half, size, playerY, opacity);
 	}
 
 	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, MapView view, MinimapShape shape, float opacity, boolean pinned) {

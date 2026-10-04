@@ -153,7 +153,7 @@ Show your movement keys on screen as keys in the settings UI's look, lighting up
 
 ### Minimap
 
-A map of the area around you in the top-right corner, drawn from each block's real textures, so it follows your resource pack. Close up, every block shows its top texture with its biome's grass, foliage and water colors; farther out the blocks blend into their average color. Height changes are shaded, and where a block stands above the ground south of it a strip of its side shows, giving the map a slight 3D look. Water gets darker the deeper it is. Plants, glass, fences and torches are drawn over the ground under them. The map fills in from the chunks you have loaded and updates as blocks change; the work happens a little at a time and the tiles are drawn on a background thread, so it doesn't stall the game. Your arrow sits in the middle, an N marks north, and your coordinates show under the map. It can be moved, resized and given an opacity in the HUD Layout Editor. On by default, unless Xaero's Minimap is installed. Its settings are split into Map, Show and Radar tabs.
+A map of the area around you in the top-right corner, drawn from each block's real textures, so it follows your resource pack. Close up, every block shows its top texture with its biome's grass, foliage and water colors; farther out the blocks blend into their average color. Height changes are shaded, and where a block stands above the ground south of it a strip of its side shows, giving the map a slight 3D look. Water gets darker the deeper it is. Plants, glass, fences and torches are drawn over the ground under them. The map fills in from the chunks you have loaded and updates as blocks change; the work happens a little at a time and the tiles are drawn on a background thread, so it doesn't stall the game. Your arrow sits in the middle, an N marks north, and your coordinates show under the map. It can be moved, resized and given an opacity in the HUD Layout Editor. On by default, unless Xaero's Minimap is installed. Its settings are split into Map and Show tabs. The players and mobs on it are the Entity Radar's.
 
 - Shape: a Square map, or a Round one.
 - Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
@@ -163,9 +163,16 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Coordinates: show your coordinates under the map.
 - Waypoints: show your waypoints with the same markers as in the world.
   - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
-- Entity Radar: show the players, mobs and items around you on the minimap, and on the world map where you are, which names the one under the cursor. Players show their face, and mobs theirs too, taken from the mob's own texture so variants and resource packs show (mobs whose head alone doesn't look like them get a drawing of their model instead: slimes and horses from the front with their eyes and muzzle, fish and parrots from the side, the armadillo, bat, silverfish, endermite and phantom from above), framed red for hostile mobs, green for the others and blue for your own pets; items show a yellow dot. The ones more than 6 blocks above or below you are faded, and those more than 24 away, like mobs in the caves under you, are left out. Entities invisible to you aren't shown. A server's NPCs, which are players that aren't in the tab list, like the ones in Hypixel's hub, show as other mobs, without a name. On by default.
-  - Players, with Player Names under their face: their account name in their team's color, without the server's rank prefixes; where names would overlap, the one nearest the middle shows; Hostile Mobs; Other Mobs; Items (off by default): which ones show.
-  - Mob Faces: turn it off to show mobs as dots in their kind's color.
+
+### Entity Radar
+
+The players, mobs and items around you on the minimap, and on the world map where you are, which names the one under the cursor. Players show their face, and mobs theirs too, taken from the mob's own texture so variants and resource packs show (mobs whose head alone doesn't look like them get a drawing of their model instead: slimes and horses from the front with their eyes and muzzle, llamas and camels cropped to their face, fish and parrots from the side, the armadillo, bat, silverfish, endermite and phantom from above). Each face is framed in its group's color. Entities more than 6 blocks above or below you are faded, and those more than 24 away, like mobs in the caves under you, are left out. Entities invisible to you aren't shown. A server's NPCs, which are players that aren't in the tab list, like the ones in Hypixel's hub, are a group of their own. On by default. Its settings are split into Entities, Icons, Names, Colors and Display tabs.
+
+- Entities: show or hide each group: Players, NPCs, Hostile Mobs, Animals, Water Mobs, Villagers & Golems, Your Pets, and Items (off by default). Mobs are grouped by the category the game spawns them in, so modded mobs land in the right group too.
+- Icons: how big they are on the minimap (the world map's are a little bigger), and whether each group shows by its face or as a dot.
+- Names: Player Names under their face, their account name without the server's rank prefixes; NPC Names (off by default); Team Colors, which is how servers color ranks; Name Background, a dark tag or a shadow; and Hide Overlapping Names, which shows only the one nearest the middle where names would overlap.
+- Colors: the color of each group's frames and dots.
+- Display: on the minimap, on the world map, and how many blocks above or below you entities are faded and left out.
 
 ### Armor Status
 

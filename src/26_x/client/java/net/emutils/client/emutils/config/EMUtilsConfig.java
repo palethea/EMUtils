@@ -16,6 +16,8 @@ import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.map.MinimapShape;
+import net.emutils.client.emutils.map.RadarGroup;
+import net.emutils.client.emutils.map.RadarIcon;
 import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.waypoint.WaypointReachAction;
@@ -125,6 +127,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	public static final int BEACON_RADIUS_LINE_WIDTH_MIN = 1;
 	public static final int BEACON_RADIUS_LINE_WIDTH_MAX = 5;
 	public static final int LIGHT_LEVEL_RANGE_MIN = 8;
+	/** The entity radar's icon size (#224), in GUI pixels, and how far above or below it fades and hides entities, in blocks. */
+	public static final int MAP_RADAR_ICON_SIZE_MIN = 6;
+	public static final int MAP_RADAR_ICON_SIZE_MAX = 12;
+	public static final int MAP_RADAR_ICON_SIZE_DEFAULT = 8;
+	public static final int MAP_RADAR_FADE_MAX = 32;
+	public static final int MAP_RADAR_FADE_DEFAULT = 6;
+	public static final int MAP_RADAR_HIDE_MIN = 8;
+	public static final int MAP_RADAR_HIDE_MAX = 128;
+	public static final int MAP_RADAR_HIDE_DEFAULT = 24;
 	public static final int LIGHT_LEVEL_RANGE_MAX = 32;
 	public static final int LIGHT_LEVEL_RANGE_DEFAULT = 24;
 	public static final int HOTBAR_SLOT_MIN = 1;
@@ -254,12 +265,20 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean mapCaves = Boolean.TRUE;
 	private Boolean mapCeilingFull = Boolean.FALSE;
 	private Boolean mapRadar = Boolean.TRUE;
-	private Boolean mapRadarPlayers = Boolean.TRUE;
+	/** Per radar group (#224), by its key: shown, its icon, and its color; a group not in them has its defaults. */
+	private Map<String, Boolean> mapRadarShown = new LinkedHashMap<>();
+	private Map<String, String> mapRadarIcons = new LinkedHashMap<>();
+	private Map<String, Integer> mapRadarColors = new LinkedHashMap<>();
+	private Integer mapRadarIconSize = MAP_RADAR_ICON_SIZE_DEFAULT;
+	private Integer mapRadarFadeBlocks = MAP_RADAR_FADE_DEFAULT;
+	private Integer mapRadarHideBlocks = MAP_RADAR_HIDE_DEFAULT;
 	private Boolean mapRadarNames = Boolean.TRUE;
-	private Boolean mapRadarHostile = Boolean.TRUE;
-	private Boolean mapRadarFriendly = Boolean.TRUE;
-	private Boolean mapRadarItems = Boolean.FALSE;
-	private Boolean mapRadarMobFaces = Boolean.TRUE;
+	private Boolean mapRadarNpcNames = Boolean.FALSE;
+	private Boolean mapRadarNameColors = Boolean.TRUE;
+	private Boolean mapRadarNameBackground = Boolean.TRUE;
+	private Boolean mapRadarHideOverlappingNames = Boolean.TRUE;
+	private Boolean mapRadarOnMinimap = Boolean.TRUE;
+	private Boolean mapRadarOnWorldMap = Boolean.TRUE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3843,13 +3862,82 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	/** The radar shows other players, with their face. */
-	public boolean mapRadarPlayers() {
-		return mapRadarPlayers == null || mapRadarPlayers;
+	/** Whether the radar shows a group of entities. */
+	public boolean mapRadarShows(RadarGroup group) {
+		Boolean shown = mapRadarShown == null ? null : mapRadarShown.get(group.key());
+		return shown == null ? group.shownByDefault() : shown;
 	}
 
-	public void setMapRadarPlayers(boolean enabled) {
-		mapRadarPlayers = enabled;
+	public void setMapRadarShows(RadarGroup group, boolean shown) {
+		if (mapRadarShown == null) {
+			mapRadarShown = new LinkedHashMap<>();
+		}
+		mapRadarShown.put(group.key(), shown);
+		save();
+	}
+
+	/** How the radar draws a group: by its face, or as a dot. */
+	public RadarIcon mapRadarIcon(RadarGroup group) {
+		String icon = mapRadarIcons == null ? null : mapRadarIcons.get(group.key());
+		if (icon != null) {
+			for (RadarIcon value : RadarIcon.values()) {
+				if (value.name().equals(icon)) {
+					return value;
+				}
+			}
+		}
+		return group.defaultIcon();
+	}
+
+	public void setMapRadarIcon(RadarGroup group, RadarIcon icon) {
+		if (mapRadarIcons == null) {
+			mapRadarIcons = new LinkedHashMap<>();
+		}
+		mapRadarIcons.put(group.key(), icon.name());
+		save();
+	}
+
+	/** The color a group's faces are framed in and its dots are, always opaque. */
+	public int mapRadarColor(RadarGroup group) {
+		Integer color = mapRadarColors == null ? null : mapRadarColors.get(group.key());
+		return 0xFF000000 | (color == null ? group.defaultColor() : color);
+	}
+
+	public void setMapRadarColor(RadarGroup group, int color) {
+		if (mapRadarColors == null) {
+			mapRadarColors = new LinkedHashMap<>();
+		}
+		mapRadarColors.put(group.key(), 0xFF000000 | color);
+		save();
+	}
+
+	/** How big faces are on the minimap, in GUI pixels; the world map's are a little bigger. */
+	public int mapRadarIconSize() {
+		return clamp(mapRadarIconSize == null ? MAP_RADAR_ICON_SIZE_DEFAULT : mapRadarIconSize, MAP_RADAR_ICON_SIZE_MIN, MAP_RADAR_ICON_SIZE_MAX);
+	}
+
+	public void setMapRadarIconSize(int size) {
+		mapRadarIconSize = Math.clamp(size, MAP_RADAR_ICON_SIZE_MIN, MAP_RADAR_ICON_SIZE_MAX);
+		save();
+	}
+
+	/** Entities more than this many blocks above or below you are faded; 0 fades none. */
+	public int mapRadarFadeBlocks() {
+		return clamp(mapRadarFadeBlocks == null ? MAP_RADAR_FADE_DEFAULT : mapRadarFadeBlocks, 0, MAP_RADAR_FADE_MAX);
+	}
+
+	public void setMapRadarFadeBlocks(int blocks) {
+		mapRadarFadeBlocks = Math.clamp(blocks, 0, MAP_RADAR_FADE_MAX);
+		save();
+	}
+
+	/** Entities more than this many blocks above or below you are left out, like mobs in the caves under you. */
+	public int mapRadarHideBlocks() {
+		return clamp(mapRadarHideBlocks == null ? MAP_RADAR_HIDE_DEFAULT : mapRadarHideBlocks, MAP_RADAR_HIDE_MIN, MAP_RADAR_HIDE_MAX);
+	}
+
+	public void setMapRadarHideBlocks(int blocks) {
+		mapRadarHideBlocks = Math.clamp(blocks, MAP_RADAR_HIDE_MIN, MAP_RADAR_HIDE_MAX);
 		save();
 	}
 
@@ -3863,33 +3951,82 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
-	/** The radar shows hostile mobs. */
-	public boolean mapRadarHostile() {
-		return mapRadarHostile == null || mapRadarHostile;
+	/** The radar shows NPCs' names under their face; off by default, as servers often give them made-up ones. */
+	public boolean mapRadarNpcNames() {
+		return mapRadarNpcNames != null && mapRadarNpcNames;
 	}
 
-	public void setMapRadarHostile(boolean enabled) {
-		mapRadarHostile = enabled;
+	public void setMapRadarNpcNames(boolean enabled) {
+		mapRadarNpcNames = enabled;
 		save();
 	}
 
-	/** The radar shows the other mobs: animals, villagers, golems and your pets. */
-	public boolean mapRadarFriendly() {
-		return mapRadarFriendly == null || mapRadarFriendly;
+	/** Names are in their team's color, which is how servers color ranks, instead of white. */
+	public boolean mapRadarNameColors() {
+		return mapRadarNameColors == null || mapRadarNameColors;
 	}
 
-	public void setMapRadarFriendly(boolean enabled) {
-		mapRadarFriendly = enabled;
+	public void setMapRadarNameColors(boolean enabled) {
+		mapRadarNameColors = enabled;
 		save();
 	}
 
-	/** The radar shows items lying on the ground; off by default. */
-	public boolean mapRadarItems() {
-		return mapRadarItems != null && mapRadarItems;
+	/** Names are on a dark tag, instead of with a shadow. */
+	public boolean mapRadarNameBackground() {
+		return mapRadarNameBackground == null || mapRadarNameBackground;
 	}
 
-	public void setMapRadarItems(boolean enabled) {
-		mapRadarItems = enabled;
+	public void setMapRadarNameBackground(boolean enabled) {
+		mapRadarNameBackground = enabled;
+		save();
+	}
+
+	/** A name that would overlap one nearer the middle is left out. */
+	public boolean mapRadarHideOverlappingNames() {
+		return mapRadarHideOverlappingNames == null || mapRadarHideOverlappingNames;
+	}
+
+	public void setMapRadarHideOverlappingNames(boolean enabled) {
+		mapRadarHideOverlappingNames = enabled;
+		save();
+	}
+
+	/** The minimap shows the radar. */
+	public boolean mapRadarOnMinimap() {
+		return mapRadarOnMinimap == null || mapRadarOnMinimap;
+	}
+
+	public void setMapRadarOnMinimap(boolean enabled) {
+		mapRadarOnMinimap = enabled;
+		save();
+	}
+
+	/** The world map shows the radar where you are. */
+	public boolean mapRadarOnWorldMap() {
+		return mapRadarOnWorldMap == null || mapRadarOnWorldMap;
+	}
+
+	public void setMapRadarOnWorldMap(boolean enabled) {
+		mapRadarOnWorldMap = enabled;
+		save();
+	}
+
+	/** The entity radar (#224): every setting back to how it starts. */
+	public void resetMapRadarDefaults() {
+		mapRadar = Boolean.TRUE;
+		mapRadarShown = new LinkedHashMap<>();
+		mapRadarIcons = new LinkedHashMap<>();
+		mapRadarColors = new LinkedHashMap<>();
+		mapRadarIconSize = MAP_RADAR_ICON_SIZE_DEFAULT;
+		mapRadarFadeBlocks = MAP_RADAR_FADE_DEFAULT;
+		mapRadarHideBlocks = MAP_RADAR_HIDE_DEFAULT;
+		mapRadarNames = Boolean.TRUE;
+		mapRadarNpcNames = Boolean.FALSE;
+		mapRadarNameColors = Boolean.TRUE;
+		mapRadarNameBackground = Boolean.TRUE;
+		mapRadarHideOverlappingNames = Boolean.TRUE;
+		mapRadarOnMinimap = Boolean.TRUE;
+		mapRadarOnWorldMap = Boolean.TRUE;
 		save();
 	}
 
@@ -3908,16 +4045,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		} else {
 			mapTeleportCommands.put(server, command);
 		}
-		save();
-	}
-
-	/** The radar shows mobs by their face, framed in their kind's color, instead of a dot; on by default. */
-	public boolean mapRadarMobFaces() {
-		return mapRadarMobFaces == null || mapRadarMobFaces;
-	}
-
-	public void setMapRadarMobFaces(boolean enabled) {
-		mapRadarMobFaces = enabled;
 		save();
 	}
 
@@ -3948,13 +4075,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapWaypointsPinned = Boolean.TRUE;
 		mapCaves = Boolean.TRUE;
 		mapCeilingFull = Boolean.FALSE;
-		mapRadar = Boolean.TRUE;
-		mapRadarPlayers = Boolean.TRUE;
-		mapRadarNames = Boolean.TRUE;
-		mapRadarHostile = Boolean.TRUE;
-		mapRadarFriendly = Boolean.TRUE;
-		mapRadarItems = Boolean.FALSE;
-		mapRadarMobFaces = Boolean.TRUE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}

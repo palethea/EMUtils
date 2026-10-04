@@ -25,6 +25,10 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.map.MinimapShape;
+import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.map.RadarIcon;
+import net.emutils.client.emutils.map.RadarGroup;
 import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.hud.HudFont;
 import net.emutils.client.emutils.hud.HudStyle;
@@ -54,6 +58,7 @@ public final class HubSettingsRegistry {
 		ROWS.put(HubCategory.LOOK_AT_INFO, HubSettingsRegistry::lookAtInfoRows);
 		ROWS.put(HubCategory.KEYSTROKES, HubSettingsRegistry::keystrokesRows);
 		ROWS.put(HubCategory.MINIMAP, HubSettingsRegistry::minimapRows);
+		ROWS.put(HubCategory.ENTITY_RADAR, HubSettingsRegistry::entityRadarRows);
 		ROWS.put(HubCategory.ARMOR_STATUS, HubSettingsRegistry::armorStatusRows);
 		ROWS.put(HubCategory.SCOREBOARD, HubSettingsRegistry::scoreboardRows);
 		ROWS.put(HubCategory.TAB_LIST, HubSettingsRegistry::tabListRows);
@@ -72,6 +77,10 @@ public final class HubSettingsRegistry {
 	/** Accent presets for the menus: saturated and dark enough for white text in both themes. */
 	private static final List<Integer> ACCENT_PRESETS = List.of(
 		0xFF16A058, 0xFF12877F, 0xFF2F6FD6, 0xFF5B5BD6, 0xFF7B4FD0, 0xFFC23D7A, 0xFFD0453A, 0xFFC77700
+	);
+	/** The entity radar's group colors (#224): every group's own, and the picker for any other. */
+	private static final List<Integer> RADAR_PRESETS = List.of(
+		0xFF1E1E1E, 0xFF9AA0A6, 0xFFFF5555, 0xFFF0A040, 0xFFFFD84A, 0xFF6BE36B, 0xFF4FD8E8, 0xFF6FC8FF
 	);
 
 	private HubSettingsRegistry() {
@@ -100,6 +109,7 @@ public final class HubSettingsRegistry {
 			case LOOK_AT_INFO -> config::resetLookAtInfoDefaults;
 			case KEYSTROKES -> config::resetKeystrokesDefaults;
 			case MINIMAP -> config::resetMinimapDefaults;
+			case ENTITY_RADAR -> config::resetMapRadarDefaults;
 			case ARMOR_STATUS -> config::resetArmorStatusDefaults;
 			case SCOREBOARD -> config::resetScoreboardDefaults;
 			case TAB_LIST -> config::resetTabListDefaults;
@@ -514,15 +524,56 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_COORDINATES, config::minimapCoordinates, config::setMinimapCoordinates));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS, config::minimapWaypoints, config::setMinimapWaypoints));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS_PINNED, config::minimapWaypointsPinned, config::setMinimapWaypointsPinned));
-		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MINIMAP_SECTION_RADAR));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR, config::mapRadar, config::setMapRadar));
 		rows.add(divider());
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_PLAYERS, config::mapRadarPlayers, config::setMapRadarPlayers));
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.UI_MINIMAP_OPEN_RADAR),
+			() -> {
+				if (MinecraftClientCompat.screen(Minecraft.getInstance()) instanceof SettingsScreen settings) {
+					settings.openSheet("entity_radar");
+				}
+			},
+			true
+		));
+		return rows;
+	}
+
+	/**
+	 * Entity Radar (#224): which groups of entities the minimap and the world map show, how each looks, the
+	 * names under players, each group's color, and where and how far up and down it shows them.
+	 */
+	private static List<HubSettingRow> entityRadarRows(Runnable refresh) {
+		EMUtilsConfig config = config();
+		List<HubSettingRow> rows = new ArrayList<>();
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR, config::mapRadar, config::setMapRadar));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_RADAR_SECTION_ENTITIES));
+		for (RadarGroup group : RadarGroup.values()) {
+			rows.add(new HubSettingRow.Toggle(group.showKey(), () -> config.mapRadarShows(group), shown -> config.setMapRadarShows(group, shown)));
+		}
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_RADAR_SECTION_ICONS));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_RADAR_ICON_SIZE, EMUtilsTexts.SUFFIX_PIXELS, EMUtilsConfig.MAP_RADAR_ICON_SIZE_MIN, EMUtilsConfig.MAP_RADAR_ICON_SIZE_MAX, config::mapRadarIconSize, config::setMapRadarIconSize));
+		rows.add(divider());
+		for (RadarGroup group : RadarGroup.values()) {
+			if (group.hasFaces()) {
+				rows.add(HubSettingRow.Cycle.ofEnum(group.iconKey(), () -> config.mapRadarIcon(group), icon -> config.setMapRadarIcon(group, icon), RadarIcon.class, icon -> Component.translatable(icon.labelKey())));
+			}
+		}
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_RADAR_SECTION_NAMES));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_NAMES, config::mapRadarNames, config::setMapRadarNames));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_HOSTILE, config::mapRadarHostile, config::setMapRadarHostile));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_FRIENDLY, config::mapRadarFriendly, config::setMapRadarFriendly));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_ITEMS, config::mapRadarItems, config::setMapRadarItems));
-		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_MOB_FACES, config::mapRadarMobFaces, config::setMapRadarMobFaces));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_NPC_NAMES, config::mapRadarNpcNames, config::setMapRadarNpcNames));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_NAME_COLORS, config::mapRadarNameColors, config::setMapRadarNameColors));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_NAME_BACKGROUND, config::mapRadarNameBackground, config::setMapRadarNameBackground));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_HIDE_OVERLAPPING_NAMES, config::mapRadarHideOverlappingNames, config::setMapRadarHideOverlappingNames));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_RADAR_SECTION_COLORS));
+		for (RadarGroup group : RadarGroup.values()) {
+			rows.add(new HubSettingRow.Swatches(group.colorKey(), RADAR_PRESETS, () -> config.mapRadarColor(group), color -> config.setMapRadarColor(group, color), () -> true));
+		}
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_RADAR_SECTION_DISPLAY));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_ON_MINIMAP, config::mapRadarOnMinimap, config::setMapRadarOnMinimap));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_RADAR_ON_WORLD_MAP, config::mapRadarOnWorldMap, config::setMapRadarOnWorldMap));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_RADAR_FADE, EMUtilsTexts.SUFFIX_BLOCKS, 0, EMUtilsConfig.MAP_RADAR_FADE_MAX, config::mapRadarFadeBlocks, config::setMapRadarFadeBlocks));
+		rows.add(new HubSettingRow.Slider(EMUtilsTexts.OPTION_RADAR_HIDE, EMUtilsTexts.SUFFIX_BLOCKS, EMUtilsConfig.MAP_RADAR_HIDE_MIN, EMUtilsConfig.MAP_RADAR_HIDE_MAX, config::mapRadarHideBlocks, config::setMapRadarHideBlocks));
 		return rows;
 	}
 
