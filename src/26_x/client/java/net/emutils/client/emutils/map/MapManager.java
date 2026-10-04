@@ -172,8 +172,9 @@ public final class MapManager {
 		}
 		SavedChunk chunk;
 		while (System.nanoTime() < deadline && (chunk = importer.poll()) != null) {
-			if (world.chunk(chunk.chunkX, chunk.chunkZ) == null) {
-				world.put(chunk.chunkX, chunk.chunkZ, MapSampler.sample(chunk));
+			MapChunk sampled;
+			if (world.chunk(chunk.chunkX, chunk.chunkZ) == null && !(sampled = MapSampler.sample(chunk)).isEmpty()) {
+				world.put(chunk.chunkX, chunk.chunkZ, sampled);
 				tiles.markDirty(chunk.chunkX, chunk.chunkZ);
 			}
 		}
@@ -258,7 +259,13 @@ public final class MapManager {
 		if (chunk == null || world == null) {
 			return;
 		}
-		world.put(chunkX, chunkZ, MapSampler.sample(level, chunk, world.biomes()));
+		MapChunk sampled = MapSampler.sample(level, chunk, world.biomes());
+		// An empty chunk shows nothing, and on servers whose worlds share a dimension (lobbies, SkyBlock
+		// islands) it's often another world's void over this one's map, so it's neither kept nor saved.
+		if (sampled.isEmpty()) {
+			return;
+		}
+		world.put(chunkX, chunkZ, sampled);
 		TILES.markDirty(chunkX, chunkZ);
 	}
 

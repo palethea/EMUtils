@@ -385,8 +385,8 @@ public final class WorldMapScreen extends Screen {
 			show = false;
 		}
 		float progress = loading ? tiles.progress() : 1.0F;
-		// Counts up smoothly while shown, and starts from nothing the next time.
-		float shownProgress = anim.towards("world-map-loading-progress", show ? progress : 0.0F, show ? 8.0F : 1000.0F);
+		// Counts up smoothly while shown; while hidden it keeps up at once, so it never shows from zero.
+		float shownProgress = anim.towards("world-map-loading-progress", progress, show ? 8.0F : 1000.0F);
 		float shown = anim.towards("world-map-loading", show && panels > 0.0F ? 1.0F : 0.0F, show ? 6.0F : 3.0F) * panels;
 		if (shown <= 0.01F) {
 			return;
