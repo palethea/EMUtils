@@ -115,13 +115,20 @@ public final class MapRadar {
 		return blips;
 	}
 
-	/**
-	 * Whether a player is a server's NPC, like the ones in Hypixel's hub: drawn as players but not in the tab
-	 * list, where every real player is.
-	 */
+	/** Whether a player is a server's NPC, like the ones in Hypixel's hub. */
 	private static boolean npc(Player player, LocalPlayer self) {
 		ClientPacketListener connection = Minecraft.getInstance().getConnection();
-		return player != self && connection != null && connection.getPlayerInfo(player.getUUID()) == null;
+		return player != self && connection != null && npc(player.getUUID(), connection.getPlayerInfo(player.getUUID()) != null);
+	}
+
+	/**
+	 * Whether a player with this id is an NPC. Servers give NPCs ids of version 2, which no real player has
+	 * (theirs are 4, or 3 on servers in offline mode), as Hypixel and the Citizens plugin do; that tells them
+	 * apart from the moment they appear. Other NPCs are known by not being in the tab list, where every real
+	 * player is, but only once the server takes them out of it: it lists them for a moment to send their skin.
+	 */
+	static boolean npc(java.util.UUID id, boolean inTabList) {
+		return id.version() == 2 || !inTabList;
 	}
 
 	/**
@@ -238,6 +245,20 @@ public final class MapRadar {
 			}
 		}
 		return false;
+	}
+
+	/** For UI snapshot checks: says which players with made-up ids were taken wrongly, or returns an empty text. */
+	public static String npcRuleForSnapshot() {
+		java.util.UUID npc = java.util.UUID.fromString("5f8a1c2e-3b4d-2e6f-8a9b-0c1d2e3f4a5b");
+		java.util.UUID online = java.util.UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5");
+		java.util.UUID offline = java.util.UUID.nameUUIDFromBytes("OfflinePlayer:Steve".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		if (!npc(npc, true)) {
+			return "an NPC still in the tab list was taken for a player";
+		}
+		if (npc(online, true) || npc(offline, true)) {
+			return "a real player was taken for an NPC";
+		}
+		return npc(online, false) ? "" : "a player missing from the tab list wasn't taken for an NPC";
 	}
 
 	/**

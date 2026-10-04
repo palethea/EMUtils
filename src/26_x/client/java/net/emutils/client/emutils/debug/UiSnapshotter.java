@@ -3809,6 +3809,8 @@ public final class UiSnapshotter {
 					}
 				}
 				if (stepTicks == 40) {
+					String npcRule = MapRadar.npcRuleForSnapshot();
+					check(npcRule.isEmpty(), "server NPCs are told from players by their id, also while they're still in the tab list" + (npcRule.isEmpty() ? "" : " (" + npcRule + ")"));
 					String overlap = MapRadar.nameOverlapForSnapshot();
 					check(overlap.isEmpty(), "players' names that would overlap one nearer the middle are left out" + (overlap.isEmpty() ? "" : " (" + overlap + ")"));
 					String faceless = MapRadar.facelessForSnapshot(client, "emradar_faces");
