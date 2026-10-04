@@ -3920,6 +3920,7 @@ public final class UiSnapshotter {
 			case 408 -> {
 				String server = WaypointManager.worldKey(client);
 				if (stepTicks == 1) {
+					teleportFrom = null;
 					EMUtilsClient.config().setMapTeleportCommand(server, "execute as @s run tp @s {x} {y} {z}");
 					// The teleport goes high up; falling back down mustn't end the run.
 					command(client, "effect give @s slow_falling 60 0 true");
@@ -3935,9 +3936,12 @@ public final class UiSnapshotter {
 					teleportFrom = new int[] {client.player.getBlockX(), client.player.getBlockZ(), client.player.getBlockY()};
 					check(map.teleportForSnapshot(teleportFrom[0] + 40, 120, teleportFrom[1] - 25), "Teleport is offered with the server's own command");
 				}
-				if (stepTicks == 60) {
+				int[] arrived = teleportFrom;
+				boolean there = arrived != null && client.player.getBlockX() == arrived[0] + 40 && client.player.getBlockZ() == arrived[1] - 25;
+				// Waits for the server to move you, which takes longer on a busy run.
+				if (stepTicks > 40 && (there || stepTicks == 150)) {
 					int[] from = teleportFrom;
-					boolean moved = from != null && client.player.getBlockX() == from[0] + 40 && client.player.getBlockZ() == from[1] - 25;
+					boolean moved = there;
 					check(moved, "the server's own teleport command takes you there (" + client.player.getBlockX() + ", " + client.player.getBlockZ() + ")");
 					EMUtilsClient.config().setMapTeleportCommand(server, null);
 					if (from != null) {

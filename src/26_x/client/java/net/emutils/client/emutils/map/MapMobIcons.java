@@ -143,7 +143,8 @@ final class MapMobIcons {
 
 	/** By model, which every mob drawn with it shares; let go when resource packs make new ones. */
 	private static final Map<Model<?>, Optional<Shape>> SHAPES = new WeakHashMap<>();
-	private static final Map<Integer, Icon> ICONS = new HashMap<>();
+	/** By the entity's UUID, which, unlike its number, isn't used again for another entity in the next world. */
+	private static final Map<java.util.UUID, Icon> ICONS = new HashMap<>();
 
 	private MapMobIcons() {
 	}
@@ -204,7 +205,7 @@ final class MapMobIcons {
 
 	private static Icon icon(Entity entity) {
 		long now = System.currentTimeMillis();
-		Icon cached = ICONS.get(entity.getId());
+		Icon cached = ICONS.get(entity.getUUID());
 		if (cached != null && now < cached.until()) {
 			return cached;
 		}
@@ -212,7 +213,7 @@ final class MapMobIcons {
 			ICONS.values().removeIf(icon -> now >= icon.until());
 		}
 		Icon icon = lookUp(entity, now + TEXTURE_MILLIS);
-		ICONS.put(entity.getId(), icon);
+		ICONS.put(entity.getUUID(), icon);
 		return icon;
 	}
 
