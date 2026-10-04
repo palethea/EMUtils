@@ -975,7 +975,7 @@
   "emutils.option.radar_color.players": "Players",
   "emutils.option.radar_color.players.desc": "The frame around players' faces, and their dots.",
   "emutils.option.radar_show.npcs": "NPCs",
-  "emutils.option.radar_show.npcs.desc": "Characters servers put in the world that look like players but aren't in the tab list, like the ones in Hypixel's hub.",
+  "emutils.option.radar_show.npcs.desc": "Characters servers put in the world that look like players but aren't in the tab list, like the ones in Hypixel's hub. Off by default.",
   "emutils.option.radar_icon.npcs": "NPCs",
   "emutils.option.radar_icon.npcs.desc": "How NPCs show: their face, or a dot.",
   "emutils.option.radar_color.npcs": "NPCs",

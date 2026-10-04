@@ -7,7 +7,8 @@ package net.emutils.client.emutils.map;
  */
 public enum RadarGroup {
 	PLAYERS("players", true, RadarIcon.FACE, 0xFF1E1E1E, 7),
-	NPCS("npcs", true, RadarIcon.FACE, 0xFF9AA0A6, 4),
+	// Off by default: on servers like Hypixel they crowd the map, and few want them.
+	NPCS("npcs", false, RadarIcon.FACE, 0xFF9AA0A6, 4),
 	HOSTILE("hostile", true, RadarIcon.FACE, 0xFFFF5555, 6),
 	ANIMALS("animals", true, RadarIcon.FACE, 0xFF6BE36B, 1),
 	WATER("water", true, RadarIcon.FACE, 0xFF4FD8E8, 2),
