@@ -171,7 +171,13 @@ public final class MinimapRenderer {
 		if (world != null) {
 			MapManager.shownTiles().beginFrame();
 			float screenPixelsPerBlock = zoom * layoutScale * (float) client.getWindow().getGuiScale();
-			MapDraw.tiles(context, world, MapManager.shownTiles(), view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1), fade(0xFFFFFFFF, opacity));
+			int level = MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1);
+			// The layer you just left stays under the new one while it draws, so the map doesn't flash empty.
+			MapTiles backdrop = MapManager.backdropTiles();
+			if (backdrop != null) {
+				MapDraw.backdrop(context, backdrop, view, outline, level, fade(0xFFFFFFFF, opacity));
+			}
+			MapDraw.tiles(context, world, MapManager.shownTiles(), view, outline, level, fade(0xFFFFFFFF, opacity));
 		}
 		drawFrame(context, shape, opacity);
 		// Markers are placed exactly where the map puts them, not rounded to pixels, so they move with it.

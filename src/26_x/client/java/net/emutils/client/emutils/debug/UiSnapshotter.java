@@ -197,6 +197,8 @@ public final class UiSnapshotter {
 	private static int @Nullable [] caveReturn;
 	/** The world the map was in before step 402 started a new one. */
 	private static @Nullable String firstWorld;
+	/** Whether step 399 saw the map left behind kept under the new one. */
+	private static boolean sawBackdrop;
 	/** The world map showing the Nether while the settings are open over it, in step 396. */
 	private static @Nullable WorldMapScreen netherMap;
 	/** The screenshots the gallery showed the first time it opened. */
@@ -3671,12 +3673,17 @@ public final class UiSnapshotter {
 				}
 				if (stepTicks == 5) {
 					command(client, "tp @s " + x + " -50 " + z);
+					sawBackdrop = false;
+				}
+				if (stepTicks > 5 && MapManager.backdropTiles() != null) {
+					sawBackdrop = true;
 				}
 				if (stepTicks == 110) {
 					Integer layer = MapManager.caveLayerForSnapshot();
 					check(layer != null && layer == Math.floorDiv(-50 + 2, 16), "underground, the minimap shows the cave layer at your height (" + layer + ")");
 					String column = MapManager.caveColumnForSnapshot(client);
 					check(column.equals("floor at -51"), "the cave layer found the room's floor under you (" + column + ")");
+					check(sawBackdrop, "going underground, the surface stays under the cave layer while it draws, so the map doesn't flash empty");
 				}
 				captureAfter(client, 111, "minimap, cave view");
 			}

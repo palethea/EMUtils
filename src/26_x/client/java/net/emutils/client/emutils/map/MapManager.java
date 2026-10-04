@@ -81,7 +81,22 @@ public final class MapManager {
 	/** Chunks the cave layer's map still has to sample, as it changes more often than the surface's. */
 	private static final LongLinkedOpenHashSet CAVE_PENDING = new LongLinkedOpenHashSet();
 	private static final MapTiles TILES = new MapTiles();
-	private static final MapTiles CAVE_TILES = new MapTiles();
+	/** Two sets of cave tiles, used in turn, so the layer you just left can stay on screen while the new one draws. */
+	private static final MapTiles[] CAVE_TILE_SETS = {new MapTiles(), new MapTiles()};
+	private static int caveTileSet;
+	/**
+	 * The map you just left, a cave layer or the surface, drawn under the one shown until that one finished
+	 * drawing, so changing layers doesn't flash the map empty. Its world is closed when it goes, unless it's
+	 * the surface's, which stays anyway.
+	 */
+	private static @Nullable MapWorld backdropWorld;
+	private static @Nullable MapTiles backdropTiles;
+	private static boolean backdropOwned;
+	private static long backdropSince;
+	private static long backdropIdleSince = -1L;
+	/** The backdrop goes once the map shown has had nothing left to draw for this long, or after the longer time at the latest. */
+	private static final long BACKDROP_IDLE_MILLIS = 500L;
+	private static final long BACKDROP_MAX_MILLIS = 15_000L;
 	private static @Nullable ClientLevel loadedLevel;
 	private static @Nullable MapWorld world;
 	private static @Nullable MapWorld cave;
@@ -156,7 +171,12 @@ public final class MapManager {
 	}
 
 	static MapTiles caveTiles() {
-		return CAVE_TILES;
+		return CAVE_TILE_SETS[caveTileSet];
+	}
+
+	/** The tiles of the map you just left, drawn under the one shown while it draws, or null. */
+	public static @Nullable MapTiles backdropTiles() {
+		return backdropTiles;
 	}
 
 	/** The map the minimap shows: the cave layer's underground, the surface's otherwise. */
@@ -165,7 +185,7 @@ public final class MapManager {
 	}
 
 	public static MapTiles shownTiles() {
-		return cave != null ? CAVE_TILES : TILES;
+		return cave != null ? caveTiles() : TILES;
 	}
 
 	private static void onChunkLoad(ClientLevel level, LevelChunk chunk) {
@@ -217,7 +237,7 @@ public final class MapManager {
 				}
 			}
 			TILES.clear();
-			CAVE_TILES.clear();
+			clearCaveTiles();
 			PENDING.addAll(LOADED);
 			CAVE_PENDING.addAll(LOADED);
 		}
@@ -230,8 +250,9 @@ public final class MapManager {
 
 		prepare(surface, TILES);
 		if (cave != null) {
-			prepare(cave, CAVE_TILES);
+			prepare(cave, caveTiles());
 		}
+		retireBackdrop();
 
 		int playerChunkX = player.getBlockX() >> 4;
 		int playerChunkZ = player.getBlockZ() >> 4;
@@ -268,7 +289,7 @@ public final class MapManager {
 	private static void openLevel(Minecraft client, ClientLevel level) {
 		closeAll();
 		TILES.clear();
-		CAVE_TILES.clear();
+		clearCaveTiles();
 		pendingSamples = 0;
 		pendingTicks = 0;
 		match = null;
@@ -378,11 +399,16 @@ public final class MapManager {
 		if (wanted == current) {
 			return;
 		}
+		// What was shown stays under the new map until that one has drawn, instead of the map going blank.
+		releaseBackdrop();
 		if (cave != null) {
-			cave.close();
+			setBackdrop(cave, caveTiles(), true);
+			caveTileSet ^= 1;
 			cave = null;
+		} else if (world != null) {
+			setBackdrop(world, TILES, false);
 		}
-		CAVE_TILES.clear();
+		caveTiles().clear();
 		CAVE_PENDING.clear();
 		if (wanted == MapSampler.SURFACE || world == null) {
 			return;
@@ -567,7 +593,7 @@ public final class MapManager {
 			pendingSamples++;
 		}
 		if (caveToo && cave != null) {
-			sampleInto(cave, CAVE_TILES, level, chunk, chunkX, chunkZ);
+			sampleInto(cave, caveTiles(), level, chunk, chunkX, chunkZ);
 		}
 	}
 
@@ -630,7 +656,7 @@ public final class MapManager {
 		}
 		closeAll();
 		TILES.clear();
-		CAVE_TILES.clear();
+		clearCaveTiles();
 		match = null;
 		worlds.seen(entry, spawn(level), level.getMinY(), level.getHeight());
 		world = new MapWorld(level, worlds.folder(entry.id()), surface.dimension(), level.getMinY(), level.dimensionType().hasCeiling(), entry.id(), MapSampler.SURFACE);
@@ -732,7 +758,49 @@ public final class MapManager {
 		return count;
 	}
 
+	private static void clearCaveTiles() {
+		for (MapTiles tiles : CAVE_TILE_SETS) {
+			tiles.clear();
+		}
+	}
+
+	private static void setBackdrop(MapWorld shown, MapTiles tiles, boolean owned) {
+		backdropWorld = shown;
+		backdropTiles = tiles;
+		backdropOwned = owned;
+		backdropSince = System.currentTimeMillis();
+		backdropIdleSince = -1L;
+	}
+
+	/** Lets the backdrop go once the map shown has drawn everything it shows, or after a while at the latest. */
+	private static void retireBackdrop() {
+		if (backdropTiles == null) {
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (shownTiles().busy()) {
+			backdropIdleSince = -1L;
+		} else if (backdropIdleSince < 0L) {
+			backdropIdleSince = now;
+		}
+		if (backdropIdleSince >= 0L && now - backdropIdleSince >= BACKDROP_IDLE_MILLIS || now - backdropSince >= BACKDROP_MAX_MILLIS) {
+			releaseBackdrop();
+		}
+	}
+
+	private static void releaseBackdrop() {
+		if (backdropTiles != null && backdropOwned) {
+			if (backdropWorld != null) {
+				backdropWorld.close();
+			}
+			backdropTiles.clear();
+		}
+		backdropWorld = null;
+		backdropTiles = null;
+	}
+
 	private static void closeAll() {
+		releaseBackdrop();
 		if (world != null) {
 			world.close();
 			world = null;
@@ -748,7 +816,7 @@ public final class MapManager {
 		if (world != null || cave != null) {
 			closeAll();
 			TILES.clear();
-			CAVE_TILES.clear();
+			clearCaveTiles();
 			PENDING.addAll(LOADED);
 			CAVE_PENDING.clear();
 		}

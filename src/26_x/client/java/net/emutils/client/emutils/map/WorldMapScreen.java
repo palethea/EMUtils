@@ -110,6 +110,13 @@ public final class WorldMapScreen extends Screen {
 	/** Tiles of a map that isn't one of the two kept for where you are, freed when the screen closes. */
 	private @Nullable MapTiles otherTiles;
 	private @Nullable UiPromptDialog prompt;
+	/**
+	 * What the screen showed before switching to another map, drawn under the new one until it has drawn,
+	 * so switching layers or worlds doesn't flash the map empty; closed when it goes if the screen opened it.
+	 */
+	private @Nullable MapTiles fading;
+	private @Nullable MapWorld fadingWorld;
+	private long fadingIdleSince = -1L;
 	private double centerX;
 	private double centerZ;
 	private float zoom = lastZoom;
@@ -254,6 +261,7 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public void removed() {
 		lastZoom = targetZoom;
+		releaseFading();
 		closeOther();
 		super.removed();
 	}
@@ -302,7 +310,7 @@ public final class WorldMapScreen extends Screen {
 		if (minecraft.level == null) {
 			return false;
 		}
-		closeOther();
+		keepFading();
 		MapWorld surface = MapManager.world();
 		MapWorld liveCave = MapManager.cave();
 		if (surface != null && surface.dimension().equals(shownDimension) && java.util.Objects.equals(surface.worldId, shownWorld)) {
@@ -340,6 +348,26 @@ public final class WorldMapScreen extends Screen {
 		MapTiles opening = new MapTiles();
 		use(opened, opening, opening);
 		return true;
+	}
+
+	/** Keeps what's shown on screen under the next map, instead of closing it right away. */
+	private void keepFading() {
+		releaseFading();
+		fading = tiles;
+		fadingWorld = otherTiles != null ? world : null;
+		fadingIdleSince = -1L;
+		// No longer this screen's own map, so switching doesn't close it; it's closed when it stops fading.
+		otherTiles = null;
+	}
+
+	/** Lets go of what faded under the map, closing it when the screen had opened it. */
+	private void releaseFading() {
+		if (fading != null && fadingWorld != null && fadingWorld != MapManager.world() && fadingWorld != MapManager.cave()) {
+			fadingWorld.close();
+			fading.clear();
+		}
+		fading = null;
+		fadingWorld = null;
 	}
 
 	private void use(MapWorld shown, MapTiles shownTiles, @Nullable MapTiles own) {
@@ -408,7 +436,24 @@ public final class WorldMapScreen extends Screen {
 		MapDraw.fill(context, outline, from == null ? UiTheme.fade(BACKGROUND, progress) : BACKGROUND);
 		tiles.beginFrame();
 		float screenPixelsPerBlock = viewZoom * (float) minecraft.getWindow().getGuiScale();
-		MapDraw.tiles(context, world, tiles, view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.LEVELS - 1), tint);
+		int level = MapDraw.level(screenPixelsPerBlock, MapTileBaker.LEVELS - 1);
+		// The map shown before stays under the new one while it draws: the layer you just left, or the one the
+		// screen switched away from.
+		MapTiles backdrop = fading != null ? fading : showingLive() ? MapManager.backdropTiles() : null;
+		if (backdrop != null && backdrop != tiles) {
+			MapDraw.backdrop(context, backdrop, view, outline, level, tint);
+		}
+		if (fading != null) {
+			long now = System.currentTimeMillis();
+			if (tiles.busy()) {
+				fadingIdleSince = -1L;
+			} else if (fadingIdleSince < 0L) {
+				fadingIdleSince = now;
+			} else if (now - fadingIdleSince >= 500L) {
+				releaseFading();
+			}
+		}
+		MapDraw.tiles(context, world, tiles, view, outline, level, tint);
 
 		boolean interactive = menu == null && sheet == null && prompt == null && progress >= 1.0F;
 		hovered = null;
@@ -793,7 +838,7 @@ public final class WorldMapScreen extends Screen {
 	private void showLive() {
 		MapWorld live = MapManager.shownWorld();
 		if (live != null) {
-			closeOther();
+			keepFading();
 			use(live, MapManager.shownTiles(), null);
 		}
 	}

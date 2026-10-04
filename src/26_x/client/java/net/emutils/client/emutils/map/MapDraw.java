@@ -53,6 +53,47 @@ public final class MapDraw {
 	 * faded in, the nearest coarser tile that is drawn fills in under it, and the finer ones already drawn go
 	 * over that, as they are after zooming out, so the map never shows holes while it loads.
 	 */
+	/**
+	 * Draws the tiles of the map you just left (#222) that are already drawn, the nearest coarser one where a
+	 * tile isn't, without asking for any: what stays on screen under the new map while it draws.
+	 */
+	public static void backdrop(GuiGraphicsExtractor context, MapTiles tiles, MapView view, float[] outline, int level, int color) {
+		int blocks = MapTileBaker.blocksPerTile(level);
+		int[] range = range(view, outline, blocks);
+		for (int tileZ = range[2]; tileZ <= range[3]; tileZ++) {
+			for (int tileX = range[0]; tileX <= range[1]; tileX++) {
+				for (int coarser = level; coarser < MapTileBaker.LEVELS; coarser++) {
+					int coarseBlocks = MapTileBaker.blocksPerTile(coarser);
+					int coarseX = Math.floorDiv(tileX * blocks, coarseBlocks);
+					int coarseZ = Math.floorDiv(tileZ * blocks, coarseBlocks);
+					MapTiles.Tile drawn = tiles.drawn(coarser, coarseX, coarseZ);
+					if (drawn != null) {
+						float[] clip = clipToRect(outline, view, tileX * (double) blocks, tileZ * (double) blocks, blocks);
+						drawClipped(context, drawn.texture(), view, clip, coarseX * (double) coarseBlocks, coarseZ * (double) coarseBlocks, coarseBlocks, color);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	/** The tiles at a level that an outline covers: the first and last x, then the first and last z. */
+	private static int[] range(MapView view, float[] outline, int blocks) {
+		double minX = Double.MAX_VALUE;
+		double maxX = -Double.MAX_VALUE;
+		double minZ = Double.MAX_VALUE;
+		double maxZ = -Double.MAX_VALUE;
+		for (int i = 0; i < outline.length; i += 2) {
+			double x = view.worldX(outline[i], outline[i + 1]);
+			double z = view.worldZ(outline[i], outline[i + 1]);
+			minX = Math.min(minX, x);
+			maxX = Math.max(maxX, x);
+			minZ = Math.min(minZ, z);
+			maxZ = Math.max(maxZ, z);
+		}
+		return new int[] {(int) Math.floor(minX / blocks), (int) Math.floor(maxX / blocks), (int) Math.floor(minZ / blocks), (int) Math.floor(maxZ / blocks)};
+	}
+
 	public static void tiles(GuiGraphicsExtractor context, MapWorld world, MapTiles tiles, MapView view, float[] outline, int level, int color) {
 		int blocks = MapTileBaker.blocksPerTile(level);
 		double minX = Double.MAX_VALUE;
