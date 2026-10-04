@@ -3935,6 +3935,22 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Every kind of mob's radar face (#224) in a grid, to see which come out well.
+			case 409 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(new RadarFaceGallery());
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof RadarFaceGallery gallery) {
+					check(gallery.count() > 40 && gallery.faceless() == 0, "every kind of mob has a face on the radar (" + gallery.count() + " kinds, " + gallery.faceless() + " without)");
+				}
+				if (stepTicks == 32) {
+					grab(client, "entity radar, every mob's face");
+				}
+				if (stepTicks == 35) {
+					client.gui.setScreen(null);
+					next();
+				}
+			}
 			default -> finish(client);
 		}
 	}

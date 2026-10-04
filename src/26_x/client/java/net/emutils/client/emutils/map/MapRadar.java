@@ -186,6 +186,11 @@ public final class MapRadar {
 		return named.isEmpty() ? "none found" : String.join(", ", MapMobIcons.facelessForSnapshot(named));
 	}
 
+	/** For UI snapshots: draws a mob's radar face {@code size} pixels wide at the origin; false when it has none. */
+	public static boolean drawFaceForSnapshot(GuiGraphicsExtractor context, Entity entity, int size) {
+		return MapMobIcons.draw(context, entity, size, Kind.FRIENDLY.color, 0xFFFFFFFF);
+	}
+
 	/** For UI snapshots: shows you on the radar, as another player would be. */
 	public static void showSelfForSnapshot(boolean show) {
 		selfForSnapshot = show;
