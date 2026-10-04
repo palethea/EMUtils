@@ -119,6 +119,10 @@ public final class WorldMapScreen extends Screen {
 	/** Tiles of a map that isn't one of the two kept for where you are, freed when the screen closes. */
 	private @Nullable MapTiles otherTiles;
 	private @Nullable UiPromptDialog prompt;
+	/** The next {@link #removed} is for a screen that comes back here, so the map shown is kept. */
+	private boolean keepingMaps;
+	/** The world map you left for the settings or the waypoint list, whose maps are kept until you're back. */
+	private static @Nullable WorldMapScreen away;
 	/**
 	 * What the screen showed before switching to another map, drawn under the new one until it has drawn,
 	 * so switching layers or worlds doesn't flash the map empty; closed when it goes if the screen opened it.
@@ -184,6 +188,9 @@ public final class WorldMapScreen extends Screen {
 
 	@Override
 	protected void init() {
+		if (away == this) {
+			away = null;
+		}
 		if (openedAt < 0L) {
 			openedAt = System.nanoTime();
 		}
@@ -273,9 +280,37 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public void removed() {
 		lastZoom = targetZoom;
-		releaseFading();
-		closeOther();
+		if (keepingMaps) {
+			// Off to the settings or the waypoint list, which come back here: the map shown stays as it is.
+			keepingMaps = false;
+		} else {
+			releaseFading();
+			closeOther();
+		}
 		super.removed();
+	}
+
+	/**
+	 * Opens a screen that comes back to the map, keeping the map shown meanwhile (#228), so another dimension's
+	 * isn't read in and drawn again from nothing when you're back.
+	 */
+	private void openChild(Screen child) {
+		keepingMaps = true;
+		away = this;
+		minecraft.gui.setScreen(child);
+	}
+
+	/**
+	 * Lets go of the maps of a world map you left for the settings or the waypoint list, when you won't come
+	 * back to them: the map stops or you leave the world.
+	 */
+	static void releaseAway() {
+		WorldMapScreen screen = away;
+		away = null;
+		if (screen != null) {
+			screen.releaseFading();
+			screen.closeOther();
+		}
 	}
 
 	/** Lets go of a map the screen opened itself: stops its importer and frees its tiles. */
@@ -1026,11 +1061,11 @@ public final class WorldMapScreen extends Screen {
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND), this::editTeleportCommand));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE_LOCATION), () -> EMUtilsClient.waypoint().shareLocation(minecraft, Component.translatable(EMUtilsTexts.WORLD_MAP_LOCATION).getString(), blockX, blockY, blockZ, dimension)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
-			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> minecraft.gui.setScreen(new WaypointsScreen(this))));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> openChild(new WaypointsScreen(this))));
 			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_EXPORT), !MapExport.running(), false, () -> MapExport.start(minecraft, world)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_SETTINGS), () -> {
 				SettingsScreen settings = new SettingsScreen(this);
-				minecraft.gui.setScreen(settings);
+				openChild(settings);
 				settings.openSheet("minimap");
 			}));
 		}
@@ -1233,6 +1268,16 @@ public final class WorldMapScreen extends Screen {
 		}
 		teleport(x, y, z);
 		return true;
+	}
+
+	/** For UI snapshot checks: opens the settings as the map's menu does, coming back to the map. */
+	public void openSettingsForSnapshot() {
+		openChild(new SettingsScreen(this));
+	}
+
+	/** For UI snapshot checks: the map shown, to tell whether it's still the same one. */
+	public Object mapForSnapshot() {
+		return world;
 	}
 
 	/** For UI snapshot checks: starts saving the map shown as an image, as its menu item does. */

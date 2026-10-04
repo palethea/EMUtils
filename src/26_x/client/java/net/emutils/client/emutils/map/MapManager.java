@@ -45,7 +45,8 @@ public final class MapManager {
 	private static final long SAMPLE_BUDGET_NANOS = 3_000_000L;
 	/** How many of the nearest waiting chunks are picked per pass. */
 	private static final int NEAREST_BATCH = 16;
-	private static final int SAVE_EVERY_TICKS = 600;
+	/** Changed regions are written this often, so a crash loses little (#228); only what changed is written. */
+	private static final int SAVE_EVERY_TICKS = 200;
 	/** Often, so regions read in only to draw far tiles are let go soon after. */
 	private static final int UNLOAD_EVERY_TICKS = 20;
 	private static final int OVERVIEWS_EVERY_TICKS = 10;
@@ -822,6 +823,7 @@ public final class MapManager {
 	}
 
 	private static void closeAll() {
+		WorldMapScreen.releaseAway();
 		releaseBackdrop();
 		if (world != null) {
 			world.close();
@@ -878,6 +880,114 @@ public final class MapManager {
 			world == null ? 0 : world.knownRegions().size(),
 			world == null ? 0 : world.loadedCount()
 		};
+	}
+
+	/**
+	 * For UI snapshot checks (#228): how much the map costs where you are: memory per chunk, how long a chunk
+	 * takes to sample and a tile to draw at each detail level, and the disk its saved regions take, next to
+	 * Xaero's map of the same world when that's installed. Returns the average bytes a chunk takes in memory,
+	 * and logs the rest.
+	 */
+	public static int statsForSnapshot(Minecraft client) {
+		MapWorld map = world;
+		ClientLevel level = client.level;
+		if (map == null || level == null || client.player == null) {
+			return -1;
+		}
+		long bytes = 0L;
+		int chunks = 0;
+		for (MapRegion region : map.loadedRegions()) {
+			for (int i = 0; i < MapRegion.CHUNKS * MapRegion.CHUNKS; i++) {
+				MapChunk chunk = region.chunk(i);
+				if (chunk != null) {
+					bytes += chunk.bytesForSnapshot();
+					chunks++;
+				}
+			}
+		}
+		int perChunk = chunks == 0 ? -1 : (int) (bytes / chunks);
+		// Sampling: the loaded chunks around you, a few times over.
+		int centerX = client.player.getBlockX() >> 4;
+		int centerZ = client.player.getBlockZ() >> 4;
+		long sampleNanos = 0L;
+		int sampled = 0;
+		for (int round = 0; round < 3; round++) {
+			for (int dz = -5; dz <= 5; dz++) {
+				for (int dx = -5; dx <= 5; dx++) {
+					LevelChunk chunk = level.getChunkSource().getChunk(centerX + dx, centerZ + dz, ChunkStatus.FULL, false);
+					if (chunk != null) {
+						long start = System.nanoTime();
+						MapSampler.sample(level, chunk, map.biomes(), map.startY());
+						sampleNanos += System.nanoTime() - start;
+						sampled++;
+					}
+				}
+			}
+		}
+		// Drawing: the tile you're in, at each column level, a few times over.
+		StringBuilder bakes = new StringBuilder();
+		for (int level2 = 0; level2 < MapTileBaker.COLUMN_LEVELS; level2++) {
+			int blocks = MapTileBaker.blocksPerTile(level2);
+			int tileX = Math.floorDiv(client.player.getBlockX(), blocks);
+			int tileZ = Math.floorDiv(client.player.getBlockZ(), blocks);
+			long start = System.nanoTime();
+			for (int i = 0; i < 5; i++) {
+				MapTileBaker.bake(map, level2, tileX, tileZ);
+			}
+			bakes.append(level2 == 0 ? "" : ", ").append(String.format(Locale.ROOT, "%.2f ms", (System.nanoTime() - start) / 5 / 1.0E6D));
+		}
+		long disk = folderBytes(serverFolder);
+		int regionFiles = countFiles(serverFolder, ".emap");
+		String xaero = "not installed";
+		java.nio.file.Path xaeroFolder = client.gameDirectory.toPath().resolve("xaero").resolve("world-map");
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server != null && Files.isDirectory(xaeroFolder)) {
+			// Xaero names it after the save's folder.
+			java.nio.file.Path own = xaeroFolder.resolve(server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName().toString());
+			xaero = Files.isDirectory(own) ? folderBytes(own) / 1024 + " KB in " + countFiles(own, ".zip") + " region files" : "no map for this world";
+		}
+		EMUtilsClient.LOGGER.info(
+			"EMUtils map stats: {} chunks in memory, {} bytes each; sampling {} us a chunk; drawing a tile {}; minimap {} us a frame; disk {} KB in {} region files ({} bytes a chunk in memory's terms); Xaero's map: {}",
+			chunks, perChunk, sampled == 0 ? -1 : sampleNanos / sampled / 1000, bakes, MinimapRenderer.frameMicrosForSnapshot(), disk / 1024, regionFiles,
+			chunks == 0 ? -1 : disk / Math.max(1, chunks), xaero
+		);
+		return perChunk;
+	}
+
+	/** For UI snapshot checks: whether the saved mask of the region you're in matches its chunks. */
+	public static String presenceForSnapshot(Minecraft client) {
+		if (world == null || client.player == null) {
+			return "no map";
+		}
+		return world.presenceForSnapshot(client.player.getBlockX() >> 9, client.player.getBlockZ() >> 9);
+	}
+
+	private static long folderBytes(@Nullable Path folder) {
+		if (folder == null || !Files.isDirectory(folder)) {
+			return 0L;
+		}
+		try (java.util.stream.Stream<Path> files = Files.walk(folder)) {
+			return files.filter(Files::isRegularFile).mapToLong(file -> {
+				try {
+					return Files.size(file);
+				} catch (IOException exception) {
+					return 0L;
+				}
+			}).sum();
+		} catch (IOException exception) {
+			return 0L;
+		}
+	}
+
+	private static int countFiles(@Nullable Path folder, String ending) {
+		if (folder == null || !Files.isDirectory(folder)) {
+			return 0;
+		}
+		try (java.util.stream.Stream<Path> files = Files.walk(folder)) {
+			return (int) files.filter(file -> file.getFileName().toString().endsWith(ending)).count();
+		} catch (IOException exception) {
+			return 0;
+		}
 	}
 
 	/** For UI snapshot checks: the cave layer the minimap shows, or null above ground. */
