@@ -79,6 +79,8 @@ public final class WorldMapScreen extends Screen {
 	private static final float ZOOM_SPEED = 16.0F;
 	private static final int SPINNER_SIZE = 10;
 	private static final int CHEVRON_SIZE = 8;
+	/** How /tp teleports you, as the teleport command's prompt shows it (#227). */
+	private static final String DEFAULT_TELEPORT = "tp @s {x} {y} {z}";
 	/** A player's face on the radar (#224), and how much bigger mob dots are than on the minimap. */
 	private static final int RADAR_FACE = 10;
 	private static final float RADAR_DOT_SCALE = 1.2F;
@@ -1016,7 +1018,9 @@ public final class WorldMapScreen extends Screen {
 			int blockY = groundY(blockX, blockZ);
 			String other = isOwnDimension() ? null : dimension;
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_ADD_WAYPOINT), () -> openSheet(null, new SharedWaypoint(null, blockX, blockY, blockZ, other, null))));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_ADD_TEMPORARY), () -> EMUtilsClient.waypoint().addTemporary(minecraft, other, blockX, blockY, blockZ)));
 			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT), teleport, false, () -> teleport(blockX, blockY, blockZ)));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND), this::editTeleportCommand));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE_LOCATION), () -> EMUtilsClient.waypoint().shareLocation(minecraft, Component.translatable(EMUtilsTexts.WORLD_MAP_LOCATION).getString(), blockX, blockY, blockZ, dimension)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> minecraft.gui.setScreen(new WaypointsScreen(this))));
@@ -1046,10 +1050,18 @@ public final class WorldMapScreen extends Screen {
 		return minecraft.player == null ? 64 : minecraft.player.getBlockY();
 	}
 
-	/** The server sends only the commands you may use, so /tp being among them means you can teleport. */
+	/**
+	 * The server sends only the commands you may use, so the teleport command being among them means you can
+	 * teleport. A server's own command (#227) can't be told which dimension, so it's only offered in yours.
+	 */
 	private boolean canTeleport() {
 		ClientPacketListener connection = minecraft.getConnection();
-		return connection != null && connection.getCommands().getRoot().getChild("tp") != null;
+		String custom = teleportCommand();
+		if (connection == null || custom != null && !isOwnDimension()) {
+			return false;
+		}
+		String root = custom == null ? "tp" : custom.split(" ", 2)[0];
+		return connection.getCommands().getRoot().getChild(root) != null;
 	}
 
 	private void teleport(int x, int y, int z) {
@@ -1057,9 +1069,50 @@ public final class WorldMapScreen extends Screen {
 		if (connection == null) {
 			return;
 		}
-		String tp = "tp @s " + x + " " + y + " " + z;
-		connection.sendCommand(isOwnDimension() ? tp : "execute in " + dimension + " run " + tp);
+		String custom = teleportCommand();
+		if (custom != null) {
+			connection.sendCommand(custom.replace("{x}", Integer.toString(x)).replace("{y}", Integer.toString(y)).replace("{z}", Integer.toString(z)));
+		} else {
+			String tp = "tp @s " + x + " " + y + " " + z;
+			connection.sendCommand(isOwnDimension() ? tp : "execute in " + dimension + " run " + tp);
+		}
 		closingAt = System.nanoTime();
+	}
+
+	/** The teleport command set for the server you're on (#227), without its slash, or null for /tp. */
+	private @Nullable String teleportCommand() {
+		return EMUtilsClient.config().mapTeleportCommand(WaypointManager.worldKey(minecraft));
+	}
+
+	/**
+	 * Asks for the server's teleport command (#227), with {x}, {y} and {z} where the coordinates go. Left
+	 * empty, or set to /tp's own, it goes back to /tp.
+	 */
+	private void editTeleportCommand() {
+		String current = teleportCommand();
+		prompt = new UiPromptDialog(
+			font, anim,
+			Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND),
+			Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND_MESSAGE),
+			"/" + (current == null ? DEFAULT_TELEPORT : current),
+			Component.literal("/" + DEFAULT_TELEPORT),
+			Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND_SAVE),
+			text -> {
+				String command = text.strip();
+				while (command.startsWith("/")) {
+					command = command.substring(1).strip();
+				}
+				if (command.isEmpty() || command.equals(DEFAULT_TELEPORT)) {
+					EMUtilsClient.config().setMapTeleportCommand(WaypointManager.worldKey(minecraft), null);
+					return null;
+				}
+				if (!command.contains("{x}") || !command.contains("{y}") || !command.contains("{z}")) {
+					return Component.translatable(EMUtilsTexts.WORLD_MAP_TELEPORT_COMMAND_INVALID);
+				}
+				EMUtilsClient.config().setMapTeleportCommand(WaypointManager.worldKey(minecraft), command);
+				return null;
+			}
+		);
 	}
 
 	@Override
@@ -1168,6 +1221,15 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
 	public void switchDimensionForSnapshot(String id) {
 		switchDimension(id);
+	}
+
+	/** For UI snapshot checks: whether the right-click menu offers Teleport, and teleports there when it does. */
+	public boolean teleportForSnapshot(int x, int y, int z) {
+		if (!canTeleport()) {
+			return false;
+		}
+		teleport(x, y, z);
+		return true;
 	}
 
 	/** For UI snapshot checks: starts saving the map shown as an image, as its menu item does. */

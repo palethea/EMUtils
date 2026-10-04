@@ -192,6 +192,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String hudOverlayAnchor = HudOverlayAnchor.TOP_LEFT.name();
 	private String hudLayoutMode = HudLayoutMode.ANCHOR.name();
 	private Map<String, HudCustomLayoutEntry> hudCustomLayout = new LinkedHashMap<>();
+	/** The world map's teleport command per server (#227), by the server's waypoint key; /tp where there's none. */
+	private Map<String, String> mapTeleportCommands = new LinkedHashMap<>();
 	private Boolean hudShowCoordinates = Boolean.TRUE;
 	private Boolean hudShowNetherCoordinates = Boolean.FALSE;
 	private Boolean hudShowChunkRegion = Boolean.TRUE;
@@ -3887,6 +3889,24 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setMapRadarItems(boolean enabled) {
 		mapRadarItems = enabled;
+		save();
+	}
+
+	/** The command the world map teleports with on a server (#227), with {x}, {y} and {z} in it, or null for /tp. */
+	public @Nullable String mapTeleportCommand(String server) {
+		return mapTeleportCommands == null ? null : mapTeleportCommands.get(server);
+	}
+
+	/** Sets the world map's teleport command for a server, or goes back to /tp with null. */
+	public void setMapTeleportCommand(String server, @Nullable String command) {
+		if (mapTeleportCommands == null) {
+			mapTeleportCommands = new LinkedHashMap<>();
+		}
+		if (command == null) {
+			mapTeleportCommands.remove(server);
+		} else {
+			mapTeleportCommands.put(server, command);
+		}
 		save();
 	}
 

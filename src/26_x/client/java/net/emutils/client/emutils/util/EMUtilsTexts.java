@@ -983,6 +983,12 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_ADD_WAYPOINT = "emutils.world_map.add_waypoint";
     public static final String WORLD_MAP_EDIT_WAYPOINT = "emutils.world_map.edit_waypoint";
     public static final String WORLD_MAP_TELEPORT = "emutils.world_map.teleport";
+    public static final String WORLD_MAP_ADD_TEMPORARY = "emutils.world_map.add_temporary";
+    public static final String WORLD_MAP_TELEPORT_COMMAND = "emutils.world_map.teleport_command";
+    public static final String WORLD_MAP_TELEPORT_COMMAND_MESSAGE = "emutils.world_map.teleport_command.message";
+    public static final String WORLD_MAP_TELEPORT_COMMAND_INVALID = "emutils.world_map.teleport_command.invalid";
+    public static final String WORLD_MAP_TELEPORT_COMMAND_SAVE = "emutils.world_map.teleport_command.save";
+    public static final String WAYPOINT_TEMPORARY_LABEL = "emutils.waypoint.temporary_label";
     public static final String WORLD_MAP_EXPORT = "emutils.world_map.export";
     public static final String WORLD_MAP_EXPORTING = "emutils.world_map.exporting";
     public static final String CHAT_MAP_EXPORTED = "emutils.chat.map_exported";

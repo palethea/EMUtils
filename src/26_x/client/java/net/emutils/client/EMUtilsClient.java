@@ -157,6 +157,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
+			// A temporary waypoint (#226) lasts until you leave; disconnects arrive on the network thread.
+			client.execute(() -> waypoint().dropTemporary());
 			tweaksManager.resetSession();
 			autoReconnectManager.onDisconnected();
 			GalleryThumbnails.freeShared();

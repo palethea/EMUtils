@@ -24,6 +24,8 @@ public final class Waypoint {
 	 * and for waypoints from before, which show in every world.
 	 */
 	private String world;
+	/** A temporary waypoint (#226): never saved, and gone once you reach it or leave the world. */
+	private transient boolean temporary;
 
 	public Waypoint() {
 	}
@@ -151,6 +153,14 @@ public final class Waypoint {
 
 	public void setWorld(@org.jspecify.annotations.Nullable String world) {
 		this.world = world;
+	}
+
+	public boolean temporary() {
+		return temporary;
+	}
+
+	void markTemporary() {
+		temporary = true;
 	}
 
 	/** It belongs to that world, or to every world; true too while it isn't known which world it is. */

@@ -199,6 +199,9 @@ public final class UiSnapshotter {
 	private static int @Nullable [] caveReturn;
 	/** The world the map was in before step 402 started a new one. */
 	private static @Nullable String firstWorld;
+	/** The temporary waypoint of step 407, and where step 408 teleported from. */
+	private static @Nullable Waypoint temporaryMark;
+	private static int @Nullable [] teleportFrom;
 	/** The second world's id and its waypoint, in steps 402 and 403. */
 	private static @Nullable String secondWorldId;
 	private static @Nullable Waypoint secondWorldMark;
@@ -3863,9 +3866,62 @@ public final class UiSnapshotter {
 					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 						map.onClose();
 					}
+					next();
+				}
+			}
+			// Temporary waypoints (#226): one shows like the others, isn't written to disk, and goes once you get there.
+			case 407 -> {
+				int x = client.player.getBlockX();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					Waypoint temporary = EMUtilsClient.waypoint().addTemporary(client, null, x + 30, client.player.getBlockY(), z);
+					temporaryMark = temporary;
+					boolean shown = temporary != null && EMUtilsClient.waypoint().renderEntries(client).stream().anyMatch(entry -> entry.waypoint() == temporary);
+					check(shown, "a temporary waypoint shows like the others");
+					// Saving the others leaves it out of the file.
+					Waypoint other = EMUtilsClient.waypoint().addCustom(client, null, "Kept", x - 30, client.player.getBlockY(), z, 0xFF55FF55, false, "");
+					String file = "";
+					try {
+						file = java.nio.file.Files.readString(net.emutils.client.emutils.util.EMUtilsPaths.waypointFile());
+					} catch (java.io.IOException exception) {
+						file = "unreadable";
+					}
+					check(other != null && temporary != null && file.contains(other.id()) && !file.contains(temporary.id()), "a temporary waypoint isn't written to disk with the others");
+					command(client, "tp @s " + (x + 30) + " ~ " + z);
+				}
+				if (stepTicks == 30) {
+					Waypoint temporary = temporaryMark;
+					boolean gone = EMUtilsClient.waypoint().renderEntries(client).stream().noneMatch(entry -> entry.waypoint() == temporary);
+					check(gone, "a temporary waypoint goes once you get there");
+					next();
+				}
+			}
+			// A server's own teleport command (#227): Teleport is offered when you may use it, and moves you with it.
+			case 408 -> {
+				String server = WaypointManager.worldKey(client);
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMapTeleportCommand(server, "execute as @s run tp @s {x} {y} {z}");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openMenuForSnapshot(map.width / 2 + 60, map.height / 2 - 120);
+				}
+				if (stepTicks == 28) {
+					grab(client, "world map, right-click menu");
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					teleportFrom = new int[] {client.player.getBlockX(), client.player.getBlockZ()};
+					check(map.teleportForSnapshot(teleportFrom[0] + 40, 120, teleportFrom[1] - 25), "Teleport is offered with the server's own command");
+				}
+				if (stepTicks == 60) {
+					int[] from = teleportFrom;
+					boolean moved = from != null && client.player.getBlockX() == from[0] + 40 && client.player.getBlockZ() == from[1] - 25;
+					check(moved, "the server's own teleport command takes you there (" + client.player.getBlockX() + ", " + client.player.getBlockZ() + ")");
+					EMUtilsClient.config().setMapTeleportCommand(server, null);
 					EMUtilsClient.config().resetMinimapDefaults();
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
 					next();
 				}
 			}
