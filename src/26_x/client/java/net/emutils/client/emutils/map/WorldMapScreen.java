@@ -544,7 +544,9 @@ public final class WorldMapScreen extends Screen {
 	 */
 	private void drawLoading(GuiGraphicsExtractor context, UiTheme theme, float panels) {
 		long now = System.currentTimeMillis();
-		boolean loading = tiles.busy();
+		// Saving a picture of the map (#225) shows here too, with how far it got.
+		boolean exporting = MapExport.running();
+		boolean loading = tiles.busy() || exporting;
 		if (loading) {
 			idleSince = -1L;
 			if (busySince < 0L) {
@@ -558,16 +560,17 @@ public final class WorldMapScreen extends Screen {
 			busySince = -1L;
 			show = false;
 		}
-		float progress = loading ? tiles.progress() : 1.0F;
+		float progress = exporting ? MapExport.progress() : loading ? tiles.progress() : 1.0F;
 		// Counts up smoothly while shown; while hidden it keeps up at once, so it never shows from zero.
 		float shownProgress = anim.towards("world-map-loading-progress", progress, show ? 8.0F : 1000.0F);
 		float shown = anim.towards("world-map-loading", show && panels > 0.0F ? 1.0F : 0.0F, show ? 6.0F : 3.0F) * panels;
 		if (shown <= 0.01F) {
 			return;
 		}
-		Component text = Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING, Math.round(Math.clamp(shownProgress, 0.0F, 1.0F) * 100.0F) + "%");
+		String sign = exporting ? EMUtilsTexts.WORLD_MAP_EXPORTING : EMUtilsTexts.WORLD_MAP_LOADING;
+		Component text = Component.translatable(sign, Math.round(Math.clamp(shownProgress, 0.0F, 1.0F) * 100.0F) + "%");
 		// Sized for the widest percentage, so the sign doesn't change width as it counts.
-		int textWidth = UiText.width(font, Component.translatable(EMUtilsTexts.WORLD_MAP_LOADING, "100%"), UiText.Size.SMALL);
+		int textWidth = UiText.width(font, Component.translatable(sign, "100%"), UiText.Size.SMALL);
 		int pillWidth = 10 + SPINNER_SIZE + 6 + textWidth + 12;
 		int pillHeight = 20;
 		int x = (width - pillWidth) / 2;
@@ -1017,6 +1020,7 @@ public final class WorldMapScreen extends Screen {
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_SHARE_LOCATION), () -> EMUtilsClient.waypoint().shareLocation(minecraft, Component.translatable(EMUtilsTexts.WORLD_MAP_LOCATION).getString(), blockX, blockY, blockZ, dimension)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> minecraft.gui.setScreen(new WaypointsScreen(this))));
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_EXPORT), !MapExport.running(), false, () -> MapExport.start(minecraft, world)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_SETTINGS), () -> {
 				SettingsScreen settings = new SettingsScreen(this);
 				minecraft.gui.setScreen(settings);
@@ -1164,6 +1168,11 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
 	public void switchDimensionForSnapshot(String id) {
 		switchDimension(id);
+	}
+
+	/** For UI snapshot checks: starts saving the map shown as an image, as its menu item does. */
+	public boolean exportForSnapshot() {
+		return MapExport.start(minecraft, world);
 	}
 
 	/** For UI snapshot checks: opens the world chip's menu, or the layer chip's. */

@@ -45,6 +45,7 @@ import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
+import net.emutils.client.emutils.map.MapExport;
 import net.emutils.client.emutils.map.MapRadar;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
@@ -3821,6 +3822,47 @@ public final class UiSnapshotter {
 				if (stepTicks == 95) {
 					MapRadar.showSelfForSnapshot(false);
 					command(client, "kill @e[tag=emradar]");
+					// With what they dropped.
+					command(client, "kill @e[type=item,distance=..48]");
+					next();
+				}
+			}
+			// Saving the map as an image (#225): it's written, and the game reads it back as a picture with ground on it.
+			case 406 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(map.exportForSnapshot(), "saving the map as an image starts");
+				}
+				if (stepTicks == 34) {
+					grab(client, "world map, saving the map as an image");
+				}
+				if (stepTicks > 34 && !MapExport.running()) {
+					java.nio.file.Path saved = MapExport.lastSavedForSnapshot();
+					String read = "nothing saved";
+					if (saved != null) {
+						try (java.io.InputStream in = java.nio.file.Files.newInputStream(saved); com.mojang.blaze3d.platform.NativeImage image = com.mojang.blaze3d.platform.NativeImage.read(in)) {
+							int ground = 0;
+							for (int py = 0; py < image.getHeight(); py += 7) {
+								for (int px = 0; px < image.getWidth(); px += 7) {
+									if ((image.getPixel(px, py) >>> 24) != 0) {
+										ground++;
+									}
+								}
+							}
+							read = image.getWidth() + "x" + image.getHeight() + ", " + ground + " sampled pixels with ground";
+							if (ground > 0) {
+								read = "";
+							}
+						} catch (java.io.IOException | RuntimeException exception) {
+							read = "it couldn't be read: " + exception;
+						}
+					}
+					check(read.isEmpty(), "the map is saved as an image that reads back with ground on it (" + (saved == null ? "" : saved.getFileName() + ": ") + read + ")");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
 					EMUtilsClient.config().resetMinimapDefaults();
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);

@@ -103,6 +103,16 @@ public final class MapWorld {
 		return dimension;
 	}
 
+	/** The folder the map is saved in, or null while it's kept in memory. */
+	@Nullable Path folder() {
+		return folder;
+	}
+
+	/** Whether the dimension has a ceiling, like the Nether. */
+	boolean ceiling() {
+		return ceiling;
+	}
+
 	/** Where sampling starts: {@link MapSampler#SURFACE}, or the top of the cave layer. */
 	int startY() {
 		return cave == MapSampler.SURFACE ? MapSampler.SURFACE : cave * LAYER_BLOCKS + LAYER_BLOCKS - 1;
