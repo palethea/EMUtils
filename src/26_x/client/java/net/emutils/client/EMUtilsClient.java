@@ -40,9 +40,11 @@ import net.emutils.client.emutils.hud.InfoOverlayHudElement;
 import net.emutils.client.emutils.hud.ScoreboardHudElement;
 import net.emutils.client.emutils.hud.TabListHudElement;
 import net.emutils.client.emutils.hud.KeystrokesHudElement;
+import net.emutils.client.emutils.compat.XaeroMapIntegration;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MinimapHudElement;
 import net.emutils.client.emutils.map.MinimapRenderer;
+import net.emutils.client.emutils.map.WorldMapScreen;
 import net.emutils.client.emutils.hud.LookAtInfoHudElement;
 import net.emutils.client.emutils.hud.LookAtInfoRenderer;
 import net.emutils.client.emutils.hud.layout.HudLayoutManager;
@@ -108,6 +110,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping addWaypointAtCrosshairKeyMapping;
 	private static KeyMapping copyCoordinatesKeyMapping;
 	private static KeyMapping massDropKeyMapping;
+	private static KeyMapping worldMapKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
 	private static KeyMapping nextProfileKeyMapping;
 
@@ -371,6 +374,13 @@ public class EMUtilsClient implements ClientModInitializer {
 			InputConstants.KEY_MINUS,
 			category
 		));
+		// M, like most map mods; left unbound beside Xaero's World Map, which uses M too.
+		worldMapKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.world_map",
+			VersionedInput.keyboardType(),
+			XaeroMapIntegration.worldMapLoaded() ? InputConstants.UNKNOWN.getValue() : InputConstants.KEY_M,
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			VersionedInput.keyboardType(),
@@ -433,6 +443,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
 			if (!(current instanceof WaypointsScreen)) {
 				client.gui.setScreen(new WaypointsScreen(current));
+			}
+		}
+		while (worldMapKeyMapping != null && worldMapKeyMapping.consumeClick()) {
+			// Pressed again while the map is open, the map closes itself.
+			if (config.worldMap() && net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null) {
+				WorldMapScreen.open(client, worldMapKeyMapping);
 			}
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {

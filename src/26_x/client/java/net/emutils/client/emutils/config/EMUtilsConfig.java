@@ -241,6 +241,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer keystrokesPressedColor = KEYSTROKES_PRESSED_COLOR_DEFAULT;
 	/** Null until changed: the minimap starts on, unless Xaero's Minimap is installed (#212). */
 	private Boolean minimap;
+	/** Null until changed: the world map starts on, unless Xaero's World Map is installed (#215). */
+	private Boolean worldMap;
 	private String minimapShape = MinimapShape.SQUARE.name();
 	private Boolean minimapRotate = Boolean.TRUE;
 	private String minimapZoom = MinimapZoom.ONE.name();
@@ -3794,6 +3796,22 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 
 	public void setMinimapWaypointsPinned(boolean enabled) {
 		minimapWaypointsPinned = enabled;
+		save();
+	}
+
+	/** The EMUtils world map (#215): on by default, unless Xaero's World Map is installed. Also keeps the map saved while the minimap is off. */
+	public boolean worldMap() {
+		return worldMap == null ? !XaeroMapIntegration.worldMapLoaded() : worldMap;
+	}
+
+	public void setWorldMap(boolean enabled) {
+		worldMap = enabled;
+		save();
+	}
+
+	/** The world map (#215). */
+	public void resetWorldMapDefaults() {
+		worldMap = null;
 		save();
 	}
 

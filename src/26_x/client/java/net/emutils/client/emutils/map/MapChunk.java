@@ -34,6 +34,16 @@ public final class MapChunk {
 	}
 
 	/** The block state id seen from above, or {@link #NONE} when the column is empty. */
+	/** Nothing in it is drawn: all air, as in a void world. */
+	boolean isEmpty() {
+		for (int i = 0; i < AREA; i++) {
+			if (top[i] != NONE) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public int top(int index) {
 		return top[index];
 	}

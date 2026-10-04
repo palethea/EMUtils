@@ -497,9 +497,16 @@ public final class WaypointManager {
         if (client == null || client.level == null) {
             return List.of();
         }
+        return entriesIn(client, dimensionId(client.level), includeOtherDimensions);
+    }
+
+    /** Like {@link #entriesForCurrentWorld}, but as they are in {@code dimension}, which the world map may be showing. */
+    public List<WaypointEntry> entriesIn(Minecraft client, String dimension, boolean includeOtherDimensions) {
+        if (client == null || client.level == null) {
+            return List.of();
+        }
 
         String worldKey = worldKey(client);
-        String dimension = dimensionId(client.level);
         List<WaypointEntry> entries = new ArrayList<>();
         for (Waypoint waypoint : waypoints) {
             if (!waypoint.matchesWorldKey(worldKey)) {
@@ -520,6 +527,14 @@ public final class WaypointManager {
     /** The waypoints that have a place in the world you are in: this dimension's, plus converted ones if that's on. */
     public List<WaypointEntry> renderEntries(Minecraft client) {
         return entriesForCurrentWorld(client, EMUtilsClient.config().waypointShowOtherDimensions())
+            .stream()
+            .filter(WaypointEntry::placeable)
+            .toList();
+    }
+
+    /** The waypoints that have a place in {@code dimension}: its own, plus converted ones if that's on. */
+    public List<WaypointEntry> renderEntries(Minecraft client, String dimension) {
+        return entriesIn(client, dimension, EMUtilsClient.config().waypointShowOtherDimensions())
             .stream()
             .filter(WaypointEntry::placeable)
             .toList();
@@ -572,6 +587,23 @@ public final class WaypointManager {
                             EMUtilsTexts.WAYPOINT_SHARED,
                             waypoint.label()
                         ).withStyle(ChatFormatting.GREEN)
+                    )
+                );
+        }
+    }
+
+    /** Says a spot in chat in the share format, as a waypoint named {@code label}; the world map's Share Location (#215). */
+    public void shareLocation(Minecraft client, String label, int x, int y, int z, String dimension) {
+        if (client == null || client.level == null || client.getConnection() == null) {
+            return;
+        }
+        Waypoint spot = new Waypoint(x, y, z, dimension, worldKey(client), System.currentTimeMillis(), label, EMUtilsClient.config().waypointDefaultCustomColor(), WaypointType.CUSTOM);
+        client.getConnection().sendChat(WaypointShare.format(spot, EMUtilsClient.config().waypointShareFormat(), dimensionId(client.level)));
+        if (client.gui != null) {
+            net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client)
+                .addClientSystemMessage(
+                    EmUtilsChatPrefix.chat(
+                        Component.translatable(EMUtilsTexts.WAYPOINT_SHARED, label).withStyle(ChatFormatting.GREEN)
                     )
                 );
         }
@@ -932,12 +964,14 @@ public final class WaypointManager {
         }
     }
 
-    private static String dimensionId(ClientLevel world) {
+    /** The dimension's id, such as {@code minecraft:overworld}; the map keys its files by it too (#215). */
+    public static String dimensionId(ClientLevel world) {
         ResourceKey<Level> key = world.dimension();
         return key.identifier().toString();
     }
 
-    private static String worldKey(Minecraft client) {
+    /** Which world or server you are in, as waypoints and the map (#215) store it; empty when in none. */
+    public static String worldKey(Minecraft client) {
         ServerData serverInfo = client.getCurrentServer();
         if (
             serverInfo != null &&
