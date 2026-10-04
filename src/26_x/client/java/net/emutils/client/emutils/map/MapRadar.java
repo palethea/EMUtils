@@ -66,7 +66,7 @@ public final class MapRadar {
 
 	/** Whether the radar shows anything at all. */
 	static boolean enabled(@Nullable EMUtilsConfig config) {
-		return config != null && config.mapRadar();
+		return config != null && config.mapRadar() && config.unfairFeatures();
 	}
 
 	/** Whether the minimap shows the radar. */
@@ -299,6 +299,11 @@ public final class MapRadar {
 	}
 
 	/** For UI snapshots: shows you on the radar, as another player would be. */
+	/** For UI snapshot checks: whether the radar is drawn at all. */
+	public static boolean enabledForSnapshot() {
+		return enabled(EMUtilsClient.config());
+	}
+
 	public static void showSelfForSnapshot(boolean show) {
 		selfForSnapshot = show;
 	}

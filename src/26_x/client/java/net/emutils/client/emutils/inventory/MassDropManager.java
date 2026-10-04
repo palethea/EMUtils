@@ -1,6 +1,7 @@
 package net.emutils.client.emutils.inventory;
 
 import java.util.Set;
+import net.emutils.client.EMUtilsClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
@@ -34,7 +35,8 @@ public final class MassDropManager {
 			}
 			int menuSlot = inventorySlot < 9 ? inventorySlot + 36 : inventorySlot;
 			client.gameMode.handleContainerInput(player.inventoryMenu.containerId, menuSlot, 1, ContainerInput.THROW, player);
-			if (store.mode() == MassDropMode.LEGIT) {
+			// With Unfair Features off (#213), Unfair drops one slot a press, like Legit.
+			if (store.mode() == MassDropMode.LEGIT || !EMUtilsClient.config().unfairFeatures()) {
 				return;
 			}
 		}

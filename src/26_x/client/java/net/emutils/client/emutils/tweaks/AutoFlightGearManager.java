@@ -124,6 +124,7 @@ public final class AutoFlightGearManager {
 	private static boolean anyFeatureEnabled() {
 		return EMUtilsClient.config() != null
 			&& EMUtilsClient.config().autoFlightGearEnabled()
+			&& EMUtilsClient.config().unfairFeatures()
 			&& (EMUtilsClient.config().tweakAutoSwitchElytra()
 				|| EMUtilsClient.config().tweakAutoSwitchRockets()
 				|| EMUtilsClient.config().autoFlightDoubleJump());
@@ -147,6 +148,7 @@ public final class AutoFlightGearManager {
 		jumpWasDown = jumpDown;
 
 		if (!EMUtilsClient.config().autoFlightGearEnabled()
+			|| !EMUtilsClient.config().unfairFeatures()
 			|| !EMUtilsClient.config().autoFlightDoubleJump()
 			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null) {
 			jumpTapTicks = 0;

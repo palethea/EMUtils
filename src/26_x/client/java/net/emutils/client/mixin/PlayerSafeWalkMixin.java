@@ -22,6 +22,7 @@ public abstract class PlayerSafeWalkMixin {
 		return stayingOnGroundSurface
 			|| (Object) this instanceof LocalPlayer
 			&& config != null
-			&& config.tweakSafeWalk();
+			&& config.tweakSafeWalk()
+			&& config.unfairFeatures();
 	}
 }

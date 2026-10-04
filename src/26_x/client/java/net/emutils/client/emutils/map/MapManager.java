@@ -461,6 +461,12 @@ public final class MapManager {
 	}
 
 	/** The cave view's key (#222): forces it on wherever you are, or back to switching by itself. Returns whether it's forced now. */
+	/** Cave view may be shown: it's one of the Unfair Features (#213). */
+	public static boolean cavesAllowed() {
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null && config.unfairFeatures();
+	}
+
 	public static boolean toggleManualCaves() {
 		manualCaves = !manualCaves;
 		return manualCaves;
@@ -474,7 +480,7 @@ public final class MapManager {
 	/** The cave layer you're in, or {@link MapSampler#SURFACE} above ground or with the cave view off. */
 	private static int wantedLayer(ClientLevel level, LocalPlayer player) {
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || !config.mapCaves() && !manualCaves) {
+		if (config == null || !cavesAllowed() || !config.mapCaves() && !manualCaves) {
 			return MapSampler.SURFACE;
 		}
 		int current = cave == null ? MapSampler.SURFACE : cave.cave;

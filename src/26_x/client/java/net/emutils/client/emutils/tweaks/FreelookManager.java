@@ -24,6 +24,7 @@ public final class FreelookManager {
 		boolean shouldBeActive = keyBinding != null
 			&& keyBinding.isDown()
 			&& EMUtilsClient.config().tweakFreelook()
+			&& EMUtilsClient.config().unfairFeatures()
 			&& client.player != null
 			&& client.level != null
 			&& net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null;

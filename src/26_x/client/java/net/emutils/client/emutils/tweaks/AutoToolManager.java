@@ -35,6 +35,7 @@ public final class AutoToolManager {
 		}
 
 		if (!EMUtilsClient.config().autoToolEnabled()
+			|| !EMUtilsClient.config().unfairFeatures()
 			|| net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) != null
 			|| !client.options.keyAttack.isDown()
 			|| !(client.hitResult instanceof BlockHitResult blockHit)) {

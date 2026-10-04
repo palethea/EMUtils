@@ -36,7 +36,7 @@ public final class HubFeatureCatalog {
 			categoryFeature("clear_weather", HubCategory.CLEAR_WEATHER, HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, EMUtilsTexts.HUB_FEATURE_CLEAR_WEATHER_DESC, HubFeature.Icon.CLOUD_SUN, toggle(config::tweakClearWeather, config::setTweakClearWeather)),
 			leaf("no_fog", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, HubFeature.Icon.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog), () -> config.setTweakNoFog(false)),
 			leaf("clear_underwater", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, EMUtilsTexts.HUB_FEATURE_CLEAR_UNDERWATER_DESC, HubFeature.Icon.DROPLETS, toggle(config::tweakClearUnderwater, config::setTweakClearUnderwater), () -> config.setTweakClearUnderwater(true)),
-			leaf("clear_lava", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, HubFeature.Icon.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava), () -> config.setTweakClearLava(true)),
+			leaf("clear_lava", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, HubFeature.Icon.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava), () -> config.setTweakClearLava(true)).markUnfair(),
 			leaf("no_fire_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_FIRE_OVERLAY_DESC, HubFeature.Icon.FLAME, toggle(config::tweakNoFireOverlay, config::setTweakNoFireOverlay), () -> config.setTweakNoFireOverlay(false)),
 			leaf("low_fire_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_LOW_FIRE_OVERLAY_DESC, HubFeature.Icon.FLAME, toggle(config::tweakLowFireOverlay, config::setTweakLowFireOverlay), () -> config.setTweakLowFireOverlay(false)),
 			leaf("low_shield", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_LOW_SHIELD, EMUtilsTexts.HUB_FEATURE_LOW_SHIELD_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakLowShield, config::setTweakLowShield), List.of(
@@ -82,7 +82,7 @@ public final class HubFeatureCatalog {
 			categoryFeature("look_at_info", HubCategory.LOOK_AT_INFO, HubFeature.Group.HUD, EMUtilsTexts.HUB_LOOK_AT_INFO, EMUtilsTexts.HUB_FEATURE_LOOK_AT_INFO_DESC, HubFeature.Icon.CROSSHAIR, toggle(config::lookAtInfo, config::setLookAtInfo)),
 			categoryFeature("keystrokes", HubCategory.KEYSTROKES, HubFeature.Group.HUD, EMUtilsTexts.HUB_KEYSTROKES, EMUtilsTexts.HUB_FEATURE_KEYSTROKES_DESC, HubFeature.Icon.KEYBOARD, toggle(config::keystrokes, config::setKeystrokes)),
 			categoryFeature("minimap", HubCategory.MINIMAP, HubFeature.Group.HUD, EMUtilsTexts.HUB_MINIMAP, EMUtilsTexts.HUB_FEATURE_MINIMAP_DESC, HubFeature.Icon.MAP, toggle(config::minimap, config::setMinimap)).keys("key.emutils.minimap_zoom_in", "key.emutils.minimap_zoom_out"),
-			categoryFeature("entity_radar", HubCategory.ENTITY_RADAR, HubFeature.Group.HUD, EMUtilsTexts.HUB_ENTITY_RADAR, EMUtilsTexts.HUB_FEATURE_ENTITY_RADAR_DESC, HubFeature.Icon.RADAR, toggle(config::mapRadar, config::setMapRadar)),
+			categoryFeature("entity_radar", HubCategory.ENTITY_RADAR, HubFeature.Group.HUD, EMUtilsTexts.HUB_ENTITY_RADAR, EMUtilsTexts.HUB_FEATURE_ENTITY_RADAR_DESC, HubFeature.Icon.RADAR, toggle(config::mapRadar, config::setMapRadar)).markUnfair(),
 			categoryFeature("armor_status", HubCategory.ARMOR_STATUS, HubFeature.Group.HUD, EMUtilsTexts.HUB_ARMOR_STATUS, EMUtilsTexts.HUB_FEATURE_ARMOR_STATUS_DESC, HubFeature.Icon.SHIELD, toggle(config::armorStatus, config::setArmorStatus)),
 			categoryFeature("scoreboard", HubCategory.SCOREBOARD, HubFeature.Group.HUD, EMUtilsTexts.HUB_SCOREBOARD, EMUtilsTexts.HUB_FEATURE_SCOREBOARD_DESC, HubFeature.Icon.TROPHY, toggle(config::scoreboard, config::setScoreboard)),
 			categoryFeature("tab_list", HubCategory.TAB_LIST, HubFeature.Group.HUD, EMUtilsTexts.HUB_TAB_LIST, EMUtilsTexts.HUB_FEATURE_TAB_LIST_DESC, HubFeature.Icon.USERS, toggle(config::tabList, config::setTabList)),
@@ -149,7 +149,18 @@ public final class HubFeatureCatalog {
 					config.setTweakFreeCamera(false);
 					config.resetFreeCameraSettings();
 				}
-			).keys("key.emutils.free_camera"),
+			).keys("key.emutils.free_camera").markUnfair(),
+			// One switch for every feature that gives an edge over other players (#213), with theirs below it.
+			leaf(
+				"unfair_features",
+				HubFeature.Group.MANAGEMENT,
+				EMUtilsTexts.OPTION_UNFAIR_FEATURES,
+				EMUtilsTexts.HUB_FEATURE_UNFAIR_FEATURES_DESC,
+				HubFeature.Icon.SCALE,
+				toggle(config::unfairFeatures, config::setUnfairFeatures),
+				unfairRows(config),
+				() -> config.setUnfairFeatures(true)
+			),
 			actionFeature(
 				"screenshot_gallery",
 				HubCategory.SCREENSHOT_GALLERY,
@@ -237,18 +248,18 @@ public final class HubFeatureCatalog {
 			categoryFeature("menus", HubCategory.MENUS, HubFeature.Group.MANAGEMENT, EMUtilsTexts.UI_MENUS_TITLE, EMUtilsTexts.HUB_FEATURE_MENUS_DESC, HubFeature.Icon.PALETTE, null),
 			categoryFeature("chat", HubCategory.CHAT, HubFeature.Group.QOL, EMUtilsTexts.HUB_CHAT_FEATURES, EMUtilsTexts.HUB_FEATURE_CHAT_DESC, HubFeature.Icon.CHAT, toggle(config::chatFeaturesEnabled, config::setChatFeaturesEnabled)),
 			categoryFeature("inventory", HubCategory.INVENTORY, HubFeature.Group.QOL, EMUtilsTexts.HUB_INVENTORY_TOOLS, EMUtilsTexts.HUB_FEATURE_INVENTORY_DESC, HubFeature.Icon.BAG, toggle(config::inventoryToolsEnabled, config::setInventoryToolsEnabled)).keys("key.emutils.slot_lock", "key.emutils.slot_bind", "key.emutils.quick_stack", "key.emutils.mass_drop"),
-			categoryFeature("auto_tool", HubCategory.AUTO_TOOL, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, HubFeature.Icon.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)),
-			categoryFeature("auto_flight_gear", HubCategory.AUTO_FLIGHT, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, HubFeature.Icon.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)),
-			leaf("fast_place", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace), () -> config.setTweakFastPlace(false)),
-			leaf("fast_use", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_USE, EMUtilsTexts.HUB_FEATURE_FAST_USE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastUse, config::setTweakFastUse), () -> config.setTweakFastUse(false)),
+			categoryFeature("auto_tool", HubCategory.AUTO_TOOL, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_TOOL, EMUtilsTexts.HUB_FEATURE_AUTO_TOOL_DESC, HubFeature.Icon.TOOL, toggle(config::autoToolEnabled, config::setAutoToolEnabled)).markUnfair(),
+			categoryFeature("auto_flight_gear", HubCategory.AUTO_FLIGHT, HubFeature.Group.QOL, EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, EMUtilsTexts.HUB_FEATURE_AUTO_FLIGHT_DESC, HubFeature.Icon.CAPE, toggle(config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)).markUnfair(),
+			leaf("fast_place", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, EMUtilsTexts.HUB_FEATURE_FAST_PLACE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastPlace, config::setTweakFastPlace), () -> config.setTweakFastPlace(false)).markUnfair(),
+			leaf("fast_use", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_FAST_USE, EMUtilsTexts.HUB_FEATURE_FAST_USE_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakFastUse, config::setTweakFastUse), () -> config.setTweakFastUse(false)).markUnfair(),
 			leaf("anti_durability_break", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_ANTI_DURABILITY_BREAK, EMUtilsTexts.HUB_FEATURE_ANTI_DURABILITY_BREAK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakAntiDurabilityBreak, config::setTweakAntiDurabilityBreak), List.of(
 				HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_ANTI_DURABILITY_UNIT, config::antiDurabilityUnit, config::setAntiDurabilityUnit, AntiDurabilityUnit.class, unit -> Component.translatable(unit.labelKey())),
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_ANTI_DURABILITY_PROTECT_AT, () -> config.antiDurabilityUnit().suffixKey(), EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MIN, EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MAX, config::antiDurabilityProtectAt, config::setAntiDurabilityProtectAt),
 				new HubSettingRow.Toggle(EMUtilsTexts.OPTION_ANTI_DURABILITY_WARNING, config::antiDurabilityWarning, config::setAntiDurabilityWarning),
 				new HubSettingRow.Slider(EMUtilsTexts.OPTION_ANTI_DURABILITY_WARN_AT, () -> config.antiDurabilityUnit().suffixKey(), EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MIN, EMUtilsConfig.ANTI_DURABILITY_THRESHOLD_MAX, config::antiDurabilityWarnAt, config::setAntiDurabilityWarnAt)
 			), config::resetAntiDurabilityBreakDefaults),
-			leaf("safe_walk", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk), () -> config.setTweakSafeWalk(false)),
-			leaf("place_below", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow), () -> config.setTweakPlaceBelow(false)).keys("key.emutils.place_below"),
+			leaf("safe_walk", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, EMUtilsTexts.HUB_FEATURE_SAFE_WALK_DESC, HubFeature.Icon.SHIELD, toggle(config::tweakSafeWalk, config::setTweakSafeWalk), () -> config.setTweakSafeWalk(false)).markUnfair(),
+			leaf("place_below", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, EMUtilsTexts.HUB_FEATURE_PLACE_BELOW_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakPlaceBelow, config::setTweakPlaceBelow), () -> config.setTweakPlaceBelow(false)).keys("key.emutils.place_below").markUnfair(),
 			leaf("locked_y_placement", HubFeature.Group.QOL, EMUtilsTexts.OPTION_TWEAK_LOCKED_Y_PLACEMENT, EMUtilsTexts.HUB_FEATURE_LOCKED_Y_PLACEMENT_DESC, HubFeature.Icon.MOUSE_CLICK, toggle(config::tweakLockedYPlacement, config::setTweakLockedYPlacement), () -> config.setTweakLockedYPlacement(false)).keys("key.emutils.locked_y_placement")
 		));
 		return features;
@@ -386,6 +397,24 @@ public final class HubFeatureCatalog {
 				client.gui.setScreen(screenFactory.apply(MinecraftClientCompat.screen(client)));
 			}
 		};
+	}
+
+	/** The Unfair Features' own switches, so they're all in one place. */
+	private static List<HubSettingRow> unfairRows(EMUtilsConfig config) {
+		return List.of(
+			new HubSettingRow.Section(EMUtilsTexts.UI_UNFAIR_COVERS),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA, config::tweakFreeCamera, config::setTweakFreeCamera),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FREELOOK, config::tweakFreelook, config::setTweakFreelook),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, config::tweakClearLava, config::setTweakClearLava),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_CAVES, config::mapCaves, config::setMapCaves),
+			new HubSettingRow.Toggle(EMUtilsTexts.HUB_ENTITY_RADAR, config::mapRadar, config::setMapRadar),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_PLACE, config::tweakFastPlace, config::setTweakFastPlace),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_FAST_USE, config::tweakFastUse, config::setTweakFastUse),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_SAFE_WALK, config::tweakSafeWalk, config::setTweakSafeWalk),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_TWEAK_PLACE_BELOW, config::tweakPlaceBelow, config::setTweakPlaceBelow),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_TOOL, config::autoToolEnabled, config::setAutoToolEnabled),
+			new HubSettingRow.Toggle(EMUtilsTexts.OPTION_AUTO_FLIGHT_GEAR, config::autoFlightGearEnabled, config::setAutoFlightGearEnabled)
+		);
 	}
 
 	private static HubFeature.Toggle toggle(Supplier<Boolean> getter, Consumer<Boolean> setter) {

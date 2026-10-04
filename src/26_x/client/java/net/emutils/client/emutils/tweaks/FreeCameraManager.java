@@ -3,9 +3,12 @@ package net.emutils.client.emutils.tweaks;
 import java.util.List;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.UnfairFeatures;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
@@ -57,6 +60,10 @@ public final class FreeCameraManager {
 			deactivate(client);
 		}
 
+		if (config.tweakFreeCamera() && !config.unfairFeatures()) {
+			// Unfair Features turned off (#213): it ends, and doesn't start again when they're back on.
+			config.setTweakFreeCamera(false);
+		}
 		if (config.tweakFreeCamera()) {
 			if (camera == null) {
 				activate(client);
@@ -75,6 +82,10 @@ public final class FreeCameraManager {
 	 * succession, while one press still ends it.
 	 */
 	private void handleKeyPress(EMUtilsConfig config) {
+		if (!config.tweakFreeCamera() && !config.unfairFeatures()) {
+			UnfairFeatures.tellOff(Minecraft.getInstance(), Component.translatable(EMUtilsTexts.OPTION_TWEAK_FREE_CAMERA));
+			return;
+		}
 		if (config.tweakFreeCamera() || !config.freeCameraDoubleTap()) {
 			lastPressMs = Long.MIN_VALUE;
 			config.setTweakFreeCamera(!config.tweakFreeCamera());

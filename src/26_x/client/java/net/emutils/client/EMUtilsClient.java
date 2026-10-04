@@ -463,6 +463,10 @@ public class EMUtilsClient implements ClientModInitializer {
 		}
 		while (mapCavesKeyMapping != null && mapCavesKeyMapping.consumeClick()) {
 			// Like Xaero's manual cave mode: the cave view on wherever you are, or back to switching by itself.
+			if (!net.emutils.client.emutils.map.MapManager.cavesAllowed()) {
+				net.emutils.client.emutils.util.UnfairFeatures.tellOff(client, Component.translatable(EMUtilsTexts.OPTION_MAP_CAVES));
+				continue;
+			}
 			boolean forced = net.emutils.client.emutils.map.MapManager.toggleManualCaves();
 			client.gui.hud.setOverlayMessage(Component.translatable(forced ? EMUtilsTexts.MAP_CAVES_FORCED : EMUtilsTexts.MAP_CAVES_AUTO), false);
 		}

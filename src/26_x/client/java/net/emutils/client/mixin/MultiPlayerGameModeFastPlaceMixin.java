@@ -30,7 +30,7 @@ public abstract class MultiPlayerGameModeFastPlaceMixin {
 	)
 	private InteractionResult emutils$trackBlockPlacementAttempt(ItemStack stack, UseOnContext context) {
 		if (stack.getItem() instanceof BlockItem) {
-			if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakFastPlace()) {
+			if (EMUtilsClient.config() != null && EMUtilsClient.config().tweakFastPlace() && EMUtilsClient.config().unfairFeatures()) {
 				((MinecraftFastPlaceTracker) minecraft).emutils$markFastPlaceAttempt();
 			}
 			if (EMUtilsClient.tweaks() != null
