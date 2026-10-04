@@ -49,6 +49,9 @@ public final class MinimapRenderer {
 	private static final int TEXT_COLOR = 0xFFFFFFFF;
 	private static final int TEXT_SHADOW = 0x99000000;
 
+	/** The time spent putting the minimap together, over the frames drawn, for UI snapshot checks. */
+	private static long frameNanos;
+	private static long frames;
 	private static @Nullable KeyMapping zoomInKey;
 	private static @Nullable KeyMapping zoomOutKey;
 
@@ -57,6 +60,14 @@ public final class MinimapRenderer {
 
 	public static void register() {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, ID, MinimapRenderer::render);
+	}
+
+	/** For UI snapshot checks: the average time a frame of the minimap took to put together, and starts over. */
+	public static long frameMicrosForSnapshot() {
+		long micros = frames == 0 ? -1 : frameNanos / frames / 1000;
+		frameNanos = 0L;
+		frames = 0L;
+		return micros;
 	}
 
 	public static void setKeyMappings(KeyMapping zoomIn, KeyMapping zoomOut) {
@@ -109,7 +120,10 @@ public final class MinimapRenderer {
 			context.pose().translate(layout.position().x(), layout.position().y());
 			context.pose().scale(layout.scaleFactor(), layout.scaleFactor());
 			float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
+			long start = System.nanoTime();
 			drawMap(context, client, config, layout.scaleFactor(), layout.opacityPercent(), partialTick);
+			frameNanos += System.nanoTime() - start;
+			frames++;
 		} finally {
 			UiRasterScale.reset();
 			context.pose().popMatrix();

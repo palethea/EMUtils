@@ -210,6 +210,7 @@ public final class UiSnapshotter {
 	private static boolean sawBackdrop;
 	/** The world map showing the Nether while the settings are open over it, in step 396. */
 	private static @Nullable WorldMapScreen netherMap;
+	private static @Nullable Object netherShown;
 	/** The screenshots the gallery showed the first time it opened. */
 	private static List<Path> galleryShown = List.of();
 	private static long configModifiedBefore;
@@ -3613,8 +3614,8 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 300, "world map, chunks generated far away");
 			}
-			// Another dimension's map shows that dimension's waypoints, and still loads after coming back from
-			// the settings, which close it while they're open.
+			// Another dimension's map shows that dimension's waypoints, and is kept while the settings are open
+			// over it (#228): it's the same map when you're back, not one read in again.
 			case 396 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					int x = client.player.getBlockX() / 8;
@@ -3625,7 +3626,8 @@ public final class UiSnapshotter {
 				}
 				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					check(map.waypointsDrawnForSnapshot() > 0, "another dimension's map shows its waypoints (" + map.waypointsDrawnForSnapshot() + " drawn)");
-					client.gui.setScreen(new SettingsScreen(map));
+					netherShown = map.mapForSnapshot();
+					map.openSettingsForSnapshot();
 					netherMap = map;
 				}
 				if (stepTicks == 30 && netherMap != null) {
@@ -3634,6 +3636,7 @@ public final class UiSnapshotter {
 				}
 				if (stepTicks == 90 && netherMap != null) {
 					check(!netherMap.loadingForSnapshot(), "another dimension's map still loads after coming back from the settings");
+					check(netherMap.mapForSnapshot() == netherShown, "another dimension's map is kept while the settings are open, not read in again");
 					netherMap.centerForSnapshot(client.player.getBlockX() / 8, client.player.getBlockZ() / 8);
 					netherMap = null;
 				}
@@ -3951,6 +3954,25 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);
 					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
+			}
+			// What the map costs (#228): logged for comparing, with a check that chunks stay small in memory.
+			case 411 -> {
+				if (stepTicks == 1) {
+					EMUtilsClient.config().setMinimap(true);
+					EMUtilsClient.config().setWorldMap(true);
+					MinimapRenderer.frameMicrosForSnapshot();
+				}
+				if (stepTicks == 100) {
+					MapManager.saveForSnapshot();
+					String presence = MapManager.presenceForSnapshot(client);
+					check(presence.isEmpty(), "which chunks a region has is read from its file without reading the region in" + (presence.isEmpty() ? "" : " (" + presence + ")"));
+					int perChunk = MapManager.statsForSnapshot(client);
+					check(perChunk > 0 && perChunk < 2_400, "the map's chunks stay small in memory (" + perChunk + " bytes each)");
+					EMUtilsClient.config().resetMinimapDefaults();
+					EMUtilsClient.config().setMinimap(false);
+					EMUtilsClient.config().setWorldMap(false);
 					next();
 				}
 			}

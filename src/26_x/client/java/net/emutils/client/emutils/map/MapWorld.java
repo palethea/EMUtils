@@ -371,6 +371,63 @@ public final class MapWorld {
 		redrawing.clear();
 	}
 
+	/**
+	 * Which chunks of a region the map has (#228), as a mask of {@link MapRegion#index} bits: from memory when
+	 * the region is in, or else from the mask in its file, without reading the region in. Any thread.
+	 */
+	long[] chunksIn(int regionX, int regionZ) {
+		long[] present = new long[MapRegion.CHUNKS * MapRegion.CHUNKS / 64];
+		MapRegion region = regions.get(MapRegion.key(regionX, regionZ));
+		Path where = folder;
+		if (region == null || !region.loaded) {
+			if (where != null) {
+				try {
+					long[] saved = MapRegionFile.readPresence(MapRegionFile.path(where, regionX, regionZ), ceiling);
+					if (saved != null) {
+						System.arraycopy(saved, 0, present, 0, present.length);
+					}
+				} catch (IOException | RuntimeException exception) {
+					EMUtilsClient.LOGGER.warn("EMUtils map couldn't read which chunks region {}, {} has", regionX, regionZ, exception);
+				}
+			}
+		}
+		if (region != null) {
+			// What was sampled since, and everything once it's read in.
+			for (int i = 0; i < MapRegion.CHUNKS * MapRegion.CHUNKS; i++) {
+				if (region.chunk(i) != null) {
+					present[i >> 6] |= 1L << (i & 63);
+				}
+			}
+		}
+		return present;
+	}
+
+	/**
+	 * For UI snapshot checks (#228): whether the chunk mask read from a region's file, without reading the
+	 * region in, matches the chunks it has in memory; says what differs, or returns an empty text.
+	 */
+	String presenceForSnapshot(int regionX, int regionZ) {
+		MapRegion region = regions.get(MapRegion.key(regionX, regionZ));
+		if (folder == null || region == null || !region.loaded) {
+			return "region " + regionX + ", " + regionZ + " isn't loaded";
+		}
+		try {
+			long[] saved = MapRegionFile.readPresence(MapRegionFile.path(folder, regionX, regionZ), ceiling);
+			if (saved == null) {
+				return "the region has no file";
+			}
+			for (int i = 0; i < MapRegion.CHUNKS * MapRegion.CHUNKS; i++) {
+				boolean inFile = (saved[i >> 6] & 1L << (i & 63)) != 0;
+				if (inFile != (region.chunk(i) != null)) {
+					return "chunk " + i + " is " + (inFile ? "in the file but not in memory" : "in memory but not in the file");
+				}
+			}
+			return "";
+		} catch (IOException | RuntimeException exception) {
+			return "reading the mask failed: " + exception;
+		}
+	}
+
 	/** Some regions or overviews are still being read from disk. */
 	boolean busy() {
 		for (MapRegion region : regions.values()) {

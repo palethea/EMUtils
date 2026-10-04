@@ -165,6 +165,32 @@ final class MapRegionFile {
 		return contents != null && ceiling && contents.version() < 2 ? null : contents;
 	}
 
+	/**
+	 * Which of a region file's chunks are saved, read from the mask after its overview without unpacking a
+	 * chunk (#228); null when there's no file, or its chunks don't fit the dimension (see {@link #readFor}).
+	 */
+	static long @Nullable [] readPresence(Path file, boolean ceiling) throws IOException {
+		if (!Files.isRegularFile(file)) {
+			return null;
+		}
+		try (DataInputStream in = open(file)) {
+			int version = readHeader(in);
+			if (version < 0 || ceiling && version < 2) {
+				return null;
+			}
+			in.readInt();
+			if (in.readBoolean()) {
+				in.readInt();
+				in.skipNBytes((long) MapRegion.OVERVIEW_SIZE * MapRegion.OVERVIEW_SIZE * 4);
+			}
+			long[] present = new long[MapRegion.CHUNKS * MapRegion.CHUNKS / 64];
+			for (int i = 0; i < present.length; i++) {
+				present[i] = in.readLong();
+			}
+			return present;
+		}
+	}
+
 	static @Nullable Contents read(Path file, Registry<Biome> biomes) throws IOException {
 		if (!Files.isRegularFile(file)) {
 			return null;

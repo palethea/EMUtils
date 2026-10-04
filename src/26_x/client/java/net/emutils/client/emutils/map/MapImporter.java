@@ -49,7 +49,6 @@ final class MapImporter {
 	private static final long RESCAN_SECONDS = 30L;
 	/** At most this many unpacked chunks wait for the client thread; the importer waits while it catches up. */
 	private static final int MAX_WAITING = 64;
-	private static final long REGION_LOAD_TIMEOUT_MILLIS = 5_000L;
 	/** A chunk that failed to read this many times is left for when you visit it. */
 	private static final int MAX_FAILURES = 3;
 
@@ -186,8 +185,9 @@ final class MapImporter {
 		if (present == null) {
 			return;
 		}
-		// The map's regions are the same 32 x 32 chunks as the game's, so this is the one to look in.
-		MapRegion region = null;
+		// The map's regions are the same 32 x 32 chunks as the game's, so this is the one to look in. Which chunks
+		// it has is read from its file's mask (#228), so a region the map has all of isn't read in at all.
+		long[] mapped = null;
 		for (int i = 0; i < present.length && !stopped; i++) {
 			if (!present[i]) {
 				continue;
@@ -198,16 +198,15 @@ final class MapImporter {
 			if (done.contains(key)) {
 				continue;
 			}
-			if (region == null) {
-				region = waitForRegion(at[0], at[1]);
-				if (region == null) {
-					return;
-				}
+			if (mapped == null) {
+				mapped = world.chunksIn(at[0], at[1]);
 			}
-			if (region.chunk(MapRegion.index(chunkX, chunkZ)) != null) {
+			int index = MapRegion.index(chunkX, chunkZ);
+			if ((mapped[index >> 6] & 1L << (index & 63)) != 0) {
 				done.add(key);
 				continue;
 			}
+			waitForRoom();
 			SavedChunk chunk = read(key, chunkX, chunkZ);
 			if (chunk == null) {
 				continue;
@@ -222,20 +221,14 @@ final class MapImporter {
 	}
 
 	/**
-	 * The map region, once it's read from the map's own files, so chunks already on the map are skipped. While
-	 * the map holds many more regions than it keeps, it waits for saved ones to be let go first.
+	 * While the map holds many more regions than it keeps, waits for saved ones to be let go before bringing in
+	 * chunks of another, which reads that one in.
 	 */
-	private @Nullable MapRegion waitForRegion(int regionX, int regionZ) {
+	private void waitForRoom() {
 		long crowded = System.currentTimeMillis() + 60_000L;
 		while (world.loadedCount() > MapWorld.MAX_LOADED_REGIONS * 2 && !stopped && System.currentTimeMillis() < crowded) {
 			sleep(50L);
 		}
-		MapRegion region = world.region(regionX, regionZ);
-		long deadline = System.currentTimeMillis() + REGION_LOAD_TIMEOUT_MILLIS;
-		while (!region.loaded && !stopped && System.currentTimeMillis() < deadline) {
-			sleep(10L);
-		}
-		return region.loaded ? region : null;
 	}
 
 	/**
