@@ -91,6 +91,8 @@ public final class MapManager {
 	private static int pendingSamples;
 	private static int pendingTicks;
 	private static @Nullable Match match;
+	/** The cave layer you were last in, per dimension, which the world map's Underground shows when you're above ground. */
+	private static final Map<String, Integer> LAST_LAYER = new HashMap<>();
 
 	/** Working out which world a map is, in the background (#219). */
 	private static final class Match {
@@ -356,6 +358,12 @@ public final class MapManager {
 		Path folder = worlds == null || id == null ? null : worlds.caveFolder(id, wanted);
 		cave = new MapWorld(level, folder, world.dimension(), level.getMinY(), level.dimensionType().hasCeiling(), id, wanted);
 		CAVE_PENDING.addAll(LOADED);
+		LAST_LAYER.put(world.dimension(), wanted);
+	}
+
+	/** The cave layer you were last in, in a dimension, or {@code fallback} when you weren't underground there yet. */
+	static int lastLayer(String dimension, int fallback) {
+		return LAST_LAYER.getOrDefault(dimension, fallback);
 	}
 
 	/** The cave layer you're in, or {@link MapSampler#SURFACE} above ground or with the cave view off. */
@@ -495,11 +503,8 @@ public final class MapManager {
 	/** Samples a chunk into a map; returns whether it had something in it. */
 	private static boolean sampleInto(MapWorld map, MapTiles tiles, ClientLevel level, LevelChunk chunk, int chunkX, int chunkZ) {
 		MapChunk sampled = MapSampler.sample(level, chunk, map.biomes(), map.startY());
-		// An empty chunk is kept as void (#220). On a server it doesn't replace what the map has there, as it
-		// may be another world's void that the map took for this one; in singleplayer it really was emptied.
-		if (sampled.isEmpty() && map.chunk(chunkX, chunkZ) != null && Minecraft.getInstance().getSingleplayerServer() == null) {
-			return false;
-		}
+		// An empty chunk is kept as void (#220) and replaces what was there: worlds have maps of their own (#219),
+		// so it's this world's void, and what it covers is left over from before.
 		map.put(chunkX, chunkZ, sampled);
 		tiles.markDirty(chunkX, chunkZ);
 		return !sampled.isEmpty();

@@ -983,10 +983,7 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_LOCATION = "emutils.world_map.location";
     public static final String WORLD_MAP_LOADING = "emutils.world_map.loading";
     public static final String WORLD_MAP_SURFACE = "emutils.world_map.surface";
-    public static final String WORLD_MAP_CAVES = "emutils.world_map.caves";
-    public static final String WORLD_MAP_CAVES_HERE = "emutils.world_map.caves_here";
-    public static final String WORLD_MAP_LAYER_UP = "emutils.world_map.layer_up";
-    public static final String WORLD_MAP_LAYER_DOWN = "emutils.world_map.layer_down";
+    public static final String WORLD_MAP_UNDERGROUND = "emutils.world_map.underground";
     public static final String WORLD_MAP_HERE = "emutils.world_map.here";
     public static final String WORLD_MAP_RENAME_WORLD = "emutils.world_map.rename_world";
     public static final String WORLD_MAP_RENAME_MESSAGE = "emutils.world_map.rename_message";

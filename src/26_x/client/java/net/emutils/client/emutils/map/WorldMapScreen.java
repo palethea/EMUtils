@@ -52,8 +52,9 @@ import org.jspecify.annotations.Nullable;
  * and editing open the waypoint sheet over the map. The other explored dimensions can be looked at too.
  *
  * <p>Under the title, a chip shows which of the server's worlds the map is (#219), with a menu to look at the
- * others, rename them, say which one you're in, start a new one or delete one; and a chip shows the layer
- * (#222): the surface or a cave layer, with Page Up and Page Down stepping between layers.
+ * others, rename them, say which one you're in, start a new one or delete one; and a chip switches between
+ * the surface and underground (#222), which is the cave layer at your height. A dimension with a ceiling,
+ * like the Nether, has no surface to show, so it's underground only.
  *
  * <p>Opened while the minimap shows, the minimap grows out of its corner into the world map, turning
  * north-up and losing its round shape on the way, and shrinks back into it when closed. The map's panels
@@ -637,7 +638,11 @@ public final class WorldMapScreen extends Screen {
 		MapWorlds.Entry entry = catalog == null ? null : catalog.get(worldId);
 		boolean worlds = entry != null && (minecraft.getSingleplayerServer() == null || catalog.worlds().size() > 1);
 		Component worldLabel = worlds ? Component.literal(entry.name()) : null;
-		Component layerLabel = Component.literal(layerName(cave));
+		// The Nether and other dimensions with a ceiling have no surface to switch to.
+		Component layerLabel = hasCeiling(dimension) ? null : Component.literal(layerName(cave));
+		if (worldLabel == null && layerLabel == null) {
+			return;
+		}
 		int y = MARGIN + PANEL_HEIGHT + 4;
 		int chipY = y + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
 		int pad = (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
@@ -646,7 +651,10 @@ public final class WorldMapScreen extends Screen {
 		if (worldLabel != null) {
 			panelWidth += UiText.width(font, worldLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + 2;
 		}
-		panelWidth += UiText.width(font, layerLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + pad;
+		if (layerLabel != null) {
+			panelWidth += UiText.width(font, layerLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4;
+		}
+		panelWidth += pad - (layerLabel == null ? 2 : 0);
 		context.pose().pushMatrix();
 		context.pose().translate(0.0F, -slide);
 		drawPanel(context, theme, MARGIN, y, panelWidth, panelColor);
@@ -654,7 +662,9 @@ public final class WorldMapScreen extends Screen {
 			worldChip = drawChip(context, theme, worldLabel, x, chipY, mouseX, mouseY, interactive);
 			x += worldChip[2] + 2;
 		}
-		layerChip = drawChip(context, theme, layerLabel, x, chipY, mouseX, mouseY, interactive);
+		if (layerLabel != null) {
+			layerChip = drawChip(context, theme, layerLabel, x, chipY, mouseX, mouseY, interactive);
+		}
 		context.pose().popMatrix();
 		panels.add(new int[] {MARGIN, y, panelWidth, PANEL_HEIGHT});
 	}
@@ -672,13 +682,31 @@ public final class WorldMapScreen extends Screen {
 		return new int[] {x, y, chipWidth, CHIP_HEIGHT};
 	}
 
-	/** "Surface", or the heights a cave layer covers. */
+	/** "Surface" or "Underground". */
 	private static String layerName(int layer) {
-		if (layer == MapSampler.SURFACE) {
-			return Component.translatable(EMUtilsTexts.WORLD_MAP_SURFACE).getString();
+		return Component.translatable(layer == MapSampler.SURFACE ? EMUtilsTexts.WORLD_MAP_SURFACE : EMUtilsTexts.WORLD_MAP_UNDERGROUND).getString();
+	}
+
+	/**
+	 * The cave layer Underground shows: the one you're in when you're underground in the dimension shown, else
+	 * the one you were last in there, else the one at your height.
+	 */
+	private int undergroundLayer(String shownDimension) {
+		MapWorld liveCave = MapManager.cave();
+		if (liveCave != null && liveCave.dimension().equals(shownDimension)) {
+			return liveCave.cave;
 		}
-		int bottom = layer * MapWorld.LAYER_BLOCKS;
-		return Component.translatable(EMUtilsTexts.WORLD_MAP_CAVES, bottom, bottom + MapWorld.LAYER_BLOCKS - 1).getString();
+		return MapManager.lastLayer(shownDimension, playerLayer());
+	}
+
+	/** Whether a dimension has a ceiling, like the Nether, so it has no surface to map (#221). */
+	private boolean hasCeiling(String shownDimension) {
+		if (minecraft.level != null && shownDimension.equals(WaypointManager.dimensionId(minecraft.level))) {
+			return minecraft.level.dimensionType().hasCeiling();
+		}
+		Identifier id = Identifier.tryParse(shownDimension);
+		ServerLevel server = id == null ? null : MapImporter.serverLevel(minecraft, ResourceKey.create(Registries.DIMENSION, id));
+		return server != null ? server.dimensionType().hasCeiling() : shownDimension.equals("minecraft:the_nether");
 	}
 
 	/** The cave layer at your height. */
@@ -745,27 +773,15 @@ public final class WorldMapScreen extends Screen {
 		menu = new UiContextMenu(font, anim, worldChip[0], worldChip[1] + worldChip[3] + 2, items);
 	}
 
-	/** The menu of the layer chip: the surface, the caves at your height, and the layers above and below (#222). */
+	/** The menu of the layer chip: the surface or underground (#222). */
 	private void openLayerMenu() {
 		if (layerChip.length == 0) {
 			return;
 		}
 		List<UiContextMenu.Item> items = new ArrayList<>();
 		items.add(UiContextMenu.Item.choice(Component.literal(layerName(MapSampler.SURFACE)), cave == MapSampler.SURFACE, () -> show(dimension, worldId, MapSampler.SURFACE)));
-		if (isOwnDimension()) {
-			int here = playerLayer();
-			items.add(UiContextMenu.Item.choice(Component.translatable(EMUtilsTexts.WORLD_MAP_CAVES_HERE, layerName(here)), cave == here, () -> show(dimension, worldId, here)));
-		}
-		int from = cave == MapSampler.SURFACE ? playerLayer() : cave;
-		items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_LAYER_UP, layerName(from + 1)), () -> stepLayer(1)));
-		items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_LAYER_DOWN, layerName(from - 1)), () -> stepLayer(-1)));
+		items.add(UiContextMenu.Item.choice(Component.literal(layerName(0)), cave != MapSampler.SURFACE, () -> show(dimension, worldId, undergroundLayer(dimension))));
 		menu = new UiContextMenu(font, anim, layerChip[0], layerChip[1] + layerChip[3] + 2, items);
-	}
-
-	/** One cave layer up or down; from the surface, to the layers next to yours. */
-	private void stepLayer(int step) {
-		int from = cave == MapSampler.SURFACE ? playerLayer() : cave;
-		show(dimension, worldId, from + step);
 	}
 
 	/** Back to the map of where you are. */
@@ -996,11 +1012,6 @@ public final class WorldMapScreen extends Screen {
 			}
 			return true;
 		}
-		if (event.key() == InputConstants.KEY_PAGEUP || event.key() == InputConstants.KEY_PAGEDOWN) {
-			menu = null;
-			stepLayer(event.key() == InputConstants.KEY_PAGEUP ? 1 : -1);
-			return true;
-		}
 		if (openKey != null && openKey.matches(event)) {
 			menu = null;
 			onClose();
@@ -1122,7 +1133,9 @@ public final class WorldMapScreen extends Screen {
 		}
 		MapWorlds catalog = MapManager.worlds(id);
 		MapWorlds.Entry latest = catalog == null ? null : catalog.latest();
-		if (!show(id, latest == null ? null : latest.id(), MapSampler.SURFACE)) {
+		// The Nether has no surface to show, so it opens underground, where you were last there.
+		boolean underground = hasCeiling(id) && EMUtilsClient.config().mapCaves();
+		if (!show(id, latest == null ? null : latest.id(), underground ? MapManager.lastLayer(id, 4) : MapSampler.SURFACE)) {
 			return;
 		}
 		// The Nether is an eighth the size of the Overworld, so the view moves with the scale between them.

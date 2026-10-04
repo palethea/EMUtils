@@ -206,9 +206,24 @@ final class MapSampler {
 			return level.dimensionType().hasCeiling() ? level.getMinY() + level.dimensionType().logicalHeight() - 1 : SURFACE;
 		}
 
+		/**
+		 * The heightmap's top, unless it's missing or points at air, as some servers send it (Hypixel's islands):
+		 * then the blocks are looked through from the highest section that has any.
+		 */
 		@Override
 		public int highest(int localX, int localZ) {
-			return chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
+			int minY = level.getMinY();
+			int height = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
+			if (height >= minY && !state(localX, height, localZ).isAir()) {
+				return height;
+			}
+			int section = chunk.getHighestFilledSectionIndex();
+			for (int y = section < 0 ? minY - 1 : minY + section * 16 + 15; y >= minY; y--) {
+				if (!state(localX, y, localZ).isAir()) {
+					return y;
+				}
+			}
+			return minY - 1;
 		}
 
 		@Override
