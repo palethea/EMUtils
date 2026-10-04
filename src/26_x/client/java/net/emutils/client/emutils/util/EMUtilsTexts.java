@@ -959,6 +959,9 @@ public final class EMUtilsTexts {
     public static final String OPTION_MINIMAP_WAYPOINTS = "emutils.option.minimap_waypoints";
     public static final String OPTION_MINIMAP_WAYPOINTS_PINNED = "emutils.option.minimap_waypoints_pinned";
     public static final String OPTION_MAP_CAVES = "emutils.option.map_caves";
+    public static final String OPTION_MAP_CEILING_FULL = "emutils.option.map_ceiling_full";
+    public static final String MAP_CAVES_FORCED = "emutils.map.caves_forced";
+    public static final String MAP_CAVES_AUTO = "emutils.map.caves_auto";
     public static final String UI_MINIMAP_SECTION_MAP = "emutils.ui.minimap.section.map";
     public static final String UI_MINIMAP_SECTION_SHOW = "emutils.ui.minimap.section.show";
     public static final String HUD_MINIMAP_NORTH = "emutils.hud.minimap.north";
@@ -984,6 +987,8 @@ public final class EMUtilsTexts {
     public static final String WORLD_MAP_LOADING = "emutils.world_map.loading";
     public static final String WORLD_MAP_SURFACE = "emutils.world_map.surface";
     public static final String WORLD_MAP_UNDERGROUND = "emutils.world_map.underground";
+    public static final String WORLD_MAP_FULL = "emutils.world_map.full";
+    public static final String WORLD_MAP_YOUR_HEIGHT = "emutils.world_map.your_height";
     public static final String WORLD_MAP_HERE = "emutils.world_map.here";
     public static final String WORLD_MAP_RENAME_WORLD = "emutils.world_map.rename_world";
     public static final String WORLD_MAP_RENAME_MESSAGE = "emutils.world_map.rename_message";

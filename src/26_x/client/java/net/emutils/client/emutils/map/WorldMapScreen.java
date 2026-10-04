@@ -638,8 +638,7 @@ public final class WorldMapScreen extends Screen {
 		MapWorlds.Entry entry = catalog == null ? null : catalog.get(worldId);
 		boolean worlds = entry != null && (minecraft.getSingleplayerServer() == null || catalog.worlds().size() > 1);
 		Component worldLabel = worlds ? Component.literal(entry.name()) : null;
-		// The Nether and other dimensions with a ceiling have no surface to switch to.
-		Component layerLabel = hasCeiling(dimension) ? null : Component.literal(layerName(cave));
+		Component layerLabel = Component.literal(layerName(cave));
 		if (worldLabel == null && layerLabel == null) {
 			return;
 		}
@@ -682,8 +681,14 @@ public final class WorldMapScreen extends Screen {
 		return new int[] {x, y, chipWidth, CHIP_HEIGHT};
 	}
 
-	/** "Surface" or "Underground". */
-	private static String layerName(int layer) {
+	/**
+	 * "Surface" or "Underground"; in a dimension with a ceiling, which has no surface, "Full" (every floor under
+	 * the roof, like Xaero's full cave mode) or "Your Height".
+	 */
+	private String layerName(int layer) {
+		if (hasCeiling(dimension)) {
+			return Component.translatable(layer == MapSampler.SURFACE ? EMUtilsTexts.WORLD_MAP_FULL : EMUtilsTexts.WORLD_MAP_YOUR_HEIGHT).getString();
+		}
 		return Component.translatable(layer == MapSampler.SURFACE ? EMUtilsTexts.WORLD_MAP_SURFACE : EMUtilsTexts.WORLD_MAP_UNDERGROUND).getString();
 	}
 
@@ -1133,8 +1138,8 @@ public final class WorldMapScreen extends Screen {
 		}
 		MapWorlds catalog = MapManager.worlds(id);
 		MapWorlds.Entry latest = catalog == null ? null : catalog.latest();
-		// The Nether has no surface to show, so it opens underground, where you were last there.
-		boolean underground = hasCeiling(id) && EMUtilsClient.config().mapCaves();
+		// The Nether opens at the height you were last at there, unless the full map is chosen for it.
+		boolean underground = hasCeiling(id) && EMUtilsClient.config().mapCaves() && !EMUtilsClient.config().mapCeilingFull();
 		if (!show(id, latest == null ? null : latest.id(), underground ? MapManager.lastLayer(id, 4) : MapSampler.SURFACE)) {
 			return;
 		}

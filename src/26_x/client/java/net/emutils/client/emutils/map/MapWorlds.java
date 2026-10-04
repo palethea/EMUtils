@@ -34,6 +34,8 @@ final class MapWorlds {
 		int @Nullable [] spawn;
 		@Nullable Integer minY;
 		@Nullable Integer height;
+		/** The id the server gives this world, when it gives one (#219); the surest way to know it again. */
+		@Nullable String serverId;
 		long lastSeen;
 
 		String id() {
@@ -117,6 +119,22 @@ final class MapWorlds {
 			}
 		}
 		return null;
+	}
+
+	/** The world the server gave this id, or null. */
+	@Nullable Entry byServerId(String serverId) {
+		for (Entry entry : data.worlds) {
+			if (serverId.equals(entry.serverId)) {
+				return entry;
+			}
+		}
+		return null;
+	}
+
+	/** Remembers the id the server gives a world. */
+	void serverId(Entry entry, String serverId) {
+		entry.serverId = serverId;
+		save();
 	}
 
 	/** The world seen last, or null when there's none yet. */

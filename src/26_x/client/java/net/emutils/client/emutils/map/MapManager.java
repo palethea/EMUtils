@@ -23,7 +23,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -65,9 +64,13 @@ public final class MapManager {
 	private static final int RESOLVE_CHUNKS = 24;
 	/** ...or after this many ticks, whichever comes first. */
 	private static final int RESOLVE_TICKS = 100;
-	/** Underground means the sky's light where your eyes are is at most this; you're out again from {@link #CAVE_LEAVE_SKY}. */
-	private static final int CAVE_ENTER_SKY = 2;
-	private static final int CAVE_LEAVE_SKY = 8;
+	/**
+	 * Underground means a solid roof over all 3 x 3 columns around you, like Xaero's roof check, so standing
+	 * under a log while cutting it doesn't count; you're out again once fewer than this many are roofed.
+	 */
+	private static final int ROOF_LEAVE = 5;
+	/** How often, in ticks, the roof over you is looked for. */
+	private static final int ROOF_EVERY_TICKS = 5;
 	/** You stay on a cave layer until you're this many blocks past its edge, so walking along an edge doesn't flip it. */
 	private static final int LAYER_SLACK = 2;
 	/** Before the server says where its spawn is, the game puts it here. */
@@ -90,7 +93,15 @@ public final class MapManager {
 	/** Chunks with something in them sampled into a map whose world isn't known yet. */
 	private static int pendingSamples;
 	private static int pendingTicks;
+	/** The server's world id when the level opened: the last world's, until the server sends the new one. */
+	private static @Nullable String idAtOpen;
+	/** A world id that didn't change is trusted after this many ticks, as the world may really have the same one. */
+	private static final int SAME_ID_TICKS = 40;
 	private static @Nullable Match match;
+	/** The cave view is on whatever's over you, by its key, like Xaero's manual cave mode (#222). */
+	private static boolean manualCaves;
+	private static int roofTicks;
+	private static int roofed;
 	/** The cave layer you were last in, per dimension, which the world map's Underground shows when you're above ground. */
 	private static final Map<String, Integer> LAST_LAYER = new HashMap<>();
 
@@ -273,6 +284,8 @@ public final class MapManager {
 			world.importer = MapImporter.start(client, world, level.dimension());
 		} else {
 			world = new MapWorld(level, null, dimension, level.getMinY(), ceiling, null, MapSampler.SURFACE);
+			idAtOpen = MapServerWorlds.current();
+			MapServerWorlds.ask();
 		}
 		if (level == loadedLevel) {
 			PENDING.addAll(LOADED);
@@ -288,9 +301,21 @@ public final class MapManager {
 			return;
 		}
 		pendingTicks++;
+		// A server that says which world this is settles it at once, as Xaero's maps take it (#219).
+		String serverId = MapServerWorlds.current();
+		if (serverId != null && match == null && (!serverId.equals(idAtOpen) || pendingTicks >= SAME_ID_TICKS)) {
+			MapWorlds.Entry known = worlds.byServerId(serverId);
+			if (known == null) {
+				known = worlds.create();
+				worlds.serverId(known, serverId);
+			}
+			attach(surface, level, known, spawn(level));
+			return;
+		}
 		Match current = match;
 		if (current == null) {
-			if (pendingSamples < RESOLVE_CHUNKS && pendingTicks < RESOLVE_TICKS) {
+			// A server that gives ids sends the new one shortly; the map waits for it rather than guess.
+			if (pendingSamples < RESOLVE_CHUNKS && pendingTicks < RESOLVE_TICKS || serverId != null) {
 				return;
 			}
 			Match started = new Match(surface, spawn(level));
@@ -312,13 +337,21 @@ public final class MapManager {
 		if (entry == null) {
 			entry = worlds.create();
 		}
-		worlds.seen(entry, current.spawn, level.getMinY(), level.getHeight());
+		attach(surface, level, entry, current.spawn);
+		match = null;
+	}
+
+	/** Gives the maps kept in memory the world they turned out to be in. */
+	private static void attach(MapWorld surface, ClientLevel level, MapWorlds.Entry entry, int @Nullable [] spawn) {
+		if (worlds == null) {
+			return;
+		}
+		worlds.seen(entry, spawn, level.getMinY(), level.getHeight());
 		surface.attach(worlds.folder(entry.id()), entry.id());
 		if (cave != null && cave.pending()) {
 			cave.attach(worlds.caveFolder(entry.id(), cave.cave), entry.id());
 		}
 		EMUtilsClient.LOGGER.info("EMUtils map: {} in {} is {}", serverFolder == null ? "?" : serverFolder.getFileName(), worlds.dimension(), entry.name());
-		match = null;
 	}
 
 	private static List<MapWorldMatcher.Candidate> candidates(MapWorlds catalog) {
@@ -361,6 +394,38 @@ public final class MapManager {
 		LAST_LAYER.put(world.dimension(), wanted);
 	}
 
+	/**
+	 * How many of the 3 x 3 columns around you have a roof over your head: a block the map draws as solid,
+	 * leaves and see-through blocks aside, anywhere up to the column's top.
+	 */
+	private static int roofedColumns(ClientLevel level, LocalPlayer player) {
+		int eye = (int) Math.floor(player.getEyeY());
+		int count = 0;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				int x = player.getBlockX() + dx;
+				int z = player.getBlockZ() + dz;
+				int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+				for (int y = eye + 1; y <= top; y++) {
+					net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos.set(x, y, z));
+					MapBlockLook look = MapBlockLooks.ensure(state, Block.getId(state));
+					if (look.kind() == MapBlockLook.Kind.OPAQUE && look.part() != MapBlockLook.Part.CANOPY) {
+						count++;
+						break;
+					}
+				}
+			}
+		}
+		return count;
+	}
+
+	/** The cave view's key (#222): forces it on wherever you are, or back to switching by itself. Returns whether it's forced now. */
+	public static boolean toggleManualCaves() {
+		manualCaves = !manualCaves;
+		return manualCaves;
+	}
+
 	/** The cave layer you were last in, in a dimension, or {@code fallback} when you weren't underground there yet. */
 	static int lastLayer(String dimension, int fallback) {
 		return LAST_LAYER.getOrDefault(dimension, fallback);
@@ -369,13 +434,19 @@ public final class MapManager {
 	/** The cave layer you're in, or {@link MapSampler#SURFACE} above ground or with the cave view off. */
 	private static int wantedLayer(ClientLevel level, LocalPlayer player) {
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || !config.mapCaves()) {
+		if (config == null || !config.mapCaves() && !manualCaves) {
 			return MapSampler.SURFACE;
 		}
 		int current = cave == null ? MapSampler.SURFACE : cave.cave;
-		if (!level.dimensionType().hasCeiling()) {
-			int sky = level.getBrightness(LightLayer.SKY, BlockPos.containing(player.getEyePosition()));
-			if (current == MapSampler.SURFACE ? sky > CAVE_ENTER_SKY : sky >= CAVE_LEAVE_SKY) {
+		if (level.dimensionType().hasCeiling() && config.mapCeilingFull() && !manualCaves) {
+			// The whole Nether at once, under its roof, as Xaero's full cave mode shows it.
+			return MapSampler.SURFACE;
+		}
+		if (!level.dimensionType().hasCeiling() && !manualCaves) {
+			if (roofTicks++ % ROOF_EVERY_TICKS == 0) {
+				roofed = roofedColumns(level, player);
+			}
+			if (current == MapSampler.SURFACE ? roofed < 9 : roofed < ROOF_LEAVE) {
 				return MapSampler.SURFACE;
 			}
 		}

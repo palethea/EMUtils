@@ -250,6 +250,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean minimapWaypoints = Boolean.TRUE;
 	private Boolean minimapWaypointsPinned = Boolean.TRUE;
 	private Boolean mapCaves = Boolean.TRUE;
+	private Boolean mapCeilingFull = Boolean.FALSE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3810,6 +3811,19 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/**
+	 * In the Nether and other dimensions with a ceiling, the maps show every floor under the roof at once
+	 * instead of the caves at your height (#222), like Xaero's full cave mode; off by default.
+	 */
+	public boolean mapCeilingFull() {
+		return mapCeilingFull != null && mapCeilingFull;
+	}
+
+	public void setMapCeilingFull(boolean enabled) {
+		mapCeilingFull = enabled;
+		save();
+	}
+
 	/** The EMUtils world map (#215): on by default, unless Xaero's World Map is installed. Also keeps the map saved while the minimap is off. */
 	public boolean worldMap() {
 		return worldMap == null ? !XaeroMapIntegration.worldMapLoaded() : worldMap;
@@ -3836,6 +3850,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapWaypoints = Boolean.TRUE;
 		minimapWaypointsPinned = Boolean.TRUE;
 		mapCaves = Boolean.TRUE;
+		mapCeilingFull = Boolean.FALSE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}

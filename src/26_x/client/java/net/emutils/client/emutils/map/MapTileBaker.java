@@ -44,6 +44,9 @@ final class MapTileBaker {
 	private static final int NO_FLOOR_DEPTH = 24;
 	/** A side strip is this much darker than the block's top, like a side facing away from the light. */
 	private static final float SIDE_SHADE = 0.68F;
+	/** A cave floor this many blocks under its layer's start is darkened the most, by {@link #DEPTH_FADE}. */
+	private static final int DEPTH_FADE_BLOCKS = 40;
+	private static final float DEPTH_FADE = 0.45F;
 	/** An island's edge shows this much of its side over the void south of it, as a share of a block. */
 	private static final float UNDERSIDE = 0.5F;
 	/** The ground just south of a raised block is slightly darker, as if in its shadow. */
@@ -107,7 +110,7 @@ final class MapTileBaker {
 				int northHeight = grid.present[north] ? grid.shadeHeight(north) : height;
 				int westHeight = grid.present[west] ? grid.shadeHeight(west) : height;
 				int slope = Math.clamp((height - northHeight) + (height - westHeight), -MAX_SLOPE, MAX_SLOPE);
-				float shade = 1.0F + slope * SLOPE_SHADE[level];
+				float shade = (1.0F + slope * SLOPE_SHADE[level]) * depthFade(world, height);
 
 				// A strip of the north neighbor's side where it stands above this column.
 				int strip = 0;
@@ -171,6 +174,18 @@ final class MapTileBaker {
 				}
 			}
 		}
+	}
+
+	/**
+	 * How much a cave layer's floor is darkened for lying deep under where the layer starts (#222), like
+	 * Xaero's depth fade, so caves read by how far down they are. The surface isn't darkened.
+	 */
+	private static float depthFade(MapWorld world, int height) {
+		int start = world.startY();
+		if (start == MapSampler.SURFACE) {
+			return 1.0F;
+		}
+		return 1.0F - DEPTH_FADE * Math.clamp((start - height) / (float) DEPTH_FADE_BLOCKS, 0.0F, 1.0F);
 	}
 
 	/** A far tile, put together from the overviews of the regions it covers, each shrunk to fit. */

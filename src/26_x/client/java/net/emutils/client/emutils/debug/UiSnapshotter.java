@@ -3648,6 +3648,8 @@ public final class UiSnapshotter {
 			case 398 -> {
 				String problem = MapManager.samplingRulesForSnapshot();
 				check(problem.isEmpty(), "under the Nether's roof the ground shows, and cave layers show the caves at their height" + (problem.isEmpty() ? "" : " (" + problem + ")"));
+				String ids = net.emutils.client.emutils.map.MapServerWorlds.checkForSnapshot();
+				check(ids.isEmpty(), "the world ids servers send map mods are read, Xaero's and the shared one" + (ids.isEmpty() ? "" : " (" + ids + ")"));
 				next();
 			}
 			// The cave view (#222): in a sealed room dug deep underground, the minimap shows the cave layer.
