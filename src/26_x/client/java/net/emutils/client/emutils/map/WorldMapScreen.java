@@ -313,6 +313,20 @@ public final class WorldMapScreen extends Screen {
 		}
 	}
 
+	/**
+	 * Lets go of the maps of a world map you left for the settings or the waypoint list once you're back in the
+	 * game or on another world map instead, as when you died meanwhile, so they aren't kept until you leave.
+	 */
+	static void releaseAwayIfLeft(Minecraft client) {
+		WorldMapScreen screen = away;
+		if (screen != null) {
+			Screen shown = MinecraftClientCompat.screen(client);
+			if (shown == null || shown instanceof WorldMapScreen && shown != screen) {
+				releaseAway();
+			}
+		}
+	}
+
 	/** Lets go of a map the screen opened itself: stops its importer and frees its tiles. */
 	private void closeOther() {
 		if (otherTiles != null) {

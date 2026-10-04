@@ -224,6 +224,7 @@ public final class MapManager {
 
 	public static void tick(Minecraft client) {
 		MapExport.tick(client);
+		WorldMapScreen.releaseAwayIfLeft(client);
 		ClientLevel level = client.level;
 		LocalPlayer player = client.player;
 		if (level == null || player == null || !active()) {
