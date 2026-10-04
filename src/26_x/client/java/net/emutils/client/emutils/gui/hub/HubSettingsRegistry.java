@@ -508,6 +508,7 @@ public final class HubSettingsRegistry {
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_MINIMAP_SHAPE, config::minimapShape, config::setMinimapShape, MinimapShape.class, shape -> Component.translatable(shape.labelKey())));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_ROTATE, config::minimapRotate, config::setMinimapRotate));
 		rows.add(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_MINIMAP_ZOOM, config::minimapZoom, config::setMinimapZoom, MinimapZoom.class, zoom -> Component.literal(zoom.label())));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_CAVES, config::mapCaves, config::setMapCaves));
 		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MINIMAP_SECTION_SHOW));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_COORDINATES, config::minimapCoordinates, config::setMinimapCoordinates));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS, config::minimapWaypoints, config::setMinimapWaypoints));

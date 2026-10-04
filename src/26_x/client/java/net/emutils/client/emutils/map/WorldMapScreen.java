@@ -15,6 +15,7 @@ import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiContextMenu;
 import net.emutils.client.emutils.gui.ui.UiIcons;
 import net.emutils.client.emutils.gui.ui.UiOpacity;
+import net.emutils.client.emutils.gui.ui.UiPromptDialog;
 import net.emutils.client.emutils.gui.ui.UiShapes;
 import net.emutils.client.emutils.gui.ui.UiText;
 import net.emutils.client.emutils.gui.ui.UiTheme;
@@ -50,6 +51,10 @@ import org.jspecify.annotations.Nullable;
  * delete the one under the cursor, teleport there when the server lets you, or copy the coordinates. Adding
  * and editing open the waypoint sheet over the map. The other explored dimensions can be looked at too.
  *
+ * <p>Under the title, a chip shows which of the server's worlds the map is (#219), with a menu to look at the
+ * others, rename them, say which one you're in, start a new one or delete one; and a chip shows the layer
+ * (#222): the surface or a cave layer, with Page Up and Page Down stepping between layers.
+ *
  * <p>Opened while the minimap shows, the minimap grows out of its corner into the world map, turning
  * north-up and losing its round shape on the way, and shrinks back into it when closed. The map's panels
  * fade and slide in with it.
@@ -71,6 +76,7 @@ public final class WorldMapScreen extends Screen {
 	/** How quickly zooming glides to where the wheel asked, per second; higher is snappier. */
 	private static final float ZOOM_SPEED = 16.0F;
 	private static final int SPINNER_SIZE = 10;
+	private static final int CHEVRON_SIZE = 8;
 	private static final long LOADING_SHOW_AFTER_MILLIS = 250L;
 	private static final long LOADING_HIDE_AFTER_MILLIS = 600L;
 	private static final int ARROW = 0xFFFFFFFF;
@@ -88,13 +94,21 @@ public final class WorldMapScreen extends Screen {
 	private final List<String> dimensions = new ArrayList<>();
 	/** Each dimension chip's x and width, by the index of its dimension. */
 	private final List<int[]> dimensionChips = new ArrayList<>();
+	/** The world chip's and the layer chip's place, x, y, width, height each; empty while not shown. */
+	private int[] worldChip = new int[0];
+	private int[] layerChip = new int[0];
 	/** The panels' places on screen, x, y, width, height each, so clicks on them don't reach the map. */
 	private final List<int[]> panels = new ArrayList<>();
 	private String dimension;
+	/** Which of the server's worlds is shown (#219), or null when that isn't known. */
+	private @Nullable String worldId;
+	/** The cave layer shown (#222), or {@link MapSampler#SURFACE}. */
+	private int cave;
 	private MapWorld world;
 	private MapTiles tiles;
-	/** Tiles of another dimension than yours, freed when the screen closes. */
+	/** Tiles of a map that isn't one of the two kept for where you are, freed when the screen closes. */
 	private @Nullable MapTiles otherTiles;
+	private @Nullable UiPromptDialog prompt;
 	private double centerX;
 	private double centerZ;
 	private float zoom = lastZoom;
@@ -118,22 +132,24 @@ public final class WorldMapScreen extends Screen {
 	private @Nullable UiContextMenu menu;
 	private @Nullable WaypointSheet sheet;
 
-	private WorldMapScreen(@Nullable KeyMapping openKey, MinimapRenderer.@Nullable Frame from, MapWorld world, String dimension) {
+	private WorldMapScreen(@Nullable KeyMapping openKey, MinimapRenderer.@Nullable Frame from, MapWorld world, MapTiles tiles) {
 		super(Component.translatable(EMUtilsTexts.SCREEN_WORLD_MAP));
 		this.openKey = openKey;
 		this.from = from;
 		this.world = world;
-		this.tiles = MapManager.tiles();
-		this.dimension = dimension;
+		this.tiles = tiles;
+		this.dimension = world.dimension();
+		this.worldId = world.worldId;
+		this.cave = world.cave;
 	}
 
-	/** Opens the world map of the dimension you are in, or nothing when no map is being kept. */
+	/** Opens the world map where you are, as the minimap shows it: the surface or your cave layer. */
 	public static void open(Minecraft client, @Nullable KeyMapping openKey) {
-		MapWorld world = MapManager.world();
+		MapWorld world = MapManager.shownWorld();
 		if (world == null || client.player == null || client.level == null) {
 			return;
 		}
-		WorldMapScreen screen = new WorldMapScreen(openKey, MinimapRenderer.frame(client), world, WaypointManager.dimensionId(client.level));
+		WorldMapScreen screen = new WorldMapScreen(openKey, MinimapRenderer.frame(client), world, MapManager.shownTiles());
 		screen.centerX = client.player.getX();
 		screen.centerZ = client.player.getZ();
 		screen.anchorWorldX = screen.centerX;
@@ -151,15 +167,9 @@ public final class WorldMapScreen extends Screen {
 		if (openedAt < 0L) {
 			openedAt = System.nanoTime();
 		}
-		// Back from the settings or the waypoint list, which closed another dimension's map when they opened.
-		if (isOwnDimension()) {
-			MapWorld own = MapManager.world();
-			if (own != null && own != world) {
-				world = own;
-				tiles = MapManager.tiles();
-			}
-		} else if (otherTiles == null) {
-			openOther();
+		// Back from the settings or the waypoint list, which closed a map of its own when they opened.
+		if (otherTiles == null && !showingLive()) {
+			show(dimension, worldId, cave);
 		}
 		dimensions.clear();
 		// Yours first, also when another one is shown.
@@ -167,7 +177,7 @@ public final class WorldMapScreen extends Screen {
 		if (!dimensions.contains(dimension)) {
 			dimensions.add(dimension);
 		}
-		Path folder = MapManager.worldFolder(minecraft);
+		Path folder = MapManager.serverFolder();
 		if (folder != null && Files.isDirectory(folder)) {
 			try (Stream<Path> children = Files.list(folder)) {
 				children.filter(Files::isDirectory).sorted().forEach(path -> {
@@ -211,6 +221,9 @@ public final class WorldMapScreen extends Screen {
 			sheet.close();
 			return;
 		}
+		if (prompt != null) {
+			return;
+		}
 		if (menu != null) {
 			menu = null;
 			return;
@@ -223,6 +236,7 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
+		followLive();
 		if (otherTiles != null) {
 			if (world.importer != null) {
 				world.importer.center(centerX, centerZ);
@@ -243,15 +257,97 @@ public final class WorldMapScreen extends Screen {
 		super.removed();
 	}
 
-	/** Lets go of another dimension's map: stops its importer and frees its tiles. */
+	/** Lets go of a map the screen opened itself: stops its importer and frees its tiles. */
 	private void closeOther() {
 		if (otherTiles != null) {
-			if (world != MapManager.world()) {
+			if (world != MapManager.world() && world != MapManager.cave()) {
 				world.close();
 			}
 			otherTiles.clear();
 			otherTiles = null;
 		}
+	}
+
+	/** Whether the map shown is one of the two kept for where you are, the surface's or your cave layer's. */
+	private boolean showingLive() {
+		return world == MapManager.world() || world == MapManager.cave();
+	}
+
+	/**
+	 * Keeps showing what's live when it changes under the screen: a new cave layer as you climb or dig, or
+	 * the map started for the world you said you're in.
+	 */
+	private void followLive() {
+		if (otherTiles != null || showingLive()) {
+			return;
+		}
+		MapWorld live = cave == MapSampler.SURFACE ? MapManager.world() : MapManager.cave();
+		if (live != null && live.dimension().equals(dimension)) {
+			world = live;
+			tiles = cave == MapSampler.SURFACE ? MapManager.tiles() : MapManager.caveTiles();
+			worldId = live.worldId;
+			cave = live.cave;
+		} else {
+			// What was shown isn't live any more, like the cave layer you just left: it stays on screen, read from disk.
+			show(dimension, worldId, cave);
+		}
+	}
+
+	/**
+	 * Shows the map of a dimension, one of its worlds and a layer: one of the two kept for where you are when
+	 * it's one of them, else read from disk with tiles of its own. Returns false when there's no such map.
+	 */
+	private boolean show(String shownDimension, @Nullable String shownWorld, int shownCave) {
+		if (minecraft.level == null) {
+			return false;
+		}
+		closeOther();
+		MapWorld surface = MapManager.world();
+		MapWorld liveCave = MapManager.cave();
+		if (surface != null && surface.dimension().equals(shownDimension) && java.util.Objects.equals(surface.worldId, shownWorld)) {
+			if (shownCave == MapSampler.SURFACE) {
+				use(surface, MapManager.tiles(), null);
+				return true;
+			}
+			if (liveCave != null && liveCave.cave == shownCave) {
+				use(liveCave, MapManager.caveTiles(), null);
+				return true;
+			}
+		}
+		MapWorlds catalog = MapManager.worlds(shownDimension);
+		MapWorlds.Entry entry = catalog == null ? null : catalog.get(shownWorld);
+		if (entry == null && catalog != null) {
+			entry = catalog.latest();
+		}
+		if (entry == null && catalog != null && minecraft.getSingleplayerServer() != null) {
+			// A save is one world, so a dimension not mapped yet gets it, and what's imported for it is kept.
+			entry = catalog.create();
+		}
+		// Without a world, a dimension nobody mapped yet: an empty map, kept nowhere.
+		Path folder = entry == null ? null : shownCave == MapSampler.SURFACE ? catalog.folder(entry.id()) : catalog.caveFolder(entry.id(), shownCave);
+		boolean own = shownDimension.equals(WaypointManager.dimensionId(minecraft.level));
+		Identifier dimensionId = Identifier.tryParse(shownDimension);
+		ResourceKey<Level> key = dimensionId == null ? null : ResourceKey.create(Registries.DIMENSION, dimensionId);
+		// In singleplayer the dimension's bottom is known, so what's imported for it can be saved; elsewhere only yours is.
+		ServerLevel server = key == null ? null : MapImporter.serverLevel(minecraft, key);
+		int minY = own ? minecraft.level.getMinY() : server != null ? server.getMinY() : Integer.MIN_VALUE;
+		boolean ceiling = own ? minecraft.level.dimensionType().hasCeiling() : server != null ? server.dimensionType().hasCeiling() : shownDimension.equals("minecraft:the_nether");
+		MapWorld opened = new MapWorld(minecraft.level, folder, shownDimension, minY, ceiling, entry == null ? null : entry.id(), shownCave);
+		if (key != null && !own && shownCave == MapSampler.SURFACE) {
+			opened.importer = MapImporter.start(minecraft, opened, key);
+		}
+		MapTiles opening = new MapTiles();
+		use(opened, opening, opening);
+		return true;
+	}
+
+	private void use(MapWorld shown, MapTiles shownTiles, @Nullable MapTiles own) {
+		world = shown;
+		tiles = shownTiles;
+		otherTiles = own;
+		dimension = shown.dimension();
+		worldId = shown.worldId;
+		cave = shown.cave;
 	}
 
 	@Override
@@ -313,11 +409,12 @@ public final class WorldMapScreen extends Screen {
 		float screenPixelsPerBlock = viewZoom * (float) minecraft.getWindow().getGuiScale();
 		MapDraw.tiles(context, world, tiles, view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.LEVELS - 1), tint);
 
-		boolean interactive = menu == null && sheet == null && progress >= 1.0F;
+		boolean interactive = menu == null && sheet == null && prompt == null && progress >= 1.0F;
 		hovered = null;
 		// The waypoints of the dimension shown, also when it isn't yours; your arrow only in your own.
 		drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
-		if (ownDimension && player != null) {
+		MapWorld surface = MapManager.world();
+		if (ownDimension && player != null && (surface == null || surface.worldId == null || java.util.Objects.equals(surface.worldId, worldId))) {
 			double px = player.xo + (player.getX() - player.xo) * delta;
 			double pz = player.zo + (player.getZ() - player.zo) * delta;
 			drawArrow(context, view.screenX(px, pz), view.screenY(px, pz), (float) Math.toRadians(yaw + 180.0F) + angle);
@@ -345,6 +442,12 @@ public final class WorldMapScreen extends Screen {
 			sheet.render(context, theme, mouseX, mouseY, width, height);
 			if (sheet.isClosed()) {
 				sheet = null;
+			}
+		}
+		if (prompt != null) {
+			prompt.render(context, theme, mouseX, mouseY, width, height);
+			if (prompt.isClosed()) {
+				prompt = null;
 			}
 		}
 	}
@@ -420,7 +523,7 @@ public final class WorldMapScreen extends Screen {
 		if (manager == null || !manager.enabled()) {
 			return;
 		}
-		for (WaypointEntry entry : manager.renderEntries(minecraft, dimension)) {
+		for (WaypointEntry entry : manager.renderEntries(minecraft, dimension, worldId)) {
 			Waypoint waypoint = entry.waypoint();
 			if (!entry.placeable()) {
 				continue;
@@ -496,12 +599,13 @@ public final class WorldMapScreen extends Screen {
 		}
 		context.pose().popMatrix();
 		panels.add(new int[] {MARGIN, MARGIN, topWidth, PANEL_HEIGHT});
+		drawWorldPanel(context, theme, mouseX, mouseY, panelColor, slide, interactive);
 
 		// Bottom left: where the cursor points, with the ground's height when the map knows it.
 		int blockX = (int) Math.floor(view.worldX(mouseX, mouseY));
 		int blockZ = (int) Math.floor(view.worldZ(mouseX, mouseY));
 		MapChunk chunk = world.chunk(blockX >> 4, blockZ >> 4);
-		Component position = Component.literal(chunk == null
+		Component position = Component.literal(chunk == null || chunk.top(MapChunk.index(blockX & 15, blockZ & 15)) == MapChunk.NONE
 			? blockX + ", " + blockZ
 			: blockX + ", " + chunk.topY(MapChunk.index(blockX & 15, blockZ & 15)) + ", " + blockZ);
 		int positionWidth = UiText.width(font, position, UiText.Size.LABEL) + 20;
@@ -520,6 +624,157 @@ public final class WorldMapScreen extends Screen {
 		context.pose().popMatrix();
 		panels.add(new int[] {MARGIN, bottomY, positionWidth, PANEL_HEIGHT});
 		panels.add(new int[] {hintX, bottomY, hintWidth, PANEL_HEIGHT});
+	}
+
+	/**
+	 * Under the title: which of the server's worlds is shown (#219), when there's a choice, and which layer
+	 * (#222), each a chip that opens a menu.
+	 */
+	private void drawWorldPanel(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY, int panelColor, float slide, boolean interactive) {
+		worldChip = new int[0];
+		layerChip = new int[0];
+		MapWorlds catalog = MapManager.worlds(dimension);
+		MapWorlds.Entry entry = catalog == null ? null : catalog.get(worldId);
+		boolean worlds = entry != null && (minecraft.getSingleplayerServer() == null || catalog.worlds().size() > 1);
+		Component worldLabel = worlds ? Component.literal(entry.name()) : null;
+		Component layerLabel = Component.literal(layerName(cave));
+		int y = MARGIN + PANEL_HEIGHT + 4;
+		int chipY = y + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
+		int pad = (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
+		int x = MARGIN + pad;
+		int panelWidth = pad;
+		if (worldLabel != null) {
+			panelWidth += UiText.width(font, worldLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + 2;
+		}
+		panelWidth += UiText.width(font, layerLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + pad;
+		context.pose().pushMatrix();
+		context.pose().translate(0.0F, -slide);
+		drawPanel(context, theme, MARGIN, y, panelWidth, panelColor);
+		if (worldLabel != null) {
+			worldChip = drawChip(context, theme, worldLabel, x, chipY, mouseX, mouseY, interactive);
+			x += worldChip[2] + 2;
+		}
+		layerChip = drawChip(context, theme, layerLabel, x, chipY, mouseX, mouseY, interactive);
+		context.pose().popMatrix();
+		panels.add(new int[] {MARGIN, y, panelWidth, PANEL_HEIGHT});
+	}
+
+	private int[] drawChip(GuiGraphicsExtractor context, UiTheme theme, Component label, int x, int y, int mouseX, int mouseY, boolean interactive) {
+		int labelWidth = UiText.width(font, label, UiText.Size.SMALL);
+		int chipWidth = labelWidth + 16 + CHEVRON_SIZE + 4;
+		boolean hover = interactive && contains(mouseX, mouseY, x, y, chipWidth, CHIP_HEIGHT);
+		if (hover) {
+			UiShapes.roundedRect(context, x, y, chipWidth, CHIP_HEIGHT, CHIP_HEIGHT / 2, theme.hover());
+		}
+		int color = hover ? theme.text() : theme.textSecondary();
+		UiText.drawCentered(context, font, label, UiText.Size.SMALL, x + 8, y + CHIP_HEIGHT / 2, color);
+		UiIcons.draw(context, HubIcons.CHEVRON_DOWN, x + 8 + labelWidth + 4, y + (CHIP_HEIGHT - CHEVRON_SIZE) / 2, CHEVRON_SIZE, color);
+		return new int[] {x, y, chipWidth, CHIP_HEIGHT};
+	}
+
+	/** "Surface", or the heights a cave layer covers. */
+	private static String layerName(int layer) {
+		if (layer == MapSampler.SURFACE) {
+			return Component.translatable(EMUtilsTexts.WORLD_MAP_SURFACE).getString();
+		}
+		int bottom = layer * MapWorld.LAYER_BLOCKS;
+		return Component.translatable(EMUtilsTexts.WORLD_MAP_CAVES, bottom, bottom + MapWorld.LAYER_BLOCKS - 1).getString();
+	}
+
+	/** The cave layer at your height. */
+	private int playerLayer() {
+		return minecraft.player == null ? 4 : Math.floorDiv(minecraft.player.getBlockY() + 2, MapWorld.LAYER_BLOCKS);
+	}
+
+	/** The menu of the world chip: the dimension's worlds, and what can be done with the one shown (#219). */
+	private void openWorldMenu() {
+		MapWorlds catalog = MapManager.worlds(dimension);
+		if (catalog == null || worldChip.length == 0) {
+			return;
+		}
+		MapWorld surface = MapManager.world();
+		String live = surface != null && surface.dimension().equals(dimension) ? surface.worldId : null;
+		List<UiContextMenu.Item> items = new ArrayList<>();
+		for (MapWorlds.Entry entry : catalog.worlds()) {
+			String name = entry.name() + (entry.id().equals(live) ? "  " + Component.translatable(EMUtilsTexts.WORLD_MAP_HERE).getString() : "");
+			items.add(UiContextMenu.Item.choice(Component.literal(name), entry.id().equals(worldId), () -> show(dimension, entry.id(), cave)));
+		}
+		String shown = worldId;
+		MapWorlds.Entry shownEntry = catalog.get(shown);
+		if (shownEntry != null) {
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_WORLD), () -> prompt = new UiPromptDialog(
+				font, anim,
+				Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_WORLD),
+				Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_MESSAGE),
+				shownEntry.name(),
+				Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_PLACEHOLDER),
+				Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_CONFIRM),
+				name -> {
+					if (name.isBlank()) {
+						return Component.translatable(EMUtilsTexts.WORLD_MAP_RENAME_EMPTY);
+					}
+					catalog.rename(shownEntry.id(), name);
+					return null;
+				}
+			)));
+		}
+		if (isOwnDimension() && surface != null && surface.worldId != null) {
+			if (shown != null && !shown.equals(live)) {
+				items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_THIS_WORLD), () -> {
+					MapManager.useWorld(shown);
+					showLive();
+				}));
+			} else {
+				items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_NEW_WORLD), () -> {
+					MapManager.useWorld(null);
+					showLive();
+				}));
+			}
+		}
+		if (shownEntry != null && !shownEntry.id().equals(live)) {
+			int x = worldChip[0];
+			int y = worldChip[1] + worldChip[3] + 2;
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_DELETE_WORLD), true, true, () -> menu = new UiContextMenu(font, anim, x, y, List.of(
+				new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_CONFIRM_DELETE_WORLD, shownEntry.name()), true, true, () -> {
+					closeOther();
+					catalog.delete(shownEntry.id());
+					showLive();
+				})
+			))));
+		}
+		menu = new UiContextMenu(font, anim, worldChip[0], worldChip[1] + worldChip[3] + 2, items);
+	}
+
+	/** The menu of the layer chip: the surface, the caves at your height, and the layers above and below (#222). */
+	private void openLayerMenu() {
+		if (layerChip.length == 0) {
+			return;
+		}
+		List<UiContextMenu.Item> items = new ArrayList<>();
+		items.add(UiContextMenu.Item.choice(Component.literal(layerName(MapSampler.SURFACE)), cave == MapSampler.SURFACE, () -> show(dimension, worldId, MapSampler.SURFACE)));
+		if (isOwnDimension()) {
+			int here = playerLayer();
+			items.add(UiContextMenu.Item.choice(Component.translatable(EMUtilsTexts.WORLD_MAP_CAVES_HERE, layerName(here)), cave == here, () -> show(dimension, worldId, here)));
+		}
+		int from = cave == MapSampler.SURFACE ? playerLayer() : cave;
+		items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_LAYER_UP, layerName(from + 1)), () -> stepLayer(1)));
+		items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_LAYER_DOWN, layerName(from - 1)), () -> stepLayer(-1)));
+		menu = new UiContextMenu(font, anim, layerChip[0], layerChip[1] + layerChip[3] + 2, items);
+	}
+
+	/** One cave layer up or down; from the surface, to the layers next to yours. */
+	private void stepLayer(int step) {
+		int from = cave == MapSampler.SURFACE ? playerLayer() : cave;
+		show(dimension, worldId, from + step);
+	}
+
+	/** Back to the map of where you are. */
+	private void showLive() {
+		MapWorld live = MapManager.shownWorld();
+		if (live != null) {
+			closeOther();
+			use(live, MapManager.shownTiles(), null);
+		}
 	}
 
 	private static void drawPanel(GuiGraphicsExtractor context, UiTheme theme, int x, int y, int width, int color) {
@@ -565,6 +820,12 @@ public final class WorldMapScreen extends Screen {
 			}
 			return true;
 		}
+		if (prompt != null) {
+			if (left && !prompt.closing()) {
+				prompt.mouseClicked(mouseX, mouseY, click.hasShiftDown());
+			}
+			return true;
+		}
 		if (menu != null) {
 			// Cleared before the item runs, since an item may open a menu of its own (deleting asks first).
 			UiContextMenu clicked = menu;
@@ -577,6 +838,14 @@ public final class WorldMapScreen extends Screen {
 			}
 		}
 		if (overPanel(mouseX, mouseY)) {
+			if (left && worldChip.length > 0 && contains(mouseX, mouseY, worldChip[0], worldChip[1], worldChip[2], worldChip[3])) {
+				openWorldMenu();
+				return true;
+			}
+			if (left && layerChip.length > 0 && contains(mouseX, mouseY, layerChip[0], layerChip[1], layerChip[2], layerChip[3])) {
+				openLayerMenu();
+				return true;
+			}
 			if (left) {
 				int chipY = MARGIN + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
 				for (int i = 0; i < dimensionChips.size(); i++) {
@@ -721,6 +990,17 @@ public final class WorldMapScreen extends Screen {
 			sheet.keyPressed(event);
 			return true;
 		}
+		if (prompt != null) {
+			if (!prompt.closing()) {
+				prompt.keyPressed(event);
+			}
+			return true;
+		}
+		if (event.key() == InputConstants.KEY_PAGEUP || event.key() == InputConstants.KEY_PAGEDOWN) {
+			menu = null;
+			stepLayer(event.key() == InputConstants.KEY_PAGEUP ? 1 : -1);
+			return true;
+		}
 		if (openKey != null && openKey.matches(event)) {
 			menu = null;
 			onClose();
@@ -737,6 +1017,12 @@ public final class WorldMapScreen extends Screen {
 	public boolean charTyped(CharacterEvent event) {
 		if (sheet != null) {
 			sheet.charTyped(event);
+			return true;
+		}
+		if (prompt != null) {
+			if (!prompt.closing()) {
+				prompt.charTyped(event);
+			}
 			return true;
 		}
 		return super.charTyped(event);
@@ -767,6 +1053,20 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
 	public void switchDimensionForSnapshot(String id) {
 		switchDimension(id);
+	}
+
+	/** For UI snapshot checks: shows a cave layer, or the surface for {@link Integer#MIN_VALUE}, as the layer menu does. */
+	public void showLayerForSnapshot(int layer) {
+		show(dimension, worldId, layer);
+	}
+
+	/** For UI snapshot checks: opens the world chip's menu, or the layer chip's. */
+	public void openChipMenuForSnapshot(boolean worlds) {
+		if (worlds) {
+			openWorldMenu();
+		} else {
+			openLayerMenu();
+		}
 	}
 
 	/** For UI snapshot checks: how many waypoints the map drew last frame. */
@@ -810,18 +1110,19 @@ public final class WorldMapScreen extends Screen {
 		if (id.equals(dimension) || minecraft.level == null) {
 			return;
 		}
-		closeOther();
 		String previous = dimension;
-		dimension = id;
-		if (isOwnDimension() && MapManager.world() != null) {
-			world = MapManager.world();
-			tiles = MapManager.tiles();
+		boolean own = id.equals(WaypointManager.dimensionId(minecraft.level));
+		if (own) {
+			// Back to where you are: the map the minimap shows.
+			showLive();
 			if (minecraft.player != null) {
 				lookAt(minecraft.player.getX(), minecraft.player.getZ());
 			}
 			return;
 		}
-		if (!openOther()) {
+		MapWorlds catalog = MapManager.worlds(id);
+		MapWorlds.Entry latest = catalog == null ? null : catalog.latest();
+		if (!show(id, latest == null ? null : latest.id(), MapSampler.SURFACE)) {
 			return;
 		}
 		// The Nether is an eighth the size of the Overworld, so the view moves with the scale between them.
@@ -832,28 +1133,6 @@ public final class WorldMapScreen extends Screen {
 		} else if (fromNether && !toNether) {
 			lookAt(centerX * 8.0D, centerZ * 8.0D);
 		}
-	}
-
-	/**
-	 * Opens the map of the dimension shown, which isn't yours: read from its files, with tiles of its own.
-	 * Returns false when this world keeps no maps.
-	 */
-	private boolean openOther() {
-		Path folder = MapManager.worldFolder(minecraft);
-		if (folder == null || minecraft.level == null) {
-			return false;
-		}
-		Identifier dimensionId = Identifier.tryParse(dimension);
-		ResourceKey<Level> key = dimensionId == null ? null : ResourceKey.create(Registries.DIMENSION, dimensionId);
-		// In singleplayer the dimension's bottom is known, so what's imported for it can be saved; elsewhere it's only read.
-		ServerLevel server = key == null ? null : MapImporter.serverLevel(minecraft, key);
-		world = new MapWorld(minecraft.level, MapManager.dimensionFolder(folder, dimension), dimension, server == null ? Integer.MIN_VALUE : server.getMinY());
-		if (key != null) {
-			world.importer = MapImporter.start(minecraft, world, key);
-		}
-		otherTiles = new MapTiles();
-		tiles = otherTiles;
-		return true;
 	}
 
 	private static float lerp(float from, float to, float t) {

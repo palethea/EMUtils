@@ -1,9 +1,11 @@
 package net.emutils.client.emutils.gui.ui;
 
 import java.util.List;
+import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A right-click menu: a short list of actions at the mouse, kept on screen. Clicking an item runs it,
@@ -15,12 +17,26 @@ public final class UiContextMenu {
 	private static final int PADDING = 4;
 	private static final int MIN_WIDTH = 120;
 
-	/** One action; a {@code danger} item (such as delete) is drawn in the warning color. */
-	public record Item(Component label, boolean enabled, boolean danger, Runnable action) {
+	/**
+	 * One action; a {@code danger} item (such as delete) is drawn in the warning color. A {@code checked}
+	 * item is one of a choice: it shows a check mark when it's the one chosen, and null leaves it out.
+	 */
+	public record Item(Component label, boolean enabled, boolean danger, Runnable action, @Nullable Boolean checked) {
+		public Item(Component label, boolean enabled, boolean danger, Runnable action) {
+			this(label, enabled, danger, action, null);
+		}
+
 		public static Item of(Component label, Runnable action) {
 			return new Item(label, true, false, action);
 		}
+
+		/** One of a choice, checked when it's the one chosen. */
+		public static Item choice(Component label, boolean chosen, Runnable action) {
+			return new Item(label, true, false, action, chosen);
+		}
 	}
+
+	private static final int CHECK_SIZE = 10;
 
 	private final Font font;
 	private final UiAnim anim;
@@ -55,9 +71,11 @@ public final class UiContextMenu {
 		if (closed) {
 			return;
 		}
+		// When some items are a choice, every label moves over to make room for the check mark.
+		int indent = items.stream().anyMatch(item -> item.checked() != null) ? CHECK_SIZE + 6 : 0;
 		width = MIN_WIDTH;
 		for (Item item : items) {
-			width = Math.max(width, UiText.width(font, item.label(), UiText.Size.BODY) + 24);
+			width = Math.max(width, UiText.width(font, item.label(), UiText.Size.BODY) + 24 + indent);
 		}
 		height = items.size() * ITEM_HEIGHT + PADDING * 2;
 		// Opens down and right from the mouse, flipping when it would leave the screen.
@@ -78,7 +96,10 @@ public final class UiContextMenu {
 				UiShapes.roundedRect(context, x + PADDING, top, width - PADDING * 2, ITEM_HEIGHT, 5, item.danger() ? UiTheme.fade(theme.warning(), 0.16F) : theme.hover());
 			}
 			int color = !item.enabled() ? UiTheme.fade(theme.muted(), 0.7F) : item.danger() ? theme.warning() : theme.text();
-			UiText.drawCentered(context, font, item.label(), UiText.Size.BODY, x + 12, top + ITEM_HEIGHT / 2, color);
+			if (Boolean.TRUE.equals(item.checked())) {
+				UiIcons.draw(context, HubIcons.CHECK, x + 12, top + (ITEM_HEIGHT - CHECK_SIZE) / 2, CHECK_SIZE, theme.accent());
+			}
+			UiText.drawCentered(context, font, item.label(), UiText.Size.BODY, x + 12 + indent, top + ITEM_HEIGHT / 2, color);
 		}
 		context.pose().popMatrix();
 		UiOpacity.reset();

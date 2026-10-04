@@ -260,7 +260,8 @@ final class MapImporter {
 				CompoundTag context = ChunkMap.getChunkDataFixContextTag(level.dimension(), level.getChunkSource().getGenerator().getTypeNameForDataFixer());
 				tag = chunks.upgradeChunkTag(tag, -1, context, dataVersion);
 			}
-			return SavedChunk.parse(tag, dataVersion, level.getMinY(), level.getHeight(), world.biomes());
+			int ceiling = level.dimensionType().hasCeiling() ? level.getMinY() + level.dimensionType().logicalHeight() - 1 : MapSampler.SURFACE;
+			return SavedChunk.parse(tag, dataVersion, level.getMinY(), level.getHeight(), ceiling, world.biomes());
 		} catch (Exception exception) {
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();

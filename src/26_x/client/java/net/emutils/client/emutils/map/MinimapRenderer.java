@@ -167,11 +167,11 @@ public final class MinimapRenderer {
 			context.fill(-1, -1, MAP_SIZE + 1, MAP_SIZE + 1, fade(FRAME, opacity));
 		}
 		MapDraw.fill(context, outline, fade(BACKGROUND, opacity));
-		MapWorld world = MapManager.world();
+		MapWorld world = MapManager.shownWorld();
 		if (world != null) {
-			MapManager.tiles().beginFrame();
+			MapManager.shownTiles().beginFrame();
 			float screenPixelsPerBlock = zoom * layoutScale * (float) client.getWindow().getGuiScale();
-			MapDraw.tiles(context, world, MapManager.tiles(), view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1), fade(0xFFFFFFFF, opacity));
+			MapDraw.tiles(context, world, MapManager.shownTiles(), view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1), fade(0xFFFFFFFF, opacity));
 		}
 		drawFrame(context, shape, opacity);
 		// Markers are placed exactly where the map puts them, not rounded to pixels, so they move with it.

@@ -158,6 +158,7 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Shape: a Square map, or a Round one.
 - Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
 - Zoom: from 0.25× to 8×. The Minimap Zoom In (`=`) and Minimap Zoom Out (`-`) keys change it too.
+- Cave View: underground (where the sky's light doesn't reach you), and always in the Nether, the minimap shows the caves at your height instead of the surface: a layer of 16 blocks, starting a little above your head, showing the floor of the caves in it, with solid rock left dark. It goes back to the surface when you come out. The caves you explore are kept per layer, and the world map can show them too. On by default.
 - Coordinates: show your coordinates under the map.
 - Waypoints: show your waypoints with the same markers as in the world.
   - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
@@ -230,6 +231,11 @@ Show the current Spotify track, with its cover, artist and progress, in the paus
 ### World Map
 
 A full-screen map of everything you explored, drawn like the minimap, with block textures close up and colors far out. Open it with `M` (left unbound when Xaero's World Map is installed, which uses `M` too); with the minimap showing, the minimap grows into the world map and shrinks back when you close it. What the map sees is saved per world or server and per dimension in `.minecraft/emutils/maps`, so it remembers places you've been and the minimap shows them too. In singleplayer it also reads the chunks the world has generated away from you, such as ones Chunky pre-generates, from the world's files in the background, including chunks saved by older Minecraft versions. Drag to move, scroll to zoom around the cursor, and Space takes you back to where you are. The coordinates under the cursor show at the bottom. Your waypoints show on it, and clicking one edits it. Right-click opens a menu. On the map: add a waypoint there, teleport there (when the server lets you use `/tp`), share the location in chat, copy the coordinates, or open the waypoint list or the map settings. On a waypoint: edit it, teleport to it, share it, copy its coordinates, hide or show it (hidden waypoints stay on the world map, faded), or delete it after a second click to confirm. Adding and editing open the waypoint sheet over the map. The other dimensions you explored can be looked at from the panel at the top, with their own waypoints. On by default, unless Xaero's World Map is installed.
+
+- Worlds on a server: servers that run many worlds under one dimension, like a hub, private islands and minigames, get a map per world. The map recognises the world you're in from its spawn point, its height range and whether the terrain around you matches a map it already has, and starts a new world when nothing matches. The chip under the title shows the world, and its menu switches between the worlds kept for the dimension, renames them, tells the map which world you're really in, starts a new one where you are, or deletes one with its map. Waypoints made on a server belong to the world they were made in and don't show in the others; ones from before show everywhere.
+- Layers: the chip next to it shows the surface or a cave layer, and switches between them: the surface, the caves at your height, or the layers above and below. Page Up and Page Down step through the layers.
+- In dimensions with a ceiling, like the Nether, the map shows the ground under the bedrock roof instead of the roof.
+- Void, like the End's or a SkyBlock island's, is drawn dark, and islands show a strip of their side over the void south of them, so they read as floating.
 
 ### Auto Reconnect
 

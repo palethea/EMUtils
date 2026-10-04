@@ -44,6 +44,10 @@ final class MapTileBaker {
 	private static final int NO_FLOOR_DEPTH = 24;
 	/** A side strip is this much darker than the block's top, like a side facing away from the light. */
 	private static final float SIDE_SHADE = 0.68F;
+	/** Void the map knows is there (#220): the End's, a SkyBlock island's, rock without a cave in a cave layer. */
+	private static final int VOID = 0xFF07080B;
+	/** An island's edge shows this much of its side over the void south of it, as a share of a block. */
+	private static final float UNDERSIDE = 0.5F;
 	/** The ground just south of a raised block is slightly darker, as if in its shadow. */
 	private static final float SHADOW_SHADE = 0.86F;
 
@@ -85,7 +89,11 @@ final class MapTileBaker {
 		for (int bz = 0; bz < blocks; bz++) {
 			for (int bx = 0; bx < blocks; bx++) {
 				int g = grid.index(bx + 1, bz + 1);
-				if (!grid.present[g] || grid.top[g] == MapChunk.NONE) {
+				if (!grid.present[g]) {
+					continue;
+				}
+				if (grid.top[g] == MapChunk.NONE) {
+					drawVoid(grid, tints, out, level, res, bx, bz, g);
 					continue;
 				}
 				MapBlockLook top = grid.look(grid.top[g]);
@@ -140,6 +148,31 @@ final class MapTileBaker {
 			}
 		}
 		return new Result(out, grid.complete);
+	}
+
+	/**
+	 * Draws a column the map knows is void: dark, and where an island ends north of it, a strip of the
+	 * island's side fading into the dark below, so the island reads as floating over nothing (#220).
+	 */
+	private static void drawVoid(Grid grid, Tints tints, int[] out, int level, int res, int bx, int bz, int g) {
+		int north = grid.index(bx + 1, bz);
+		MapBlockLook island = grid.present[north] && grid.top[north] != MapChunk.NONE ? grid.shadeLook(north) : null;
+		MapBlockLook.Layer side = island == null ? null : island.side() != null ? island.side() : island.top();
+		int sideTint = island == null ? 0xFFFFFFFF : tints.color(island, grid.shadeId(north), north);
+		int strip = side == null ? 0 : Math.max(1, Math.round(res * UNDERSIDE));
+		for (int py = 0; py < res; py++) {
+			for (int px = 0; px < res; px++) {
+				int color = VOID;
+				if (py < strip) {
+					int sidePixel = pixel(side, level, py * res + px, sideTint);
+					if ((sidePixel >>> 24) != 0) {
+						// Darker toward the bottom, as the island's underside falls away into the void.
+						color = mix(VOID, scale(sidePixel | 0xFF000000, SIDE_SHADE), 1.0F - 0.6F * py / (float) strip);
+					}
+				}
+				out[(bz * res + py) * TILE_PIXELS + bx * res + px] = toAbgr(color);
+			}
+		}
 	}
 
 	/** A far tile, put together from the overviews of the regions it covers, each shrunk to fit. */

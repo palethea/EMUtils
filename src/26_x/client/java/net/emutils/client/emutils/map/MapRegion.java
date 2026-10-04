@@ -30,6 +30,8 @@ public final class MapRegion {
 	 * lost, and it's read again once let go.
 	 */
 	volatile boolean unreadable;
+	/** Saved chunks were read in under ones sampled before the map knew its world (#219); its tiles are drawn again. */
+	volatile boolean merged;
 	/** The overview no longer matches the chunks; set when a chunk is sampled or read without an overview. */
 	volatile boolean overviewStale;
 	volatile long lastUsed = System.currentTimeMillis();

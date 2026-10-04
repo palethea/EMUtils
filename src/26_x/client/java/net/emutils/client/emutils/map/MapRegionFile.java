@@ -36,13 +36,17 @@ import org.jspecify.annotations.Nullable;
  */
 final class MapRegionFile {
 	private static final int MAGIC = 0x454D4D50;
-	private static final int VERSION = 1;
+	/**
+	 * 2: columns under a ceiling, like the Nether's roof, are sampled from under it (#221). Files of version 1
+	 * are still read; the map drops their chunks in such dimensions, as they show the roof.
+	 */
+	private static final int VERSION = 2;
 
 	private MapRegionFile() {
 	}
 
 	/** What a region file holds: its chunks by index (null where none), and its overview if it has one. */
-	record Contents(MapChunk @Nullable [] chunks, int @Nullable [] overview, int overviewFingerprint) {
+	record Contents(MapChunk @Nullable [] chunks, int @Nullable [] overview, int overviewFingerprint, int version) {
 	}
 
 	static Path path(Path folder, int regionX, int regionZ) {
@@ -137,7 +141,8 @@ final class MapRegionFile {
 			return null;
 		}
 		try (DataInputStream in = open(file)) {
-			if (!readHeader(in)) {
+			int version = readHeader(in);
+			if (version < 0) {
 				return null;
 			}
 			in.readInt();
@@ -147,7 +152,7 @@ final class MapRegionFile {
 				fingerprint = in.readInt();
 				overview = readOverviewPixels(in);
 			}
-			return new Contents(null, overview, fingerprint);
+			return new Contents(null, overview, fingerprint, version);
 		}
 	}
 
@@ -156,7 +161,8 @@ final class MapRegionFile {
 			return null;
 		}
 		try (DataInputStream in = open(file)) {
-			if (!readHeader(in)) {
+			int version = readHeader(in);
+			if (version < 0) {
 				return null;
 			}
 			int minY = in.readInt();
@@ -209,7 +215,7 @@ final class MapRegionFile {
 				}
 				chunks[i] = new MapChunk(top, topY, floor, floorY, biome);
 			}
-			return new Contents(chunks, overview, fingerprint);
+			return new Contents(chunks, overview, fingerprint, version);
 		}
 	}
 
@@ -218,8 +224,13 @@ final class MapRegionFile {
 		return new DataInputStream(new BufferedInputStream(new InflaterInputStream(raw), 1 << 16));
 	}
 
-	private static boolean readHeader(DataInputStream in) throws IOException {
-		return in.readInt() == MAGIC && in.readInt() == VERSION;
+	/** The file's format version, or -1 when it isn't a map region file this build can read. */
+	private static int readHeader(DataInputStream in) throws IOException {
+		if (in.readInt() != MAGIC) {
+			return -1;
+		}
+		int version = in.readInt();
+		return version >= 1 && version <= VERSION ? version : -1;
 	}
 
 	private static int[] readOverviewPixels(DataInputStream in) throws IOException {

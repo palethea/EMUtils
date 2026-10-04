@@ -19,6 +19,11 @@ public final class Waypoint {
 	private Boolean hidden;
 	/** The set the waypoint is grouped in; null or blank when it is in none. */
 	private String set;
+	/**
+	 * Which of the server's worlds it was made in (#219), as the map tells them apart; null in singleplayer
+	 * and for waypoints from before, which show in every world.
+	 */
+	private String world;
 
 	public Waypoint() {
 	}
@@ -138,6 +143,19 @@ public final class Waypoint {
 
 	public void setSet(String set) {
 		this.set = set == null || set.isBlank() ? null : set.trim();
+	}
+
+	public @org.jspecify.annotations.Nullable String world() {
+		return world;
+	}
+
+	public void setWorld(@org.jspecify.annotations.Nullable String world) {
+		this.world = world;
+	}
+
+	/** It belongs to that world, or to every world; true too while it isn't known which world it is. */
+	public boolean matchesWorld(@org.jspecify.annotations.Nullable String worldId) {
+		return world == null || worldId == null || world.equals(worldId);
 	}
 
 	public boolean matchesDimension(String otherDimension) {

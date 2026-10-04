@@ -193,6 +193,10 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotTo=N} (Gradle property {@code emutilsUiSnapshotTo}) stops after step N. */
 	private static final int LAST_STEP = Integer.getInteger("emutils.uiSnapshotTo", Integer.MAX_VALUE);
 	private static int stepTicks;
+	/** Where you stood before going down into the cave of steps 399 to 401. */
+	private static int @Nullable [] caveReturn;
+	/** The world the map was in before step 402 started a new one. */
+	private static @Nullable String firstWorld;
 	/** The world map showing the Nether while the settings are open over it, in step 396. */
 	private static @Nullable WorldMapScreen netherMap;
 	/** The screenshots the gallery showed the first time it opened. */
@@ -3637,6 +3641,110 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().setWorldMap(false);
 					EMUtilsClient.waypoint().clearForCurrentWorld(client);
 					EMUtilsClient.waypoint().clearOtherDimensionsForSnapshot(client);
+					next();
+				}
+			}
+			// Phase 3 of the maps (#219 to #222). Sampling under a roof and in cave layers, on made-up columns.
+			case 398 -> {
+				String problem = MapManager.samplingRulesForSnapshot();
+				check(problem.isEmpty(), "under the Nether's roof the ground shows, and cave layers show the caves at their height" + (problem.isEmpty() ? "" : " (" + problem + ")"));
+				next();
+			}
+			// The cave view (#222): in a sealed room dug deep underground, the minimap shows the cave layer.
+			case 399 -> {
+				int x = client.player.getBlockX();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setMinimapRotate(false);
+					config.setMinimapZoom(MinimapZoom.TWO);
+					config.setWorldMap(true);
+					config.setMapCaves(true);
+					caveReturn = new int[] {x, client.player.getBlockY(), z};
+					// A sealed stone room from -51 to -32, so nothing of the random terrain reaches into it.
+					command(client, "fill " + (x - 8) + " -51 " + (z - 8) + " " + (x + 8) + " -32 " + (z + 8) + " stone hollow");
+					command(client, "fill " + (x + 3) + " -50 " + (z - 4) + " " + (x + 6) + " -50 " + (z + 4) + " stone");
+					command(client, "fill " + (x + 4) + " -50 " + (z - 3) + " " + (x + 5) + " -50 " + (z + 3) + " minecraft:water");
+				}
+				if (stepTicks == 5) {
+					command(client, "tp @s " + x + " -50 " + z);
+				}
+				if (stepTicks == 110) {
+					Integer layer = MapManager.caveLayerForSnapshot();
+					check(layer != null && layer == Math.floorDiv(-50 + 2, 16), "underground, the minimap shows the cave layer at your height (" + layer + ")");
+					String column = MapManager.caveColumnForSnapshot(client);
+					check(column.equals("floor at -51"), "the cave layer found the room's floor under you (" + column + ")");
+				}
+				captureAfter(client, 111, "minimap, cave view");
+			}
+			case 400 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openChipMenuForSnapshot(false);
+				}
+				captureAfter(client, 50, "world map, cave layer and its menu");
+			}
+			case 401 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.onClose();
+				}
+				if (stepTicks == 25 && caveReturn != null) {
+					command(client, "tp @s " + caveReturn[0] + " " + caveReturn[1] + " " + caveReturn[2]);
+				}
+				if (stepTicks == 90) {
+					check(MapManager.caveLayerForSnapshot() == null, "back under the sky, the minimap shows the surface again");
+					next();
+				}
+			}
+			// Several worlds (#219): the chunks around you are recognised as the world saved before, a new world
+			// can be started by hand, and waypoints made in one world don't show in another.
+			case 402 -> {
+				if (stepTicks == 1) {
+					MapManager.saveForSnapshot();
+					String first = MapManager.worldNameForSnapshot();
+					String matched = MapManager.matchForSnapshot(client);
+					check(first != null && first.equals(matched), "the chunks around you are recognised as the world they were saved in (" + first + ", matched " + matched + ")");
+					MapManager.useWorldForSnapshot(null);
+					String second = MapManager.worldNameForSnapshot();
+					check(MapManager.worldCountForSnapshot() == 2 && second != null && !second.equals(first), "a new world can be started by hand (" + second + ")");
+					firstWorld = first;
+					Waypoint mark = EMUtilsClient.waypoint().addCustom(client, null, "World two", client.player.getBlockX() + 6, client.player.getBlockY(), client.player.getBlockZ(), 0xFF55FFFF, false, "");
+					if (mark != null) {
+						mark.setWorld("w2");
+					}
+					String dimension = WaypointManager.dimensionId(client.level);
+					boolean inSecond = EMUtilsClient.waypoint().entriesIn(client, dimension, "w2", false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					boolean inFirst = EMUtilsClient.waypoint().entriesIn(client, dimension, "w1", false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					check(inSecond && !inFirst, "a waypoint made in one world shows there and not in the other (" + inSecond + ", " + inFirst + ")");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 30) {
+					// Once the new world has sampled the chunks around you, they still match the first world's saved map.
+					String again = MapManager.matchForSnapshot(client);
+					check(firstWorld != null && firstWorld.equals(again), "the chunks around you aren't taken for the new world but for the one whose terrain matches (" + again + ")");
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openChipMenuForSnapshot(true);
+				}
+				captureAfter(client, 50, "world map, world menu");
+			}
+			case 403 -> {
+				if (stepTicks == 1) {
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
+				if (stepTicks == 25) {
+					MapManager.useWorldForSnapshot(MapManager.matchForSnapshot(client));
+					MapManager.deleteWorldForSnapshot("World 2");
+					check(MapManager.worldCountForSnapshot() == 1, "a world can be deleted with its map (" + MapManager.worldCountForSnapshot() + " left)");
+					EMUtilsClient.config().resetMinimapDefaults();
+					EMUtilsClient.config().setMinimap(false);
+					EMUtilsClient.config().setWorldMap(false);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
 					next();
 				}
 			}

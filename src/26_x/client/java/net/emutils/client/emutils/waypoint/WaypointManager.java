@@ -25,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.emutils.client.emutils.map.MapManager;
 import org.jspecify.annotations.Nullable;
 
 public final class WaypointManager {
@@ -107,6 +108,7 @@ public final class WaypointManager {
                 EMUtilsClient.config().waypointDefaultDeathColor(),
                 WaypointType.DEATH
             );
+        waypoint.setWorld(MapManager.worldIdFor(client, dimension));
         waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
         trimDeathHistory(client, worldKey);
@@ -170,6 +172,7 @@ public final class WaypointManager {
         );
         waypoint.setBeaconEnabled(beacon);
         waypoint.setSet(set);
+        waypoint.setWorld(MapManager.worldIdFor(client, dimension));
         // Trimming can drop the oldest waypoint, so keep the whole list to put back if saving fails.
         List<Waypoint> before = new ArrayList<>(waypoints);
         waypoints.add(waypoint);
@@ -482,7 +485,7 @@ public final class WaypointManager {
         String dimension = dimensionId(client.level);
         return waypoints
             .stream()
-            .filter(wp -> matchesWorld(wp, worldKey, dimension))
+            .filter(wp -> matchesWorld(wp, worldKey, dimension) && wp.matchesWorld(MapManager.worldIdFor(client, dimension)))
             .sorted(Comparator.comparingLong(Waypoint::timestamp).reversed())
             .toList();
     }
@@ -505,11 +508,25 @@ public final class WaypointManager {
         if (client == null || client.level == null) {
             return List.of();
         }
+        return entriesIn(client, dimension, MapManager.worldIdFor(client, dimension), includeOtherDimensions);
+    }
+
+    /**
+     * Like the above, in one of the server's worlds of that dimension (#219), which the world map may be
+     * showing: waypoints made in another of its worlds are left out.
+     */
+    public List<WaypointEntry> entriesIn(Minecraft client, String dimension, @Nullable String worldId, boolean includeOtherDimensions) {
+        if (client == null || client.level == null) {
+            return List.of();
+        }
 
         String worldKey = worldKey(client);
         List<WaypointEntry> entries = new ArrayList<>();
         for (Waypoint waypoint : waypoints) {
             if (!waypoint.matchesWorldKey(worldKey)) {
+                continue;
+            }
+            if (!waypoint.matchesWorld(waypoint.matchesDimension(dimension) ? worldId : MapManager.worldIdFor(client, waypoint.dimension()))) {
                 continue;
             }
             if (waypoint.matchesDimension(dimension)) {
@@ -535,6 +552,14 @@ public final class WaypointManager {
     /** The waypoints that have a place in {@code dimension}: its own, plus converted ones if that's on. */
     public List<WaypointEntry> renderEntries(Minecraft client, String dimension) {
         return entriesIn(client, dimension, EMUtilsClient.config().waypointShowOtherDimensions())
+            .stream()
+            .filter(WaypointEntry::placeable)
+            .toList();
+    }
+
+    /** The waypoints that have a place in one of the server's worlds of {@code dimension} (#219). */
+    public List<WaypointEntry> renderEntries(Minecraft client, String dimension, @Nullable String worldId) {
+        return entriesIn(client, dimension, worldId, EMUtilsClient.config().waypointShowOtherDimensions())
             .stream()
             .filter(WaypointEntry::placeable)
             .toList();
