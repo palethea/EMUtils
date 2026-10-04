@@ -259,6 +259,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean mapRadarHostile = Boolean.TRUE;
 	private Boolean mapRadarFriendly = Boolean.TRUE;
 	private Boolean mapRadarItems = Boolean.FALSE;
+	private Boolean mapRadarMobFaces = Boolean.TRUE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3910,6 +3911,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** The radar shows mobs by their face, framed in their kind's color, instead of a dot; on by default. */
+	public boolean mapRadarMobFaces() {
+		return mapRadarMobFaces == null || mapRadarMobFaces;
+	}
+
+	public void setMapRadarMobFaces(boolean enabled) {
+		mapRadarMobFaces = enabled;
+		save();
+	}
+
 	/** The EMUtils world map (#215): on by default, unless Xaero's World Map is installed. Also keeps the map saved while the minimap is off. */
 	public boolean worldMap() {
 		return worldMap == null ? !XaeroMapIntegration.worldMapLoaded() : worldMap;
@@ -3943,6 +3954,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		mapRadarHostile = Boolean.TRUE;
 		mapRadarFriendly = Boolean.TRUE;
 		mapRadarItems = Boolean.FALSE;
+		mapRadarMobFaces = Boolean.TRUE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}

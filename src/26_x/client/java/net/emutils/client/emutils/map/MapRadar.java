@@ -25,8 +25,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The entity radar (#224): the players, mobs and items around you on the minimap and the world map. Players
- * show their face, the rest a dot in their kind's color: red for hostile mobs, green for the others, blue for
- * your own pets, and yellow for items. Those above or below you are faded, so the ones on your level stand
+ * show their face, and so do mobs ({@link MapMobIcons}), framed in their kind's color: red for hostile mobs,
+ * green for the others and blue for your own pets; items, and mobs without a face, show a dot in it, yellow
+ * for items. Those above or below you are faded, so the ones on your level stand
  * out, as they do underground in the cave view, and those far above or below, like mobs in the caves under
  * you, are left out. Only what the game shows you is on it: entities
  * invisible to you, and spectators while you aren't one, are left out.
@@ -141,9 +142,10 @@ public final class MapRadar {
 
 	/**
 	 * Draws a blip centered on the current origin: a player's face {@code face} pixels wide with an outline,
-	 * or a dot {@code scale} times its kind's size. {@code playerY} fades the ones on another level.
+	 * a mob's face with {@code mobFaces}, or a dot {@code scale} times its kind's size. {@code playerY} fades
+	 * the ones on another level.
 	 */
-	static void draw(GuiGraphicsExtractor context, Font font, Blip blip, double playerY, int face, float scale, boolean names, float opacity) {
+	static void draw(GuiGraphicsExtractor context, Font font, Blip blip, double playerY, int face, float scale, boolean names, boolean mobFaces, float opacity) {
 		float alpha = opacity * (Math.abs(blip.y() - playerY) > LEVEL_BLOCKS ? OTHER_LEVEL_ALPHA : 1.0F);
 		if (blip.kind() == Kind.PLAYER && blip.entity() instanceof AbstractClientPlayer player) {
 			int half = face / 2;
@@ -160,10 +162,28 @@ public final class MapRadar {
 			}
 			return;
 		}
+		if (blip.kind() != Kind.ITEM && mobFaces && MapMobIcons.draw(context, blip.entity(), face - 1, fade(blip.kind().color, alpha), fade(0xFFFFFFFF, alpha))) {
+			return;
+		}
 		int dot = Math.max(3, Math.round(blip.kind().dot * scale));
 		int outer = dot + 2;
 		UiShapes.circle(context, -outer / 2, -outer / 2, outer, fade(OUTLINE, alpha));
 		UiShapes.circle(context, -dot / 2, -dot / 2, dot, fade(blip.kind().color, alpha));
+	}
+
+	/** For UI snapshots: the mobs named {@code name} around you that show a dot for want of a face. */
+	public static String facelessForSnapshot(Minecraft client, String name) {
+		if (client.level == null) {
+			return "no level";
+		}
+		List<Entity> named = new ArrayList<>();
+		for (Entity entity : client.level.entitiesForRendering()) {
+			Component custom = entity.getCustomName();
+			if (custom != null && custom.getString().equals(name)) {
+				named.add(entity);
+			}
+		}
+		return named.isEmpty() ? "none found" : String.join(", ", MapMobIcons.facelessForSnapshot(named));
 	}
 
 	/** For UI snapshots: shows you on the radar, as another player would be. */

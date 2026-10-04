@@ -966,6 +966,7 @@ public final class EMUtilsTexts {
     public static final String OPTION_MAP_RADAR_HOSTILE = "emutils.option.map_radar_hostile";
     public static final String OPTION_MAP_RADAR_FRIENDLY = "emutils.option.map_radar_friendly";
     public static final String OPTION_MAP_RADAR_ITEMS = "emutils.option.map_radar_items";
+    public static final String OPTION_MAP_RADAR_MOB_FACES = "emutils.option.map_radar_mob_faces";
     public static final String UI_MINIMAP_SECTION_RADAR = "emutils.ui.minimap.section.radar";
     public static final String MAP_CAVES_FORCED = "emutils.map.caves_forced";
     public static final String MAP_CAVES_AUTO = "emutils.map.caves_auto";

@@ -522,6 +522,7 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_HOSTILE, config::mapRadarHostile, config::setMapRadarHostile));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_FRIENDLY, config::mapRadarFriendly, config::setMapRadarFriendly));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_ITEMS, config::mapRadarItems, config::setMapRadarItems));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_MOB_FACES, config::mapRadarMobFaces, config::setMapRadarMobFaces));
 		return rows;
 	}
 

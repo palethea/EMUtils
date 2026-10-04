@@ -3798,8 +3798,18 @@ public final class UiSnapshotter {
 					command(client, "summon husk " + (x - 6) + " " + (y + 40) + " " + (z - 2) + " " + floating);
 					command(client, "summon item " + (x + 2) + " " + y + " " + (z + 5) + " {Item:{id:\"minecraft:diamond\",count:1},PickupDelay:32767,Age:-32768,NoGravity:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}");
 					MapRadar.showSelfForSnapshot(true);
+					// A lineup of mobs in a ring around you, to see their faces on the radar.
+					String[] lineup = {"pig", "sheep", "villager", "creeper", "spider", "zombie", "slime", "chicken", "skeleton", "wolf", "horse", "enderman"};
+					for (int i = 0; i < lineup.length; i++) {
+						double turn = Math.PI * 2.0D * i / lineup.length;
+						int mx = x + (int) Math.round(Math.cos(turn) * 10.0D);
+						int mz = z + (int) Math.round(Math.sin(turn) * 10.0D);
+						command(client, "summon " + lineup[i] + " " + mx + " " + y + " " + mz + " {NoAI:1b,Silent:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:\"emradar_faces\",Tags:[\"emradar\"]}");
+					}
 				}
 				if (stepTicks == 40) {
+					String faceless = MapRadar.facelessForSnapshot(client, "emradar_faces");
+					check(faceless.isEmpty(), "every mob of the lineup shows its face on the radar (" + faceless + ")");
 					String seen = MapRadar.kindsForSnapshot(client, "emradar");
 					check(sortedKinds(seen).equals("FRIENDLY, HOSTILE, HOSTILE, ITEM, PLAYER"), "the radar shows the mobs, the item and a player, but not the invisible mob or the one far above (" + seen + ")");
 				}

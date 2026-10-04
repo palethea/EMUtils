@@ -644,7 +644,7 @@ public final class WorldMapScreen extends Screen {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(sx, sy);
-			MapRadar.draw(context, font, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarNames(), progress);
+			MapRadar.draw(context, font, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarNames(), config.mapRadarMobFaces(), progress);
 			context.pose().popMatrix();
 			float distance = Math.max(Math.abs(mouseX - sx), Math.abs(mouseY - sy));
 			if (hover && distance <= nearest) {

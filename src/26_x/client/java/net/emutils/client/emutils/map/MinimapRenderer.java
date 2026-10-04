@@ -295,7 +295,7 @@ public final class MinimapRenderer {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(x, y);
-			MapRadar.draw(context, client.font, blip, playerY, FACE_SIZE, 1.0F, config.mapRadarNames(), opacity);
+			MapRadar.draw(context, client.font, blip, playerY, FACE_SIZE, 1.0F, config.mapRadarNames(), config.mapRadarMobFaces(), opacity);
 			context.pose().popMatrix();
 		}
 	}

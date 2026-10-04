@@ -163,8 +163,9 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Coordinates: show your coordinates under the map.
 - Waypoints: show your waypoints with the same markers as in the world.
   - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
-- Entity Radar: show the players, mobs and items around you on the minimap, and on the world map where you are, which names the one under the cursor. Players show their face; mobs and items a dot: red for hostile mobs, green for the others, blue for your own pets, yellow for items. The ones more than 6 blocks above or below you are faded, and those more than 24 away, like mobs in the caves under you, are left out. Entities invisible to you aren't shown. On by default.
+- Entity Radar: show the players, mobs and items around you on the minimap, and on the world map where you are, which names the one under the cursor. Players show their face, and mobs theirs too, taken from the mob's own texture so variants and resource packs show, framed red for hostile mobs, green for the others and blue for your own pets; items show a yellow dot. The ones more than 6 blocks above or below you are faded, and those more than 24 away, like mobs in the caves under you, are left out. Entities invisible to you aren't shown. On by default.
   - Players, with Player Names under their face; Hostile Mobs; Other Mobs; Items (off by default): which ones show.
+  - Mob Faces: turn it off to show mobs as dots in their kind's color.
 
 ### Armor Status
 
