@@ -251,6 +251,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean minimapWaypointsPinned = Boolean.TRUE;
 	private Boolean mapCaves = Boolean.TRUE;
 	private Boolean mapCeilingFull = Boolean.FALSE;
+	private Boolean mapRadar = Boolean.TRUE;
+	private Boolean mapRadarPlayers = Boolean.TRUE;
+	private Boolean mapRadarNames = Boolean.TRUE;
+	private Boolean mapRadarHostile = Boolean.TRUE;
+	private Boolean mapRadarFriendly = Boolean.TRUE;
+	private Boolean mapRadarItems = Boolean.FALSE;
 	private Boolean armorStatus = Boolean.FALSE;
 	private Boolean armorStatusHelmet = Boolean.TRUE;
 	private Boolean armorStatusChestplate = Boolean.TRUE;
@@ -3824,6 +3830,66 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	/** The entity radar (#224): players, mobs and items around you on the minimap and the world map; on by default. */
+	public boolean mapRadar() {
+		return mapRadar == null || mapRadar;
+	}
+
+	public void setMapRadar(boolean enabled) {
+		mapRadar = enabled;
+		save();
+	}
+
+	/** The radar shows other players, with their face. */
+	public boolean mapRadarPlayers() {
+		return mapRadarPlayers == null || mapRadarPlayers;
+	}
+
+	public void setMapRadarPlayers(boolean enabled) {
+		mapRadarPlayers = enabled;
+		save();
+	}
+
+	/** The radar shows players' names under their face. */
+	public boolean mapRadarNames() {
+		return mapRadarNames == null || mapRadarNames;
+	}
+
+	public void setMapRadarNames(boolean enabled) {
+		mapRadarNames = enabled;
+		save();
+	}
+
+	/** The radar shows hostile mobs. */
+	public boolean mapRadarHostile() {
+		return mapRadarHostile == null || mapRadarHostile;
+	}
+
+	public void setMapRadarHostile(boolean enabled) {
+		mapRadarHostile = enabled;
+		save();
+	}
+
+	/** The radar shows the other mobs: animals, villagers, golems and your pets. */
+	public boolean mapRadarFriendly() {
+		return mapRadarFriendly == null || mapRadarFriendly;
+	}
+
+	public void setMapRadarFriendly(boolean enabled) {
+		mapRadarFriendly = enabled;
+		save();
+	}
+
+	/** The radar shows items lying on the ground; off by default. */
+	public boolean mapRadarItems() {
+		return mapRadarItems != null && mapRadarItems;
+	}
+
+	public void setMapRadarItems(boolean enabled) {
+		mapRadarItems = enabled;
+		save();
+	}
+
 	/** The EMUtils world map (#215): on by default, unless Xaero's World Map is installed. Also keeps the map saved while the minimap is off. */
 	public boolean worldMap() {
 		return worldMap == null ? !XaeroMapIntegration.worldMapLoaded() : worldMap;
@@ -3851,6 +3917,12 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapWaypointsPinned = Boolean.TRUE;
 		mapCaves = Boolean.TRUE;
 		mapCeilingFull = Boolean.FALSE;
+		mapRadar = Boolean.TRUE;
+		mapRadarPlayers = Boolean.TRUE;
+		mapRadarNames = Boolean.TRUE;
+		mapRadarHostile = Boolean.TRUE;
+		mapRadarFriendly = Boolean.TRUE;
+		mapRadarItems = Boolean.FALSE;
 		if (hudCustomLayout != null) {
 			hudCustomLayout.remove(net.emutils.client.EMUtilsHudElements.MINIMAP.configKey());
 		}

@@ -156,6 +156,15 @@ final class MapRegionFile {
 		}
 	}
 
+	/**
+	 * A region file of a map, or null when there's none or its chunks don't fit the dimension: in one with a
+	 * ceiling, files of version 1 show the roof instead of the ground under it (#221).
+	 */
+	static @Nullable Contents readFor(Path file, Registry<Biome> biomes, boolean ceiling) throws IOException {
+		Contents contents = read(file, biomes);
+		return contents != null && ceiling && contents.version() < 2 ? null : contents;
+	}
+
 	static @Nullable Contents read(Path file, Registry<Biome> biomes) throws IOException {
 		if (!Files.isRegularFile(file)) {
 			return null;

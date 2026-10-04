@@ -45,6 +45,7 @@ import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
+import net.emutils.client.emutils.map.MapRadar;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
@@ -197,6 +198,9 @@ public final class UiSnapshotter {
 	private static int @Nullable [] caveReturn;
 	/** The world the map was in before step 402 started a new one. */
 	private static @Nullable String firstWorld;
+	/** The second world's id and its waypoint, in steps 402 and 403. */
+	private static @Nullable String secondWorldId;
+	private static @Nullable Waypoint secondWorldMark;
 	/** Whether step 399 saw the map left behind kept under the new one. */
 	private static boolean sawBackdrop;
 	/** The world map showing the Nether while the settings are open over it, in step 396. */
@@ -3714,6 +3718,7 @@ public final class UiSnapshotter {
 				if (stepTicks == 1) {
 					MapManager.saveForSnapshot();
 					String first = MapManager.worldNameForSnapshot();
+					String firstId = MapManager.worldIdForSnapshot();
 					String matched = MapManager.matchForSnapshot(client);
 					check(first != null && first.equals(matched), "the chunks around you are recognised as the world they were saved in (" + first + ", matched " + matched + ")");
 					MapManager.useWorldForSnapshot(null);
@@ -3721,12 +3726,14 @@ public final class UiSnapshotter {
 					check(MapManager.worldCountForSnapshot() == 2 && second != null && !second.equals(first), "a new world can be started by hand (" + second + ")");
 					firstWorld = first;
 					Waypoint mark = EMUtilsClient.waypoint().addCustom(client, null, "World two", client.player.getBlockX() + 6, client.player.getBlockY(), client.player.getBlockZ(), 0xFF55FFFF, false, "");
+					secondWorldId = MapManager.worldIdForSnapshot();
+					secondWorldMark = mark;
 					if (mark != null) {
-						mark.setWorld("w2");
+						mark.setWorld(secondWorldId);
 					}
 					String dimension = WaypointManager.dimensionId(client.level);
-					boolean inSecond = EMUtilsClient.waypoint().entriesIn(client, dimension, "w2", false).stream().anyMatch(entry -> entry.waypoint() == mark);
-					boolean inFirst = EMUtilsClient.waypoint().entriesIn(client, dimension, "w1", false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					boolean inSecond = EMUtilsClient.waypoint().entriesIn(client, dimension, secondWorldId, false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					boolean inFirst = EMUtilsClient.waypoint().entriesIn(client, dimension, firstId, false).stream().anyMatch(entry -> entry.waypoint() == mark);
 					check(inSecond && !inFirst, "a waypoint made in one world shows there and not in the other (" + inSecond + ", " + inFirst + ")");
 					WorldMapScreen.open(client, null);
 				}
@@ -3750,10 +3757,73 @@ public final class UiSnapshotter {
 					MapManager.useWorldForSnapshot(MapManager.matchForSnapshot(client));
 					MapManager.deleteWorldForSnapshot("World 2");
 					check(MapManager.worldCountForSnapshot() == 1, "a world can be deleted with its map (" + MapManager.worldCountForSnapshot() + " left)");
+					check(secondWorldMark != null && secondWorldMark.world() == null, "the deleted world's waypoints are kept, in no world, instead of hidden");
+					// A world made after a delete gets a new id, so it doesn't take over the deleted one's waypoints or files.
+					String first = MapManager.worldNameForSnapshot();
+					MapManager.useWorldForSnapshot(null);
+					String third = MapManager.worldIdForSnapshot();
+					check(third != null && !third.equals(secondWorldId), "a world made after one was deleted doesn't reuse its id (" + secondWorldId + ", then " + third + ")");
+					MapManager.useWorldForSnapshot(first);
+					MapManager.deleteWorldForSnapshot(MapManager.worldNameForSnapshot(third));
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
+			}
+			// The entity radar (#224): a hostile mob, a friendly one and an item show, each in its color; an
+			// invisible mob doesn't; one far overhead is faded. You show as a player, beside your arrow.
+			case 404 -> {
+				int x = client.player.getBlockX();
+				int y = client.player.getBlockY();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setWorldMap(true);
+					config.setMinimapRotate(false);
+					config.setMinimapZoom(MinimapZoom.FOUR);
+					config.setMapRadarItems(true);
+					// Named, as the client doesn't know entity tags, so the check can tell them from the mobs about.
+					String still = "{NoAI:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
+					String floating = "{NoAI:1b,NoGravity:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
+					command(client, "summon husk " + (x + 6) + " " + y + " " + (z - 4) + " " + still);
+					command(client, "summon cow " + (x - 5) + " " + y + " " + (z + 3) + " " + still);
+					command(client, "summon cow " + (x - 3) + " " + y + " " + (z - 6) + " {NoAI:1b,Silent:1b,CustomName:\"emradar\",Tags:[\"emradar\",\"emradar_hidden\"]}");
+					command(client, "effect give @e[tag=emradar_hidden] invisibility infinite 0 true");
+					// One above you, faded; one far above, left out.
+					command(client, "summon husk " + (x + 3) + " " + (y + 12) + " " + (z + 6) + " " + floating);
+					command(client, "summon husk " + (x - 6) + " " + (y + 40) + " " + (z - 2) + " " + floating);
+					command(client, "summon item " + (x + 2) + " " + y + " " + (z + 5) + " {Item:{id:\"minecraft:diamond\",count:1},PickupDelay:32767,Age:-32768,NoGravity:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}");
+					MapRadar.showSelfForSnapshot(true);
+				}
+				if (stepTicks == 40) {
+					String seen = MapRadar.kindsForSnapshot(client, "emradar");
+					check(sortedKinds(seen).equals("FRIENDLY, HOSTILE, HOSTILE, ITEM, PLAYER"), "the radar shows the mobs, the item and a player, but not the invisible mob or the one far above (" + seen + ")");
+				}
+				captureAfter(client, 45, "minimap, entity radar");
+			}
+			case 405 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					// In close, where the radar shows mobs and items too, around you.
+					for (int i = 0; i < 40 && map.zoomForSnapshot() < 4.0F; i++) {
+						map.scrollForSnapshot(1.0D);
+					}
+					map.centerForSnapshot(client.player.getX(), client.player.getZ());
+				}
+				if (stepTicks == 70) {
+					grab(client, "world map, entity radar");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
+				if (stepTicks == 95) {
+					MapRadar.showSelfForSnapshot(false);
+					command(client, "kill @e[tag=emradar]");
 					EMUtilsClient.config().resetMinimapDefaults();
 					EMUtilsClient.config().setMinimap(false);
 					EMUtilsClient.config().setWorldMap(false);
-					EMUtilsClient.waypoint().clearForCurrentWorld(client);
 					next();
 				}
 			}
@@ -4582,6 +4652,11 @@ public final class UiSnapshotter {
 	}
 
 	/** Runs a command as the player; the test world is created with commands allowed. */
+	/** The kinds in a comma separated list, sorted by name. */
+	private static String sortedKinds(String kinds) {
+		return String.join(", ", java.util.Arrays.stream(kinds.split(", ")).sorted().toList());
+	}
+
 	private static void command(Minecraft client, String command) {
 		if (client.getConnection() != null) {
 			client.getConnection().sendCommand(command);

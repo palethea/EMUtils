@@ -428,6 +428,42 @@ public final class WaypointManager {
         clear(client, WaypointMessage::clearedForWorld);
     }
 
+    /**
+     * Puts the waypoints of a dimension made since {@code sinceMillis} without a world into {@code worldId}
+     * (#219): they were made while the map was still working out which of the server's worlds you're in.
+     */
+    public void adoptIntoWorld(Minecraft client, String dimension, String worldId, long sinceMillis) {
+        String worldKey = worldKey(client);
+        boolean changed = false;
+        for (Waypoint waypoint : waypoints) {
+            if (waypoint.world() == null && waypoint.timestamp() >= sinceMillis && waypoint.matchesWorldKey(worldKey) && waypoint.matchesDimension(dimension)) {
+                waypoint.setWorld(worldId);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save();
+        }
+    }
+
+    /**
+     * The world {@code worldId} of a dimension was deleted (#219): its waypoints belong to no world any more,
+     * so they show in all of them instead of in none, and can be kept or deleted from there.
+     */
+    public void forgetWorld(Minecraft client, String dimension, String worldId) {
+        String worldKey = worldKey(client);
+        boolean changed = false;
+        for (Waypoint waypoint : waypoints) {
+            if (worldId.equals(waypoint.world()) && waypoint.matchesWorldKey(worldKey) && waypoint.matchesDimension(dimension)) {
+                waypoint.setWorld(null);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save();
+        }
+    }
+
     /** Turns the beacon on or off; returns false, with nothing changed, if the waypoints couldn't be written. */
     public boolean toggleBeacon(String id) {
         Waypoint waypoint = findById(id);

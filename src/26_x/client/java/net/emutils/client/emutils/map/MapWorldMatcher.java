@@ -38,7 +38,7 @@ final class MapWorldMatcher {
 	}
 
 	/** The id of the world you're in, or null when it's a new one. */
-	static @Nullable String match(List<Candidate> candidates, List<Sample> samples, int @Nullable [] spawn, int minY, int height, Registry<Biome> biomes) {
+	static @Nullable String match(List<Candidate> candidates, List<Sample> samples, int @Nullable [] spawn, int minY, int height, boolean ceiling, Registry<Biome> biomes) {
 		Candidate best = null;
 		double bestShare = 0.0D;
 		Candidate sameSpawn = null;
@@ -47,7 +47,7 @@ final class MapWorldMatcher {
 			if (candidate.minY() != null && candidate.minY() != minY || candidate.height() != null && candidate.height() != height) {
 				continue;
 			}
-			int[] counts = compare(candidate.folder(), samples, biomes);
+			int[] counts = compare(candidate.folder(), samples, ceiling, biomes);
 			if (counts[0] >= MIN_COMPARED) {
 				double share = counts[1] / (double) counts[0];
 				if (share >= SAME && share > bestShare) {
@@ -77,7 +77,7 @@ final class MapWorldMatcher {
 	}
 
 	/** How many columns a world's saved map has where the samples are, and how many of them are the same. */
-	private static int[] compare(Path folder, List<Sample> samples, Registry<Biome> biomes) {
+	private static int[] compare(Path folder, List<Sample> samples, boolean ceiling, Registry<Biome> biomes) {
 		Map<Long, MapChunk[]> regions = new HashMap<>();
 		int compared = 0;
 		int same = 0;
@@ -91,7 +91,7 @@ final class MapWorldMatcher {
 				if (regions.size() >= MAX_REGIONS) {
 					continue;
 				}
-				saved = read(MapRegionFile.path(folder, regionX, regionZ), biomes);
+				saved = read(MapRegionFile.path(folder, regionX, regionZ), ceiling, biomes);
 				regions.put(key, saved);
 			}
 			MapChunk old = saved == null ? null : saved[MapRegion.index(sample.chunkX(), sample.chunkZ())];
@@ -111,9 +111,10 @@ final class MapWorldMatcher {
 		return new int[] {compared, same};
 	}
 
-	private static MapChunk @Nullable [] read(Path file, Registry<Biome> biomes) {
+	/** A saved region's chunks; in a dimension with a ceiling, not from files that show its roof (#221). */
+	private static MapChunk @Nullable [] read(Path file, boolean ceiling, Registry<Biome> biomes) {
 		try {
-			MapRegionFile.Contents contents = MapRegionFile.read(file, biomes);
+			MapRegionFile.Contents contents = MapRegionFile.readFor(file, biomes, ceiling);
 			return contents == null ? null : contents.chunks();
 		} catch (IOException | RuntimeException exception) {
 			return null;

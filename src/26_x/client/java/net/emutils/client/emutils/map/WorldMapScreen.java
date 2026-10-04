@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
+import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.hub.HubIcons;
@@ -78,6 +79,13 @@ public final class WorldMapScreen extends Screen {
 	private static final float ZOOM_SPEED = 16.0F;
 	private static final int SPINNER_SIZE = 10;
 	private static final int CHEVRON_SIZE = 8;
+	/** A player's face on the radar (#224), and how much bigger mob dots are than on the minimap. */
+	private static final int RADAR_FACE = 10;
+	private static final float RADAR_DOT_SCALE = 1.2F;
+	/** Mobs and items show from this zoom in, in GUI pixels per block. */
+	private static final float RADAR_MOBS_ZOOM = 0.5F;
+	/** How close the cursor has to be to an entity, in GUI pixels, to name it. */
+	private static final float RADAR_HOVER = 6.0F;
 	private static final long LOADING_SHOW_AFTER_MILLIS = 250L;
 	private static final long LOADING_HIDE_AFTER_MILLIS = 600L;
 	private static final int ARROW = 0xFFFFFFFF;
@@ -117,6 +125,7 @@ public final class WorldMapScreen extends Screen {
 	private @Nullable MapTiles fading;
 	private @Nullable MapWorld fadingWorld;
 	private long fadingIdleSince = -1L;
+	private long fadingSince;
 	private double centerX;
 	private double centerZ;
 	private float zoom = lastZoom;
@@ -138,6 +147,8 @@ public final class WorldMapScreen extends Screen {
 	/** How many waypoints were drawn last frame, for UI snapshot checks. */
 	private int waypointsDrawn;
 	private @Nullable UiContextMenu menu;
+	/** The entity on the radar under the cursor (#224), named in a tooltip. */
+	private MapRadar.@Nullable Blip hoveredBlip;
 	private @Nullable WaypointSheet sheet;
 
 	private WorldMapScreen(@Nullable KeyMapping openKey, MinimapRenderer.@Nullable Frame from, MapWorld world, MapTiles tiles) {
@@ -356,6 +367,7 @@ public final class WorldMapScreen extends Screen {
 		fading = tiles;
 		fadingWorld = otherTiles != null ? world : null;
 		fadingIdleSince = -1L;
+		fadingSince = System.currentTimeMillis();
 		// No longer this screen's own map, so switching doesn't close it; it's closed when it stops fading.
 		otherTiles = null;
 	}
@@ -444,12 +456,14 @@ public final class WorldMapScreen extends Screen {
 			MapDraw.backdrop(context, backdrop, view, outline, level, tint);
 		}
 		if (fading != null) {
+			// Like the minimap's (#222): gone once the new map has had nothing to draw for a moment, or after a while.
 			long now = System.currentTimeMillis();
 			if (tiles.busy()) {
 				fadingIdleSince = -1L;
 			} else if (fadingIdleSince < 0L) {
 				fadingIdleSince = now;
-			} else if (now - fadingIdleSince >= 500L) {
+			}
+			if (fadingIdleSince >= 0L && now - fadingIdleSince >= MapManager.BACKDROP_IDLE_MILLIS || now - fadingSince >= MapManager.BACKDROP_MAX_MILLIS) {
 				releaseFading();
 			}
 		}
@@ -457,10 +471,16 @@ public final class WorldMapScreen extends Screen {
 
 		boolean interactive = menu == null && sheet == null && prompt == null && progress >= 1.0F;
 		hovered = null;
-		// The waypoints of the dimension shown, also when it isn't yours; your arrow only in your own.
-		drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
+		hoveredBlip = null;
 		MapWorld surface = MapManager.world();
-		if (ownDimension && player != null && (surface == null || surface.worldId == null || java.util.Objects.equals(surface.worldId, worldId))) {
+		boolean here = ownDimension && player != null && (surface == null || surface.worldId == null || java.util.Objects.equals(surface.worldId, worldId));
+		// The players and mobs around you (#224) where you are; the waypoints of the dimension shown, also
+		// when it isn't yours, over them; your arrow only in your own.
+		if (here) {
+			drawRadar(context, view, x, y, w, h, mouseX, mouseY, progress, delta, interactive && !overPanel(mouseX, mouseY));
+		}
+		drawWaypoints(context, view, mouseX, mouseY, progress, interactive && !overPanel(mouseX, mouseY));
+		if (here) {
 			double px = player.xo + (player.getX() - player.xo) * delta;
 			double pz = player.zo + (player.getZ() - player.zo) * delta;
 			drawArrow(context, view.screenX(px, pz), view.screenY(px, pz), (float) Math.toRadians(yaw + 180.0F) + angle);
@@ -477,6 +497,8 @@ public final class WorldMapScreen extends Screen {
 		drawLoading(context, theme, panels);
 		if (interactive && hovered != null && hovered.waypoint().label() != null) {
 			context.setTooltipForNextFrame(Component.literal(hovered.waypoint().label()), mouseX, mouseY);
+		} else if (interactive && hoveredBlip != null) {
+			context.setTooltipForNextFrame(hoveredBlip.name(), mouseX, mouseY);
 		}
 		if (menu != null) {
 			menu.render(context, theme, mouseX, mouseY, width, height);
@@ -591,6 +613,42 @@ public final class WorldMapScreen extends Screen {
 		}
 	}
 
+	/**
+	 * The players, mobs and items around you (#224) inside the map's frame; mobs and items only while zoomed in
+	 * far enough for them not to crowd around you.
+	 */
+	private void drawRadar(GuiGraphicsExtractor context, MapView view, float x, float y, float w, float h, int mouseX, int mouseY, float progress, float delta, boolean hover) {
+		LocalPlayer player = minecraft.player;
+		EMUtilsConfig config = EMUtilsClient.config();
+		if (player == null || !MapRadar.enabled(config)) {
+			return;
+		}
+		double reach = Math.max(w, h) / view.zoom();
+		double playerY = player.yo + (player.getY() - player.yo) * delta;
+		boolean mobs = view.zoom() >= RADAR_MOBS_ZOOM;
+		float nearest = RADAR_HOVER;
+		for (MapRadar.Blip blip : MapRadar.blips(minecraft, view.centerX(), view.centerZ(), reach, delta)) {
+			boolean face = blip.kind() == MapRadar.Kind.PLAYER;
+			if (!face && !mobs) {
+				continue;
+			}
+			float sx = view.screenX(blip.x(), blip.z());
+			float sy = view.screenY(blip.x(), blip.z());
+			if (sx < x || sy < y || sx > x + w || sy > y + h) {
+				continue;
+			}
+			context.pose().pushMatrix();
+			context.pose().translate(sx, sy);
+			MapRadar.draw(context, font, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarNames(), progress);
+			context.pose().popMatrix();
+			float distance = Math.max(Math.abs(mouseX - sx), Math.abs(mouseY - sy));
+			if (hover && distance <= nearest) {
+				nearest = distance;
+				hoveredBlip = blip;
+			}
+		}
+	}
+
 	private static void drawArrow(GuiGraphicsExtractor context, float x, float y, float angle) {
 		context.pose().pushMatrix();
 		context.pose().translate(x, y);
@@ -684,9 +742,6 @@ public final class WorldMapScreen extends Screen {
 		boolean worlds = entry != null && (minecraft.getSingleplayerServer() == null || catalog.worlds().size() > 1);
 		Component worldLabel = worlds ? Component.literal(entry.name()) : null;
 		Component layerLabel = Component.literal(layerName(cave));
-		if (worldLabel == null && layerLabel == null) {
-			return;
-		}
 		int y = MARGIN + PANEL_HEIGHT + 4;
 		int chipY = y + (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
 		int pad = (PANEL_HEIGHT - CHIP_HEIGHT) / 2;
@@ -695,10 +750,7 @@ public final class WorldMapScreen extends Screen {
 		if (worldLabel != null) {
 			panelWidth += UiText.width(font, worldLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + 2;
 		}
-		if (layerLabel != null) {
-			panelWidth += UiText.width(font, layerLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4;
-		}
-		panelWidth += pad - (layerLabel == null ? 2 : 0);
+		panelWidth += UiText.width(font, layerLabel, UiText.Size.SMALL) + 16 + CHEVRON_SIZE + 4 + pad;
 		context.pose().pushMatrix();
 		context.pose().translate(0.0F, -slide);
 		drawPanel(context, theme, MARGIN, y, panelWidth, panelColor);
@@ -706,9 +758,7 @@ public final class WorldMapScreen extends Screen {
 			worldChip = drawChip(context, theme, worldLabel, x, chipY, mouseX, mouseY, interactive);
 			x += worldChip[2] + 2;
 		}
-		if (layerLabel != null) {
-			layerChip = drawChip(context, theme, layerLabel, x, chipY, mouseX, mouseY, interactive);
-		}
+		layerChip = drawChip(context, theme, layerLabel, x, chipY, mouseX, mouseY, interactive);
 		context.pose().popMatrix();
 		panels.add(new int[] {MARGIN, y, panelWidth, PANEL_HEIGHT});
 	}
@@ -815,7 +865,7 @@ public final class WorldMapScreen extends Screen {
 			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_DELETE_WORLD), true, true, () -> menu = new UiContextMenu(font, anim, x, y, List.of(
 				new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_CONFIRM_DELETE_WORLD, shownEntry.name()), true, true, () -> {
 					closeOther();
-					catalog.delete(shownEntry.id());
+					MapManager.deleteWorld(catalog, shownEntry.id());
 					showLive();
 				})
 			))));
@@ -1114,11 +1164,6 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
 	public void switchDimensionForSnapshot(String id) {
 		switchDimension(id);
-	}
-
-	/** For UI snapshot checks: shows a cave layer, or the surface for {@link Integer#MIN_VALUE}, as the layer menu does. */
-	public void showLayerForSnapshot(int layer) {
-		show(dimension, worldId, layer);
 	}
 
 	/** For UI snapshot checks: opens the world chip's menu, or the layer chip's. */

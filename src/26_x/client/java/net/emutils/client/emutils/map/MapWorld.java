@@ -129,11 +129,12 @@ public final class MapWorld {
 		}
 	}
 
-	/** Reads a region's file under what was sampled before the map had a folder. IO thread. */
+	/**
+	 * Reads a region's file under what was sampled before the map had a folder. IO thread. Also once the map
+	 * is closed: closing saves the region after this, and without the file read in that save would keep only
+	 * what was sampled since you arrived.
+	 */
 	private void merge(MapRegion region) {
-		if (closed) {
-			return;
-		}
 		try {
 			MapRegionFile.Contents contents = read(region);
 			if (contents != null && contents.chunks() != null) {
@@ -165,8 +166,7 @@ public final class MapWorld {
 	 * drew a ceiling's roof instead of the ground under it (#221).
 	 */
 	private MapRegionFile.@Nullable Contents read(MapRegion region) throws IOException {
-		MapRegionFile.Contents contents = MapRegionFile.read(MapRegionFile.path(folder, region.regionX, region.regionZ), biomes);
-		return contents != null && ceiling && contents.version() < 2 ? null : contents;
+		return MapRegionFile.readFor(MapRegionFile.path(folder, region.regionX, region.regionZ), biomes, ceiling);
 	}
 
 	public ClientLevel level() {

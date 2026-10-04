@@ -95,8 +95,8 @@ public final class MapManager {
 	private static long backdropSince;
 	private static long backdropIdleSince = -1L;
 	/** The backdrop goes once the map shown has had nothing left to draw for this long, or after the longer time at the latest. */
-	private static final long BACKDROP_IDLE_MILLIS = 500L;
-	private static final long BACKDROP_MAX_MILLIS = 15_000L;
+	static final long BACKDROP_IDLE_MILLIS = 500L;
+	static final long BACKDROP_MAX_MILLIS = 15_000L;
 	private static @Nullable ClientLevel loadedLevel;
 	private static @Nullable MapWorld world;
 	private static @Nullable MapWorld cave;
@@ -110,6 +110,8 @@ public final class MapManager {
 	private static int pendingTicks;
 	/** The server's world id when the level opened: the last world's, until the server sends the new one. */
 	private static @Nullable String idAtOpen;
+	/** When the level opened; waypoints made since, before the world was known, are put in it once it is. */
+	private static long openedAt;
 	/** A world id that didn't change is trusted after this many ticks, as the world may really have the same one. */
 	private static final int SAME_ID_TICKS = 40;
 	private static @Nullable Match match;
@@ -293,6 +295,7 @@ public final class MapManager {
 		pendingSamples = 0;
 		pendingTicks = 0;
 		match = null;
+		openedAt = System.currentTimeMillis();
 		Path server = serverFolder(client);
 		String dimension = WaypointManager.dimensionId(level);
 		worlds = server == null ? null : catalog(dimension);
@@ -345,8 +348,9 @@ public final class MapManager {
 			List<MapWorldMatcher.Sample> samples = surface.samples();
 			int minY = level.getMinY();
 			int height = level.getHeight();
+			boolean ceiling = level.dimensionType().hasCeiling();
 			MapWorld.runIo(() -> {
-				started.id = MapWorldMatcher.match(candidates, samples, started.spawn, minY, height, surface.biomes());
+				started.id = MapWorldMatcher.match(candidates, samples, started.spawn, minY, height, ceiling, surface.biomes());
 				started.done = true;
 			});
 			return;
@@ -372,6 +376,7 @@ public final class MapManager {
 		if (cave != null && cave.pending()) {
 			cave.attach(worlds.caveFolder(entry.id(), cave.cave), entry.id());
 		}
+		EMUtilsClient.waypoint().adoptIntoWorld(Minecraft.getInstance(), surface.dimension(), entry.id(), openedAt);
 		EMUtilsClient.LOGGER.info("EMUtils map: {} in {} is {}", serverFolder == null ? "?" : serverFolder.getFileName(), worlds.dimension(), entry.name());
 	}
 
@@ -433,6 +438,12 @@ public final class MapManager {
 				int x = player.getBlockX() + dx;
 				int z = player.getBlockZ() + dz;
 				int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+				if (top <= eye) {
+					// Nothing over you by the heightmap, or no heightmap, as some servers send none (#220): the
+					// blocks are looked through up to the highest section that has any.
+					int section = level.getChunk(x >> 4, z >> 4).getHighestFilledSectionIndex();
+					top = section < 0 ? top : level.getMinY() + section * 16 + 15;
+				}
 				for (int y = eye + 1; y <= top; y++) {
 					net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos.set(x, y, z));
 					MapBlockLook look = MapBlockLooks.ensure(state, Block.getId(state));
@@ -666,6 +677,15 @@ public final class MapManager {
 	}
 
 	/**
+	 * Deletes one of a dimension's worlds and its map (#219). Its waypoints are kept, in no world, so they
+	 * show in all of them rather than in none.
+	 */
+	static void deleteWorld(MapWorlds catalog, String id) {
+		catalog.delete(id);
+		EMUtilsClient.waypoint().forgetWorld(Minecraft.getInstance(), catalog.dimension(), id);
+	}
+
+	/**
 	 * The folder with the maps of the server or save you're on, or null when there's none. Servers are told
 	 * apart like waypoints do; singleplayer worlds by their save folder instead of their name, so two worlds
 	 * called the same don't draw over each other's map. Looked up once per server or save.
@@ -675,6 +695,7 @@ public final class MapManager {
 		if (folder == null ? serverFolder != null : !folder.equals(serverFolder)) {
 			serverFolder = folder;
 			CATALOGS.clear();
+			LAST_LAYER.clear();
 		}
 		return serverFolder;
 	}
@@ -885,6 +906,17 @@ public final class MapManager {
 		return entry == null ? null : entry.name();
 	}
 
+	/** For UI snapshot checks: the id of the world the map took this for, or null. */
+	public static @Nullable String worldIdForSnapshot() {
+		return world == null ? null : world.worldId;
+	}
+
+	/** For UI snapshot checks: the name of the world with that id, or null. */
+	public static @Nullable String worldNameForSnapshot(@Nullable String id) {
+		MapWorlds.Entry entry = worlds == null ? null : worlds.get(id);
+		return entry == null ? null : entry.name();
+	}
+
 	/** For UI snapshot checks: how many worlds are kept for the dimension you're in. */
 	public static int worldCountForSnapshot() {
 		return worlds == null ? 0 : worlds.worlds().size();
@@ -898,7 +930,7 @@ public final class MapManager {
 		if (world == null || worlds == null || client.level == null) {
 			return null;
 		}
-		String id = MapWorldMatcher.match(candidates(worlds), world.samples(), spawn(client.level), client.level.getMinY(), client.level.getHeight(), world.biomes());
+		String id = MapWorldMatcher.match(candidates(worlds), world.samples(), spawn(client.level), client.level.getMinY(), client.level.getHeight(), client.level.dimensionType().hasCeiling(), world.biomes());
 		MapWorlds.Entry entry = worlds.get(id);
 		return entry == null ? null : entry.name();
 	}
@@ -918,7 +950,7 @@ public final class MapManager {
 		}
 		for (MapWorlds.Entry entry : worlds.worlds()) {
 			if (entry.name().equals(name)) {
-				worlds.delete(entry.id());
+				deleteWorld(worlds, entry.id());
 			}
 		}
 	}

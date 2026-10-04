@@ -514,6 +514,14 @@ public final class HubSettingsRegistry {
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_COORDINATES, config::minimapCoordinates, config::setMinimapCoordinates));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS, config::minimapWaypoints, config::setMinimapWaypoints));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MINIMAP_WAYPOINTS_PINNED, config::minimapWaypointsPinned, config::setMinimapWaypointsPinned));
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_MINIMAP_SECTION_RADAR));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR, config::mapRadar, config::setMapRadar));
+		rows.add(divider());
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_PLAYERS, config::mapRadarPlayers, config::setMapRadarPlayers));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_NAMES, config::mapRadarNames, config::setMapRadarNames));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_HOSTILE, config::mapRadarHostile, config::setMapRadarHostile));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_FRIENDLY, config::mapRadarFriendly, config::setMapRadarFriendly));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_RADAR_ITEMS, config::mapRadarItems, config::setMapRadarItems));
 		return rows;
 	}
 

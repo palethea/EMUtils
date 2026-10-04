@@ -49,6 +49,11 @@ final class MapWorlds {
 
 	private static final class Data {
 		List<Entry> worlds = new ArrayList<>();
+		/**
+		 * The number the next new world gets. Numbers aren't used twice, so a world made after one was deleted
+		 * doesn't take over its waypoints, or files of its map still being written.
+		 */
+		int next = 1;
 	}
 
 	private final Path folder;
@@ -121,6 +126,15 @@ final class MapWorlds {
 		return null;
 	}
 
+	private boolean named(String name) {
+		for (Entry entry : data.worlds) {
+			if (name.equals(entry.name)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** The world the server gave this id, or null. */
 	@Nullable Entry byServerId(String serverId) {
 		for (Entry entry : data.worlds) {
@@ -150,13 +164,18 @@ final class MapWorlds {
 	}
 
 	private Entry newEntry() {
-		int number = 1;
-		while (get("w" + number) != null) {
+		int number = Math.max(1, data.next);
+		while (get("w" + number) != null || Files.exists(folder("w" + number))) {
 			number++;
 		}
+		data.next = number + 1;
 		Entry entry = new Entry();
 		entry.id = "w" + number;
-		entry.name = "World " + number;
+		int shown = data.worlds.size() + 1;
+		while (named("World " + shown)) {
+			shown++;
+		}
+		entry.name = "World " + shown;
 		data.worlds.add(entry);
 		return entry;
 	}

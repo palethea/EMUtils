@@ -78,10 +78,12 @@ final class MapSampler {
 				int from = underground ? start : highest;
 				int lowest = underground ? Math.max(minY, from - CAVE_DEPTH) : minY;
 				int skipTo = startY == SURFACE ? lowest : Math.max(lowest, from - CAVE_SKIP);
-				if (underground) {
-					while (from >= skipTo && MapBlockLooks.ensure(columns.state(localX, from, localZ), Block.getId(columns.state(localX, from, localZ))).kind() != MapBlockLook.Kind.INVISIBLE) {
-						from--;
+				while (underground && from >= skipTo) {
+					BlockState state = columns.state(localX, from, localZ);
+					if (MapBlockLooks.ensure(state, Block.getId(state)).kind() == MapBlockLook.Kind.INVISIBLE) {
+						break;
 					}
+					from--;
 				}
 				// No open space near enough: solid rock, which the map shows as nothing.
 				boolean open = !underground || from >= skipTo;
@@ -92,11 +94,12 @@ final class MapSampler {
 					}
 					BlockState state = columns.state(localX, y, localZ);
 					int id = Block.getId(state);
-					MapBlockLook.Kind kind = MapBlockLooks.ensure(state, id).kind();
+					MapBlockLook look = MapBlockLooks.ensure(state, id);
+					MapBlockLook.Kind kind = look.kind();
 					if (kind == MapBlockLook.Kind.INVISIBLE) {
 						continue;
 					}
-					MapBlockLook.Part part = MapBlockLooks.ensure(state, id).part();
+					MapBlockLook.Part part = look.part();
 					if (topId == MapChunk.NONE) {
 						topId = id;
 						columnTopY = y;

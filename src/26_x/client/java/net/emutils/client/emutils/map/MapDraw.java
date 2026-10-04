@@ -49,11 +49,6 @@ public final class MapDraw {
 	}
 
 	/**
-	 * Draws the tiles that fall inside a convex outline. Missing tiles are asked for. Until one is ready and
-	 * faded in, the nearest coarser tile that is drawn fills in under it, and the finer ones already drawn go
-	 * over that, as they are after zooming out, so the map never shows holes while it loads.
-	 */
-	/**
 	 * Draws the tiles of the map you just left (#222) that are already drawn, the nearest coarser one where a
 	 * tile isn't, without asking for any: what stays on screen under the new map while it draws.
 	 */
@@ -94,24 +89,18 @@ public final class MapDraw {
 		return new int[] {(int) Math.floor(minX / blocks), (int) Math.floor(maxX / blocks), (int) Math.floor(minZ / blocks), (int) Math.floor(maxZ / blocks)};
 	}
 
+	/**
+	 * Draws the tiles that fall inside a convex outline. Missing tiles are asked for. Until one is ready and
+	 * faded in, the nearest coarser tile that is drawn fills in under it, and the finer ones already drawn go
+	 * over that, as they are after zooming out, so the map never shows holes while it loads.
+	 */
 	public static void tiles(GuiGraphicsExtractor context, MapWorld world, MapTiles tiles, MapView view, float[] outline, int level, int color) {
 		int blocks = MapTileBaker.blocksPerTile(level);
-		double minX = Double.MAX_VALUE;
-		double maxX = -Double.MAX_VALUE;
-		double minZ = Double.MAX_VALUE;
-		double maxZ = -Double.MAX_VALUE;
-		for (int i = 0; i < outline.length; i += 2) {
-			double x = view.worldX(outline[i], outline[i + 1]);
-			double z = view.worldZ(outline[i], outline[i + 1]);
-			minX = Math.min(minX, x);
-			maxX = Math.max(maxX, x);
-			minZ = Math.min(minZ, z);
-			maxZ = Math.max(maxZ, z);
-		}
-		int minTileX = (int) Math.floor(minX / blocks);
-		int maxTileX = (int) Math.floor(maxX / blocks);
-		int minTileZ = (int) Math.floor(minZ / blocks);
-		int maxTileZ = (int) Math.floor(maxZ / blocks);
+		int[] range = range(view, outline, blocks);
+		int minTileX = range[0];
+		int maxTileX = range[1];
+		int minTileZ = range[2];
+		int maxTileZ = range[3];
 		int centerTileX = (int) Math.floor(view.centerX() / blocks);
 		int centerTileZ = (int) Math.floor(view.centerZ() / blocks);
 

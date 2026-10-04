@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import net.emutils.client.emutils.compat.XaeroMapIntegration;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ServerboundPlayChannelEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -66,6 +67,12 @@ public final class MapServerWorlds {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			current = null;
 			ask(worldIdTaken);
+		});
+		// The server may say it takes the request only after you joined; it's asked as soon as it does.
+		ServerboundPlayChannelEvents.REGISTER.register((handler, sender, client, channels) -> {
+			if (channels.contains(WORLD_ID.id())) {
+				ask(worldIdTaken);
+			}
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> current = null);
 	}

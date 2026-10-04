@@ -960,6 +960,13 @@ public final class EMUtilsTexts {
     public static final String OPTION_MINIMAP_WAYPOINTS_PINNED = "emutils.option.minimap_waypoints_pinned";
     public static final String OPTION_MAP_CAVES = "emutils.option.map_caves";
     public static final String OPTION_MAP_CEILING_FULL = "emutils.option.map_ceiling_full";
+    public static final String OPTION_MAP_RADAR = "emutils.option.map_radar";
+    public static final String OPTION_MAP_RADAR_PLAYERS = "emutils.option.map_radar_players";
+    public static final String OPTION_MAP_RADAR_NAMES = "emutils.option.map_radar_names";
+    public static final String OPTION_MAP_RADAR_HOSTILE = "emutils.option.map_radar_hostile";
+    public static final String OPTION_MAP_RADAR_FRIENDLY = "emutils.option.map_radar_friendly";
+    public static final String OPTION_MAP_RADAR_ITEMS = "emutils.option.map_radar_items";
+    public static final String UI_MINIMAP_SECTION_RADAR = "emutils.ui.minimap.section.radar";
     public static final String MAP_CAVES_FORCED = "emutils.map.caves_forced";
     public static final String MAP_CAVES_AUTO = "emutils.map.caves_auto";
     public static final String UI_MINIMAP_SECTION_MAP = "emutils.ui.minimap.section.map";
