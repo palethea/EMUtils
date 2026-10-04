@@ -28,8 +28,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The minimap HUD element (#212): the map around you, square or round, turning with you or north-up, with
- * your arrow in the middle, a north marker, your waypoints (pinned to the edge when past it) and your
- * coordinates under it.
+ * your arrow in the middle, a north marker, the players and mobs around you (#224), your waypoints (pinned to
+ * the edge when past it) and your coordinates under it.
  *
  * <p>The tiles are drawn by {@link MapDraw}, which the world map shares.
  */
@@ -167,14 +167,21 @@ public final class MinimapRenderer {
 			context.fill(-1, -1, MAP_SIZE + 1, MAP_SIZE + 1, fade(FRAME, opacity));
 		}
 		MapDraw.fill(context, outline, fade(BACKGROUND, opacity));
-		MapWorld world = MapManager.world();
+		MapWorld world = MapManager.shownWorld();
 		if (world != null) {
-			MapManager.tiles().beginFrame();
+			MapManager.shownTiles().beginFrame();
 			float screenPixelsPerBlock = zoom * layoutScale * (float) client.getWindow().getGuiScale();
-			MapDraw.tiles(context, world, MapManager.tiles(), view, outline, MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1), fade(0xFFFFFFFF, opacity));
+			int level = MapDraw.level(screenPixelsPerBlock, MapTileBaker.COLUMN_LEVELS - 1);
+			// The layer you just left stays under the new one while it draws, so the map doesn't flash empty.
+			MapTiles backdrop = MapManager.backdropTiles();
+			if (backdrop != null) {
+				MapDraw.backdrop(context, backdrop, view, outline, level, fade(0xFFFFFFFF, opacity));
+			}
+			MapDraw.tiles(context, world, MapManager.shownTiles(), view, outline, level, fade(0xFFFFFFFF, opacity));
 		}
 		drawFrame(context, shape, opacity);
 		// Markers are placed exactly where the map puts them, not rounded to pixels, so they move with it.
+		drawRadar(context, client, view, shape, opacity, partialTick);
 		drawNorth(context, client.font, view, shape, opacity);
 		if (config.minimapWaypoints()) {
 			drawWaypoints(context, client, view, shape, opacity, config.minimapWaypointsPinned());
@@ -265,6 +272,34 @@ public final class MinimapRenderer {
 			return Math.abs(dx) <= reach && Math.abs(dy) <= reach;
 		}
 		return dx * dx + dy * dy <= reach * reach;
+	}
+
+	/** The players, mobs and items around you (#224), where they are on the map. */
+	private static void drawRadar(GuiGraphicsExtractor context, Minecraft client, MapView view, MinimapShape shape, float opacity, float partialTick) {
+		LocalPlayer player = client.player;
+		EMUtilsConfig config = EMUtilsClient.config();
+		if (player == null || !MapRadar.onMinimap(config)) {
+			return;
+		}
+		int size = config.mapRadarIconSize();
+		float half = view.screenCenterX();
+		// The map's corners are this far away when it turns.
+		double reach = half / view.zoom() * Math.sqrt(2.0D) + 1.0D;
+		double playerY = player.yo + (player.getY() - player.yo) * partialTick;
+		java.util.List<MapRadar.Placed> placed = new java.util.ArrayList<>();
+		for (MapRadar.Blip blip : MapRadar.blips(client, view.centerX(), view.centerZ(), reach, partialTick)) {
+			float x = view.screenX(blip.x(), blip.z());
+			float y = view.screenY(blip.x(), blip.z());
+			if (!inside(shape, half, x, y, size / 2.0F + 1.0F)) {
+				continue;
+			}
+			context.pose().pushMatrix();
+			context.pose().translate(x, y);
+			MapRadar.draw(context, config, blip, playerY, size, opacity);
+			context.pose().popMatrix();
+			placed.add(new MapRadar.Placed(blip, x, y));
+		}
+		MapRadar.drawNames(context, client.font, config, placed, half, half, size, playerY, opacity);
 	}
 
 	private static void drawWaypoints(GuiGraphicsExtractor context, Minecraft client, MapView view, MinimapShape shape, float opacity, boolean pinned) {

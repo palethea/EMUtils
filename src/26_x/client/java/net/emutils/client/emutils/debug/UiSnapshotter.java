@@ -45,6 +45,9 @@ import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
+import net.emutils.client.emutils.map.MapExport;
+import net.emutils.client.emutils.map.MapRadar;
+import net.emutils.client.emutils.map.RadarGroup;
 import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
@@ -193,6 +196,18 @@ public final class UiSnapshotter {
 	/** {@code -Demutils.uiSnapshotTo=N} (Gradle property {@code emutilsUiSnapshotTo}) stops after step N. */
 	private static final int LAST_STEP = Integer.getInteger("emutils.uiSnapshotTo", Integer.MAX_VALUE);
 	private static int stepTicks;
+	/** Where you stood before going down into the cave of steps 399 to 401. */
+	private static int @Nullable [] caveReturn;
+	/** The world the map was in before step 402 started a new one. */
+	private static @Nullable String firstWorld;
+	/** The temporary waypoint of step 407, and where step 408 teleported from. */
+	private static @Nullable Waypoint temporaryMark;
+	private static int @Nullable [] teleportFrom;
+	/** The second world's id and its waypoint, in steps 402 and 403. */
+	private static @Nullable String secondWorldId;
+	private static @Nullable Waypoint secondWorldMark;
+	/** Whether step 399 saw the map left behind kept under the new one. */
+	private static boolean sawBackdrop;
 	/** The world map showing the Nether while the settings are open over it, in step 396. */
 	private static @Nullable WorldMapScreen netherMap;
 	/** The screenshots the gallery showed the first time it opened. */
@@ -3640,6 +3655,343 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Phase 3 of the maps (#219 to #222). Sampling under a roof and in cave layers, on made-up columns.
+			case 398 -> {
+				String problem = MapManager.samplingRulesForSnapshot();
+				check(problem.isEmpty(), "under the Nether's roof the ground shows, and cave layers show the caves at their height" + (problem.isEmpty() ? "" : " (" + problem + ")"));
+				String ids = net.emutils.client.emutils.map.MapServerWorlds.checkForSnapshot();
+				check(ids.isEmpty(), "the world ids servers send map mods are read, Xaero's and the shared one" + (ids.isEmpty() ? "" : " (" + ids + ")"));
+				next();
+			}
+			// The cave view (#222): in a sealed room dug deep underground, the minimap shows the cave layer.
+			case 399 -> {
+				int x = client.player.getBlockX();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setMinimapRotate(false);
+					config.setMinimapZoom(MinimapZoom.TWO);
+					config.setWorldMap(true);
+					config.setMapCaves(true);
+					caveReturn = new int[] {x, client.player.getBlockY(), z};
+					// A sealed stone room from -51 to -32, so nothing of the random terrain reaches into it.
+					command(client, "fill " + (x - 8) + " -51 " + (z - 8) + " " + (x + 8) + " -32 " + (z + 8) + " stone hollow");
+					command(client, "fill " + (x + 3) + " -50 " + (z - 4) + " " + (x + 6) + " -50 " + (z + 4) + " stone");
+					command(client, "fill " + (x + 4) + " -50 " + (z - 3) + " " + (x + 5) + " -50 " + (z + 3) + " minecraft:water");
+				}
+				if (stepTicks == 5) {
+					command(client, "tp @s " + x + " -50 " + z);
+					sawBackdrop = false;
+				}
+				if (stepTicks > 5 && MapManager.backdropTiles() != null) {
+					sawBackdrop = true;
+				}
+				if (stepTicks == 110) {
+					Integer layer = MapManager.caveLayerForSnapshot();
+					check(layer != null && layer == Math.floorDiv(-50 + 2, 16), "underground, the minimap shows the cave layer at your height (" + layer + ")");
+					String column = MapManager.caveColumnForSnapshot(client);
+					check(column.equals("floor at -51"), "the cave layer found the room's floor under you (" + column + ")");
+					check(sawBackdrop, "going underground, the surface stays under the cave layer while it draws, so the map doesn't flash empty");
+				}
+				captureAfter(client, 111, "minimap, cave view");
+			}
+			case 400 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openChipMenuForSnapshot(false);
+				}
+				captureAfter(client, 50, "world map, cave layer and its menu");
+			}
+			case 401 -> {
+				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.onClose();
+				}
+				if (stepTicks == 25 && caveReturn != null) {
+					command(client, "tp @s " + caveReturn[0] + " " + caveReturn[1] + " " + caveReturn[2]);
+				}
+				if (stepTicks == 90) {
+					check(MapManager.caveLayerForSnapshot() == null, "back under the sky, the minimap shows the surface again");
+					next();
+				}
+			}
+			// Several worlds (#219): the chunks around you are recognised as the world saved before, a new world
+			// can be started by hand, and waypoints made in one world don't show in another.
+			case 402 -> {
+				if (stepTicks == 1) {
+					MapManager.saveForSnapshot();
+					String first = MapManager.worldNameForSnapshot();
+					String firstId = MapManager.worldIdForSnapshot();
+					String matched = MapManager.matchForSnapshot(client);
+					check(first != null && first.equals(matched), "the chunks around you are recognised as the world they were saved in (" + first + ", matched " + matched + ")");
+					MapManager.useWorldForSnapshot(null);
+					String second = MapManager.worldNameForSnapshot();
+					check(MapManager.worldCountForSnapshot() == 2 && second != null && !second.equals(first), "a new world can be started by hand (" + second + ")");
+					firstWorld = first;
+					Waypoint mark = EMUtilsClient.waypoint().addCustom(client, null, "World two", client.player.getBlockX() + 6, client.player.getBlockY(), client.player.getBlockZ(), 0xFF55FFFF, false, "");
+					secondWorldId = MapManager.worldIdForSnapshot();
+					secondWorldMark = mark;
+					if (mark != null) {
+						mark.setWorld(secondWorldId);
+					}
+					String dimension = WaypointManager.dimensionId(client.level);
+					boolean inSecond = EMUtilsClient.waypoint().entriesIn(client, dimension, secondWorldId, false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					boolean inFirst = EMUtilsClient.waypoint().entriesIn(client, dimension, firstId, false).stream().anyMatch(entry -> entry.waypoint() == mark);
+					check(inSecond && !inFirst, "a waypoint made in one world shows there and not in the other (" + inSecond + ", " + inFirst + ")");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 30) {
+					// Once the new world has sampled the chunks around you, they still match the first world's saved map.
+					String again = MapManager.matchForSnapshot(client);
+					check(firstWorld != null && firstWorld.equals(again), "the chunks around you aren't taken for the new world but for the one whose terrain matches (" + again + ")");
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openChipMenuForSnapshot(true);
+				}
+				captureAfter(client, 50, "world map, world menu");
+			}
+			case 403 -> {
+				if (stepTicks == 1) {
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
+				if (stepTicks == 25) {
+					MapManager.useWorldForSnapshot(MapManager.matchForSnapshot(client));
+					MapManager.deleteWorldForSnapshot("World 2");
+					check(MapManager.worldCountForSnapshot() == 1, "a world can be deleted with its map (" + MapManager.worldCountForSnapshot() + " left)");
+					check(secondWorldMark != null && secondWorldMark.world() == null, "the deleted world's waypoints are kept, in no world, instead of hidden");
+					// A world made after a delete gets a new id, so it doesn't take over the deleted one's waypoints or files.
+					String first = MapManager.worldNameForSnapshot();
+					MapManager.useWorldForSnapshot(null);
+					String third = MapManager.worldIdForSnapshot();
+					check(third != null && !third.equals(secondWorldId), "a world made after one was deleted doesn't reuse its id (" + secondWorldId + ", then " + third + ")");
+					MapManager.useWorldForSnapshot(first);
+					MapManager.deleteWorldForSnapshot(MapManager.worldNameForSnapshot(third));
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
+			}
+			// The entity radar (#224): a hostile mob, a friendly one and an item show, each in its color; an
+			// invisible mob doesn't; one far overhead is faded. You show as a player, beside your arrow.
+			case 404 -> {
+				int x = client.player.getBlockX();
+				int y = client.player.getBlockY();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					EMUtilsConfig config = EMUtilsClient.config();
+					config.setMinimap(true);
+					config.setWorldMap(true);
+					config.setMinimapRotate(false);
+					config.setMinimapZoom(MinimapZoom.FOUR);
+					config.setMapRadarShows(RadarGroup.ITEMS, true);
+					// Named, as the client doesn't know entity tags, so the check can tell them from the mobs about.
+					String still = "{NoAI:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
+					String floating = "{NoAI:1b,NoGravity:1b,Silent:1b,PersistenceRequired:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}";
+					command(client, "summon husk " + (x + 6) + " " + y + " " + (z - 4) + " " + still);
+					command(client, "summon cow " + (x - 5) + " " + y + " " + (z + 3) + " " + still);
+					command(client, "summon cow " + (x - 3) + " " + y + " " + (z - 6) + " {NoAI:1b,Silent:1b,CustomName:\"emradar\",Tags:[\"emradar\",\"emradar_hidden\"]}");
+					command(client, "effect give @e[tag=emradar_hidden] invisibility infinite 0 true");
+					// One above you, faded; one far above, left out.
+					command(client, "summon husk " + (x + 3) + " " + (y + 12) + " " + (z + 6) + " " + floating);
+					command(client, "summon husk " + (x - 6) + " " + (y + 40) + " " + (z - 2) + " " + floating);
+					command(client, "summon item " + (x + 2) + " " + y + " " + (z + 5) + " {Item:{id:\"minecraft:diamond\",count:1},PickupDelay:32767,Age:-32768,NoGravity:1b,CustomName:\"emradar\",Tags:[\"emradar\"]}");
+					MapRadar.showSelfForSnapshot(true);
+					// A lineup of mobs in a ring around you, to see their faces on the radar.
+					String[] lineup = {"pig", "sheep", "villager", "creeper", "spider", "zombie", "slime", "chicken", "skeleton", "wolf", "horse", "enderman"};
+					for (int i = 0; i < lineup.length; i++) {
+						double turn = Math.PI * 2.0D * i / lineup.length;
+						int mx = x + (int) Math.round(Math.cos(turn) * 10.0D);
+						int mz = z + (int) Math.round(Math.sin(turn) * 10.0D);
+						command(client, "summon " + lineup[i] + " " + mx + " " + y + " " + mz + " {NoAI:1b,Silent:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:\"emradar_faces\",Tags:[\"emradar\"]}");
+					}
+				}
+				if (stepTicks == 40) {
+					String npcRule = MapRadar.npcRuleForSnapshot();
+					check(npcRule.isEmpty(), "server NPCs are told from players by their id, also while they're still in the tab list" + (npcRule.isEmpty() ? "" : " (" + npcRule + ")"));
+					String overlap = MapRadar.nameOverlapForSnapshot();
+					check(overlap.isEmpty(), "players' names that would overlap one nearer the middle are left out" + (overlap.isEmpty() ? "" : " (" + overlap + ")"));
+					String faceless = MapRadar.facelessForSnapshot(client, "emradar_faces");
+					check(faceless.isEmpty(), "every mob of the lineup shows its face on the radar (" + faceless + ")");
+					// Hiding a group in the settings takes it off the radar.
+					EMUtilsClient.config().setMapRadarShows(RadarGroup.HOSTILE, false);
+					String withoutHostile = MapRadar.kindsForSnapshot(client, "emradar");
+					EMUtilsClient.config().setMapRadarShows(RadarGroup.HOSTILE, true);
+					check(!withoutHostile.contains("HOSTILE") && withoutHostile.contains("ANIMALS"), "hiding hostile mobs in the settings takes only them off the radar (" + withoutHostile + ")");
+					String seen = MapRadar.kindsForSnapshot(client, "emradar");
+					check(sortedKinds(seen).equals("ANIMALS, HOSTILE, HOSTILE, ITEMS, PLAYERS"), "the radar shows the mobs, the item and a player, but not the invisible mob or the one far above (" + seen + ")");
+				}
+				captureAfter(client, 45, "minimap, entity radar");
+			}
+			case 405 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 40 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					// In close, where the radar shows mobs and items too, around you.
+					for (int i = 0; i < 40 && map.zoomForSnapshot() < 4.0F; i++) {
+						map.scrollForSnapshot(1.0D);
+					}
+					map.centerForSnapshot(client.player.getX(), client.player.getZ());
+				}
+				if (stepTicks == 70) {
+					grab(client, "world map, entity radar");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+				}
+				if (stepTicks == 95) {
+					MapRadar.showSelfForSnapshot(false);
+					command(client, "kill @e[tag=emradar]");
+					// With what they dropped.
+					command(client, "kill @e[type=item,distance=..48]");
+					next();
+				}
+			}
+			// Saving the map as an image (#225): it's written, and the game reads it back as a picture with ground on it.
+			case 406 -> {
+				if (stepTicks == 1) {
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					check(map.exportForSnapshot(), "saving the map as an image starts");
+				}
+				if (stepTicks == 34) {
+					grab(client, "world map, saving the map as an image");
+				}
+				if (stepTicks > 34 && !MapExport.running()) {
+					java.nio.file.Path saved = MapExport.lastSavedForSnapshot();
+					String read = "nothing saved";
+					if (saved != null) {
+						try (java.io.InputStream in = java.nio.file.Files.newInputStream(saved); com.mojang.blaze3d.platform.NativeImage image = com.mojang.blaze3d.platform.NativeImage.read(in)) {
+							int ground = 0;
+							for (int py = 0; py < image.getHeight(); py += 7) {
+								for (int px = 0; px < image.getWidth(); px += 7) {
+									if ((image.getPixel(px, py) >>> 24) != 0) {
+										ground++;
+									}
+								}
+							}
+							read = image.getWidth() + "x" + image.getHeight() + ", " + ground + " sampled pixels with ground";
+							if (ground > 0) {
+								read = "";
+							}
+						} catch (java.io.IOException | RuntimeException exception) {
+							read = "it couldn't be read: " + exception;
+						}
+					}
+					check(read.isEmpty(), "the map is saved as an image that reads back with ground on it (" + (saved == null ? "" : saved.getFileName() + ": ") + read + ")");
+					if (MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.onClose();
+					}
+					next();
+				}
+			}
+			// Temporary waypoints (#226): one shows like the others, isn't written to disk, and goes once you get there.
+			case 407 -> {
+				int x = client.player.getBlockX();
+				int z = client.player.getBlockZ();
+				if (stepTicks == 1) {
+					Waypoint temporary = EMUtilsClient.waypoint().addTemporary(client, null, x + 30, client.player.getBlockY(), z);
+					temporaryMark = temporary;
+					boolean shown = temporary != null && EMUtilsClient.waypoint().renderEntries(client).stream().anyMatch(entry -> entry.waypoint() == temporary);
+					check(shown, "a temporary waypoint shows like the others");
+					// Saving the others leaves it out of the file.
+					Waypoint other = EMUtilsClient.waypoint().addCustom(client, null, "Kept", x - 30, client.player.getBlockY(), z, 0xFF55FF55, false, "");
+					String file = "";
+					try {
+						file = java.nio.file.Files.readString(net.emutils.client.emutils.util.EMUtilsPaths.waypointFile());
+					} catch (java.io.IOException exception) {
+						file = "unreadable";
+					}
+					check(other != null && temporary != null && file.contains(other.id()) && !file.contains(temporary.id()), "a temporary waypoint isn't written to disk with the others");
+					command(client, "tp @s " + (x + 30) + " ~ " + z);
+				}
+				if (stepTicks == 30) {
+					Waypoint temporary = temporaryMark;
+					boolean gone = EMUtilsClient.waypoint().renderEntries(client).stream().noneMatch(entry -> entry.waypoint() == temporary);
+					check(gone, "a temporary waypoint goes once you get there");
+					next();
+				}
+			}
+			// A server's own teleport command (#227): Teleport is offered when you may use it, and moves you with it.
+			case 408 -> {
+				String server = WaypointManager.worldKey(client);
+				if (stepTicks == 1) {
+					teleportFrom = null;
+					EMUtilsClient.config().setMapTeleportCommand(server, "execute as @s run tp @s {x} {y} {z}");
+					// The teleport goes high up; falling back down mustn't end the run.
+					command(client, "effect give @s slow_falling 60 0 true");
+					WorldMapScreen.open(client, null);
+				}
+				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					map.openMenuForSnapshot(map.width / 2 + 60, map.height / 2 - 120);
+				}
+				if (stepTicks == 28) {
+					grab(client, "world map, right-click menu");
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					teleportFrom = new int[] {client.player.getBlockX(), client.player.getBlockZ(), client.player.getBlockY()};
+					check(map.teleportForSnapshot(teleportFrom[0] + 40, 120, teleportFrom[1] - 25), "Teleport is offered with the server's own command");
+				}
+				int[] arrived = teleportFrom;
+				boolean there = arrived != null && client.player.getBlockX() == arrived[0] + 40 && client.player.getBlockZ() == arrived[1] - 25;
+				// Waits for the server to move you, which takes longer on a busy run.
+				if (stepTicks > 40 && (there || stepTicks == 150)) {
+					int[] from = teleportFrom;
+					boolean moved = there;
+					check(moved, "the server's own teleport command takes you there (" + client.player.getBlockX() + ", " + client.player.getBlockZ() + ")");
+					EMUtilsClient.config().setMapTeleportCommand(server, null);
+					if (from != null) {
+						command(client, "tp @s " + from[0] + " " + from[2] + " " + from[1]);
+					}
+					EMUtilsClient.config().resetMinimapDefaults();
+					EMUtilsClient.config().setMinimap(false);
+					EMUtilsClient.config().setWorldMap(false);
+					EMUtilsClient.waypoint().clearForCurrentWorld(client);
+					next();
+				}
+			}
+			// Every kind of mob's radar face (#224) in a grid, to see which come out well.
+			case 409 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(new RadarFaceGallery());
+				}
+				if (stepTicks == 30 && MinecraftClientCompat.screen(client) instanceof RadarFaceGallery gallery) {
+					check(gallery.count() > 40 && gallery.faceless() == 0, "every kind of mob has a face on the radar (" + gallery.count() + " kinds, " + gallery.faceless() + " without)");
+				}
+				if (stepTicks == 32) {
+					grab(client, "entity radar, every mob's face");
+				}
+				if (stepTicks == 35) {
+					client.gui.setScreen(null);
+					next();
+				}
+			}
+			// The Entity Radar settings (#224): a tab each for the groups shown, their icons, names, colors and display.
+			case 410 -> {
+				if (stepTicks == 1) {
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("entity_radar");
+				}
+				String[] tabs = {"entities", "icons", "names", "colors", "display"};
+				for (int i = 0; i < tabs.length; i++) {
+					int at = 20 + i * 20;
+					if (stepTicks == at && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.selectSheetSectionForSnapshot(i);
+					}
+					if (stepTicks == at + 12) {
+						grab(client, "entity radar settings, " + tabs[i]);
+					}
+				}
+				if (stepTicks == 20 + tabs.length * 20) {
+					client.gui.setScreen(null);
+					next();
+				}
+			}
 			default -> finish(client);
 		}
 	}
@@ -4465,6 +4817,11 @@ public final class UiSnapshotter {
 	}
 
 	/** Runs a command as the player; the test world is created with commands allowed. */
+	/** The kinds in a comma separated list, sorted by name. */
+	private static String sortedKinds(String kinds) {
+		return String.join(", ", java.util.Arrays.stream(kinds.split(", ")).sorted().toList());
+	}
+
 	private static void command(Minecraft client, String command) {
 		if (client.getConnection() != null) {
 			client.getConnection().sendCommand(command);

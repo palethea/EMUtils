@@ -38,6 +38,7 @@ public final class HubIcons {
 	public static final Identifier KEYBOARD = icon("keyboard");
 	public static final Identifier MAP = icon("map");
 	public static final Identifier MAP_PIN = icon("map-pin");
+	public static final Identifier RADAR = icon("radar");
 	public static final Identifier MESSAGE_SQUARE = icon("message-square");
 	public static final Identifier MONITOR = icon("monitor");
 	public static final Identifier MOON = icon("moon");

@@ -25,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.emutils.client.emutils.map.MapManager;
 import org.jspecify.annotations.Nullable;
 
 public final class WaypointManager {
@@ -35,6 +36,9 @@ public final class WaypointManager {
     private static final double NEAR_DISTANCE_BLOCKS = 10.0D;
     private static final double NEAR_DISTANCE_SQUARED =
         NEAR_DISTANCE_BLOCKS * NEAR_DISTANCE_BLOCKS;
+    /** A temporary waypoint (#226) is reached this close, across, and in white so it stands apart from your own. */
+    private static final double TEMPORARY_REACHED_DISTANCE = 4.0D;
+    private static final int TEMPORARY_COLOR = 0xFFFFFFFF;
     /** How close you have to get to a death waypoint for it to count as reached and be removed. */
     private static final double REACHED_DISTANCE_BLOCKS = 5.0D;
     private static final double REACHED_DISTANCE_SQUARED =
@@ -107,6 +111,7 @@ public final class WaypointManager {
                 EMUtilsClient.config().waypointDefaultDeathColor(),
                 WaypointType.DEATH
             );
+        waypoint.setWorld(MapManager.worldIdFor(client, dimension));
         waypoints.add(waypoint);
         trimWaypointsForWorld(worldKey, dimension);
         trimDeathHistory(client, worldKey);
@@ -170,6 +175,7 @@ public final class WaypointManager {
         );
         waypoint.setBeaconEnabled(beacon);
         waypoint.setSet(set);
+        waypoint.setWorld(MapManager.worldIdFor(client, dimension));
         // Trimming can drop the oldest waypoint, so keep the whole list to put back if saving fails.
         List<Waypoint> before = new ArrayList<>(waypoints);
         waypoints.add(waypoint);
@@ -181,6 +187,52 @@ public final class WaypointManager {
             return null;
         }
         return waypoint;
+    }
+
+    /**
+     * Marks a spot with a temporary waypoint (#226), in place of the one there was: it shows like any other
+     * but isn't saved, and goes once you reach it or leave the world.
+     */
+    public @Nullable Waypoint addTemporary(Minecraft client, @Nullable String inDimension, int x, int y, int z) {
+        if (!enabled() || client == null || client.level == null) {
+            return null;
+        }
+        waypoints.removeIf(Waypoint::temporary);
+        String dimension = inDimension == null || inDimension.isBlank() ? dimensionId(client.level) : inDimension;
+        Waypoint waypoint = new Waypoint(
+            x,
+            y,
+            z,
+            dimension,
+            worldKey(client),
+            System.currentTimeMillis(),
+            Component.translatable(EMUtilsTexts.WAYPOINT_TEMPORARY_LABEL).getString(),
+            TEMPORARY_COLOR,
+            WaypointType.CUSTOM
+        );
+        waypoint.setWorld(MapManager.worldIdFor(client, dimension));
+        waypoint.markTemporary();
+        waypoints.add(waypoint);
+        return waypoint;
+    }
+
+    /** Lets go of the temporary waypoint, as you left the world (#226). */
+    public void dropTemporary() {
+        waypoints.removeIf(Waypoint::temporary);
+    }
+
+    /** The temporary waypoint goes once you're within a few blocks of it, across (#226). */
+    private void checkTemporaryReached(Minecraft client) {
+        String dimension = dimensionId(client.level);
+        String worldKey = worldKey(client);
+        waypoints.removeIf(waypoint -> {
+            if (!waypoint.temporary() || !waypoint.matchesDimension(dimension) || !waypoint.matchesWorldKey(worldKey)) {
+                return false;
+            }
+            double dx = client.player.getX() - (waypoint.x() + 0.5D);
+            double dz = client.player.getZ() - (waypoint.z() + 0.5D);
+            return dx * dx + dz * dz <= TEMPORARY_REACHED_DISTANCE * TEMPORARY_REACHED_DISTANCE;
+        });
     }
 
     /**
@@ -246,6 +298,7 @@ public final class WaypointManager {
             return;
         }
 
+        checkTemporaryReached(client);
         if (!canInteractWithWaypoint(client)) {
             return;
         }
@@ -425,6 +478,42 @@ public final class WaypointManager {
         clear(client, WaypointMessage::clearedForWorld);
     }
 
+    /**
+     * Puts the waypoints of a dimension made since {@code sinceMillis} without a world into {@code worldId}
+     * (#219): they were made while the map was still working out which of the server's worlds you're in.
+     */
+    public void adoptIntoWorld(Minecraft client, String dimension, String worldId, long sinceMillis) {
+        String worldKey = worldKey(client);
+        boolean changed = false;
+        for (Waypoint waypoint : waypoints) {
+            if (waypoint.world() == null && waypoint.timestamp() >= sinceMillis && waypoint.matchesWorldKey(worldKey) && waypoint.matchesDimension(dimension)) {
+                waypoint.setWorld(worldId);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save();
+        }
+    }
+
+    /**
+     * The world {@code worldId} of a dimension was deleted (#219): its waypoints belong to no world any more,
+     * so they show in all of them instead of in none, and can be kept or deleted from there.
+     */
+    public void forgetWorld(Minecraft client, String dimension, String worldId) {
+        String worldKey = worldKey(client);
+        boolean changed = false;
+        for (Waypoint waypoint : waypoints) {
+            if (worldId.equals(waypoint.world()) && waypoint.matchesWorldKey(worldKey) && waypoint.matchesDimension(dimension)) {
+                waypoint.setWorld(null);
+                changed = true;
+            }
+        }
+        if (changed) {
+            save();
+        }
+    }
+
     /** Turns the beacon on or off; returns false, with nothing changed, if the waypoints couldn't be written. */
     public boolean toggleBeacon(String id) {
         Waypoint waypoint = findById(id);
@@ -482,7 +571,7 @@ public final class WaypointManager {
         String dimension = dimensionId(client.level);
         return waypoints
             .stream()
-            .filter(wp -> matchesWorld(wp, worldKey, dimension))
+            .filter(wp -> matchesWorld(wp, worldKey, dimension) && wp.matchesWorld(MapManager.worldIdFor(client, dimension)))
             .sorted(Comparator.comparingLong(Waypoint::timestamp).reversed())
             .toList();
     }
@@ -505,11 +594,25 @@ public final class WaypointManager {
         if (client == null || client.level == null) {
             return List.of();
         }
+        return entriesIn(client, dimension, MapManager.worldIdFor(client, dimension), includeOtherDimensions);
+    }
+
+    /**
+     * Like the above, in one of the server's worlds of that dimension (#219), which the world map may be
+     * showing: waypoints made in another of its worlds are left out.
+     */
+    public List<WaypointEntry> entriesIn(Minecraft client, String dimension, @Nullable String worldId, boolean includeOtherDimensions) {
+        if (client == null || client.level == null) {
+            return List.of();
+        }
 
         String worldKey = worldKey(client);
         List<WaypointEntry> entries = new ArrayList<>();
         for (Waypoint waypoint : waypoints) {
             if (!waypoint.matchesWorldKey(worldKey)) {
+                continue;
+            }
+            if (!waypoint.matchesWorld(waypoint.matchesDimension(dimension) ? worldId : MapManager.worldIdFor(client, waypoint.dimension()))) {
                 continue;
             }
             if (waypoint.matchesDimension(dimension)) {
@@ -535,6 +638,14 @@ public final class WaypointManager {
     /** The waypoints that have a place in {@code dimension}: its own, plus converted ones if that's on. */
     public List<WaypointEntry> renderEntries(Minecraft client, String dimension) {
         return entriesIn(client, dimension, EMUtilsClient.config().waypointShowOtherDimensions())
+            .stream()
+            .filter(WaypointEntry::placeable)
+            .toList();
+    }
+
+    /** The waypoints that have a place in one of the server's worlds of {@code dimension} (#219). */
+    public List<WaypointEntry> renderEntries(Minecraft client, String dimension, @Nullable String worldId) {
+        return entriesIn(client, dimension, worldId, EMUtilsClient.config().waypointShowOtherDimensions())
             .stream()
             .filter(WaypointEntry::placeable)
             .toList();
@@ -947,14 +1058,16 @@ public final class WaypointManager {
     private boolean save() {
         try {
             Files.createDirectories(EMUtilsPaths.configDir());
-            if (waypoints.isEmpty()) {
+            // Temporary waypoints (#226) are never written.
+            List<Waypoint> kept = waypoints.stream().filter(waypoint -> !waypoint.temporary()).toList();
+            if (kept.isEmpty()) {
                 Files.deleteIfExists(EMUtilsPaths.waypointFile());
                 deleteLegacyDeathFileIfPending();
                 return true;
             }
 
             WaypointSaveData saveData = new WaypointSaveData();
-            saveData.setWaypoints(new ArrayList<>(waypoints));
+            saveData.setWaypoints(new ArrayList<>(kept));
             AtomicFiles.writeString(EMUtilsPaths.waypointFile(), GSON.toJson(saveData));
             deleteLegacyDeathFileIfPending();
             return true;

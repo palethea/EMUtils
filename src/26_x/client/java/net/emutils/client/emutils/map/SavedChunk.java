@@ -26,6 +26,7 @@ final class SavedChunk implements MapSampler.Columns {
 	final int chunkZ;
 	private final int minY;
 	private final int minSection;
+	private final int ceiling;
 	private final Section[] sections;
 
 	private record Section(BlockState[] palette, boolean[] air, long @Nullable [] data, int bits, int[] biomePalette, long @Nullable [] biomeData, int biomeBits) {
@@ -42,11 +43,12 @@ final class SavedChunk implements MapSampler.Columns {
 		}
 	}
 
-	private SavedChunk(int chunkX, int chunkZ, int minY, int minSection, Section[] sections) {
+	private SavedChunk(int chunkX, int chunkZ, int minY, int minSection, int ceiling, Section[] sections) {
 		this.chunkX = chunkX;
 		this.chunkZ = chunkZ;
 		this.minY = minY;
 		this.minSection = minSection;
+		this.ceiling = ceiling;
 		this.sections = sections;
 	}
 
@@ -54,7 +56,7 @@ final class SavedChunk implements MapSampler.Columns {
 	 * Unpacks a saved chunk, or returns null when it isn't fully generated or wasn't upgraded to this game
 	 * version, whose layout may differ; those show up once you visit them.
 	 */
-	static @Nullable SavedChunk parse(CompoundTag tag, int dataVersion, int minY, int height, Registry<Biome> biomes) {
+	static @Nullable SavedChunk parse(CompoundTag tag, int dataVersion, int minY, int height, int ceiling, Registry<Biome> biomes) {
 		if (tag.getIntOr("DataVersion", -1) != dataVersion || !tag.getStringOr("Status", "").equals("minecraft:full")) {
 			return null;
 		}
@@ -69,7 +71,7 @@ final class SavedChunk implements MapSampler.Columns {
 			}
 			sections[index] = section(section, biomes);
 		}
-		return new SavedChunk(tag.getIntOr("xPos", 0), tag.getIntOr("zPos", 0), minY, minSection, sections);
+		return new SavedChunk(tag.getIntOr("xPos", 0), tag.getIntOr("zPos", 0), minY, minSection, ceiling, sections);
 	}
 
 	private static @Nullable Section section(CompoundTag tag, Registry<Biome> biomes) {
@@ -136,6 +138,11 @@ final class SavedChunk implements MapSampler.Columns {
 	@Override
 	public int minY() {
 		return minY;
+	}
+
+	@Override
+	public int ceiling() {
+		return ceiling;
 	}
 
 	@Override

@@ -23,9 +23,11 @@ import net.minecraft.world.level.biome.Biome;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The map of one dimension of one world (#212, #215): its regions, loaded from disk as the map needs them
- * and saved back when they change. Lives as long as you are in that dimension. Chunks and overviews are
- * read by the tile baker from its own thread, and regions load and save on the map's IO thread.
+ * One map (#212, #215): of one world (#219) in one dimension, at the surface or one cave layer (#222). Its
+ * regions are loaded from disk as the map needs them and saved back when they change. Lives as long as you
+ * are there. Chunks and overviews are read by the tile baker from its own thread, and regions load and save
+ * on the map's IO thread. On a server, which world you're in is only known after a few chunks, so the map
+ * starts without a folder, in memory, and is given one when it's known ({@link #attach}).
  */
 public final class MapWorld {
 	/** Regions unused for this long are let go once saved. */
@@ -37,7 +39,9 @@ public final class MapWorld {
 	 * used go first and are read from their files again when needed.
 	 */
 	private static final int MAX_OVERVIEWS = 1024;
-	private static final String DIMENSION_FILE = "dimension.txt";
+	static final String DIMENSION_FILE = "dimension.txt";
+	/** How many blocks tall a cave layer is (#222). */
+	static final int LAYER_BLOCKS = 16;
 	private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "EMUtils Map IO");
 		thread.setDaemon(true);
@@ -47,8 +51,14 @@ public final class MapWorld {
 	private final ClientLevel level;
 	private final String dimension;
 	private final int minY;
+	/** The dimension has a ceiling, like the Nether's roof, which old files show instead of the ground (#221). */
+	private final boolean ceiling;
+	/** The cave layer this map shows, or {@link MapSampler#SURFACE}. */
+	final int cave;
 	private final Registry<Biome> biomes;
-	private final @Nullable Path folder;
+	private volatile @Nullable Path folder;
+	/** Which of the server's or save's worlds this is (#219), or null while that isn't known yet. */
+	volatile @Nullable String worldId;
 	private final ConcurrentHashMap<Long, MapRegion> regions = new ConcurrentHashMap<>();
 	/** Overviews of regions whose chunks aren't loaded, read from their files for the far zoom levels. */
 	private final ConcurrentHashMap<Long, MapRegion> overviews = new ConcurrentHashMap<>();
@@ -71,25 +81,102 @@ public final class MapWorld {
 	int preparingAt;
 
 	/**
-	 * The map of the level you are in, saved in {@code folder} (nothing is saved without one).
+	 * A map, which may be of another dimension or world than yours, as the world map shows them. Its bottom
+	 * is needed to save its heights; without one ({@link Integer#MIN_VALUE}) the map is only read, never
+	 * saved. Without a folder it's kept in memory until {@link #attach} gives it one.
 	 */
-	MapWorld(ClientLevel level, @Nullable Path folder) {
-		this(level, folder, WaypointManager.dimensionId(level), level.getMinY());
-	}
-
-	/**
-	 * The map of a dimension, which may be another one than yours, as the world map shows them. Its bottom is
-	 * needed to save its heights; without one ({@link Integer#MIN_VALUE}) the map is only read, never saved.
-	 */
-	MapWorld(ClientLevel level, @Nullable Path folder, String dimension, int minY) {
+	MapWorld(ClientLevel level, @Nullable Path folder, String dimension, int minY, boolean ceiling, @Nullable String worldId, int cave) {
 		this.level = level;
 		this.dimension = dimension;
 		this.minY = minY;
+		this.ceiling = ceiling;
+		this.worldId = worldId;
+		this.cave = cave;
 		this.biomes = level.registryAccess().lookupOrThrow(Registries.BIOME);
 		this.folder = folder;
 		if (folder != null) {
 			IO.execute(this::listKnownRegions);
 		}
+	}
+
+	String dimension() {
+		return dimension;
+	}
+
+	/** The folder the map is saved in, or null while it's kept in memory. */
+	@Nullable Path folder() {
+		return folder;
+	}
+
+	/** Whether the dimension has a ceiling, like the Nether. */
+	boolean ceiling() {
+		return ceiling;
+	}
+
+	/** Where sampling starts: {@link MapSampler#SURFACE}, or the top of the cave layer. */
+	int startY() {
+		return cave == MapSampler.SURFACE ? MapSampler.SURFACE : cave * LAYER_BLOCKS + LAYER_BLOCKS - 1;
+	}
+
+	/** Which world this is isn't known yet, so nothing is saved. */
+	boolean pending() {
+		return worldId == null;
+	}
+
+	/**
+	 * Gives a map kept in memory its world and folder (#219). What it sampled meanwhile stays, the saved
+	 * chunks fill in around it, and from now on it's saved like any other.
+	 */
+	void attach(Path folder, String worldId) {
+		if (this.folder != null || closed) {
+			return;
+		}
+		this.folder = folder;
+		this.worldId = worldId;
+		IO.execute(this::listKnownRegions);
+		for (MapRegion region : regions.values()) {
+			IO.execute(() -> merge(region));
+		}
+	}
+
+	/**
+	 * Reads a region's file under what was sampled before the map had a folder. IO thread. Also once the map
+	 * is closed: closing saves the region after this, and without the file read in that save would keep only
+	 * what was sampled since you arrived.
+	 */
+	private void merge(MapRegion region) {
+		try {
+			MapRegionFile.Contents contents = read(region);
+			if (contents != null && contents.chunks() != null) {
+				IntOpenHashSet states = new IntOpenHashSet();
+				MapChunk[] chunks = contents.chunks();
+				for (int i = 0; i < chunks.length; i++) {
+					if (chunks[i] != null) {
+						region.putLoaded(i, chunks[i]);
+						for (int c = 0; c < MapChunk.AREA; c++) {
+							states.add(chunks[i].top(c));
+							states.add(chunks[i].floor(c));
+						}
+					}
+				}
+				region.states = states.toIntArray();
+				region.overviewStale = true;
+				region.dirty = true;
+				region.merged = true;
+			}
+		} catch (IOException | RuntimeException exception) {
+			region.unreadable = true;
+			EMUtilsClient.LOGGER.warn("EMUtils map couldn't read region {}, {}; it won't be saved over", region.regionX, region.regionZ, exception);
+		}
+		justLoaded.add(region);
+	}
+
+	/**
+	 * A region's file, with its chunks and overview left out when they were saved by an older build that
+	 * drew a ceiling's roof instead of the ground under it (#221).
+	 */
+	private MapRegionFile.@Nullable Contents read(MapRegion region) throws IOException {
+		return MapRegionFile.readFor(MapRegionFile.path(folder, region.regionX, region.regionZ), biomes, ceiling);
 	}
 
 	public ClientLevel level() {
@@ -166,7 +253,7 @@ public final class MapWorld {
 			return;
 		}
 		try {
-			MapRegionFile.Contents contents = MapRegionFile.read(MapRegionFile.path(folder, region.regionX, region.regionZ), biomes);
+			MapRegionFile.Contents contents = read(region);
 			if (contents != null) {
 				MapChunk[] chunks = contents.chunks();
 				IntOpenHashSet states = new IntOpenHashSet();
@@ -218,7 +305,7 @@ public final class MapWorld {
 			IO.execute(() -> {
 				try {
 					MapRegionFile.Contents contents = MapRegionFile.readOverview(MapRegionFile.path(folder, regionX, regionZ));
-					if (contents != null && contents.overview() != null) {
+					if (contents != null && contents.overview() != null && !(ceiling && contents.version() < 2)) {
 						created.overview = contents.overview();
 						created.overviewFingerprint = contents.overviewFingerprint();
 					}
@@ -354,20 +441,10 @@ public final class MapWorld {
 
 	private void save(MapRegion region) {
 		try {
-			writeDimension();
 			MapRegionFile.write(MapRegionFile.path(folder, region.regionX, region.regionZ), region, biomes, minY);
 		} catch (IOException | RuntimeException exception) {
 			region.dirty = true;
 			EMUtilsClient.LOGGER.warn("EMUtils map couldn't save region {}, {}", region.regionX, region.regionZ, exception);
-		}
-	}
-
-	/** The dimension's id, written once beside its regions, so the world map can name the folder. */
-	private void writeDimension() throws IOException {
-		Path file = folder.resolve(DIMENSION_FILE);
-		if (!Files.exists(file)) {
-			Files.createDirectories(folder);
-			Files.writeString(file, dimension);
 		}
 	}
 
@@ -457,6 +534,27 @@ public final class MapWorld {
 				});
 			}
 		}
+	}
+
+	/** Runs something on the map's IO thread, after what's queued there. */
+	static void runIo(Runnable task) {
+		IO.execute(task);
+	}
+
+	/** Every chunk sampled into the map so far, for working out which world it is (#219). */
+	List<MapWorldMatcher.Sample> samples() {
+		List<MapWorldMatcher.Sample> samples = new ArrayList<>();
+		for (MapRegion region : regions.values()) {
+			for (int i = 0; i < MapRegion.CHUNKS * MapRegion.CHUNKS; i++) {
+				MapChunk chunk = region.chunk(i);
+				if (chunk != null) {
+					int chunkX = region.regionX * MapRegion.CHUNKS + (i & (MapRegion.CHUNKS - 1));
+					int chunkZ = region.regionZ * MapRegion.CHUNKS + (i >> MapRegion.SHIFT);
+					samples.add(new MapWorldMatcher.Sample(chunkX, chunkZ, chunk));
+				}
+			}
+		}
+		return samples;
 	}
 
 	/** Waits until the saves queued so far are written, for when the game closes. */

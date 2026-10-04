@@ -111,6 +111,7 @@ public class EMUtilsClient implements ClientModInitializer {
 	private static KeyMapping copyCoordinatesKeyMapping;
 	private static KeyMapping massDropKeyMapping;
 	private static KeyMapping worldMapKeyMapping;
+	private static KeyMapping mapCavesKeyMapping;
 	private static KeyMapping debugDumpGuiKeyMapping;
 	private static KeyMapping nextProfileKeyMapping;
 
@@ -142,6 +143,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		BeaconRadiusRenderer.register();
 		LightLevelOverlayRenderer.register();
 		MapManager.register();
+		net.emutils.client.emutils.map.MapServerWorlds.register();
 		registerHudLayoutElements();
 		UiClosingScreens.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -155,6 +157,8 @@ public class EMUtilsClient implements ClientModInitializer {
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);
+			// A temporary waypoint (#226) lasts until you leave; disconnects arrive on the network thread.
+			client.execute(() -> waypoint().dropTemporary());
 			tweaksManager.resetSession();
 			autoReconnectManager.onDisconnected();
 			GalleryThumbnails.freeShared();
@@ -381,6 +385,12 @@ public class EMUtilsClient implements ClientModInitializer {
 			XaeroMapIntegration.worldMapLoaded() ? InputConstants.UNKNOWN.getValue() : InputConstants.KEY_M,
 			category
 		));
+		mapCavesKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			"key.emutils.map_caves",
+			VersionedInput.keyboardType(),
+			InputConstants.UNKNOWN.getValue(),
+			category
+		));
 		massDropKeyMapping = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.emutils.mass_drop",
 			VersionedInput.keyboardType(),
@@ -450,6 +460,11 @@ public class EMUtilsClient implements ClientModInitializer {
 			if (config.worldMap() && net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client) == null) {
 				WorldMapScreen.open(client, worldMapKeyMapping);
 			}
+		}
+		while (mapCavesKeyMapping != null && mapCavesKeyMapping.consumeClick()) {
+			// Like Xaero's manual cave mode: the cave view on wherever you are, or back to switching by itself.
+			boolean forced = net.emutils.client.emutils.map.MapManager.toggleManualCaves();
+			client.gui.hud.setOverlayMessage(Component.translatable(forced ? EMUtilsTexts.MAP_CAVES_FORCED : EMUtilsTexts.MAP_CAVES_AUTO), false);
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);

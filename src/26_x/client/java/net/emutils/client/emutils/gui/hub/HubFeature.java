@@ -65,7 +65,8 @@ public final class HubFeature {
 		USERS(HubIcons.USERS),
 		PALETTE(HubIcons.PALETTE),
 		KEYBOARD(HubIcons.KEYBOARD),
-		TROPHY(HubIcons.TROPHY);
+		TROPHY(HubIcons.TROPHY),
+		RADAR(HubIcons.RADAR);
 
 		private final Identifier texture;
 

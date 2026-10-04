@@ -19,9 +19,14 @@ public final class ScreenshotMessage {
 	}
 
 	public static Component saved(File screenshot) {
+		return saved(screenshot, EMUtilsTexts.CHAT_SCREENSHOT_SAVED);
+	}
+
+	/** Says an image was saved, with buttons to copy or open it or its folder; also for the map's pictures (#225). */
+	public static Component saved(File screenshot, String messageKey) {
 		return Component.empty()
 			.append(EMUtilsTexts.greenPrefix())
-			.append(Component.translatable(EMUtilsTexts.CHAT_SCREENSHOT_SAVED).withStyle(ChatFormatting.GRAY))
+			.append(Component.translatable(messageKey).withStyle(ChatFormatting.GRAY))
 			.append(action(EMUtilsTexts.CHAT_ACTION_COPY, ChatFormatting.YELLOW, new ClickEvent.Custom(COPY_SCREENSHOT_ACTION, Optional.of(StringTag.valueOf(screenshot.getAbsolutePath()))), EMUtilsTexts.CHAT_HOVER_COPY_SCREENSHOT))
 			.append(Component.literal(" "))
 			.append(action(EMUtilsTexts.CHAT_ACTION_OPEN, ChatFormatting.AQUA, new ClickEvent.OpenFile(screenshot), EMUtilsTexts.CHAT_HOVER_OPEN_IMAGE))

@@ -44,6 +44,11 @@ final class MapTileBaker {
 	private static final int NO_FLOOR_DEPTH = 24;
 	/** A side strip is this much darker than the block's top, like a side facing away from the light. */
 	private static final float SIDE_SHADE = 0.68F;
+	/** A cave floor this many blocks under its layer's start is darkened the most, by {@link #DEPTH_FADE}. */
+	private static final int DEPTH_FADE_BLOCKS = 40;
+	private static final float DEPTH_FADE = 0.45F;
+	/** An island's edge shows this much of its side over the void south of it, as a share of a block. */
+	private static final float UNDERSIDE = 0.5F;
 	/** The ground just south of a raised block is slightly darker, as if in its shadow. */
 	private static final float SHADOW_SHADE = 0.86F;
 
@@ -85,7 +90,11 @@ final class MapTileBaker {
 		for (int bz = 0; bz < blocks; bz++) {
 			for (int bx = 0; bx < blocks; bx++) {
 				int g = grid.index(bx + 1, bz + 1);
-				if (!grid.present[g] || grid.top[g] == MapChunk.NONE) {
+				if (!grid.present[g]) {
+					continue;
+				}
+				if (grid.top[g] == MapChunk.NONE) {
+					drawVoid(grid, tints, out, level, res, bx, bz, g);
 					continue;
 				}
 				MapBlockLook top = grid.look(grid.top[g]);
@@ -101,7 +110,7 @@ final class MapTileBaker {
 				int northHeight = grid.present[north] ? grid.shadeHeight(north) : height;
 				int westHeight = grid.present[west] ? grid.shadeHeight(west) : height;
 				int slope = Math.clamp((height - northHeight) + (height - westHeight), -MAX_SLOPE, MAX_SLOPE);
-				float shade = 1.0F + slope * SLOPE_SHADE[level];
+				float shade = (1.0F + slope * SLOPE_SHADE[level]) * depthFade(world, height);
 
 				// A strip of the north neighbor's side where it stands above this column.
 				int strip = 0;
@@ -140,6 +149,43 @@ final class MapTileBaker {
 			}
 		}
 		return new Result(out, grid.complete);
+	}
+
+	/**
+	 * Draws a column the map knows is void (#220), like the End's, a SkyBlock island's or, in a cave layer,
+	 * rock without a cave: nothing, so the map's background shows as it does where nothing was explored. Where
+	 * an island ends north of it, a strip of the island's side fades out below its edge, so the island reads
+	 * as floating over nothing.
+	 */
+	private static void drawVoid(Grid grid, Tints tints, int[] out, int level, int res, int bx, int bz, int g) {
+		int north = grid.index(bx + 1, bz);
+		MapBlockLook island = grid.present[north] && grid.top[north] != MapChunk.NONE ? grid.shadeLook(north) : null;
+		MapBlockLook.Layer side = island == null ? null : island.side() != null ? island.side() : island.top();
+		int sideTint = island == null ? 0xFFFFFFFF : tints.color(island, grid.shadeId(north), north);
+		int strip = side == null ? 0 : Math.max(1, Math.round(res * UNDERSIDE));
+		for (int py = 0; py < strip; py++) {
+			// Fainter toward the bottom, as the island's underside falls away into the void.
+			int alpha = Math.round(255 * (1.0F - 0.7F * py / (float) strip));
+			for (int px = 0; px < res; px++) {
+				int sidePixel = pixel(side, level, py * res + px, sideTint);
+				if ((sidePixel >>> 24) != 0) {
+					int color = scale(sidePixel | 0xFF000000, SIDE_SHADE);
+					out[(bz * res + py) * TILE_PIXELS + bx * res + px] = toAbgr(color) & 0x00FFFFFF | alpha << 24;
+				}
+			}
+		}
+	}
+
+	/**
+	 * How much a cave layer's floor is darkened for lying deep under where the layer starts (#222), like
+	 * Xaero's depth fade, so caves read by how far down they are. The surface isn't darkened.
+	 */
+	private static float depthFade(MapWorld world, int height) {
+		int start = world.startY();
+		if (start == MapSampler.SURFACE) {
+			return 1.0F;
+		}
+		return 1.0F - DEPTH_FADE * Math.clamp((start - height) / (float) DEPTH_FADE_BLOCKS, 0.0F, 1.0F);
 	}
 
 	/** A far tile, put together from the overviews of the regions it covers, each shrunk to fit. */
