@@ -287,6 +287,7 @@ public final class MinimapRenderer {
 		// The map's corners are this far away when it turns.
 		double reach = half / view.zoom() * Math.sqrt(2.0D) + 1.0D;
 		double playerY = player.yo + (player.getY() - player.yo) * partialTick;
+		java.util.List<MapRadar.Placed> placed = new java.util.ArrayList<>();
 		for (MapRadar.Blip blip : MapRadar.blips(client, view.centerX(), view.centerZ(), reach, partialTick)) {
 			float x = view.screenX(blip.x(), blip.z());
 			float y = view.screenY(blip.x(), blip.z());
@@ -295,8 +296,12 @@ public final class MinimapRenderer {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(x, y);
-			MapRadar.draw(context, client.font, blip, playerY, FACE_SIZE, 1.0F, config.mapRadarNames(), config.mapRadarMobFaces(), opacity);
+			MapRadar.draw(context, blip, playerY, FACE_SIZE, 1.0F, config.mapRadarMobFaces(), opacity);
 			context.pose().popMatrix();
+			placed.add(new MapRadar.Placed(blip, x, y));
+		}
+		if (config.mapRadarNames()) {
+			MapRadar.drawNames(context, client.font, placed, half, half, FACE_SIZE, playerY, opacity);
 		}
 	}
 

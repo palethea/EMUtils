@@ -3808,6 +3808,8 @@ public final class UiSnapshotter {
 					}
 				}
 				if (stepTicks == 40) {
+					String overlap = MapRadar.nameOverlapForSnapshot();
+					check(overlap.isEmpty(), "players' names that would overlap one nearer the middle are left out" + (overlap.isEmpty() ? "" : " (" + overlap + ")"));
 					String faceless = MapRadar.facelessForSnapshot(client, "emradar_faces");
 					check(faceless.isEmpty(), "every mob of the lineup shows its face on the radar (" + faceless + ")");
 					String seen = MapRadar.kindsForSnapshot(client, "emradar");

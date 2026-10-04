@@ -972,7 +972,7 @@
   "emutils.option.map_radar_players": "Players",
   "emutils.option.map_radar_players.desc": "Show other players with their face.",
   "emutils.option.map_radar_names": "Player Names",
-  "emutils.option.map_radar_names.desc": "Show the names of players under their face.",
+  "emutils.option.map_radar_names.desc": "Show the names of players under their face, in their team's color. Where names would overlap, the one nearest the middle shows.",
   "emutils.option.map_radar_hostile": "Hostile Mobs",
   "emutils.option.map_radar_hostile.desc": "Show hostile mobs, framed or dotted red.",
   "emutils.option.map_radar_friendly": "Other Mobs",

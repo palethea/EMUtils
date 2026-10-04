@@ -632,6 +632,7 @@ public final class WorldMapScreen extends Screen {
 		double playerY = player.yo + (player.getY() - player.yo) * delta;
 		boolean mobs = view.zoom() >= RADAR_MOBS_ZOOM;
 		float nearest = RADAR_HOVER;
+		List<MapRadar.Placed> placed = new ArrayList<>();
 		for (MapRadar.Blip blip : MapRadar.blips(minecraft, view.centerX(), view.centerZ(), reach, delta)) {
 			boolean face = blip.kind() == MapRadar.Kind.PLAYER;
 			if (!face && !mobs) {
@@ -644,13 +645,17 @@ public final class WorldMapScreen extends Screen {
 			}
 			context.pose().pushMatrix();
 			context.pose().translate(sx, sy);
-			MapRadar.draw(context, font, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarNames(), config.mapRadarMobFaces(), progress);
+			MapRadar.draw(context, blip, playerY, RADAR_FACE, RADAR_DOT_SCALE, config.mapRadarMobFaces(), progress);
 			context.pose().popMatrix();
+			placed.add(new MapRadar.Placed(blip, sx, sy));
 			float distance = Math.max(Math.abs(mouseX - sx), Math.abs(mouseY - sy));
 			if (hover && distance <= nearest) {
 				nearest = distance;
 				hoveredBlip = blip;
 			}
+		}
+		if (config.mapRadarNames()) {
+			MapRadar.drawNames(context, font, placed, view.screenCenterX(), view.screenCenterY(), RADAR_FACE, playerY, progress);
 		}
 	}
 
