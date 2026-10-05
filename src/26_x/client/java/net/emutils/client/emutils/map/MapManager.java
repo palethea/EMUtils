@@ -48,8 +48,6 @@ public final class MapManager {
 	private static final int SAVE_EVERY_TICKS = 200;
 	/** Often, so regions read in only to draw far tiles are let go soon after. */
 	private static final int UNLOAD_EVERY_TICKS = 20;
-	/** A region's overview is redrawn at most this often while you explore it. */
-	private static final long OVERVIEW_MIN_MILLIS = 10_000L;
 	/**
 	 * How hard the map works (#239): the overviews drawn at once (fewer while tiles on screen are waiting, so
 	 * they don't wait behind overviews) and how often, the regions read in at a time only to redraw theirs, and
@@ -509,13 +507,13 @@ public final class MapManager {
 		if (importer == null) {
 			return;
 		}
-		SavedChunk chunk;
+		MapImporter.Imported chunk;
 		while (System.nanoTime() < deadline && (chunk = importer.poll()) != null) {
-			MapChunk sampled;
-			if (world.chunk(chunk.chunkX, chunk.chunkZ) == null) {
-				sampled = MapSampler.sample(chunk, world.startY());
-				world.put(chunk.chunkX, chunk.chunkZ, sampled);
-				tiles.markDirty(chunk.chunkX, chunk.chunkZ);
+			if (world.chunk(chunk.chunkX(), chunk.chunkZ()) == null) {
+				// Sampled already on the importer's threads (#239), unless it needed a look only made here.
+				MapChunk sampled = chunk.sampled() != null ? chunk.sampled() : MapSampler.sample(chunk.saved(), world.startY());
+				world.put(chunk.chunkX(), chunk.chunkZ(), sampled);
+				tiles.markDirty(chunk.chunkX(), chunk.chunkZ());
 			}
 		}
 	}
@@ -584,7 +582,7 @@ public final class MapManager {
 		List<MapRegion> waiting = new ArrayList<>();
 		for (MapRegion region : world.loadedRegions()) {
 			// Not before the looks of its blocks are made, or it would come out empty.
-			if (region.loaded && region.states == null && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS && MapWorld.needsOverview(region)) {
+			if (region.loaded && region.states == null && now - region.overviewBakedAt >= speed.overviewMinMillis() && MapWorld.needsOverview(region)) {
 				waiting.add(region);
 			}
 		}
@@ -829,11 +827,54 @@ public final class MapManager {
 		speed = wanted;
 		MapTiles.applySpeed(wanted);
 		MapWorld.applySpeed(wanted);
+		MapImporter.applySpeed(wanted);
 	}
 
 	/** For UI snapshot checks: regions of the map you're on waiting to be read in or drawn for their overviews. */
 	public static int redrawsForSnapshot() {
 		return world == null ? -1 : world.redrawsForSnapshot();
+	}
+
+	/**
+	 * For UI snapshot checks (#239): forgets the map saved for the world you're in, as if the map had never seen
+	 * it, so it starts again from nothing, as when a pre-generated world is opened with the map for the first time.
+	 */
+	public static void forgetSavedMapForSnapshot(Minecraft client) {
+		drop();
+		MapWorld.awaitIoForSnapshot();
+		Path folder = serverFolder(client);
+		CATALOGS.clear();
+		LAST_LAYER.clear();
+		if (folder != null && Files.isDirectory(folder)) {
+			try (java.util.stream.Stream<Path> walk = Files.walk(folder)) {
+				walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+			} catch (IOException exception) {
+				EMUtilsClient.LOGGER.warn("EMUtils UI snapshot couldn't delete the saved map in {}", folder, exception);
+			}
+		}
+	}
+
+	/**
+	 * For UI snapshot checks (#239): how far the map is with the world you're in: chunks imported, the importer's
+	 * full passes, regions in memory, those of them whose overview is still to be drawn, regions known on disk,
+	 * and regions waiting to be read in only for their overviews.
+	 */
+	public static int[] progressForSnapshot() {
+		if (world == null) {
+			return new int[8];
+		}
+		int[] regions = world.regionsForSnapshot();
+		MapImporter importer = world.importer;
+		return new int[] {
+			importer == null ? -1 : importer.importedCount(),
+			importer == null ? -1 : importer.passes(),
+			regions[0],
+			regions[1],
+			regions[2],
+			world.redrawsForSnapshot(),
+			importer == null ? -1 : importer.queueForSnapshot()[0],
+			importer == null ? -1 : importer.queueForSnapshot()[1]
+		};
 	}
 
 	/** For UI snapshot checks: has the map you're on look for region files again. */

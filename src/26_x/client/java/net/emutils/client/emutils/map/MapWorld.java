@@ -458,6 +458,31 @@ public final class MapWorld {
 		return redraws.size() + redrawing.size();
 	}
 
+	/** For UI snapshot checks: waits for everything queued to read or save to be done. */
+	static void awaitIoForSnapshot() {
+		try {
+			IO.submit(() -> {
+			}).get(60L, java.util.concurrent.TimeUnit.SECONDS);
+		} catch (Exception exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot gave up waiting for the map's IO", exception);
+		}
+	}
+
+	/** For UI snapshot checks: regions in memory, and of those, the ones whose overview is still to be drawn. */
+	int[] regionsForSnapshot() {
+		int loaded = 0;
+		int needing = 0;
+		for (MapRegion region : regions.values()) {
+			if (region.loaded) {
+				loaded++;
+				if (needsOverview(region)) {
+					needing++;
+				}
+			}
+		}
+		return new int[] {loaded, needing, known.size()};
+	}
+
 	/** For UI snapshot checks: looks for region files again, as when the map opens. */
 	void relistForSnapshot() {
 		IO.execute(this::listKnownRegions);

@@ -63,7 +63,7 @@ public enum MapLoadSpeed {
 	/** How often, in ticks, the overviews waiting to be drawn are looked at. */
 	int overviewEveryTicks() {
 		return switch (this) {
-			case NORMAL -> 10;
+			case NORMAL -> 4;
 			case FAST -> 3;
 			case FASTEST -> 1;
 		};
@@ -84,6 +84,33 @@ public enum MapLoadSpeed {
 			case NORMAL -> 1;
 			case FAST -> 2;
 			case FASTEST -> 4;
+		};
+	}
+
+	/** Threads unpacking and sampling chunks brought in from a singleplayer world's files. */
+	int importWorkers() {
+		return switch (this) {
+			case NORMAL -> 1;
+			case FAST -> Math.max(2, CORES / 3);
+			case FASTEST -> Math.max(2, CORES - 2);
+		};
+	}
+
+	/** Chunks being read from a singleplayer world's files at once. */
+	int importReadsInFlight() {
+		return switch (this) {
+			case NORMAL -> 4;
+			case FAST -> 16;
+			case FASTEST -> 32;
+		};
+	}
+
+	/** How soon a region's overview may be drawn again while it fills in. */
+	long overviewMinMillis() {
+		return switch (this) {
+			case NORMAL -> 5_000L;
+			case FAST -> 3_000L;
+			case FASTEST -> 1_000L;
 		};
 	}
 

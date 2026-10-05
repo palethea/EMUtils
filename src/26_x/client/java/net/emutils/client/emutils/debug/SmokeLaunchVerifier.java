@@ -13,6 +13,13 @@ public final class SmokeLaunchVerifier {
 	private static final String ENABLED_PROPERTY = "emutils.smokeLaunch";
 	private static final String LAUNCH_TEST_WORLD_PROPERTY = "emutils.launchTestWorld";
 	private static final String TEST_WORLD_NAME = "EMUtils Debug World";
+	/**
+	 * A world kept between launches, by its folder name, such as the big pre-generated one the map's speed is
+	 * measured in (#239): opened when it's there, else made once with a fixed seed. Without it each launch
+	 * makes a new small world.
+	 */
+	private static final String KEPT_WORLD_PROPERTY = "emutils.testWorld";
+	private static final String KEPT_WORLD_SEED = "emutils";
 	private static final int MIN_WORLD_TICKS = 80;
 	private static final int MAX_TICKS = 2400;
 
@@ -31,6 +38,12 @@ public final class SmokeLaunchVerifier {
 	/** Stops going back into the test world, so UI snapshots can check screens outside a world. */
 	public static void stopEnteringTestWorld() {
 		launchTestWorld = false;
+	}
+
+	/** The kept world launches open, or null when they make a new one each time. */
+	public static String keptWorld() {
+		String name = System.getProperty(KEPT_WORLD_PROPERTY);
+		return name == null || name.isBlank() ? null : name.trim();
 	}
 
 	public static void registerIfEnabled() {
@@ -81,6 +94,16 @@ public final class SmokeLaunchVerifier {
 	}
 
 	private static void launchOrContinueTestWorld(Minecraft client) {
+		String kept = keptWorld();
+		if (!requestedWorldCreation && client.isGameLoadFinished() && kept != null
+			&& java.nio.file.Files.isRegularFile(client.gameDirectory.toPath().resolve("saves").resolve(kept).resolve("level.dat"))) {
+			requestedWorldCreation = true;
+			clickedCreateWorld = true;
+			EMUtilsClient.LOGGER.info("EMUtils debug launch is opening the kept test world {}.", kept);
+			client.createWorldOpenFlows().openWorld(kept, () -> {
+			});
+			return;
+		}
 		if (!requestedWorldCreation && client.isGameLoadFinished()) {
 			requestedWorldCreation = true;
 			EMUtilsClient.LOGGER.info("EMUtils debug launch is preparing a singleplayer test world.");
@@ -97,7 +120,10 @@ public final class SmokeLaunchVerifier {
 			Screen screen = currentScreen(client);
 			if (screen instanceof CreateWorldScreen createWorldScreen) {
 				clickedCreateWorld = true;
-				createWorldScreen.getUiState().setName(TEST_WORLD_NAME);
+				createWorldScreen.getUiState().setName(kept != null ? kept : TEST_WORLD_NAME);
+				if (kept != null) {
+					createWorldScreen.getUiState().setSeed(KEPT_WORLD_SEED);
+				}
 				// UI snapshots set up their checks with commands, such as building a beacon.
 				createWorldScreen.getUiState().setAllowCommands(true);
 				invokeCreateWorld(createWorldScreen);

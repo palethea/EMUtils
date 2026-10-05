@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Reads what the map shows of a chunk (#212): for each column the first block from the top that is drawn,
@@ -58,6 +59,41 @@ final class MapSampler {
 	}
 
 	static MapChunk sample(Columns columns, int startY) {
+		return sample(columns, startY, MapBlockLooks::ensure);
+	}
+
+	/**
+	 * Samples off the client thread (#239), with only the looks the map has made already; null when a block
+	 * needs a look that isn't made yet, which only the client thread can make, so the chunk is sampled there.
+	 */
+	static @Nullable MapChunk sampleOffThread(Columns columns, int startY) {
+		try {
+			return sample(columns, startY, (state, id) -> {
+				MapBlockLook look = MapBlockLooks.get(id);
+				if (look == null) {
+					throw MissingLook.INSTANCE;
+				}
+				return look;
+			});
+		} catch (MissingLook missing) {
+			return null;
+		}
+	}
+
+	/** Where sampling gets the look of a block state. */
+	private interface Looks {
+		MapBlockLook look(BlockState state, int stateId);
+	}
+
+	private static final class MissingLook extends RuntimeException {
+		static final MissingLook INSTANCE = new MissingLook();
+
+		private MissingLook() {
+			super(null, null, false, false);
+		}
+	}
+
+	private static MapChunk sample(Columns columns, int startY, Looks looks) {
 		int[] top = new int[MapChunk.AREA];
 		short[] topY = new short[MapChunk.AREA];
 		int[] floor = new int[MapChunk.AREA];
@@ -80,7 +116,7 @@ final class MapSampler {
 				int skipTo = startY == SURFACE ? lowest : Math.max(lowest, from - CAVE_SKIP);
 				while (underground && from >= skipTo) {
 					BlockState state = columns.state(localX, from, localZ);
-					if (MapBlockLooks.ensure(state, Block.getId(state)).kind() == MapBlockLook.Kind.INVISIBLE) {
+					if (looks.look(state, Block.getId(state)).kind() == MapBlockLook.Kind.INVISIBLE) {
 						break;
 					}
 					from--;
@@ -94,7 +130,7 @@ final class MapSampler {
 					}
 					BlockState state = columns.state(localX, y, localZ);
 					int id = Block.getId(state);
-					MapBlockLook look = MapBlockLooks.ensure(state, id);
+					MapBlockLook look = looks.look(state, id);
 					MapBlockLook.Kind kind = look.kind();
 					if (kind == MapBlockLook.Kind.INVISIBLE) {
 						continue;

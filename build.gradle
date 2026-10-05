@@ -226,6 +226,11 @@ tasks.matching { it.name == "runClient" }.configureEach {
 	if (mcFamily == "26.x" && findProperty("emutilsLaunchTestWorld")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.launchTestWorld=true"
 	}
+	def keptWorld = findProperty("emutilsTestWorld")
+	if (mcFamily == "26.x" && keptWorld != null) {
+		// A world kept between launches (see SmokeLaunchVerifier), such as the big one the map is measured in.
+		jvmArgs "-Demutils.testWorld=${keptWorld}"
+	}
 	if (uiSnapshot) {
 		// Opens the new settings UI in a test world, screenshots it, and quits (see UiSnapshotter).
 		jvmArgs "-Demutils.uiSnapshot=true"
