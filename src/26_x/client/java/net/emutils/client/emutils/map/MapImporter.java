@@ -234,9 +234,12 @@ final class MapImporter {
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("EMUtils map couldn't list {}", regionFolder, exception);
 		}
+		// Where you are, read once: you move meanwhile, and a sort whose order changes under it fails (#235).
+		int centerX = centerRegionX;
+		int centerZ = centerRegionZ;
 		files.sort(Comparator.comparingInt(path -> {
 			int[] at = regionCoordinates(path);
-			return at == null ? Integer.MAX_VALUE : Math.max(Math.abs(at[0] - centerRegionX), Math.abs(at[1] - centerRegionZ));
+			return at == null ? Integer.MAX_VALUE : Math.max(Math.abs(at[0] - centerX), Math.abs(at[1] - centerZ));
 		}));
 		return files;
 	}

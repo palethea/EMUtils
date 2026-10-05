@@ -279,6 +279,12 @@ public final class MapManager {
 			surface.importer.center(player.getX(), player.getZ());
 		}
 		importSaved(surface, TILES, deadline);
+		if (cave != null) {
+			if (cave.importer != null) {
+				cave.importer.center(player.getX(), player.getZ());
+			}
+			importSaved(cave, caveTiles(), deadline);
+		}
 	}
 
 	/**
@@ -404,6 +410,10 @@ public final class MapManager {
 		// What was shown stays under the new map until that one has drawn, instead of the map going blank.
 		releaseBackdrop();
 		if (cave != null) {
+			// It isn't live any more: what it shows stays a moment, but nothing more is brought in for it.
+			if (cave.importer != null) {
+				cave.importer.stop();
+			}
 			setBackdrop(cave, caveTiles(), true);
 			caveTileSet ^= 1;
 			cave = null;
@@ -418,6 +428,10 @@ public final class MapManager {
 		String id = world.worldId;
 		Path folder = worlds == null || id == null ? null : worlds.caveFolder(id, wanted);
 		cave = new MapWorld(level, folder, world.dimension(), level.getMinY(), level.dimensionType().hasCeiling(), id, wanted);
+		if (folder != null) {
+			// In singleplayer the layer fills in from the world's files too (#237), like the surface.
+			cave.importer = MapImporter.start(Minecraft.getInstance(), cave, level.dimension());
+		}
 		CAVE_PENDING.addAll(LOADED);
 		LAST_LAYER.put(world.dimension(), wanted);
 	}
@@ -579,16 +593,19 @@ public final class MapManager {
 	private static void redrawOverviews(MapWorld world, MapTiles tiles) {
 		long now = System.currentTimeMillis();
 		int fingerprint = MapBlockLooks.fingerprint();
-		List<MapRegion> waiting = new ArrayList<>();
+		// Each with its turn, worked out once: overviews are baked on another thread, so they change meanwhile,
+		// and a sort whose order changes under it fails (#235).
+		List<Map.Entry<MapRegion, Integer>> waiting = new ArrayList<>();
 		for (MapRegion region : world.loadedRegions()) {
 			// Not before the looks of its blocks are made, or it would come out empty.
 			if (region.loaded && region.states == null && now - region.overviewBakedAt >= speed.overviewMinMillis() && MapWorld.needsOverview(region)) {
-				waiting.add(region);
+				// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
+				waiting.add(Map.entry(region, region.overview == null ? 0 : region.overviewStale ? 1 : 2));
 			}
 		}
-		// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
-		waiting.sort(Comparator.comparingInt(region -> region.overview == null ? 0 : region.overviewStale ? 1 : 2));
-		for (MapRegion region : waiting) {
+		waiting.sort(Map.Entry.comparingByValue());
+		for (Map.Entry<MapRegion, Integer> turn : waiting) {
+			MapRegion region = turn.getKey();
 			if (tiles.overviewsBaking() >= (tiles.busy() ? speed.overviewsBakingWhileBusy() : speed.overviewsBaking())) {
 				return;
 			}
@@ -923,6 +940,16 @@ public final class MapManager {
 	/** For UI snapshot checks: whether the map has a chunk. */
 	public static boolean hasChunkForSnapshot(int chunkX, int chunkZ) {
 		return world != null && world.chunk(chunkX, chunkZ) != null;
+	}
+
+	/** For UI snapshot checks: whether the cave layer you're in has a chunk. */
+	public static boolean caveHasChunkForSnapshot(int chunkX, int chunkZ) {
+		return cave != null && cave.chunk(chunkX, chunkZ) != null;
+	}
+
+	/** For UI snapshot checks: how many chunks the cave layer's importer brought in from the world's files. */
+	public static int caveImportedForSnapshot() {
+		return cave == null || cave.importer == null ? -1 : cave.importer.importedCount();
 	}
 
 	/** For UI snapshot checks: how many chunks the importer brought in from the world's files. */

@@ -114,6 +114,7 @@ import net.emutils.client.emutils.waypoint.WaypointShare;
 import net.emutils.client.emutils.waypoint.WaypointChatShare;
 import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.waypoint.WaypointManager;
+import net.emutils.client.emutils.waypoint.XaeroWaypointImport;
 import net.emutils.client.emutils.waypoint.WaypointEntry;
 import net.emutils.client.emutils.waypoint.WaypointDimensions;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
@@ -3614,9 +3615,15 @@ public final class UiSnapshotter {
 				if (stepTicks == 220) {
 					check(MapManager.hasChunkForSnapshot(farX >> 4, farZ >> 4), "a chunk generated 2000 blocks away, never sent to the client, is on the map (" + MapManager.importedForSnapshot() + " imported)");
 					WorldMapScreen.open(client, null);
+					// The cave layer you're in fills in from the world's files too (#237).
+					MapManager.toggleManualCaves();
 				}
 				if (stepTicks == 240 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.centerForSnapshot(farX, farZ);
+				}
+				if (stepTicks == 299) {
+					check(MapManager.caveHasChunkForSnapshot(farX >> 4, farZ >> 4), "the cave layer you're in has that chunk too, from the world's files (" + MapManager.caveImportedForSnapshot() + " imported)");
+					MapManager.toggleManualCaves();
 				}
 				captureAfter(client, 300, "world map, chunks generated far away");
 			}
@@ -4074,6 +4081,37 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Moving over from Xaero's Minimap (#233): its waypoint files read for every world, imported once, and
+			// custom waypoints no longer capped at 64 per world.
+			case 413 -> {
+				if (stepTicks == 1) {
+					checkXaeroImport(client);
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.openSheet("waypoints");
+				}
+				if (stepTicks == 20 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					settings.selectSheetSectionForSnapshot(3);
+				}
+				if (stepTicks == 35) {
+					grab(client, "waypoint settings with the xaero import");
+					client.gui.setScreen(null);
+					if (xaeroTestMade) {
+						try {
+							deleteTree(XaeroWaypointImport.folder(client));
+							// The xaero folder too, unless something else is in it.
+							java.io.File[] left = XaeroWaypointImport.folder(client).getParent().toFile().listFiles();
+							if (left != null && left.length == 0) {
+								java.nio.file.Files.deleteIfExists(XaeroWaypointImport.folder(client).getParent());
+							}
+						} catch (java.io.IOException exception) {
+							EMUtilsClient.LOGGER.warn("EMUtils UI snapshot couldn't delete the test's Xaero files", exception);
+						}
+						xaeroTestMade = false;
+					}
+					next();
+				}
+			}
 			// Loading Speed (#239): far regions whose overviews must be drawn again, as a pre-generated world's are,
 			// redrawn at each speed, timed; Fastest must be quicker than Normal.
 			case 414 -> {
@@ -4139,6 +4177,87 @@ public final class UiSnapshotter {
 			case 903 -> measureBigWorld(client, MapLoadSpeed.FAST);
 			default -> finish(client);
 		}
+	}
+
+	/**
+	 * Where the test's Xaero files go: Xaero's own folder when the test client has none, so the settings show the
+	 * import ready to use, else a folder of the test's own.
+	 */
+	private static java.nio.file.Path xaeroTestRoot(Minecraft client) {
+		java.nio.file.Path own = XaeroWaypointImport.folder(client);
+		return !java.nio.file.Files.exists(own) || xaeroTestMade ? own : client.gameDirectory.toPath().resolve("emutils-test").resolve("xaero-minimap");
+	}
+
+	private static boolean xaeroTestMade;
+
+	private static void deleteTree(java.nio.file.Path root) throws java.io.IOException {
+		if (java.nio.file.Files.isDirectory(root)) {
+			try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root)) {
+				walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+			}
+		}
+	}
+
+	private static void checkXaeroImport(Minecraft client) {
+		java.nio.file.Path root = xaeroTestRoot(client);
+		xaeroTestMade = root.equals(XaeroWaypointImport.folder(client));
+		WaypointManager manager = EMUtilsClient.waypoint();
+		try {
+			if (!xaeroTestMade) {
+				deleteTree(root);
+			}
+			String header = "#\n#waypoint:name:initials:x:y:z:color:disabled:type:set:rotate_on_tp:tp_yaw:visibility_type:destination\n#\nsets:gui.xaero_default:Farms\n";
+			writeTest(root.resolve("XaeroTestWorld").resolve("dim%0").resolve("waypoints.txt"), header
+				+ "waypoint:Base§§1:B:100:70:-200:12:true:0:Farms:false:0:0:false\n"
+				+ "waypoint:gui.xaero_deathpoint:D:5:60:5:0:false:1:gui.xaero_default:false:0:0:false\n"
+				+ "waypoint:Sky:S:7:~:8:3:false:0:gui.xaero_default:false:0:0:false\n"
+				+ "waypoint:Going:G:9:64:9:3:false:0:gui.xaero_default:false:0:0:true\n");
+			writeTest(root.resolve("Multiplayer_play.example.net_25566").resolve("dim%-1").resolve("mw$default_1.txt"), header
+				+ "waypoint:Portal:P:10:40:10:4:false:0:gui.xaero_default:false:0:0:false\n");
+			writeTest(root.resolve("Multiplayer_play.example.net_25566").resolve("dim%minecraft$the_end").resolve("waypoints.txt"), header
+				+ "waypoint:City:C:500:80:500:13:false:0:gui.xaero_default:false:0:0:false\n");
+			writeTest(root.resolve("backup").resolve("dim%0").resolve("waypoints.txt"), header
+				+ "waypoint:Old:O:1:1:1:0:false:0:gui.xaero_default:false:0:0:false\n");
+		} catch (java.io.IOException exception) {
+			check(false, "the test's Xaero files could be written (" + exception + ")");
+			return;
+		}
+		List<Waypoint> read = XaeroWaypointImport.read(client, root);
+		check(read.size() == 5, "Xaero's waypoint files are read for every world and dimension, without its backups or temporary destination (" + read.size() + " read)");
+		Waypoint base = read.stream().filter(waypoint -> waypoint.label().equals("Base:1")).findFirst().orElse(null);
+		check(base != null && base.color() == 0xFFFF5555 && base.hidden() && base.set().equals("Farms")
+			&& base.serverAddress().equals("singleplayer:XaeroTestWorld") && base.dimension().equals("minecraft:overworld") && base.y() == 70,
+			"a Xaero waypoint keeps its name, color, hidden state, set, world and dimension");
+		check(read.stream().anyMatch(waypoint -> waypoint.isDeath() && waypoint.label().equals("Death") && waypoint.nearPromptShown()), "Xaero's death waypoint comes over as a kept death waypoint");
+		check(read.stream().anyMatch(waypoint -> waypoint.label().equals("Portal") && waypoint.serverAddress().equals("multiplayer:play.example.net:25566") && waypoint.dimension().equals("minecraft:the_nether")),
+			"a server's waypoint goes to that server, port and all, in its dimension");
+		check(read.stream().anyMatch(waypoint -> waypoint.label().equals("City") && waypoint.dimension().equals("minecraft:the_end")), "a dimension folder named by its id is read");
+		java.util.function.Predicate<Waypoint> test = waypoint -> waypoint.serverAddress() != null
+			&& (waypoint.serverAddress().equals("singleplayer:XaeroTestWorld") || waypoint.serverAddress().equals("multiplayer:play.example.net:25566"));
+		manager.removeForSnapshot(test);
+		int first = manager.importWaypoints(read);
+		int again = manager.importWaypoints(XaeroWaypointImport.read(client, root));
+		check(first == 5 && again == 0, "importing adds them once; importing again adds nothing (" + first + ", then " + again + ")");
+		manager.removeForSnapshot(test);
+		// More than 64 of your own in one world and dimension all stay.
+		String worldKey = WaypointManager.worldKey(client);
+		String dimension = WaypointManager.dimensionId(client.level);
+		List<Waypoint> many = new ArrayList<>();
+		for (int i = 0; i < 70; i++) {
+			Waypoint waypoint = new Waypoint(3000 + i, 70, 3000, dimension, worldKey, System.currentTimeMillis() - 100_000L + i, "Limit " + i, 0xFFFFFFFF, WaypointType.CUSTOM);
+			waypoint.setSet("emutils-limit-test");
+			many.add(waypoint);
+		}
+		manager.importWaypoints(many);
+		manager.addCustom(client, "Limit new", 3100, 70, 3000, 0xFFFFFFFF, false, "emutils-limit-test");
+		long kept = manager.countForSnapshot(waypoint -> waypoint.set().equals("emutils-limit-test"));
+		check(kept == 71, "more than 64 of your own waypoints in one world all stay (" + kept + " kept)");
+		manager.removeForSnapshot(waypoint -> waypoint.set().equals("emutils-limit-test"));
+	}
+
+	private static void writeTest(java.nio.file.Path file, String text) throws java.io.IOException {
+		java.nio.file.Files.createDirectories(file.getParent());
+		java.nio.file.Files.writeString(file, text);
 	}
 
 	private static final String BIG_WORLD_DONE = "emutils-chunky-done.txt";

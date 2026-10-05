@@ -417,7 +417,8 @@ public final class WorldMapScreen extends Screen {
 		int minY = own ? minecraft.level.getMinY() : server != null ? server.getMinY() : Integer.MIN_VALUE;
 		boolean ceiling = own ? minecraft.level.dimensionType().hasCeiling() : server != null ? server.dimensionType().hasCeiling() : shownDimension.equals("minecraft:the_nether");
 		MapWorld opened = new MapWorld(minecraft.level, folder, shownDimension, minY, ceiling, entry == null ? null : entry.id(), shownCave);
-		if (key != null && !own && shownCave == MapSampler.SURFACE) {
+		// Another dimension's map, or a cave layer other than yours (#237), fills in from the world's files.
+		if (key != null && (!own || shownCave != MapSampler.SURFACE)) {
 			opened.importer = MapImporter.start(minecraft, opened, key);
 		}
 		MapTiles opening = new MapTiles();
