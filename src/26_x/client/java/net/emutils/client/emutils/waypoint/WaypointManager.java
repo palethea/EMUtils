@@ -48,7 +48,8 @@ public final class WaypointManager {
     private static final double ARM_DISTANCE_SQUARED =
         ARM_DISTANCE_BLOCKS * ARM_DISTANCE_BLOCKS;
     private static final long DUPLICATE_CAPTURE_WINDOW_MS = 1_000L;
-    private static final int MAX_WAYPOINTS_PER_WORLD = 64;
+    /** Death waypoints kept per world and dimension; your own waypoints have no limit (#233). */
+    private static final int MAX_DEATH_WAYPOINTS_PER_WORLD = 64;
 
     private final List<Waypoint> waypoints = new ArrayList<>();
     private long lastCaptureTimestamp;
@@ -217,6 +218,50 @@ public final class WaypointManager {
     }
 
     /** Lets go of the temporary waypoint, as you left the world (#226). */
+    /**
+     * Adds waypoints brought over from another mod (#233), each unless its world and dimension already have one
+     * at that spot, and saves them. Returns how many were added, or -1 when they couldn't be saved, which adds
+     * none.
+     */
+    public int importWaypoints(List<Waypoint> incoming) {
+        List<Waypoint> before = new ArrayList<>(waypoints);
+        int added = 0;
+        for (Waypoint waypoint : incoming) {
+            boolean there = false;
+            for (Waypoint existing : waypoints) {
+                if (existing.matchesDimension(waypoint.dimension()) && existing.matchesWorldKey(waypoint.serverAddress())
+                    && existing.sameBlock(waypoint.x(), waypoint.y(), waypoint.z())) {
+                    there = true;
+                    break;
+                }
+            }
+            if (!there) {
+                waypoints.add(waypoint);
+                added++;
+            }
+        }
+        if (added > 0 && !save()) {
+            waypoints.clear();
+            waypoints.addAll(before);
+            return -1;
+        }
+        return added;
+    }
+
+    /** For UI snapshot checks: deletes the waypoints that match, and says how many of them there were. */
+    public int removeForSnapshot(java.util.function.Predicate<Waypoint> which) {
+        int before = waypoints.size();
+        if (waypoints.removeIf(which)) {
+            save();
+        }
+        return before - waypoints.size();
+    }
+
+    /** For UI snapshot checks: how many waypoints match. */
+    public long countForSnapshot(java.util.function.Predicate<Waypoint> which) {
+        return waypoints.stream().filter(which).count();
+    }
+
     public void dropTemporary() {
         waypoints.removeIf(Waypoint::temporary);
     }
@@ -883,14 +928,15 @@ public final class WaypointManager {
         }
     }
 
+    /** Drops the oldest death waypoints past the limit; your own waypoints are never dropped (#233). */
     private void trimWaypointsForWorld(String worldKey, String dimension) {
         List<Waypoint> worldWaypoints = waypoints
             .stream()
-            .filter(wp -> matchesWorld(wp, worldKey, dimension))
+            .filter(wp -> wp.isDeath() && matchesWorld(wp, worldKey, dimension))
             .sorted(Comparator.comparingLong(Waypoint::timestamp))
             .toList();
 
-        int excess = worldWaypoints.size() - MAX_WAYPOINTS_PER_WORLD;
+        int excess = worldWaypoints.size() - MAX_DEATH_WAYPOINTS_PER_WORLD;
         for (int index = 0; index < excess; index++) {
             waypoints.remove(worldWaypoints.get(index));
         }
