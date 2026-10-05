@@ -996,7 +996,6 @@ public final class EMUtilsTexts {
     public static final String UI_RADAR_SECTION_NAMES = "emutils.ui.radar.section.names";
     public static final String UI_RADAR_SECTION_COLORS = "emutils.ui.radar.section.colors";
     public static final String UI_RADAR_SECTION_DISPLAY = "emutils.ui.radar.section.display";
-    public static final String UI_MINIMAP_OPEN_RADAR = "emutils.ui.minimap.open_radar";
     public static final String OPTION_RADAR_ICON_SIZE = "emutils.option.radar_icon_size";
     public static final String OPTION_RADAR_NPC_NAMES = "emutils.option.radar_npc_names";
     public static final String OPTION_RADAR_NAME_COLORS = "emutils.option.radar_name_colors";

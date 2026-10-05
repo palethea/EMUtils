@@ -1052,7 +1052,6 @@
   "emutils.ui.radar.section.names": "Names",
   "emutils.ui.radar.section.colors": "Colors",
   "emutils.ui.radar.section.display": "Display",
-  "emutils.ui.minimap.open_radar": "Entity Radar Settings",
   "emutils.option.radar_icon_size": "Icon Size",
   "emutils.option.radar_icon_size.desc": "How big faces and dots are on the minimap. The world map's are a little bigger.",
   "emutils.option.radar_npc_names": "NPC Names",
