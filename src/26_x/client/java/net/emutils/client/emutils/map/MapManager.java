@@ -42,25 +42,20 @@ import org.jspecify.annotations.Nullable;
  */
 public final class MapManager {
 	/** At most this long per tick is spent sampling chunks, so joining a world doesn't hitch. */
-	private static final long SAMPLE_BUDGET_NANOS = 3_000_000L;
 	/** How many of the nearest waiting chunks are picked per pass. */
 	private static final int NEAREST_BATCH = 16;
 	/** Changed regions are written this often, so a crash loses little (#228); only what changed is written. */
 	private static final int SAVE_EVERY_TICKS = 200;
 	/** Often, so regions read in only to draw far tiles are let go soon after. */
 	private static final int UNLOAD_EVERY_TICKS = 20;
-	private static final int OVERVIEWS_EVERY_TICKS = 10;
 	/** A region's overview is redrawn at most this often while you explore it. */
 	private static final long OVERVIEW_MIN_MILLIS = 10_000L;
 	/**
-	 * At most this many overviews are drawn at once, and only one while tiles on screen are waiting, so they
-	 * don't wait behind overviews.
+	 * How hard the map works (#239): the overviews drawn at once (fewer while tiles on screen are waiting, so
+	 * they don't wait behind overviews) and how often, the regions read in at a time only to redraw theirs, and
+	 * the time per tick for sampling and for the looks of blocks just read. Follows the Loading Speed setting.
 	 */
-	private static final int MAX_OVERVIEWS_BAKING = 2;
-	/** At most this many regions are read in at a time to redraw an overview that's missing or outdated. */
-	private static final int REDRAW_LOADS = 4;
-	/** At most this long per tick is spent making the looks of blocks just read from disk. */
-	private static final long PREPARE_BUDGET_NANOS = 2_000_000L;
+	private static MapLoadSpeed speed = MapLoadSpeed.NORMAL;
 	/** On a server, which world you're in is worked out once this many chunks with something in them are sampled... */
 	private static final int RESOLVE_CHUNKS = 24;
 	/** ...or after this many ticks, whichever comes first. */
@@ -223,6 +218,7 @@ public final class MapManager {
 	}
 
 	public static void tick(Minecraft client) {
+		applySpeed(EMUtilsClient.config() == null ? MapLoadSpeed.NORMAL : EMUtilsClient.config().mapLoadSpeed());
 		MapExport.tick(client);
 		WorldMapScreen.releaseAwayIfLeft(client);
 		ClientLevel level = client.level;
@@ -261,7 +257,7 @@ public final class MapManager {
 
 		int playerChunkX = player.getBlockX() >> 4;
 		int playerChunkZ = player.getBlockZ() >> 4;
-		long deadline = System.nanoTime() + SAMPLE_BUDGET_NANOS;
+		long deadline = System.nanoTime() + speed.sampleBudgetNanos();
 		long[] batch = new long[NEAREST_BATCH];
 		while (!PENDING.isEmpty() && System.nanoTime() < deadline) {
 			int count = nearest(PENDING, batch, playerChunkX, playerChunkZ);
@@ -534,7 +530,7 @@ public final class MapManager {
 		// Tiles that missed these looks were left unfinished and are drawn again on their own.
 		MapBlockLooks.makeRequested();
 		world.ticks++;
-		if (world.ticks % OVERVIEWS_EVERY_TICKS == 0) {
+		if (world.ticks % speed.overviewEveryTicks() == 0) {
 			redrawOverviews(world, tiles);
 		}
 		if (world.ticks % SAVE_EVERY_TICKS == 0) {
@@ -553,7 +549,7 @@ public final class MapManager {
 	 * sampled before the map knew its world.
 	 */
 	private static void prepareLoaded(MapWorld world, MapTiles tiles) {
-		long deadline = System.nanoTime() + PREPARE_BUDGET_NANOS;
+		long deadline = System.nanoTime() + speed.prepareBudgetNanos();
 		MapRegion region;
 		while (System.nanoTime() < deadline && (region = world.preparing != null ? world.preparing : world.pollLoaded()) != null) {
 			world.preparing = region;
@@ -595,12 +591,12 @@ public final class MapManager {
 		// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
 		waiting.sort(Comparator.comparingInt(region -> region.overview == null ? 0 : region.overviewStale ? 1 : 2));
 		for (MapRegion region : waiting) {
-			if (tiles.overviewsBaking() >= (tiles.busy() ? 1 : MAX_OVERVIEWS_BAKING)) {
+			if (tiles.overviewsBaking() >= (tiles.busy() ? speed.overviewsBakingWhileBusy() : speed.overviewsBaking())) {
 				return;
 			}
 			tiles.bakeOverview(world, region, fingerprint);
 		}
-		world.loadRedraws(REDRAW_LOADS);
+		world.loadRedraws(speed.redrawLoads());
 	}
 
 	/** Samples a loaded chunk into the surface's map and, with {@code caveToo}, the cave layer's. */
@@ -827,6 +823,29 @@ public final class MapManager {
 		}
 		backdropWorld = null;
 		backdropTiles = null;
+	}
+
+	private static void applySpeed(MapLoadSpeed wanted) {
+		speed = wanted;
+		MapTiles.applySpeed(wanted);
+		MapWorld.applySpeed(wanted);
+	}
+
+	/** For UI snapshot checks: regions of the map you're on waiting to be read in or drawn for their overviews. */
+	public static int redrawsForSnapshot() {
+		return world == null ? -1 : world.redrawsForSnapshot();
+	}
+
+	/** For UI snapshot checks: has the map you're on look for region files again. */
+	public static void relistForSnapshot() {
+		if (world != null) {
+			world.relistForSnapshot();
+		}
+	}
+
+	/** For UI snapshot checks: the folder the map you're on is saved in, or null. */
+	public static @Nullable Path folderForSnapshot() {
+		return world == null ? null : world.folder();
 	}
 
 	private static void closeAll() {

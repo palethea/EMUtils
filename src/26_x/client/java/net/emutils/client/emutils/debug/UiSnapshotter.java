@@ -43,6 +43,7 @@ import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
+import net.emutils.client.emutils.map.MapLoadSpeed;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
 import net.emutils.client.emutils.map.MapExport;
@@ -4073,8 +4074,123 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Loading Speed (#239): far regions whose overviews must be drawn again, as a pre-generated world's are,
+			// redrawn at each speed, timed; Fast and Fastest must be quicker than Normal.
+			case 414 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				int[] runs = {MapLoadSpeed.NORMAL.ordinal(), MapLoadSpeed.FAST.ordinal(), MapLoadSpeed.FASTEST.ordinal()};
+				if (stepTicks == 1) {
+					config.setMinimap(true);
+					config.setWorldMap(true);
+					loadBench = new long[runs.length];
+					loadRun = 0;
+					loadRunStart = -1;
+				}
+				if (stepTicks == 20) {
+					// The benchmark copies a saved region, so there must be one.
+					MapManager.saveForSnapshot();
+				}
+				if (stepTicks >= 40 && loadRun < runs.length) {
+					MapLoadSpeed speed = MapLoadSpeed.values()[runs[loadRun]];
+					int offset = 60 + loadRun * 20;
+					int baseX = (client.player.getBlockX() >> 9) + offset;
+					int baseZ = (client.player.getBlockZ() >> 9) + offset;
+					if (loadRunStart < 0) {
+						config.setMapLoadSpeed(speed);
+						int copied = copyRegionsForSnapshot(baseX, baseZ, LOAD_BENCH_SIDE);
+						check(copied == LOAD_BENCH_SIDE * LOAD_BENCH_SIDE, "the benchmark's far regions were written (" + copied + ")");
+						MapManager.relistForSnapshot();
+						WorldMapScreen.open(client, null);
+						loadRunStart = stepTicks;
+					} else if (stepTicks == loadRunStart + 10 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.centerForSnapshot((baseX + LOAD_BENCH_SIDE / 2.0D) * 512.0D, (baseZ + LOAD_BENCH_SIDE / 2.0D) * 512.0D);
+						map.scrollForSnapshot(-12.0D);
+					} else if (stepTicks > loadRunStart + 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						boolean done = MapManager.redrawsForSnapshot() == 0 && !map.loadingForSnapshot();
+						if (done || stepTicks - loadRunStart > 1200) {
+							loadBench[loadRun] = done ? stepTicks - loadRunStart - 20 : -1;
+							EMUtilsClient.LOGGER.info("EMUtils map loading speed {}: {} far regions redrawn in {} ticks", speed, LOAD_BENCH_SIDE * LOAD_BENCH_SIDE, loadBench[loadRun]);
+							grab(client, "world map far regions at " + speed.name().toLowerCase(java.util.Locale.ROOT));
+							client.gui.setScreen(null);
+							loadRun++;
+							loadRunStart = -1;
+						}
+					}
+				}
+				if (loadRun >= runs.length) {
+					check(loadBench[0] > 0 && loadBench[1] > 0 && loadBench[2] > 0 && loadBench[1] < loadBench[0] && loadBench[2] < loadBench[0],
+						"Fast and Fastest draw far regions sooner than Normal (" + loadBench[0] + " ticks at Normal, " + loadBench[1] + " at Fast, " + loadBench[2] + " at Fastest)");
+					config.setMapLoadSpeed(MapLoadSpeed.NORMAL);
+					deleteBenchRegions();
+					config.resetMinimapDefaults();
+					config.setMinimap(false);
+					config.setWorldMap(false);
+					next();
+				}
+			}
 			default -> finish(client);
 		}
+	}
+
+	private static final int LOAD_BENCH_SIDE = 8;
+	private static long[] loadBench = new long[0];
+	private static int loadRun;
+	private static int loadRunStart = -1;
+	private static final List<java.nio.file.Path> benchRegions = new ArrayList<>();
+
+	/**
+	 * Copies the map's fullest region file to a square of far regions, each with an overview from other resource
+	 * packs, so it must be read in and drawn again, as a region of a pre-generated world without one is. Returns
+	 * how many were written.
+	 */
+	private static int copyRegionsForSnapshot(int baseX, int baseZ, int side) {
+		java.nio.file.Path folder = MapManager.folderForSnapshot();
+		if (folder == null) {
+			return 0;
+		}
+		try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(folder)) {
+			java.nio.file.Path source = files.filter(path -> path.getFileName().toString().endsWith(".emap"))
+				.max(java.util.Comparator.comparingLong(path -> path.toFile().length())).orElse(null);
+			if (source == null) {
+				return 0;
+			}
+			byte[] raw;
+			try (java.io.InputStream in = new java.util.zip.InflaterInputStream(java.nio.file.Files.newInputStream(source))) {
+				raw = in.readAllBytes();
+			}
+			// After the magic, the version and the bottom: whether there's an overview, then its packs' fingerprint.
+			if (raw[12] != 0) {
+				raw[13] ^= 0x55;
+			}
+			java.io.ByteArrayOutputStream packed = new java.io.ByteArrayOutputStream();
+			try (java.util.zip.DeflaterOutputStream out = new java.util.zip.DeflaterOutputStream(packed)) {
+				out.write(raw);
+			}
+			int written = 0;
+			for (int dz = 0; dz < side; dz++) {
+				for (int dx = 0; dx < side; dx++) {
+					java.nio.file.Path copy = folder.resolve("r." + (baseX + dx) + "." + (baseZ + dz) + ".emap");
+					java.nio.file.Files.write(copy, packed.toByteArray());
+					benchRegions.add(copy);
+					written++;
+				}
+			}
+			return written;
+		} catch (java.io.IOException exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot couldn't write the benchmark's regions", exception);
+			return 0;
+		}
+	}
+
+	private static void deleteBenchRegions() {
+		for (java.nio.file.Path path : benchRegions) {
+			try {
+				java.nio.file.Files.deleteIfExists(path);
+			} catch (java.io.IOException exception) {
+				// Left over; harmless.
+			}
+		}
+		benchRegions.clear();
 	}
 
 	/** Has the singleplayer server save everything to disk, as /save-all flush would, and waits for it. */

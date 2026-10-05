@@ -15,6 +15,7 @@ import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudOverlayAnchor;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
+import net.emutils.client.emutils.map.MapLoadSpeed;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.RadarGroup;
 import net.emutils.client.emutils.map.RadarIcon;
@@ -259,6 +260,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private String minimapShape = MinimapShape.SQUARE.name();
 	private Boolean minimapRotate = Boolean.TRUE;
 	private String minimapZoom = MinimapZoom.ONE.name();
+	/** How hard the minimap and world map work to load (#239). */
+	private String mapLoadSpeed = MapLoadSpeed.NORMAL.name();
 	private Boolean minimapCoordinates = Boolean.TRUE;
 	private Boolean minimapWaypoints = Boolean.TRUE;
 	private Boolean minimapWaypointsPinned = Boolean.TRUE;
@@ -3807,6 +3810,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		save();
 	}
 
+	public MapLoadSpeed mapLoadSpeed() {
+		return MapLoadSpeed.fromName(mapLoadSpeed);
+	}
+
+	public void setMapLoadSpeed(MapLoadSpeed speed) {
+		mapLoadSpeed = (speed == null ? MapLoadSpeed.NORMAL : speed).name();
+		save();
+	}
+
 	public MinimapZoom minimapZoom() {
 		return MinimapZoom.fromName(minimapZoom);
 	}
@@ -4085,6 +4097,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		minimapShape = MinimapShape.SQUARE.name();
 		minimapRotate = Boolean.TRUE;
 		minimapZoom = MinimapZoom.ONE.name();
+		mapLoadSpeed = MapLoadSpeed.NORMAL.name();
 		minimapCoordinates = Boolean.TRUE;
 		minimapWaypoints = Boolean.TRUE;
 		minimapWaypointsPinned = Boolean.TRUE;
