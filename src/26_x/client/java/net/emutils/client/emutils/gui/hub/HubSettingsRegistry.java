@@ -21,6 +21,7 @@ import net.emutils.client.emutils.inventory.gui.MassDropItemsScreen;
 import net.emutils.client.emutils.waypoint.WaypointCoordinateFormat;
 import net.emutils.client.emutils.waypoint.WaypointReachAction;
 import net.emutils.client.emutils.waypoint.WaypointShareFormat;
+import net.emutils.client.emutils.waypoint.XaeroWaypointImport;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.hud.HudTextShadow;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
@@ -332,6 +333,14 @@ public final class HubSettingsRegistry {
 			() -> waypointMaxDistanceLabel(config.waypointMaxDistance()),
 			EMUtilsConfig.WAYPOINT_MAX_DISTANCES,
 			HubSettingsRegistry::waypointMaxDistanceLabel
+		));
+		// Moving over from Xaero's Minimap (#233): its waypoints, for every world and server, with or without it installed.
+		rows.add(new HubSettingRow.Section(EMUtilsTexts.UI_WAYPOINTS_SECTION_IMPORT));
+		Minecraft client = Minecraft.getInstance();
+		rows.add(new HubSettingRow.Action(
+			Component.translatable(EMUtilsTexts.OPTION_WAYPOINT_XAERO_IMPORT),
+			() -> XaeroWaypointImport.run(Minecraft.getInstance()),
+			client != null && XaeroWaypointImport.available(client)
 		));
 		return rows;
 	}
