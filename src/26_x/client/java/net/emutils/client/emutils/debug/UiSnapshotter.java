@@ -3614,9 +3614,15 @@ public final class UiSnapshotter {
 				if (stepTicks == 220) {
 					check(MapManager.hasChunkForSnapshot(farX >> 4, farZ >> 4), "a chunk generated 2000 blocks away, never sent to the client, is on the map (" + MapManager.importedForSnapshot() + " imported)");
 					WorldMapScreen.open(client, null);
+					// The cave layer you're in fills in from the world's files too (#237).
+					MapManager.toggleManualCaves();
 				}
 				if (stepTicks == 240 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
 					map.centerForSnapshot(farX, farZ);
+				}
+				if (stepTicks == 299) {
+					check(MapManager.caveHasChunkForSnapshot(farX >> 4, farZ >> 4), "the cave layer you're in has that chunk too, from the world's files (" + MapManager.caveImportedForSnapshot() + " imported)");
+					MapManager.toggleManualCaves();
 				}
 				captureAfter(client, 300, "world map, chunks generated far away");
 			}
