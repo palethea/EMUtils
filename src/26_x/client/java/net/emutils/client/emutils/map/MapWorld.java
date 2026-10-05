@@ -13,6 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.waypoint.WaypointManager;
@@ -44,6 +47,16 @@ public final class MapWorld {
 	static final int LAYER_BLOCKS = 16;
 	private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "EMUtils Map IO");
+		thread.setDaemon(true);
+		return thread;
+	});
+	/**
+	 * Reads overviews for the far zoom levels, apart from {@link #IO} so they don't wait behind saves and whole
+	 * regions, with as many threads as the Loading Speed setting says (#239). Only reads: whole regions are
+	 * read in on IO, in order with their saves.
+	 */
+	private static final ThreadPoolExecutor OVERVIEW_READS = new ThreadPoolExecutor(1, 1, 30L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), runnable -> {
+		Thread thread = new Thread(runnable, "EMUtils Map Overview Reader");
 		thread.setDaemon(true);
 		return thread;
 	});
@@ -302,7 +315,7 @@ public final class MapWorld {
 		}
 		MapRegion created = new MapRegion(regionX, regionZ);
 		if (overviews.putIfAbsent(key, created) == null) {
-			IO.execute(() -> {
+			OVERVIEW_READS.execute(() -> {
 				try {
 					MapRegionFile.Contents contents = MapRegionFile.readOverview(MapRegionFile.path(folder, regionX, regionZ));
 					if (contents != null && contents.overview() != null && !(ceiling && contents.version() < 2)) {
@@ -426,6 +439,53 @@ public final class MapWorld {
 		} catch (IOException | RuntimeException exception) {
 			return "reading the mask failed: " + exception;
 		}
+	}
+
+	/** Follows the Loading Speed setting (#239): how many threads read overviews. */
+	static void applySpeed(MapLoadSpeed speed) {
+		int threads = speed.overviewReaders();
+		if (threads > OVERVIEW_READS.getMaximumPoolSize()) {
+			OVERVIEW_READS.setMaximumPoolSize(threads);
+			OVERVIEW_READS.setCorePoolSize(threads);
+		} else if (threads < OVERVIEW_READS.getMaximumPoolSize()) {
+			OVERVIEW_READS.setCorePoolSize(threads);
+			OVERVIEW_READS.setMaximumPoolSize(threads);
+		}
+	}
+
+	/** For UI snapshot checks: regions waiting to be read in or drawn only for their overviews. */
+	int redrawsForSnapshot() {
+		return redraws.size() + redrawing.size();
+	}
+
+	/** For UI snapshot checks: waits for everything queued to read or save to be done. */
+	static void awaitIoForSnapshot() {
+		try {
+			IO.submit(() -> {
+			}).get(60L, java.util.concurrent.TimeUnit.SECONDS);
+		} catch (Exception exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot gave up waiting for the map's IO", exception);
+		}
+	}
+
+	/** For UI snapshot checks: regions in memory, and of those, the ones whose overview is still to be drawn. */
+	int[] regionsForSnapshot() {
+		int loaded = 0;
+		int needing = 0;
+		for (MapRegion region : regions.values()) {
+			if (region.loaded) {
+				loaded++;
+				if (needsOverview(region)) {
+					needing++;
+				}
+			}
+		}
+		return new int[] {loaded, needing, known.size()};
+	}
+
+	/** For UI snapshot checks: looks for region files again, as when the map opens. */
+	void relistForSnapshot() {
+		IO.execute(this::listKnownRegions);
 	}
 
 	/** Some regions or overviews are still being read from disk. */

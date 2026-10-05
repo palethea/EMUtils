@@ -43,6 +43,7 @@ import net.emutils.client.emutils.gui.settings.KeybindsScreen;
 import net.emutils.client.emutils.hud.ArmorStatusDisplay;
 import net.emutils.client.emutils.map.MapBlockLook;
 import net.emutils.client.emutils.map.MapBlockLooks;
+import net.emutils.client.emutils.map.MapLoadSpeed;
 import net.emutils.client.emutils.map.MapManager;
 import net.emutils.client.emutils.map.MapDraw;
 import net.emutils.client.emutils.map.MapExport;
@@ -4111,6 +4112,69 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Loading Speed (#239): far regions whose overviews must be drawn again, as a pre-generated world's are,
+			// redrawn at each speed, timed; Fastest must be quicker than Normal.
+			case 414 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				int[] runs = {MapLoadSpeed.NORMAL.ordinal(), MapLoadSpeed.FAST.ordinal(), MapLoadSpeed.FASTEST.ordinal()};
+				if (stepTicks == 1) {
+					config.setMinimap(true);
+					config.setWorldMap(true);
+					loadBench = new long[runs.length];
+					loadRun = 0;
+					loadRunStart = -1;
+				}
+				if (stepTicks == 20) {
+					// The benchmark copies a saved region, so there must be one.
+					MapManager.saveForSnapshot();
+				}
+				if (stepTicks >= 40 && loadRun < runs.length) {
+					MapLoadSpeed speed = MapLoadSpeed.values()[runs[loadRun]];
+					int offset = 60 + loadRun * 20;
+					int baseX = (client.player.getBlockX() >> 9) + offset;
+					int baseZ = (client.player.getBlockZ() >> 9) + offset;
+					if (loadRunStart < 0) {
+						config.setMapLoadSpeed(speed);
+						int copied = copyRegionsForSnapshot(baseX, baseZ, LOAD_BENCH_SIDE);
+						check(copied == LOAD_BENCH_SIDE * LOAD_BENCH_SIDE, "the benchmark's far regions were written (" + copied + ")");
+						MapManager.relistForSnapshot();
+						WorldMapScreen.open(client, null);
+						loadRunStart = stepTicks;
+					} else if (stepTicks == loadRunStart + 10 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						map.centerForSnapshot((baseX + LOAD_BENCH_SIDE / 2.0D) * 512.0D, (baseZ + LOAD_BENCH_SIDE / 2.0D) * 512.0D);
+						map.scrollForSnapshot(-12.0D);
+					} else if (stepTicks > loadRunStart + 20 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+						boolean done = MapManager.redrawsForSnapshot() == 0 && !map.loadingForSnapshot();
+						if (done || stepTicks - loadRunStart > 1200) {
+							loadBench[loadRun] = done ? stepTicks - loadRunStart - 20 : -1;
+							EMUtilsClient.LOGGER.info("EMUtils map loading speed {}: {} far regions redrawn in {} ticks", speed, LOAD_BENCH_SIDE * LOAD_BENCH_SIDE, loadBench[loadRun]);
+							grab(client, "world map far regions at " + speed.name().toLowerCase(java.util.Locale.ROOT));
+							client.gui.setScreen(null);
+							loadRun++;
+							loadRunStart = -1;
+						}
+					}
+				}
+				if (loadRun >= runs.length) {
+					// Copies of one region are read in whole on the map's one IO thread, which Normal and Fast share, so
+					// those two come out close here; the kept big world (steps 900-903) tells them apart.
+					check(loadBench[0] > 0 && loadBench[1] > 0 && loadBench[2] > 0 && loadBench[2] < loadBench[0],
+						"Fastest draws far regions sooner than Normal (" + loadBench[0] + " ticks at Normal, " + loadBench[1] + " at Fast, " + loadBench[2] + " at Fastest)");
+					config.setMapLoadSpeed(MapLoadSpeed.NORMAL);
+					deleteBenchRegions();
+					config.resetMinimapDefaults();
+					config.setMinimap(false);
+					config.setWorldMap(false);
+					next();
+				}
+			}
+			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
+			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and
+			// Fast. Normal runs never get here: their steps end before.
+			case 900 -> generateBigWorld(client);
+			case 901 -> measureBigWorld(client, MapLoadSpeed.FASTEST);
+			case 902 -> measureBigWorld(client, MapLoadSpeed.NORMAL);
+			case 903 -> measureBigWorld(client, MapLoadSpeed.FAST);
 			default -> finish(client);
 		}
 	}
@@ -4194,6 +4258,210 @@ public final class UiSnapshotter {
 	private static void writeTest(java.nio.file.Path file, String text) throws java.io.IOException {
 		java.nio.file.Files.createDirectories(file.getParent());
 		java.nio.file.Files.writeString(file, text);
+	}
+
+	private static final String BIG_WORLD_DONE = "emutils-chunky-done.txt";
+	private static final int BIG_WORLD_RADIUS = 2048;
+	/** How long a measurement may take before it counts as too slow, in seconds. */
+	private static final double BIG_WORLD_MAX_SECONDS = 900.0D;
+	private static long bigWorldStart;
+	private static double bigWorldImported = -1.0D;
+
+	private static @Nullable Object chunkyApi() {
+		try {
+			Object chunky = Class.forName("org.popcraft.chunky.ChunkyProvider").getMethod("get").invoke(null);
+			return chunky == null ? null : chunky.getClass().getMethod("getApi").invoke(chunky);
+		} catch (ReflectiveOperationException | LinkageError exception) {
+			return null;
+		}
+	}
+
+	private static Object callChunky(Object api, String method, Object... arguments) throws ReflectiveOperationException {
+		for (java.lang.reflect.Method candidate : api.getClass().getMethods()) {
+			if (candidate.getName().equals(method) && candidate.getParameterCount() == arguments.length) {
+				return candidate.invoke(api, arguments);
+			}
+		}
+		throw new NoSuchMethodException(method);
+	}
+
+	/** Generates the kept world once, with Chunky, and marks it done so later runs go straight to measuring. */
+	private static void generateBigWorld(Minecraft client) {
+		IntegratedServer server = client.getSingleplayerServer();
+		java.nio.file.Path save = server == null ? null : server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+		if (stepTicks == 1) {
+			if (SmokeLaunchVerifier.keptWorld() == null || save == null) {
+				check(false, "the big map tests run in the kept world: launch with -PemutilsTestWorld=\"EMUtils Map Bench\"");
+				finish(client);
+				return;
+			}
+			// The map stays off while the world generates, so it doesn't slow that down.
+			EMUtilsClient.config().setMinimap(false);
+			EMUtilsClient.config().setWorldMap(false);
+			if (java.nio.file.Files.exists(save.resolve(BIG_WORLD_DONE))) {
+				EMUtilsClient.LOGGER.info("EMUtils big map world was generated before");
+				next();
+			}
+			return;
+		}
+		Object api = chunkyApi();
+		if (api == null) {
+			check(false, "Chunky is installed in the test client, to generate the big map world");
+			finish(client);
+			return;
+		}
+		try {
+			if (stepTicks == 40) {
+				boolean started = (Boolean) callChunky(api, "startTask", "minecraft:overworld", "square", 0.0D, 0.0D, (double) BIG_WORLD_RADIUS, (double) BIG_WORLD_RADIUS, "region");
+				if (!started) {
+					callChunky(api, "continueTask", "minecraft:overworld");
+				}
+				EMUtilsClient.LOGGER.info("EMUtils big map world: Chunky started generating a {}-block radius", BIG_WORLD_RADIUS);
+			}
+			if (stepTicks > 100 && stepTicks % 200 == 0) {
+				boolean running = (Boolean) callChunky(api, "isRunning", "minecraft:overworld");
+				long regions;
+				java.nio.file.Path regionFolder = net.minecraft.world.level.dimension.DimensionType.getStorageFolder(net.minecraft.world.level.Level.OVERWORLD, save).resolve("region");
+				if (java.nio.file.Files.isDirectory(regionFolder)) {
+					try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(regionFolder)) {
+						regions = files.count();
+					}
+				} else {
+					regions = 0;
+				}
+				EMUtilsClient.LOGGER.info("EMUtils big map world: {} s, {} region files, Chunky {}", stepTicks / 20, regions, running ? "running" : "done");
+				if (!running) {
+					check(saveServer(client), "the big map world was saved after generating");
+					java.nio.file.Files.writeString(save.resolve(BIG_WORLD_DONE), "Generated by Chunky, radius " + BIG_WORLD_RADIUS + "\n");
+					next();
+				} else if (stepTicks > 20 * 3600) {
+					check(false, "Chunky generated the big map world within an hour");
+					finish(client);
+				}
+			}
+		} catch (ReflectiveOperationException | java.io.IOException exception) {
+			check(false, "Chunky could be asked to generate the big map world (" + exception + ")");
+			finish(client);
+		}
+	}
+
+	/**
+	 * Opens the kept world's map from nothing at a Loading Speed and times it: until every generated chunk is
+	 * brought in from the world's files, and until the world map zoomed out over all of it is fully drawn.
+	 * Logs how far it is every second, with screenshots along the way.
+	 */
+	private static void measureBigWorld(Minecraft client, MapLoadSpeed speed) {
+		EMUtilsConfig config = EMUtilsClient.config();
+		String name = speed.name().toLowerCase(java.util.Locale.ROOT);
+		if (stepTicks == 1) {
+			config.setMinimap(false);
+			config.setWorldMap(false);
+			client.gui.setScreen(null);
+		}
+		if (stepTicks == 5) {
+			MapManager.forgetSavedMapForSnapshot(client);
+			config.setMapLoadSpeed(speed);
+			config.setMinimap(true);
+			config.setWorldMap(true);
+			bigWorldStart = System.nanoTime();
+			bigWorldImported = -1.0D;
+		}
+		if (stepTicks == 30) {
+			WorldMapScreen.open(client, null);
+		}
+		if (stepTicks == 50 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+			// A sixteenth of a GUI pixel a block: the whole generated square on screen, with room around it.
+			map.setZoomForSnapshot(1.0F / 16.0F);
+			map.centerForSnapshot(0.0D, 0.0D);
+		}
+		if (stepTicks <= 50 || stepTicks % 20 != 0) {
+			return;
+		}
+		int[] progress = MapManager.progressForSnapshot();
+		boolean loading = !(MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) || map.loadingForSnapshot();
+		double seconds = (System.nanoTime() - bigWorldStart) / 1.0E9D;
+		if (progress[1] >= 1 && bigWorldImported < 0.0D) {
+			bigWorldImported = seconds;
+		}
+		EMUtilsClient.LOGGER.info(
+			"EMUtils big map {} {} s: {} chunks imported, {} passes, {} regions in memory, {} overviews to draw, {} regions known, {} waiting to redraw, {} imported waiting, {} workers busy, {}, {} fps",
+			name, String.format(java.util.Locale.ROOT, "%.0f", seconds), progress[0], progress[1], progress[2], progress[3], progress[4], progress[5], progress[6], progress[7],
+			loading ? "loading" : "drawn", client.getFps()
+		);
+		if (stepTicks == 50 + 20 * 15 || stepTicks == 50 + 20 * 60) {
+			grab(client, "big world map " + name + " after " + (stepTicks - 50) / 20 + " s");
+		}
+		boolean done = progress[1] >= 1 && !loading && progress[3] == 0 && progress[5] == 0;
+		if (done || seconds > BIG_WORLD_MAX_SECONDS) {
+			EMUtilsClient.LOGGER.info("EMUtils big map {}: every chunk imported after {} s, the map fully drawn after {} s", name,
+				String.format(java.util.Locale.ROOT, "%.0f", bigWorldImported), done ? String.format(java.util.Locale.ROOT, "%.0f", seconds) : "never");
+			grab(client, "big world map " + name + " done");
+			check(done, "at " + name + ", the big world's map is fully drawn within " + (int) BIG_WORLD_MAX_SECONDS + " s (" + String.format(java.util.Locale.ROOT, "%.0f", seconds) + " s)");
+			client.gui.setScreen(null);
+			config.setMapLoadSpeed(MapLoadSpeed.NORMAL);
+			next();
+		}
+	}
+
+	private static final int LOAD_BENCH_SIDE = 8;
+	private static long[] loadBench = new long[0];
+	private static int loadRun;
+	private static int loadRunStart = -1;
+	private static final List<java.nio.file.Path> benchRegions = new ArrayList<>();
+
+	/**
+	 * Copies the map's fullest region file to a square of far regions, each with an overview from other resource
+	 * packs, so it must be read in and drawn again, as a region of a pre-generated world without one is. Returns
+	 * how many were written.
+	 */
+	private static int copyRegionsForSnapshot(int baseX, int baseZ, int side) {
+		java.nio.file.Path folder = MapManager.folderForSnapshot();
+		if (folder == null) {
+			return 0;
+		}
+		try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(folder)) {
+			java.nio.file.Path source = files.filter(path -> path.getFileName().toString().endsWith(".emap"))
+				.max(java.util.Comparator.comparingLong(path -> path.toFile().length())).orElse(null);
+			if (source == null) {
+				return 0;
+			}
+			byte[] raw;
+			try (java.io.InputStream in = new java.util.zip.InflaterInputStream(java.nio.file.Files.newInputStream(source))) {
+				raw = in.readAllBytes();
+			}
+			// After the magic, the version and the bottom: whether there's an overview, then its packs' fingerprint.
+			if (raw[12] != 0) {
+				raw[13] ^= 0x55;
+			}
+			java.io.ByteArrayOutputStream packed = new java.io.ByteArrayOutputStream();
+			try (java.util.zip.DeflaterOutputStream out = new java.util.zip.DeflaterOutputStream(packed)) {
+				out.write(raw);
+			}
+			int written = 0;
+			for (int dz = 0; dz < side; dz++) {
+				for (int dx = 0; dx < side; dx++) {
+					java.nio.file.Path copy = folder.resolve("r." + (baseX + dx) + "." + (baseZ + dz) + ".emap");
+					java.nio.file.Files.write(copy, packed.toByteArray());
+					benchRegions.add(copy);
+					written++;
+				}
+			}
+			return written;
+		} catch (java.io.IOException exception) {
+			EMUtilsClient.LOGGER.warn("EMUtils UI snapshot couldn't write the benchmark's regions", exception);
+			return 0;
+		}
+	}
+
+	private static void deleteBenchRegions() {
+		for (java.nio.file.Path path : benchRegions) {
+			try {
+				java.nio.file.Files.deleteIfExists(path);
+			} catch (java.io.IOException exception) {
+				// Left over; harmless.
+			}
+		}
+		benchRegions.clear();
 	}
 
 	/** Has the singleplayer server save everything to disk, as /save-all flush would, and waits for it. */

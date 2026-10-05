@@ -27,6 +27,10 @@ public final class EMUtilsTexts {
     public static final String WAYPOINT_XAERO_IMPORT_TITLE = "emutils.waypoint.xaero_import.title";
     public static final String WAYPOINT_XAERO_IMPORT_DONE = "emutils.waypoint.xaero_import.done";
     public static final String WAYPOINT_XAERO_IMPORT_FAILED = "emutils.waypoint.xaero_import.failed";
+    public static final String OPTION_MAP_LOAD_SPEED = "emutils.option.map_load_speed";
+    public static final String MAP_LOAD_SPEED_NORMAL = "emutils.map.load_speed.normal";
+    public static final String MAP_LOAD_SPEED_FAST = "emutils.map.load_speed.fast";
+    public static final String MAP_LOAD_SPEED_FASTEST = "emutils.map.load_speed.fastest";
     public static final String UI_UNFAIR_OFF = "emutils.ui.unfair_off";
     public static final String UI_UNFAIR_OFF_ITEM = "emutils.ui.unfair_off_item";
     public static final String UI_UNFAIR_OFF_MESSAGE = "emutils.ui.unfair_off_message";

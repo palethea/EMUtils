@@ -1306,6 +1306,12 @@ public final class WorldMapScreen extends Screen {
 		lookAt(anchorWorldX, anchorWorldZ);
 	}
 
+	/** For UI snapshot checks: zooms straight to GUI pixels per block, around where the map is centered. */
+	public void setZoomForSnapshot(float pixelsPerBlock) {
+		targetZoom = Math.clamp(pixelsPerBlock, MIN_ZOOM, MAX_ZOOM);
+		zoom = targetZoom;
+	}
+
 	/** For UI snapshot checks: shows another dimension's map, as clicking its chip does. */
 	public void switchDimensionForSnapshot(String id) {
 		switchDimension(id);

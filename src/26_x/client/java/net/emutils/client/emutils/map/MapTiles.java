@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.versioned.VersionedTextures;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -26,8 +27,6 @@ import org.lwjgl.system.MemoryUtil;
 public final class MapTiles {
 	/** About 64 MB of textures at most. */
 	private static final int MAX_TILES = 256;
-	private static final int MAX_BAKING = 4;
-	private static final int UPLOADS_PER_FRAME = 3;
 	/** How often a changed tile may be redrawn, per detail level: busy areas don't keep the baker busy. */
 	private static final long[] REBAKE_MILLIS = {150L, 500L, 2000L, 1000L, 1000L, 1000L};
 	/** An unfinished tile is tried again this soon, since what it waited for usually arrives quickly. */
@@ -36,12 +35,14 @@ public final class MapTiles {
 	private static final long FAILED_RETRY_MILLIS = 2000L;
 	/** How long a new tile takes to fade in over what stood in for it. */
 	private static final float FADE_MILLIS = 160.0F;
-	private static final ExecutorService BAKER = Executors.newFixedThreadPool(2, runnable -> {
+	/** Its number of threads follows the Loading Speed setting (#239). */
+	private static final ThreadPoolExecutor BAKER = new ThreadPoolExecutor(2, 2, 30L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), runnable -> {
 		Thread thread = new Thread(runnable, "EMUtils Map Baker");
 		thread.setDaemon(true);
 		thread.setPriority(Thread.NORM_PRIORITY - 1);
 		return thread;
 	});
+	private static volatile MapLoadSpeed speed = MapLoadSpeed.NORMAL;
 
 	private final Map<Long, Tile> tiles = new LinkedHashMap<>(64, 0.75F, true);
 	private final ConcurrentLinkedQueue<Baked> baked = new ConcurrentLinkedQueue<>();
@@ -116,7 +117,7 @@ public final class MapTiles {
 		long wait = tile.failed ? FAILED_RETRY_MILLIS : tile.complete ? REBAKE_MILLIS[level] : RETRY_MILLIS;
 		// Tiles with nothing to show yet go first; redrawing ones that have a picture waits for them.
 		boolean redraw = tile.texture != null && tile.complete;
-		if (tile.dirty && !tile.baking && baking < MAX_BAKING && (tile.texture == null && !tile.failed || now - tile.bakedAt >= wait)
+		if (tile.dirty && !tile.baking && baking < speed.tilesBaking() && (tile.texture == null && !tile.failed || now - tile.bakedAt >= wait)
 			&& (!redraw || emptyLastFrame == 0)) {
 			bake(world, tile);
 		}
@@ -177,7 +178,7 @@ public final class MapTiles {
 		waiting = 0;
 		emptyLastFrame = empty;
 		empty = 0;
-		for (int i = 0; i < UPLOADS_PER_FRAME; i++) {
+		for (int i = 0, uploads = speed.uploadsPerFrame(); i < uploads; i++) {
 			Baked done = baked.poll();
 			if (done == null) {
 				break;
@@ -279,6 +280,23 @@ public final class MapTiles {
 	 * Draws a region's overview on the baker thread and hands it to the region; {@code done} runs on the
 	 * render thread afterwards, through {@link #beginFrame}.
 	 */
+	/** Follows the Loading Speed setting (#239): how many threads draw, and how much each map has drawn at once. */
+	static void applySpeed(MapLoadSpeed wanted) {
+		if (wanted == speed) {
+			return;
+		}
+		speed = wanted;
+		int threads = wanted.bakerThreads();
+		// The most may never be below the fewest, so which is set first depends on the way it goes.
+		if (threads > BAKER.getMaximumPoolSize()) {
+			BAKER.setMaximumPoolSize(threads);
+			BAKER.setCorePoolSize(threads);
+		} else {
+			BAKER.setCorePoolSize(threads);
+			BAKER.setMaximumPoolSize(threads);
+		}
+	}
+
 	public void bakeOverview(MapWorld world, MapRegion region, int fingerprint) {
 		region.overviewStale = false;
 		region.overviewBakedAt = System.currentTimeMillis();
