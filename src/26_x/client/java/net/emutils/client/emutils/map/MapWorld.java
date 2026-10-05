@@ -530,7 +530,7 @@ public final class MapWorld {
 				idle.add(region);
 			}
 		}
-		idle.sort((a, b) -> Long.compare(a.lastUsed, b.lastUsed));
+		idle = leastUsedFirst(idle);
 		int excess = regions.size() - MAX_LOADED_REGIONS;
 		for (MapRegion region : idle) {
 			if (now - region.lastUsed < UNLOAD_AFTER_MILLIS && excess <= 0) {
@@ -556,7 +556,7 @@ public final class MapWorld {
 					old.add(region);
 				}
 			}
-			old.sort((a, b) -> Long.compare(a.lastUsed, b.lastUsed));
+			old = leastUsedFirst(old);
 			int overviewExcess = overviews.size() - MAX_OVERVIEWS;
 			for (MapRegion region : old) {
 				if (overviewExcess <= 0) {
@@ -567,6 +567,25 @@ public final class MapWorld {
 				}
 			}
 		}
+	}
+
+	/**
+	 * The regions, least recently used first, by when each was last used as this starts (#235): the tile
+	 * baker's thread marks regions used meanwhile, and a sort whose order changes under it fails.
+	 */
+	private static List<MapRegion> leastUsedFirst(List<MapRegion> regions) {
+		long[] usedAt = new long[regions.size()];
+		Integer[] order = new Integer[regions.size()];
+		for (int i = 0; i < usedAt.length; i++) {
+			usedAt[i] = regions.get(i).lastUsed;
+			order[i] = i;
+		}
+		java.util.Arrays.sort(order, (a, b) -> Long.compare(usedAt[a], usedAt[b]));
+		List<MapRegion> sorted = new ArrayList<>(order.length);
+		for (int i : order) {
+			sorted.add(regions.get(i));
+		}
+		return sorted;
 	}
 
 	/** Saves everything that changed and stops loading; the map of another dimension or world takes over. */

@@ -268,7 +268,7 @@ Replace the default screenshot message with quick actions and optional metadata.
 
 ### Waypoints
 
-Save death and custom waypoints per world or server. In the world each one is a colored marker with the waypoint's initial (a cross for deaths). Markers shrink and fade with distance and fade out right next to you. The name and distance show when you aim at a marker or are within 8 blocks.
+Save death and custom waypoints per world or server, as many custom ones as you like; each world and dimension keeps up to 64 death waypoints. In the world each one is a colored marker with the waypoint's initial (a cross for deaths). Markers shrink and fade with distance and fade out right next to you. The name and distance show when you aim at a marker or are within 8 blocks.
 
 - Auto Copy Coords: copy coordinates when a waypoint is created.
 - Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
@@ -290,6 +290,7 @@ Save death and custom waypoints per world or server. In the world each one is a 
 - Max Distance: hide waypoints beyond a distance (unlimited by default); they fade out over the last fifth.
 - Show Other Dimensions: also show the world's waypoints from other dimensions, off by default. Overworld and Nether waypoints appear at the matching spot in the other one (Nether coordinates times eight, the same height), as markers and beacons. End and custom dimensions don't line up, so those stay in the list. The same switch sits in the Current Waypoints list.
 - Show on Xaero's Maps: also show the waypoints on Xaero's Minimap and World Map when those optional mods are installed, on by default. They look like Xaero's own waypoints: on the minimap a rounded colored marker with the initial (a cross for deaths) that pins to the edge when out of range, following Waypoint Opacity, Waypoint Size and Max Distance; on the World Map Xaero's own flag with the name that fades in under the cursor, following Xaero's waypoint scale, background and zoom settings. Hidden waypoints stay hidden, and with Show Other Dimensions on, Overworld and Nether waypoints also show at their converted spot. The switch only shows when a Xaero map mod is installed.
+- Import from Xaero's Minimap: in the Import tab, bring over the waypoints of Xaero's Minimap for every singleplayer world and server at once, whether or not it's still installed. Each keeps its name, color, set, dimension and hidden state, and goes to the world or server it was made in; Xaero's death waypoints come over as kept death waypoints. A spot that already has a waypoint is skipped, so importing again adds nothing. Realms waypoints aren't imported, since Xaero's folder names for Realms can't be matched to a Realm.
 
 ## Management
 

@@ -22,6 +22,11 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String OPTION_WAYPOINT_XAERO_IMPORT = "emutils.option.waypoint_xaero_import";
+    public static final String UI_WAYPOINTS_SECTION_IMPORT = "emutils.ui.waypoints.section.import";
+    public static final String WAYPOINT_XAERO_IMPORT_TITLE = "emutils.waypoint.xaero_import.title";
+    public static final String WAYPOINT_XAERO_IMPORT_DONE = "emutils.waypoint.xaero_import.done";
+    public static final String WAYPOINT_XAERO_IMPORT_FAILED = "emutils.waypoint.xaero_import.failed";
     public static final String UI_UNFAIR_OFF = "emutils.ui.unfair_off";
     public static final String UI_UNFAIR_OFF_ITEM = "emutils.ui.unfair_off_item";
     public static final String UI_UNFAIR_OFF_MESSAGE = "emutils.ui.unfair_off_message";

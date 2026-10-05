@@ -599,16 +599,19 @@ public final class MapManager {
 	private static void redrawOverviews(MapWorld world, MapTiles tiles) {
 		long now = System.currentTimeMillis();
 		int fingerprint = MapBlockLooks.fingerprint();
-		List<MapRegion> waiting = new ArrayList<>();
+		// Each with its turn, worked out once: overviews are baked on another thread, so they change meanwhile,
+		// and a sort whose order changes under it fails (#235).
+		List<Map.Entry<MapRegion, Integer>> waiting = new ArrayList<>();
 		for (MapRegion region : world.loadedRegions()) {
 			// Not before the looks of its blocks are made, or it would come out empty.
 			if (region.loaded && region.states == null && now - region.overviewBakedAt >= OVERVIEW_MIN_MILLIS && MapWorld.needsOverview(region)) {
-				waiting.add(region);
+				// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
+				waiting.add(Map.entry(region, region.overview == null ? 0 : region.overviewStale ? 1 : 2));
 			}
 		}
-		// Regions with no picture far away go first, then changed ones, then ones only drawn with other packs.
-		waiting.sort(Comparator.comparingInt(region -> region.overview == null ? 0 : region.overviewStale ? 1 : 2));
-		for (MapRegion region : waiting) {
+		waiting.sort(Map.Entry.comparingByValue());
+		for (Map.Entry<MapRegion, Integer> turn : waiting) {
+			MapRegion region = turn.getKey();
 			if (tiles.overviewsBaking() >= (tiles.busy() ? 1 : MAX_OVERVIEWS_BAKING)) {
 				return;
 			}
