@@ -195,6 +195,11 @@ public final class WaypointManager {
      * but isn't saved, and goes once you reach it or leave the world.
      */
     public @Nullable Waypoint addTemporary(Minecraft client, @Nullable String inDimension, int x, int y, int z) {
+        return addTemporary(client, inDimension, x, y, z, Component.translatable(EMUtilsTexts.WAYPOINT_TEMPORARY_LABEL).getString(), TEMPORARY_COLOR);
+    }
+
+    /** The same, with a name and color of its own, as for an explorer map's destination (#241). */
+    public @Nullable Waypoint addTemporary(Minecraft client, @Nullable String inDimension, int x, int y, int z, String label, int color) {
         if (!enabled() || client == null || client.level == null) {
             return null;
         }
@@ -207,8 +212,8 @@ public final class WaypointManager {
             dimension,
             worldKey(client),
             System.currentTimeMillis(),
-            Component.translatable(EMUtilsTexts.WAYPOINT_TEMPORARY_LABEL).getString(),
-            TEMPORARY_COLOR,
+            label,
+            color,
             WaypointType.CUSTOM
         );
         waypoint.setWorld(MapManager.worldIdFor(client, dimension));
@@ -260,6 +265,16 @@ public final class WaypointManager {
     /** For UI snapshot checks: how many waypoints match. */
     public long countForSnapshot(java.util.function.Predicate<Waypoint> which) {
         return waypoints.stream().filter(which).count();
+    }
+
+    /** The temporary waypoint there is (#226), or null. */
+    public @Nullable Waypoint temporaryWaypoint() {
+        for (Waypoint waypoint : waypoints) {
+            if (waypoint.temporary()) {
+                return waypoint;
+            }
+        }
+        return null;
     }
 
     public void dropTemporary() {
