@@ -295,6 +295,13 @@ public final class MapSettingsScreen extends UiPanelScreen {
 		}
 	}
 
+	/** Scrolls the area's rows to the middle, so both edges fade; used by UI snapshots. */
+	public void scrollToMiddleForSnapshot() {
+		if (sheet != null) {
+			sheet.scrollToMiddleForSnapshot();
+		}
+	}
+
 	/** The ids of the areas in the sidebar, in order; used by UI snapshots. */
 	public List<String> areasForSnapshot() {
 		List<String> ids = new ArrayList<>();

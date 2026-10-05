@@ -141,6 +141,11 @@ final class SettingsSheet {
 		}
 	}
 
+	/** Scrolls the rows to the middle at once; used by UI snapshots. */
+	void scrollToMiddleForSnapshot() {
+		scroll.jumpTo(scroll.maxScroll() / 2.0);
+	}
+
 	void close() {
 		frame.close();
 		dropdown = null;
@@ -499,7 +504,8 @@ final class SettingsSheet {
 			UiText.drawCentered(context, font, Component.translatable(EMUtilsTexts.UI_NOTHING_TO_SET_UP), UiText.Size.BODY, scroll.x() + ROW_PADDING, scroll.y() + FADE_HEIGHT / 2 + 15, theme.muted());
 		}
 		context.pose().popMatrix();
-		scroll.end(context, theme.surface(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
+		// The rows fade into what's behind them: the sheet's own frame, or in a screen's pane its panel.
+		scroll.end(context, embedded ? theme.panel() : theme.surface(), FADE_HEIGHT,UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
 	}
 
 	private void drawRow(GuiGraphicsExtractor context, UiTheme theme, RowBox box, int mouseX, int mouseY) {

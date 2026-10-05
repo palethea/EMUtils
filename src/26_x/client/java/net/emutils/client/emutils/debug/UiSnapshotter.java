@@ -4027,7 +4027,18 @@ public final class UiSnapshotter {
 						grab(client, "entity radar settings, " + tabs[i]);
 					}
 				}
-				if (stepTicks == 20 + tabs.length * 20) {
+				// Scrolled partway, the rows fade out at the top and bottom of the pane instead of being cut off.
+				int scrolled = 20 + tabs.length * 20;
+				if (stepTicks == scrolled && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen settings) {
+					settings.selectSectionForSnapshot(0);
+				}
+				if (stepTicks == scrolled + 4 && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen settings) {
+					settings.scrollToMiddleForSnapshot();
+				}
+				if (stepTicks == scrolled + 12) {
+					grab(client, "entity radar settings, scrolled");
+				}
+				if (stepTicks == scrolled + 20) {
 					client.gui.setScreen(null);
 					next();
 				}
