@@ -3584,6 +3584,11 @@ public final class UiSnapshotter {
 			}
 			case 394 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+					// A waypoint's editor opens on a click, not on a drag of the map that starts on it (#231).
+					EMUtilsClient.waypoint().addTemporary(client, null, client.player.getBlockX() + 40, client.player.getBlockY(), client.player.getBlockZ());
+					check(!map.pressWaypointForSnapshot(30.0D), "a drag of the world map that starts on a waypoint moves the map, without opening its editor");
+					check(map.pressWaypointForSnapshot(2.0D), "a click on a waypoint, wobbling a little, opens its editor");
+					EMUtilsClient.waypoint().dropTemporary();
 					map.onClose();
 				}
 				if (stepTicks == 25) {
