@@ -22,6 +22,15 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String HUB_MAP = "emutils.hub.map";
+    public static final String HUB_FEATURE_MAP_DESC = "emutils.hub.feature.map.desc";
+    public static final String HUB_MAP_CAVES = "emutils.hub.map_caves";
+    public static final String HUB_FEATURE_MAP_CAVES_DESC = "emutils.hub.feature.map_caves.desc";
+    public static final String HUB_MAP_LOADING = "emutils.hub.map_loading";
+    public static final String HUB_FEATURE_MAP_LOADING_DESC = "emutils.hub.feature.map_loading.desc";
+    public static final String UI_MAP_SETTINGS_SUBTITLE = "emutils.ui.map_settings.subtitle";
+    public static final String UI_MAP_SETTINGS_OPEN_WORLD_MAP = "emutils.ui.map_settings.open_world_map";
+    public static final String UI_MAP_SETTINGS_UNFAIR_NOTE = "emutils.ui.map_settings.unfair_note";
     public static final String OPTION_WAYPOINT_EXPLORER_MAP_PREVIEW = "emutils.option.waypoint_explorer_map_preview";
     public static final String WAYPOINT_EXPLORER_MAP_TOOLTIP = "emutils.waypoint.explorer_map.tooltip";
     public static final String WAYPOINT_EXPLORER_MAP_EXISTS = "emutils.waypoint.explorer_map.exists";

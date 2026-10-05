@@ -538,6 +538,15 @@ public final class SettingsScreen extends UiPanelScreen {
 		return Component.literal(name);
 	}
 
+	private boolean mapAreaMatches(String query) {
+		for (HubFeature feature : features) {
+			if (feature.mapArea() && feature.matches(query)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private List<Group> visibleGroups() {
 		String query = HubFeatureCatalog.normalize(search.text());
 		List<Group> groups = new ArrayList<>();
@@ -547,7 +556,12 @@ public final class SettingsScreen extends UiPanelScreen {
 			}
 			List<HubFeature> matches = new ArrayList<>();
 			for (HubFeature feature : features) {
-				if (feature.group() == group && (query.isEmpty() || feature.matches(query))) {
+				// The map's areas are in the Map settings (#243), which the Map card opens, so a search for
+				// one of them, such as "cave", finds the Map card.
+				if (feature.mapArea()) {
+					continue;
+				}
+				if (feature.group() == group && (query.isEmpty() || feature.matches(query) || feature.id().equals("map") && mapAreaMatches(query))) {
 					matches.add(feature);
 				}
 			}
@@ -664,6 +678,17 @@ public final class SettingsScreen extends UiPanelScreen {
 		} else if (feature.primaryActionEnabled()) {
 			feature.primaryAction().run();
 		}
+	}
+
+	/** The ids of the cards shown, in order, with the search as it is; used by UI snapshots. */
+	public List<String> shownFeatureIdsForSnapshot() {
+		List<String> ids = new ArrayList<>();
+		for (Group group : visibleGroups()) {
+			for (HubFeature feature : group.features()) {
+				ids.add(feature.id());
+			}
+		}
+		return ids;
 	}
 
 	/** Closes any sheet and searches for {@code text}; used by UI snapshots. */

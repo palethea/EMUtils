@@ -67,6 +67,9 @@ public final class HubFeature {
 		KEYBOARD(HubIcons.KEYBOARD),
 		TROPHY(HubIcons.TROPHY),
 		RADAR(HubIcons.RADAR),
+		GLOBE(HubIcons.GLOBE),
+		PICKAXE(HubIcons.PICKAXE),
+		ZAP(HubIcons.ZAP),
 		SCALE(HubIcons.SCALE);
 
 		private final Identifier texture;
@@ -97,6 +100,7 @@ public final class HubFeature {
 	private List<String> keyNames = List.of();
 	private @Nullable String missingMod;
 	private boolean unfair;
+	private boolean mapArea;
 
 	public HubFeature(
 		String id,
@@ -190,6 +194,19 @@ public final class HubFeature {
 
 	public HubFeature markUnfair() {
 		unfair = true;
+		return this;
+	}
+
+	/**
+	 * The feature is an area of the Map settings (#243), so it has no card of its own: the Map card opens them
+	 * all. It stays a feature, for search, /emutils and resetting.
+	 */
+	public boolean mapArea() {
+		return mapArea;
+	}
+
+	public HubFeature inMapSettings() {
+		mapArea = true;
 		return this;
 	}
 

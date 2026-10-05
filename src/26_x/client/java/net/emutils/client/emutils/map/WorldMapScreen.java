@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
-import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.gui.settings.MapSettingsScreen;
 import net.emutils.client.emutils.gui.ui.UiAnim;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiContextMenu;
@@ -1097,11 +1097,7 @@ public final class WorldMapScreen extends Screen {
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_COPY_COORDINATES), () -> EMUtilsClient.waypoint().copyCoordinates(minecraft, blockX, blockY, blockZ)));
 			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_WAYPOINTS), () -> openChild(new WaypointsScreen(this))));
 			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.WORLD_MAP_EXPORT), !MapExport.running(), false, () -> MapExport.start(minecraft, world)));
-			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_SETTINGS), () -> {
-				SettingsScreen settings = new SettingsScreen(this);
-				openChild(settings);
-				settings.openSheet("minimap");
-			}));
+			items.add(UiContextMenu.Item.of(Component.translatable(EMUtilsTexts.WORLD_MAP_OPEN_SETTINGS), () -> openChild(new MapSettingsScreen(this, MapSettingsScreen.WORLD_MAP))));
 		}
 		menu = new UiContextMenu(font, anim, mouseX, mouseY, items);
 	}
@@ -1328,7 +1324,7 @@ public final class WorldMapScreen extends Screen {
 
 	/** For UI snapshot checks: opens the settings as the map's menu does, coming back to the map. */
 	public void openSettingsForSnapshot() {
-		openChild(new SettingsScreen(this));
+		openChild(new MapSettingsScreen(this, MapSettingsScreen.WORLD_MAP));
 	}
 
 	/**
