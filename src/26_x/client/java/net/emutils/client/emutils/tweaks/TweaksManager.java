@@ -78,7 +78,7 @@ public final class TweaksManager {
 		if (submersion == FogType.WATER && EMUtilsClient.config().tweakClearUnderwater()) {
 			return true;
 		}
-		if (submersion == FogType.LAVA && EMUtilsClient.config().tweakClearLava()) {
+		if (submersion == FogType.LAVA && EMUtilsClient.config().tweakClearLava() && EMUtilsClient.config().unfairFeatures()) {
 			return true;
 		}
 		if (!EMUtilsClient.config().tweakNoEnvironmentFog()) {

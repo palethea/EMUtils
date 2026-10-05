@@ -4014,6 +4014,60 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Unfair Features (#213): off, they all stop, keys say why, and their cards say so; on again, they're back.
+			case 412 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				FreeCameraManager freeCamera = EMUtilsClient.tweaks().freeCamera();
+				if (stepTicks == 1) {
+					config.setMinimap(true);
+					config.setMapRadar(true);
+					config.setMapCaves(true);
+					config.setTweakFastPlace(true);
+					config.setTweakSafeWalk(true);
+					config.setTweakFreeCamera(true);
+				}
+				if (stepTicks == 10) {
+					check(freeCamera.isActive() && MapRadar.enabledForSnapshot() && MapManager.cavesAllowed(), "with Unfair Features on, Free Camera, the radar and cave view work");
+					config.setUnfairFeatures(false);
+				}
+				if (stepTicks == 14) {
+					check(!freeCamera.isActive() && !config.tweakFreeCamera(), "turning Unfair Features off ends Free Camera");
+					check(!MapRadar.enabledForSnapshot() && !MapManager.cavesAllowed(), "with Unfair Features off, the radar and cave view are off");
+					freeCamera.pressKeyForSnapshot();
+				}
+				if (stepTicks == 18) {
+					check(!freeCamera.isActive() && !config.tweakFreeCamera(), "with Unfair Features off, the Free Camera key doesn't start it");
+					check(config.tweakFastPlace() && config.tweakSafeWalk() && config.mapRadar(), "each feature keeps its own setting");
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+					settings.showGroupForSnapshot(HubFeature.Group.QOL);
+				}
+				if (stepTicks == 40) {
+					grab(client, "unfair features off, qol cards");
+					if (MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.showGroupForSnapshot(HubFeature.Group.MANAGEMENT);
+					}
+				}
+				if (stepTicks == 55) {
+					grab(client, "unfair features card");
+					if (MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.openSheet("unfair_features");
+					}
+				}
+				if (stepTicks == 75) {
+					grab(client, "unfair features sheet");
+					client.gui.setScreen(null);
+					config.setUnfairFeatures(true);
+				}
+				if (stepTicks == 80) {
+					check(MapRadar.enabledForSnapshot() && MapManager.cavesAllowed() && !freeCamera.isActive(), "on again, the radar and cave view are back, and Free Camera stays off");
+					config.setTweakFastPlace(false);
+					config.setTweakSafeWalk(false);
+					config.resetMinimapDefaults();
+					config.setMinimap(false);
+					next();
+				}
+			}
 			default -> finish(client);
 		}
 	}

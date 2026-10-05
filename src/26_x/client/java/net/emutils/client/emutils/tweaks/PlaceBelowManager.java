@@ -19,6 +19,7 @@ public final class PlaceBelowManager {
 	public BlockHitResult redirect(BlockHitResult original) {
 		if (EMUtilsClient.config() == null
 			|| !EMUtilsClient.config().tweakPlaceBelow()
+			|| !EMUtilsClient.config().unfairFeatures()
 			|| keyMapping == null
 			|| !keyMapping.isDown()) {
 			return original;

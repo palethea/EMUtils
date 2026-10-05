@@ -66,7 +66,8 @@ public final class HubFeature {
 		PALETTE(HubIcons.PALETTE),
 		KEYBOARD(HubIcons.KEYBOARD),
 		TROPHY(HubIcons.TROPHY),
-		RADAR(HubIcons.RADAR);
+		RADAR(HubIcons.RADAR),
+		SCALE(HubIcons.SCALE);
 
 		private final Identifier texture;
 
@@ -95,6 +96,7 @@ public final class HubFeature {
 	private final @Nullable Runnable resetAction;
 	private List<String> keyNames = List.of();
 	private @Nullable String missingMod;
+	private boolean unfair;
 
 	public HubFeature(
 		String id,
@@ -179,6 +181,16 @@ public final class HubFeature {
 	/** The display name of a mod the feature needs that isn't installed, or null. */
 	public @Nullable String missingMod() {
 		return missingMod;
+	}
+
+	/** The feature is one of the Unfair Features (#213), off while they're turned off. */
+	public boolean unfair() {
+		return unfair;
+	}
+
+	public HubFeature markUnfair() {
+		unfair = true;
+		return this;
 	}
 
 	public HubFeature requiresMod(String modName, boolean loaded) {

@@ -26,7 +26,7 @@ public abstract class MinecraftFastPlaceMixin implements MinecraftFastPlaceTrack
 	@Inject(method = "startUseItem", at = @At("RETURN"))
 	private void emutils$clearFastPlaceOrUseCooldown(CallbackInfo ci) {
 		if (emutils$fastPlaceAttempted
-			|| (EMUtilsClient.config() != null && EMUtilsClient.config().tweakFastUse())) {
+			|| (EMUtilsClient.config() != null && EMUtilsClient.config().tweakFastUse() && EMUtilsClient.config().unfairFeatures())) {
 			rightClickDelay = 0;
 		}
 	}

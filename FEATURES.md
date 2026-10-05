@@ -315,6 +315,22 @@ Open the EMUtils settings from the EMUtils icon on the title screen and in the p
   - High Contrast: stronger secondary text, borders and dividers.
 - `/emutils` Command: open settings, toggle features by name, reset a feature to its defaults, switch profiles, and export or import the active profile's settings together with the EMUtils keybinds through the clipboard.
 
+### Unfair Features
+
+One switch for every feature that gives an edge over other players, for servers that don't allow them. On by default. Turned off, the features below stop at once and act as if they were off, while each keeps its own setting for when you turn the switch back on. Their cards show an "Unfair Features off" badge, the Free Camera and cave view keys say why they do nothing, and the world map's layer menu shows Underground as unavailable. The switch's settings list every feature it covers with its own switch.
+
+- Free Camera: ends when the switch is turned off, and stays off when it's turned back on.
+- Freelook.
+- Clear Lava.
+- Cave View: the minimap and world map stay on the surface, or the whole Nether under its roof.
+- Entity Radar.
+- Fast Place and Fast Use.
+- Safe Walk.
+- Place Below.
+- Auto Tool.
+- Auto Flight Gear.
+- Mass Drop's Unfair mode: drops one slot a press, like Legit.
+
 ### Screenshot Gallery
 
 Browse, copy, open, sort, and delete recent screenshots from inside Minecraft.

@@ -22,6 +22,12 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String UI_UNFAIR_OFF = "emutils.ui.unfair_off";
+    public static final String UI_UNFAIR_OFF_ITEM = "emutils.ui.unfair_off_item";
+    public static final String UI_UNFAIR_OFF_MESSAGE = "emutils.ui.unfair_off_message";
+    public static final String UI_UNFAIR_COVERS = "emutils.ui.unfair_covers";
+    public static final String OPTION_UNFAIR_FEATURES = "emutils.option.unfair_features";
+    public static final String HUB_FEATURE_UNFAIR_FEATURES_DESC = "emutils.hub.feature.unfair_features.desc";
     public static final String UI_LOADING_DONE = "emutils.ui.loading.done";
     public static final String UI_LOADING_FAILED = "emutils.ui.loading.failed";
     public static final String UI_LOADING_SHADER_NOTE = "emutils.ui.loading.shader_note";

@@ -421,6 +421,11 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Boolean tweakPlaceBelow = Boolean.FALSE;
 	private Boolean tweakLockedYPlacement = Boolean.FALSE;
 	private Boolean tweakFreeCamera = Boolean.FALSE;
+	/**
+	 * Off turns every feature that gives an edge over other players off at once (#213), such as Free Camera,
+	 * cave view and the entity radar; each keeps its own setting for when they're allowed again.
+	 */
+	private Boolean unfairFeatures = Boolean.TRUE;
 	private String freeCameraHudMode = FreeCameraHudMode.SPECTATOR.name();
 	private Integer freeCameraBoostMultiplier = 3;
 	private Integer freeCameraHorizontalSpeed = FREE_CAMERA_SPEED_DEFAULT;
@@ -2036,6 +2041,16 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		if (!enabled && net.emutils.client.EMUtilsClient.tweaks() != null) {
 			net.emutils.client.EMUtilsClient.tweaks().lockedYPlacement().reset();
 		}
+		save();
+	}
+
+	/** Features that give an edge over other players may run (#213); see {@link #unfairFeatures}. */
+	public boolean unfairFeatures() {
+		return unfairFeatures == null || unfairFeatures;
+	}
+
+	public void setUnfairFeatures(boolean enabled) {
+		unfairFeatures = enabled;
 		save();
 	}
 

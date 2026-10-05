@@ -198,6 +198,10 @@ public final class WorldMapScreen extends Screen {
 		if (otherTiles == null && !showingLive()) {
 			show(dimension, worldId, cave);
 		}
+		if (cave != MapSampler.SURFACE && !MapManager.cavesAllowed()) {
+			// Unfair Features were turned off meanwhile (#213), which cave view is one of.
+			show(dimension, worldId, MapSampler.SURFACE);
+		}
 		dimensions.clear();
 		// Yours first, also when another one is shown.
 		dimensions.add(minecraft.level == null ? dimension : WaypointManager.dimensionId(minecraft.level));
@@ -937,7 +941,13 @@ public final class WorldMapScreen extends Screen {
 		}
 		List<UiContextMenu.Item> items = new ArrayList<>();
 		items.add(UiContextMenu.Item.choice(Component.literal(layerName(MapSampler.SURFACE)), cave == MapSampler.SURFACE, () -> show(dimension, worldId, MapSampler.SURFACE)));
-		items.add(UiContextMenu.Item.choice(Component.literal(layerName(0)), cave != MapSampler.SURFACE, () -> show(dimension, worldId, undergroundLayer(dimension))));
+		if (MapManager.cavesAllowed()) {
+			items.add(UiContextMenu.Item.choice(Component.literal(layerName(0)), cave != MapSampler.SURFACE, () -> show(dimension, worldId, undergroundLayer(dimension))));
+		} else {
+			// Cave view is one of the Unfair Features (#213), which are off.
+			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_UNFAIR_OFF_ITEM, layerName(0)), false, false, () -> {
+			}));
+		}
 		menu = new UiContextMenu(font, anim, layerChip[0], layerChip[1] + layerChip[3] + 2, items);
 	}
 
@@ -1362,7 +1372,7 @@ public final class WorldMapScreen extends Screen {
 		MapWorlds catalog = MapManager.worlds(id);
 		MapWorlds.Entry latest = catalog == null ? null : catalog.latest();
 		// The Nether opens at the height you were last at there, unless the full map is chosen for it.
-		boolean underground = hasCeiling(id) && EMUtilsClient.config().mapCaves() && !EMUtilsClient.config().mapCeilingFull();
+		boolean underground = hasCeiling(id) && MapManager.cavesAllowed() && EMUtilsClient.config().mapCaves() && !EMUtilsClient.config().mapCeilingFull();
 		if (!show(id, latest == null ? null : latest.id(), underground ? MapManager.lastLayer(id, 4) : MapSampler.SURFACE)) {
 			return;
 		}

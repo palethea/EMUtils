@@ -460,7 +460,13 @@ public final class SettingsScreen extends UiPanelScreen {
 			boolean on = feature.toggle().getter().getAsBoolean();
 			float progress = anim.transition("switch:" + feature.id(), on, 0.18F);
 			float switchHover = hovered && contains(mouseX, mouseY, switchX, switchY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT) ? 1.0F : 0.0F;
+			// One of the Unfair Features while they're off (#213): its own switch still works, faded.
+			float opacity = UiOpacity.get();
+			if (unfairOff(feature)) {
+				UiOpacity.set(opacity * 0.45F);
+			}
 			UiWidgets.toggle(context, theme, switchX, switchY, progress, switchHover);
+			UiOpacity.set(opacity);
 			switchBox = new Box(switchX, switchY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT);
 			controlRight = switchX - 6;
 		}
@@ -491,12 +497,23 @@ public final class SettingsScreen extends UiPanelScreen {
 				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
 				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.devBackground(), theme.devText());
 				descriptionRight -= badgeWidth + 6;
+			} else if (unfairOff(feature)) {
+				Component badge = Component.translatable(EMUtilsTexts.UI_UNFAIR_OFF);
+				int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
+				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
+				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.surfaceAlt(), theme.textSecondary());
+				descriptionRight -= badgeWidth + 6;
 			}
 			Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
 			UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());
 		}
 		context.pose().popMatrix();
 		return new CardBox(feature, x, y, width, cardHeight(), switchBox, openBox);
+	}
+
+	/** The feature is one of the Unfair Features (#213), which are turned off. */
+	private static boolean unfairOff(HubFeature feature) {
+		return feature.unfair() && EMUtilsClient.config() != null && !EMUtilsClient.config().unfairFeatures();
 	}
 
 	/** How tall a card is: shorter without the description, with Compact cards on (#149). */
@@ -708,6 +725,11 @@ public final class SettingsScreen extends UiPanelScreen {
 	}
 
 	/** Opens tab {@code index} of the open sheet; used by UI snapshots. */
+	/** For UI snapshot checks: shows one category of cards, or all of them. */
+	public void showGroupForSnapshot(HubFeature.@Nullable Group group) {
+		selectedGroup = group;
+	}
+
 	public void selectSheetSectionForSnapshot(int index) {
 		if (sheet != null) {
 			sheet.selectSection(index);
