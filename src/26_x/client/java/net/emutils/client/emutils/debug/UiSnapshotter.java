@@ -4251,9 +4251,9 @@ public final class UiSnapshotter {
 			WorldMapScreen.open(client, null);
 		}
 		if (stepTicks == 50 && MinecraftClientCompat.screen(client) instanceof WorldMapScreen map) {
+			// A sixteenth of a GUI pixel a block: the whole generated square on screen, with room around it.
+			map.setZoomForSnapshot(1.0F / 16.0F);
 			map.centerForSnapshot(0.0D, 0.0D);
-			// About 0.2 pixels a block: the whole radius on screen.
-			map.scrollForSnapshot(-10.5D);
 		}
 		if (stepTicks <= 50 || stepTicks % 20 != 0) {
 			return;
