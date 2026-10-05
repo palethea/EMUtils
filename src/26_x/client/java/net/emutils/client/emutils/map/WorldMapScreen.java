@@ -36,6 +36,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.Registries;
@@ -70,6 +71,8 @@ public final class WorldMapScreen extends Screen {
 	private static final int BACKGROUND = 0xFF101216;
 	private static final int DIM = 0xA0000000;
 	private static final int MARGIN = 8;
+	/** How far, in pixels, a press on a waypoint may move and still count as a click on it (#231). */
+	private static final double CLICK_SLOP = 3.0D;
 	private static final int PANEL_HEIGHT = 26;
 	private static final int PANEL_RADIUS = 8;
 	private static final int CHIP_HEIGHT = 18;
@@ -148,6 +151,13 @@ public final class WorldMapScreen extends Screen {
 	private long openedAt = -1L;
 	private long closingAt = -1L;
 	private boolean dragging;
+	/**
+	 * The waypoint a left press started on (#231): its editor opens on release, unless the press turned into
+	 * a drag of the map first.
+	 */
+	private @Nullable WaypointEntry pressed;
+	private double pressX;
+	private double pressY;
 	private @Nullable WaypointEntry hovered;
 	/** How many waypoints were drawn last frame, for UI snapshot checks. */
 	private int waypointsDrawn;
@@ -1042,10 +1052,9 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		if (left) {
-			if (hovered != null) {
-				openSheet(hovered.waypoint(), null);
-				return true;
-			}
+			pressed = hovered;
+			pressX = mouseX;
+			pressY = mouseY;
 			dragging = true;
 			return true;
 		}
@@ -1100,6 +1109,7 @@ public final class WorldMapScreen extends Screen {
 	private void openSheet(@Nullable Waypoint editing, @Nullable SharedWaypoint prefill) {
 		menu = null;
 		dragging = false;
+		pressed = null;
 		sheet = new WaypointSheet(font, anim, editing, prefill, saved -> { });
 	}
 
@@ -1180,6 +1190,12 @@ public final class WorldMapScreen extends Screen {
 	@Override
 	public boolean mouseReleased(MouseButtonEvent click) {
 		dragging = false;
+		WaypointEntry clicked = pressed;
+		pressed = null;
+		if (clicked != null && sheet == null && click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+			openSheet(clicked.waypoint(), null);
+			return true;
+		}
 		if (sheet != null) {
 			sheet.mouseReleased();
 			return true;
@@ -1194,6 +1210,15 @@ public final class WorldMapScreen extends Screen {
 			return true;
 		}
 		if (dragging) {
+			if (pressed != null) {
+				// A few pixels of wobble is still a click on the waypoint; more is a drag, which moves the map.
+				if (Math.abs(click.x() - pressX) <= CLICK_SLOP && Math.abs(click.y() - pressY) <= CLICK_SLOP) {
+					return true;
+				}
+				pressed = null;
+				dx = click.x() - pressX;
+				dy = click.y() - pressY;
+			}
 			centerX -= dx / zoom;
 			centerZ -= dy / zoom;
 			anchorWorldX -= dx / zoom;
@@ -1297,6 +1322,35 @@ public final class WorldMapScreen extends Screen {
 	/** For UI snapshot checks: opens the settings as the map's menu does, coming back to the map. */
 	public void openSettingsForSnapshot() {
 		openChild(new SettingsScreen(this));
+	}
+
+	/**
+	 * For UI snapshot checks (#231): presses on the first waypoint on the map, moves the mouse {@code by} pixels
+	 * and lets go, as a click or a drag would; returns whether its editor opened, and closes it again.
+	 */
+	public boolean pressWaypointForSnapshot(double by) {
+		WaypointEntry entry = null;
+		for (WaypointEntry candidate : EMUtilsClient.waypoint().renderEntries(minecraft, dimension, worldId)) {
+			if (candidate.placeable()) {
+				entry = candidate;
+				break;
+			}
+		}
+		if (entry == null) {
+			return false;
+		}
+		MouseButtonInfo left = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0);
+		double x = width / 2.0D;
+		double y = height / 2.0D;
+		hovered = entry;
+		mouseClicked(new MouseButtonEvent(x, y, left), false);
+		for (int i = 1; i <= 4 && by > 0.0D; i++) {
+			mouseDragged(new MouseButtonEvent(x + by * i / 4.0D, y, left), by / 4.0D, 0.0D);
+		}
+		mouseReleased(new MouseButtonEvent(x + by, y, left));
+		boolean opened = sheet != null;
+		sheet = null;
+		return opened;
 	}
 
 	/** For UI snapshot checks: the map shown, to tell whether it's still the same one. */
