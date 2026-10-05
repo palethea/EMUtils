@@ -272,6 +272,7 @@ public final class HubSettingsRegistry {
 		));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_CHAT_PROMPT, config::waypointChatPrompt, config::setWaypointChatPrompt));
 		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_CHAT_AUTO_CREATE, config::waypointChatAutoCreate, config::setWaypointChatAutoCreate));
+		rows.add(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_WAYPOINT_EXPLORER_MAP_PREVIEW, config::waypointExplorerMapPreview, config::setWaypointExplorerMapPreview));
 		rows.add(HubSettingRow.Cycle.ofEnum(
 			EMUtilsTexts.OPTION_WAYPOINT_SHARE_FORMAT,
 			config::waypointShareFormat,

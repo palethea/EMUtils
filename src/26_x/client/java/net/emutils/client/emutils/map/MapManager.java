@@ -952,6 +952,20 @@ public final class MapManager {
 		return cave == null || cave.importer == null ? -1 : cave.importer.importedCount();
 	}
 
+	/**
+	 * The height of the ground at a block, from the map of where you are when it has that chunk in memory, or
+	 * null; for a waypoint at a spot you haven't loaded (#241).
+	 */
+	public static @Nullable Integer groundYIfKnown(int x, int z) {
+		MapWorld map = world;
+		MapChunk chunk = map == null ? null : map.loadedChunk(x >> 4, z >> 4);
+		if (chunk == null) {
+			return null;
+		}
+		int index = MapChunk.index(x & 15, z & 15);
+		return chunk.top(index) == MapChunk.NONE ? null : chunk.topY(index);
+	}
+
 	/** For UI snapshot checks: how many chunks the importer brought in from the world's files. */
 	public static int importedForSnapshot() {
 		return world == null || world.importer == null ? -1 : world.importer.importedCount();

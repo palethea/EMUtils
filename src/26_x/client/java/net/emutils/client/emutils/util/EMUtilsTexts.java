@@ -22,6 +22,9 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String OPTION_WAYPOINT_EXPLORER_MAP_PREVIEW = "emutils.option.waypoint_explorer_map_preview";
+    public static final String WAYPOINT_EXPLORER_MAP_TOOLTIP = "emutils.waypoint.explorer_map.tooltip";
+    public static final String WAYPOINT_EXPLORER_MAP_EXISTS = "emutils.waypoint.explorer_map.exists";
     public static final String OPTION_WAYPOINT_XAERO_IMPORT = "emutils.option.waypoint_xaero_import";
     public static final String UI_WAYPOINTS_SECTION_IMPORT = "emutils.ui.waypoints.section.import";
     public static final String WAYPOINT_XAERO_IMPORT_TITLE = "emutils.waypoint.xaero_import.title";

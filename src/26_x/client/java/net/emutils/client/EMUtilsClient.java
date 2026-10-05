@@ -18,6 +18,7 @@ import net.emutils.client.emutils.debug.SmokeLaunchVerifier;
 import net.emutils.client.emutils.debug.UiSnapshotter;
 import net.emutils.client.emutils.waypoint.SharedWaypoint;
 import net.emutils.client.emutils.waypoint.WaypointChatShare;
+import net.emutils.client.emutils.waypoint.ExplorerMaps;
 import net.emutils.client.emutils.waypoint.WaypointManager;
 import net.emutils.client.emutils.waypoint.WaypointRenderer;
 import net.emutils.client.emutils.waypoint.WaypointTarget;
@@ -67,6 +68,7 @@ import net.emutils.client.emutils.EMHelpers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipComponent;
 import net.emutils.client.emutils.tweaks.ShulkerTooltipData;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -133,6 +135,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		minescriptKeybindManager = new MinescriptKeybindManager();
 		registerKeyMappings();
 		registerTooltipComponents();
+		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> ExplorerMaps.appendTooltip(stack, lines));
 		EMUtilsCommand.register();
 		SmokeLaunchVerifier.registerIfEnabled();
 
@@ -184,6 +187,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		handleKeyMappings(client);
 		autoReconnectManager.tick(client);
 		waypointManager.tick(client);
+		ExplorerMaps.tick(client);
 		zoomManager.tick(client);
 		tweaksManager.tick(client);
 		inventoryToolsManager.tick(client);
@@ -472,6 +476,10 @@ public class EMUtilsClient implements ClientModInitializer {
 		}
 		while (addWaypointKeyMapping != null && addWaypointKeyMapping.consumeClick()) {
 			Screen current = net.emutils.client.emutils.compat.MinecraftClientCompat.screen(client);
+			// Holding an explorer map (#241): its destination, filled in.
+			if (current == null && ExplorerMaps.addFromHeld(client)) {
+				continue;
+			}
 			if (!(current instanceof WaypointsScreen)) {
 				client.gui.setScreen(WaypointsScreen.addWaypoint(current));
 			}

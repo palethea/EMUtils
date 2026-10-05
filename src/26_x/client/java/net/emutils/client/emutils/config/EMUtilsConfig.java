@@ -347,6 +347,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
 	private String waypointReachAction = WaypointReachAction.ASK.name();
 	private Boolean waypointChatPrompt = Boolean.TRUE;
+	/** While you hold an explorer map, its destination shows as a temporary waypoint (#241). */
+	private Boolean waypointExplorerMapPreview = Boolean.FALSE;
 	private Boolean waypointChatAutoCreate = Boolean.FALSE;
 	private String waypointShareFormat = WaypointShareFormat.PLAIN.name();
 	private Integer hudBackgroundOpacity = 100;
@@ -3146,6 +3148,15 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	}
 
 	/** Whether coordinates sent in chat get an offer to add a waypoint. */
+	public boolean waypointExplorerMapPreview() {
+		return waypointExplorerMapPreview != null && waypointExplorerMapPreview;
+	}
+
+	public void setWaypointExplorerMapPreview(boolean enabled) {
+		waypointExplorerMapPreview = enabled;
+		save();
+	}
+
 	public boolean waypointChatPrompt() {
 		return waypointChatPrompt == null || waypointChatPrompt;
 	}
@@ -3262,6 +3273,7 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 		deathWaypointKeep = DEATH_WAYPOINT_KEEP_DEFAULT;
 		waypointReachAction = WaypointReachAction.ASK.name();
 		waypointChatPrompt = Boolean.TRUE;
+		waypointExplorerMapPreview = Boolean.FALSE;
 		waypointChatAutoCreate = Boolean.FALSE;
 		waypointShareFormat = WaypointShareFormat.PLAIN.name();
 		save();

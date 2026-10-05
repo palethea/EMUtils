@@ -101,6 +101,7 @@ import net.emutils.client.emutils.tweaks.AntiDurabilityBreak;
 import net.emutils.client.emutils.tweaks.AntiDurabilityUnit;
 import net.emutils.client.emutils.tweaks.FreelookManager;
 import net.emutils.client.emutils.tweaks.SkyFlashAccess;
+import net.emutils.client.emutils.waypoint.ExplorerMaps;
 import net.emutils.client.emutils.waypoint.Waypoint;
 import net.fabricmc.loader.api.FabricLoader;
 import net.emutils.client.emutils.compat.XaeroMapIntegration;
@@ -4165,6 +4166,48 @@ public final class UiSnapshotter {
 					config.resetMinimapDefaults();
 					config.setMinimap(false);
 					config.setWorldMap(false);
+					next();
+				}
+			}
+			// Explorer maps (#241): the destination on the item, a tooltip line, the add sheet filled in from it, and
+			// shown as a temporary waypoint while held, with the setting on.
+			case 415 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				String map = "minecraft:filled_map[minecraft:map_decorations={\"+\":{type:\"minecraft:red_x\",x:120.0d,z:-340.0d,rotation:180.0f}}]";
+				if (stepTicks == 1) {
+					config.setWaypointEnabled(true);
+					config.setWaypointExplorerMapPreview(false);
+					ExplorerMaps.resetForSnapshot();
+					EMUtilsClient.waypoint().dropTemporary();
+					command(client, "item replace entity @s weapon.mainhand with " + map);
+				}
+				if (stepTicks == 15) {
+					ExplorerMaps.Target target = ExplorerMaps.held(client.player);
+					check(target != null && target.x() == 120 && target.z() == -340 && target.kind().equals("red_x") && target.name().equals("Treasure"),
+						"an explorer map's destination is read from the item (" + target + ")");
+					List<Component> lines = new ArrayList<>();
+					ExplorerMaps.appendTooltip(client.player.getMainHandItem(), lines);
+					check(lines.size() == 1 && lines.getFirst().getString().contains("120") && lines.getFirst().getString().contains("-340"),
+						"an explorer map's tooltip says where it leads (" + lines + ")");
+					check(ExplorerMaps.addFromHeld(client) && MinecraftClientCompat.screen(client) instanceof WaypointsScreen,
+						"Add Waypoint while holding it opens the add sheet with its destination");
+					Integer ground = ExplorerMaps.groundYForSnapshot(client, 120, -340);
+					check(ground == null || ground > client.level.getMinY(), "the destination's height is the ground there or yours, never below the world (" + ground + ")");
+				}
+				if (stepTicks == 40) {
+					grab(client, "explorer map waypoint");
+					client.gui.setScreen(null);
+					config.setWaypointExplorerMapPreview(true);
+				}
+				if (stepTicks == 45) {
+					Waypoint shown = EMUtilsClient.waypoint().temporaryWaypoint();
+					check(shown != null && shown.x() == 120 && shown.z() == -340 && shown.label().equals("Treasure") && shown.color() == 0xFFFF5555,
+						"with Show Explorer Map Destinations on, holding it shows where it leads");
+					command(client, "item replace entity @s weapon.mainhand with minecraft:air");
+				}
+				if (stepTicks == 55) {
+					check(EMUtilsClient.waypoint().temporaryWaypoint() == null, "putting the map away takes that waypoint away");
+					config.setWaypointExplorerMapPreview(false);
 					next();
 				}
 			}
