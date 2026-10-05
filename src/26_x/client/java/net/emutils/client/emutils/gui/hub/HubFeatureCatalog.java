@@ -11,6 +11,8 @@ import net.emutils.client.emutils.compat.MinescriptCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.gui.settings.KeybindsScreen;
+import net.emutils.client.emutils.gui.settings.MapSettingsScreen;
+import net.emutils.client.emutils.map.MapLoadSpeed;
 import net.emutils.client.emutils.minescript.gui.ScriptsScreen;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.profile.gui.ProfilesScreen;
@@ -81,15 +83,51 @@ public final class HubFeatureCatalog {
 			categoryFeature("food_hud", HubCategory.FOOD_HUD, HubFeature.Group.HUD, EMUtilsTexts.HUB_FOOD_HUD, EMUtilsTexts.HUB_FEATURE_FOOD_HUD_DESC, HubFeature.Icon.APPLE, toggle(config::foodHud, config::setFoodHud)),
 			categoryFeature("look_at_info", HubCategory.LOOK_AT_INFO, HubFeature.Group.HUD, EMUtilsTexts.HUB_LOOK_AT_INFO, EMUtilsTexts.HUB_FEATURE_LOOK_AT_INFO_DESC, HubFeature.Icon.CROSSHAIR, toggle(config::lookAtInfo, config::setLookAtInfo)),
 			categoryFeature("keystrokes", HubCategory.KEYSTROKES, HubFeature.Group.HUD, EMUtilsTexts.HUB_KEYSTROKES, EMUtilsTexts.HUB_FEATURE_KEYSTROKES_DESC, HubFeature.Icon.KEYBOARD, toggle(config::keystrokes, config::setKeystrokes)),
-			categoryFeature("minimap", HubCategory.MINIMAP, HubFeature.Group.HUD, EMUtilsTexts.HUB_MINIMAP, EMUtilsTexts.HUB_FEATURE_MINIMAP_DESC, HubFeature.Icon.MAP, toggle(config::minimap, config::setMinimap)).keys("key.emutils.minimap_zoom_in", "key.emutils.minimap_zoom_out"),
-			categoryFeature("entity_radar", HubCategory.ENTITY_RADAR, HubFeature.Group.HUD, EMUtilsTexts.HUB_ENTITY_RADAR, EMUtilsTexts.HUB_FEATURE_ENTITY_RADAR_DESC, HubFeature.Icon.RADAR, toggle(config::mapRadar, config::setMapRadar)).markUnfair(),
+			categoryFeature("minimap", HubCategory.MINIMAP, HubFeature.Group.HUD, EMUtilsTexts.HUB_MINIMAP, EMUtilsTexts.HUB_FEATURE_MINIMAP_DESC, HubFeature.Icon.MAP, toggle(config::minimap, config::setMinimap)).keys("key.emutils.minimap_zoom_in", "key.emutils.minimap_zoom_out").inMapSettings(),
+			categoryFeature("entity_radar", HubCategory.ENTITY_RADAR, HubFeature.Group.HUD, EMUtilsTexts.HUB_ENTITY_RADAR, EMUtilsTexts.HUB_FEATURE_ENTITY_RADAR_DESC, HubFeature.Icon.RADAR, toggle(config::mapRadar, config::setMapRadar)).markUnfair().inMapSettings(),
 			categoryFeature("armor_status", HubCategory.ARMOR_STATUS, HubFeature.Group.HUD, EMUtilsTexts.HUB_ARMOR_STATUS, EMUtilsTexts.HUB_FEATURE_ARMOR_STATUS_DESC, HubFeature.Icon.SHIELD, toggle(config::armorStatus, config::setArmorStatus)),
 			categoryFeature("scoreboard", HubCategory.SCOREBOARD, HubFeature.Group.HUD, EMUtilsTexts.HUB_SCOREBOARD, EMUtilsTexts.HUB_FEATURE_SCOREBOARD_DESC, HubFeature.Icon.TROPHY, toggle(config::scoreboard, config::setScoreboard)),
 			categoryFeature("tab_list", HubCategory.TAB_LIST, HubFeature.Group.HUD, EMUtilsTexts.HUB_TAB_LIST, EMUtilsTexts.HUB_FEATURE_TAB_LIST_DESC, HubFeature.Icon.USERS, toggle(config::tabList, config::setTabList)),
 			categoryFeature("spotify", HubCategory.SPOTIFY, HubFeature.Group.HUD, EMUtilsTexts.HUB_SPOTIFY_PLAYER, EMUtilsTexts.HUB_FEATURE_SPOTIFY_DESC, HubFeature.Icon.MUSIC, toggle(config::spotifyEnabled, config::setSpotifyEnabled)),
 			categoryFeature("auto_reconnect", HubCategory.AUTO_RECONNECT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_AUTO_RECONNECT, EMUtilsTexts.HUB_FEATURE_AUTO_RECONNECT_DESC, HubFeature.Icon.RECONNECT, toggle(config::autoReconnect, config::setAutoReconnect)),
 			categoryFeature("screenshot_helper", HubCategory.SCREENSHOT, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_SCREENSHOT_HELPER, EMUtilsTexts.HUB_FEATURE_SCREENSHOT_DESC, HubFeature.Icon.IMAGE, toggle(config::screenshotHelper, config::setScreenshotHelper)),
-			leaf("world_map", HubFeature.Group.UTILITY, EMUtilsTexts.OPTION_WORLD_MAP, EMUtilsTexts.HUB_FEATURE_WORLD_MAP_DESC, HubFeature.Icon.MAP, toggle(config::worldMap, config::setWorldMap), config::resetWorldMapDefaults).keys("key.emutils.world_map"),
+			// The map's settings, in one screen (#243): the minimap, world map and radar above, and caves and loading here.
+			actionFeature(
+				"map",
+				null,
+				HubFeature.Group.UTILITY,
+				EMUtilsTexts.HUB_MAP,
+				EMUtilsTexts.HUB_FEATURE_MAP_DESC,
+				HubFeature.Icon.MAP,
+				null,
+				openScreenAction(MapSettingsScreen::new),
+				true,
+				null
+			),
+			leaf("world_map", HubFeature.Group.UTILITY, EMUtilsTexts.OPTION_WORLD_MAP, EMUtilsTexts.HUB_FEATURE_WORLD_MAP_DESC, HubFeature.Icon.GLOBE, toggle(config::worldMap, config::setWorldMap), config::resetWorldMapDefaults).keys("key.emutils.world_map").inMapSettings(),
+			leaf(
+				"map_caves",
+				HubFeature.Group.UTILITY,
+				EMUtilsTexts.HUB_MAP_CAVES,
+				EMUtilsTexts.HUB_FEATURE_MAP_CAVES_DESC,
+				HubFeature.Icon.PICKAXE,
+				toggle(config::mapCaves, config::setMapCaves),
+				List.of(new HubSettingRow.Toggle(EMUtilsTexts.OPTION_MAP_CEILING_FULL, config::mapCeilingFull, config::setMapCeilingFull)),
+				() -> {
+					config.setMapCaves(true);
+					config.setMapCeilingFull(false);
+				}
+			).keys("key.emutils.map_caves").markUnfair().inMapSettings(),
+			leaf(
+				"map_loading",
+				HubFeature.Group.UTILITY,
+				EMUtilsTexts.HUB_MAP_LOADING,
+				EMUtilsTexts.HUB_FEATURE_MAP_LOADING_DESC,
+				HubFeature.Icon.ZAP,
+				null,
+				List.of(HubSettingRow.Cycle.ofEnum(EMUtilsTexts.OPTION_MAP_LOAD_SPEED, config::mapLoadSpeed, config::setMapLoadSpeed, MapLoadSpeed.class, speed -> Component.translatable(speed.labelKey()))),
+				() -> config.setMapLoadSpeed(MapLoadSpeed.NORMAL)
+			).inMapSettings(),
 			categoryFeature("waypoints", HubCategory.DEATH_WAYPOINTS, HubFeature.Group.UTILITY, EMUtilsTexts.HUB_WAYPOINTS, EMUtilsTexts.HUB_FEATURE_WAYPOINTS_DESC, HubFeature.Icon.PIN, toggle(config::waypointEnabled, config::setWaypointEnabled)).keys("key.emutils.add_waypoint", "key.emutils.add_waypoint_at_crosshair", "key.emutils.copy_coordinates"),
 			new HubFeature(
 				"free_camera",

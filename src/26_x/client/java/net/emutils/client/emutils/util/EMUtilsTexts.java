@@ -22,6 +22,15 @@ public final class EMUtilsTexts {
     public static final String UI_PRESS_KEY = "emutils.ui.press_key";
     public static final String UI_NOT_BOUND = "emutils.ui.not_bound";
     public static final String UI_NEEDS_MOD = "emutils.ui.needs_mod";
+    public static final String HUB_MAP = "emutils.hub.map";
+    public static final String HUB_FEATURE_MAP_DESC = "emutils.hub.feature.map.desc";
+    public static final String HUB_MAP_CAVES = "emutils.hub.map_caves";
+    public static final String HUB_FEATURE_MAP_CAVES_DESC = "emutils.hub.feature.map_caves.desc";
+    public static final String HUB_MAP_LOADING = "emutils.hub.map_loading";
+    public static final String HUB_FEATURE_MAP_LOADING_DESC = "emutils.hub.feature.map_loading.desc";
+    public static final String UI_MAP_SETTINGS_SUBTITLE = "emutils.ui.map_settings.subtitle";
+    public static final String UI_MAP_SETTINGS_OPEN_WORLD_MAP = "emutils.ui.map_settings.open_world_map";
+    public static final String UI_MAP_SETTINGS_UNFAIR_NOTE = "emutils.ui.map_settings.unfair_note";
     public static final String OPTION_WAYPOINT_EXPLORER_MAP_PREVIEW = "emutils.option.waypoint_explorer_map_preview";
     public static final String WAYPOINT_EXPLORER_MAP_TOOLTIP = "emutils.waypoint.explorer_map.tooltip";
     public static final String WAYPOINT_EXPLORER_MAP_EXISTS = "emutils.waypoint.explorer_map.exists";
@@ -987,7 +996,6 @@ public final class EMUtilsTexts {
     public static final String UI_RADAR_SECTION_NAMES = "emutils.ui.radar.section.names";
     public static final String UI_RADAR_SECTION_COLORS = "emutils.ui.radar.section.colors";
     public static final String UI_RADAR_SECTION_DISPLAY = "emutils.ui.radar.section.display";
-    public static final String UI_MINIMAP_OPEN_RADAR = "emutils.ui.minimap.open_radar";
     public static final String OPTION_RADAR_ICON_SIZE = "emutils.option.radar_icon_size";
     public static final String OPTION_RADAR_NPC_NAMES = "emutils.option.radar_npc_names";
     public static final String OPTION_RADAR_NAME_COLORS = "emutils.option.radar_name_colors";

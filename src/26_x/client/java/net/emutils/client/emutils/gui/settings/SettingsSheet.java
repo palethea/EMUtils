@@ -90,11 +90,22 @@ final class SettingsSheet {
 	/** Where the "Keybinds" heading sits in the list, or -1 without keybinds. */
 	private int keysHeadingTop = -1;
 
+	/**
+	 * Drawn inside a screen's own pane, such as an area of the Map settings (#243), instead of floating over
+	 * it: no frame, dimming or Done button, and Esc and clicks outside are the screen's.
+	 */
+	private final boolean embedded;
+
 	SettingsSheet(Font font, UiAnim anim, HubFeature feature, KeybindCapture capture) {
+		this(font, anim, feature, capture, false);
+	}
+
+	SettingsSheet(Font font, UiAnim anim, HubFeature feature, KeybindCapture capture, boolean embedded) {
 		this.font = font;
 		this.anim = anim;
 		this.feature = feature;
 		this.capture = capture;
+		this.embedded = embedded;
 		this.rows = loadRows();
 		this.frame = new UiSheetFrame(anim, "sheet:" + feature.id(), RADIUS);
 	}
@@ -130,6 +141,11 @@ final class SettingsSheet {
 		}
 	}
 
+	/** Scrolls the rows to the middle at once; used by UI snapshots. */
+	void scrollToMiddleForSnapshot() {
+		scroll.jumpTo(scroll.maxScroll() / 2.0);
+	}
+
 	void close() {
 		frame.close();
 		dropdown = null;
@@ -141,6 +157,19 @@ final class SettingsSheet {
 		if (rowsDirty) {
 			rowsDirty = false;
 			rows = loadRows();
+		}
+		if (embedded) {
+			layout(panelX, panelY, panelWidth, panelHeight);
+			drawHeader(context, theme, mouseX, mouseY);
+			drawRows(context, theme, mouseX, mouseY);
+			drawFooter(context, theme, mouseX, mouseY);
+			if (dropdown != null) {
+				drawDropdown(context, theme, dropdown, mouseX, mouseY);
+			}
+			if (colorPicker != null) {
+				colorPicker.render(context, font, theme);
+			}
+			return;
 		}
 		if (frame.firstFrame()) {
 			layout(panelX, panelY, panelWidth, panelHeight);
@@ -165,7 +194,7 @@ final class SettingsSheet {
 	}
 
 	private void layout(int panelX, int panelY, int panelWidth, int panelHeight) {
-		width = Math.min(MAX_WIDTH, panelWidth - 32);
+		width = embedded ? panelWidth : Math.min(MAX_WIDTH, panelWidth - 32);
 		int contentWidth = width - PADDING * 2;
 		// With tabs, the sheet is as tall as its tallest tab, so it doesn't jump when switching them.
 		int tallest = 0;
@@ -185,6 +214,12 @@ final class SettingsSheet {
 		height = Math.min(maxHeight, PADDING + headerHeight + 10 + Math.max(tallest, 18) + FADE_HEIGHT + 8 + footerHeight);
 		x = panelX + (panelWidth - width) / 2;
 		y = panelY + (panelHeight - height) / 2;
+		if (embedded) {
+			// The whole pane, rows scrolling in what's left under the header.
+			height = panelHeight;
+			x = panelX;
+			y = panelY;
+		}
 		footerY = y + height - PADDING - BUTTON_HEIGHT;
 		int listTop = y + PADDING + headerHeight + 10 - FADE_HEIGHT / 2;
 		scroll.setBounds(x + PADDING, listTop, contentWidth + UiScrollArea.GUTTER, footerY - 8 - listTop);
@@ -226,8 +261,13 @@ final class SettingsSheet {
 		UiText.prepare(Component.translatable(EMUtilsTexts.UI_RESET), UiText.Size.LABEL);
 	}
 
+	/** The line under the title: the feature's category, left out in a screen's pane, whose sidebar says it. */
+	private int subtitleHeight() {
+		return embedded ? 0 : 5 + UiText.lineHeight(font, UiText.Size.BODY);
+	}
+
 	private int headerHeight(int contentWidth) {
-		int titleBlock = UiText.lineHeight(font, UiText.Size.HEADING) + 5 + UiText.lineHeight(font, UiText.Size.BODY);
+		int titleBlock = UiText.lineHeight(font, UiText.Size.HEADING) + subtitleHeight();
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, contentWidth);
 		int tabs = sectionLabels().isEmpty() ? 0 : 8 + UiWidgets.SEGMENT_HEIGHT;
 		return titleBlock + 12 + description.size() * UiText.lineSpacing() + tabs;
@@ -240,7 +280,9 @@ final class SettingsSheet {
 		UiIcons.draw(context, feature.icon().texture(), left, top + headingHeight / 2 - 8 + 3, 16, theme.text());
 		int textX = left + 24;
 		UiText.draw(context, font, SettingsScreen.title(feature), UiText.Size.HEADING, textX, top, theme.text());
-		UiText.draw(context, font, Component.translatable(feature.group().labelKey()), UiText.Size.BODY, textX, top + headingHeight + 5, theme.muted());
+		if (!embedded) {
+			UiText.draw(context, font, Component.translatable(feature.group().labelKey()), UiText.Size.BODY, textX, top + headingHeight + 5, theme.muted());
+		}
 
 		if (feature.toggle() != null) {
 			switchX = x + width - PADDING - UiWidgets.SWITCH_WIDTH;
@@ -249,7 +291,7 @@ final class SettingsSheet {
 			UiWidgets.toggle(context, theme, switchX, switchY, on, contains(mouseX, mouseY, switchX, switchY, UiWidgets.SWITCH_WIDTH, UiWidgets.SWITCH_HEIGHT) ? 1.0F : 0.0F);
 		}
 
-		int descriptionTop = top + headingHeight + 5 + UiText.lineHeight(font, UiText.Size.BODY) + 12;
+		int descriptionTop = top + headingHeight + subtitleHeight() + 12;
 		List<Component> description = UiText.wrap(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, width - PADDING * 2);
 		for (int i = 0; i < description.size(); i++) {
 			UiText.draw(context, font, description.get(i), UiText.Size.BODY, left, descriptionTop + i * UiText.lineSpacing(), theme.textSecondary());
@@ -462,7 +504,8 @@ final class SettingsSheet {
 			UiText.drawCentered(context, font, Component.translatable(EMUtilsTexts.UI_NOTHING_TO_SET_UP), UiText.Size.BODY, scroll.x() + ROW_PADDING, scroll.y() + FADE_HEIGHT / 2 + 15, theme.muted());
 		}
 		context.pose().popMatrix();
-		scroll.end(context, theme.surface(), FADE_HEIGHT, UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
+		// The rows fade into what's behind them: the sheet's own frame, or in a screen's pane its panel.
+		scroll.end(context, embedded ? theme.panel() : theme.surface(), FADE_HEIGHT,UiTheme.fade(theme.text(), 0.25F), UiTheme.fade(theme.text(), 0.45F));
 	}
 
 	private void drawRow(GuiGraphicsExtractor context, UiTheme theme, RowBox box, int mouseX, int mouseY) {
@@ -633,10 +676,16 @@ final class SettingsSheet {
 	// ---- footer and dropdown --------------------------------------------------------------------
 
 	private void drawFooter(GuiGraphicsExtractor context, UiTheme theme, int mouseX, int mouseY) {
-		Component done = CommonComponents.GUI_DONE;
-		doneWidth = Math.max(60, UiWidgets.buttonWidth(font, done) + 12);
-		doneX = x + width - PADDING - doneWidth;
-		UiWidgets.button(context, font, theme, doneX, footerY, doneWidth, BUTTON_HEIGHT, done, UiWidgets.ButtonStyle.PRIMARY, contains(mouseX, mouseY, doneX, footerY, doneWidth, BUTTON_HEIGHT) ? 1.0F : 0.0F);
+		if (embedded) {
+			// In a screen's pane only Reset: the screen itself is closed as usual.
+			doneWidth = 0;
+			doneX = x + width - PADDING + 6;
+		} else {
+			Component done = CommonComponents.GUI_DONE;
+			doneWidth = Math.max(60, UiWidgets.buttonWidth(font, done) + 12);
+			doneX = x + width - PADDING - doneWidth;
+			UiWidgets.button(context, font, theme, doneX, footerY, doneWidth, BUTTON_HEIGHT, done, UiWidgets.ButtonStyle.PRIMARY, contains(mouseX, mouseY, doneX, footerY, doneWidth, BUTTON_HEIGHT) ? 1.0F : 0.0F);
+		}
 		if (feature.resetAction() != null) {
 			Component reset = Component.translatable(EMUtilsTexts.UI_RESET);
 			resetWidth = UiWidgets.buttonWidth(font, reset) + 4;
@@ -706,6 +755,9 @@ final class SettingsSheet {
 			return true;
 		}
 		if (!contains(mouseX, mouseY, x, y, width, height)) {
+			if (embedded) {
+				return false;
+			}
 			close();
 			return true;
 		}
@@ -874,6 +926,9 @@ final class SettingsSheet {
 				dropdown = null;
 			} else if (colorPicker != null) {
 				closeColorPicker();
+			} else if (embedded) {
+				// Nothing open in the pane: Esc is the screen's, which closes.
+				return false;
 			} else {
 				close();
 			}

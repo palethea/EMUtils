@@ -73,6 +73,7 @@ import net.emutils.client.emutils.hud.HudTpsTracker;
 import net.emutils.client.emutils.hud.KeystrokesStyle;
 import net.emutils.client.emutils.hud.LookAtInfoData;
 import net.emutils.client.emutils.gui.settings.SettingsIconButton;
+import net.emutils.client.emutils.gui.settings.MapSettingsScreen;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
 import net.emutils.client.emutils.config.ConfigTransfer;
 import net.emutils.client.emutils.config.EMUtilsConfig;
@@ -3523,7 +3524,12 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 80, "minimap, round, 0.25x, not pinned");
 			}
-			case 386 -> openSheetAndCapture(client, "minimap", "minimap sheet");
+			case 386 -> {
+				if (stepTicks == 1) {
+					client.gui.setScreen(new MapSettingsScreen(null, MapSettingsScreen.MINIMAP));
+				}
+				captureAfter(client, 20, "map settings, minimap");
+			}
 			case 387 -> {
 				EMUtilsClient.config().resetMinimapDefaults();
 				EMUtilsClient.config().setMinimap(false);
@@ -4009,21 +4015,30 @@ public final class UiSnapshotter {
 			// The Entity Radar settings (#224): a tab each for the groups shown, their icons, names, colors and display.
 			case 410 -> {
 				if (stepTicks == 1) {
-					SettingsScreen settings = new SettingsScreen(null);
-					client.gui.setScreen(settings);
-					settings.openSheet("entity_radar");
+					client.gui.setScreen(new MapSettingsScreen(null, MapSettingsScreen.ENTITY_RADAR));
 				}
 				String[] tabs = {"entities", "icons", "names", "colors", "display"};
 				for (int i = 0; i < tabs.length; i++) {
 					int at = 20 + i * 20;
-					if (stepTicks == at && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
-						settings.selectSheetSectionForSnapshot(i);
+					if (stepTicks == at && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen settings) {
+						settings.selectSectionForSnapshot(i);
 					}
 					if (stepTicks == at + 12) {
 						grab(client, "entity radar settings, " + tabs[i]);
 					}
 				}
-				if (stepTicks == 20 + tabs.length * 20) {
+				// Scrolled partway, the rows fade out at the top and bottom of the pane instead of being cut off.
+				int scrolled = 20 + tabs.length * 20;
+				if (stepTicks == scrolled && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen settings) {
+					settings.selectSectionForSnapshot(0);
+				}
+				if (stepTicks == scrolled + 4 && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen settings) {
+					settings.scrollToMiddleForSnapshot();
+				}
+				if (stepTicks == scrolled + 12) {
+					grab(client, "entity radar settings, scrolled");
+				}
+				if (stepTicks == scrolled + 20) {
 					client.gui.setScreen(null);
 					next();
 				}
@@ -4208,6 +4223,45 @@ public final class UiSnapshotter {
 				if (stepTicks == 55) {
 					check(EMUtilsClient.waypoint().temporaryWaypoint() == null, "putting the map away takes that waypoint away");
 					config.setWaypointExplorerMapPreview(false);
+					next();
+				}
+			}
+			// The map's settings in one screen (#243): the hub has one Map card for them, which search finds by any of
+			// its areas, and the screen shows each area with its settings.
+			case 416 -> {
+				if (stepTicks == 1) {
+					SettingsScreen settings = new SettingsScreen(null);
+					client.gui.setScreen(settings);
+				}
+				if (stepTicks == 10 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					List<String> shown = settings.shownFeatureIdsForSnapshot();
+					check(shown.contains("map") && !shown.contains("minimap") && !shown.contains("world_map") && !shown.contains("entity_radar") && shown.contains("waypoints"),
+						"the hub has one Map card for the map's settings, and Waypoints keeps its own");
+					settings.searchFor("radar");
+				}
+				if (stepTicks == 14 && MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+					check(settings.shownFeatureIdsForSnapshot().contains("map"), "searching for the radar finds the Map card (" + settings.shownFeatureIdsForSnapshot() + ")");
+					grab(client, "hub search finds the map card");
+					settings.searchFor("caves");
+					check(settings.shownFeatureIdsForSnapshot().contains("map"), "searching for one of its areas, caves, finds the Map card too (" + settings.shownFeatureIdsForSnapshot() + ")");
+					settings.searchFor("");
+					MapSettingsScreen map = new MapSettingsScreen(settings);
+					client.gui.setScreen(map);
+					check(map.areasForSnapshot().equals(List.of("minimap", "world_map", "entity_radar", "map_caves", "map_loading")),
+						"the Map settings have the minimap, world map, radar, caves and loading (" + map.areasForSnapshot() + ")");
+				}
+				String[] areas = {MapSettingsScreen.WORLD_MAP, MapSettingsScreen.CAVES, MapSettingsScreen.LOADING};
+				for (int i = 0; i < areas.length; i++) {
+					int at = 30 + i * 20;
+					if (stepTicks == at && MinecraftClientCompat.screen(client) instanceof MapSettingsScreen map) {
+						map.selectAreaForSnapshot(areas[i]);
+					}
+					if (stepTicks == at + 12) {
+						grab(client, "map settings, " + areas[i].replace('_', ' '));
+					}
+				}
+				if (stepTicks == 30 + areas.length * 20) {
+					client.gui.setScreen(null);
 					next();
 				}
 			}
