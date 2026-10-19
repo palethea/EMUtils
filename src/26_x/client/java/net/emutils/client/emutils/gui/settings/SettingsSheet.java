@@ -146,6 +146,11 @@ final class SettingsSheet {
 		scroll.jumpTo(scroll.maxScroll() / 2.0);
 	}
 
+	/** Scrolls the rows to the end at once; used by UI snapshots. */
+	void scrollToEndForSnapshot() {
+		scroll.jumpTo(scroll.maxScroll());
+	}
+
 	void close() {
 		frame.close();
 		dropdown = null;

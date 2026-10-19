@@ -4085,10 +4085,23 @@ public final class UiSnapshotter {
 				}
 				if (stepTicks == 75) {
 					grab(client, "unfair features sheet");
+					if (MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.scrollSheetToMiddleForSnapshot();
+					}
+				}
+				// The rest of the list: every switch has a description (#248).
+				if (stepTicks == 85) {
+					grab(client, "unfair features sheet, middle");
+					if (MinecraftClientCompat.screen(client) instanceof SettingsScreen settings) {
+						settings.scrollSheetToEndForSnapshot();
+					}
+				}
+				if (stepTicks == 95) {
+					grab(client, "unfair features sheet, end");
 					client.gui.setScreen(null);
 					config.setUnfairFeatures(true);
 				}
-				if (stepTicks == 80) {
+				if (stepTicks == 100) {
 					check(MapRadar.enabledForSnapshot() && MapManager.cavesAllowed() && !freeCamera.isActive(), "on again, the radar and cave view are back, and Free Camera stays off");
 					config.setTweakFastPlace(false);
 					config.setTweakSafeWalk(false);
