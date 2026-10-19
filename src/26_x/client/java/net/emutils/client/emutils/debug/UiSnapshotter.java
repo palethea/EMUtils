@@ -3466,7 +3466,7 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
-			// Back into a new test world for the steps after this, which need one (#252). Each of them starts from a
+			// Back into a test world for the steps after this, which need one (#252). Each of them starts from a
 			// new world when run on its own too, so they find it as they expect.
 			case 379 -> {
 				if (stepTicks == 1) {
