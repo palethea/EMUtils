@@ -220,6 +220,8 @@ public final class UiSnapshotter {
 	private static long configModifiedBefore;
 	private static boolean configCheckPending;
 	private static boolean leftWorld;
+	/** The step tick the player was back in a world after the outside-a-world steps, or -1 (#252). */
+	private static int rejoinedAt = -1;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
@@ -245,6 +247,10 @@ public final class UiSnapshotter {
 			return;
 		}
 
+		// The snapshots stand in for a player using the game, but send no real input, so after a minute vanilla
+		// would cap the frame rate as if they were away (30, then 10 FPS). Animations then get too few frames per
+		// tick for their checks, and menus report the away limit (#252).
+		client.getFramerateLimitTracker().onInputReceived();
 		worldTicks++;
 		if (worldTicks < 40) {
 			return;
@@ -1175,12 +1181,14 @@ public final class UiSnapshotter {
 				next();
 			}
 			case 186 -> captureAfter(client, 20, "hud overlay, gui scale 2, dark");
-			// Values change every tick; they come from cached glyphs, so no new text textures appear.
+			// Values change every tick; they come from cached glyphs, so no new text textures appear. The first
+			// 10 s let every digit show once (the clock's seconds go through all ten), so a glyph drawn for the
+			// first time doesn't count as one made by a changing value (#252).
 			case 187 -> {
-				if (stepTicks == 1) {
+				if (stepTicks == 200) {
 					hudTextures = UiFontRenderer.texturesMade();
 				}
-				if (stepTicks >= 60) {
+				if (stepTicks >= 260) {
 					int made = UiFontRenderer.texturesMade() - hudTextures;
 					check(made <= 2, "the HUD overlay's changing values make no new text textures: " + made + " in 3 s");
 					next();
@@ -2121,10 +2129,11 @@ public final class UiSnapshotter {
 					config.setCapeCosmetica(true);
 					int animatedBefore = CapeAnimations.count();
 					CompletableFuture.runAsync(() -> {
-						String animated = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("cd19cb6e-c829-46b3-a6df-63bbe2c5a0dd"), "Lythogeor"));
+						// These are live lookups; a known Cosmetica user is tried again when one times out (#252).
+						String animated = resolveCapeForSnapshot(new GameProfile(UUID.fromString("cd19cb6e-c829-46b3-a6df-63bbe2c5a0dd"), "Lythogeor"));
 						// Counted now: the setting changes below reload the capes, which clears animations.
 						int animatedAfter = CapeAnimations.count();
-						String still = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("4f507640-5bc3-4e87-acdd-896a9cf0fe6c"), "Redjie"));
+						String still = resolveCapeForSnapshot(new GameProfile(UUID.fromString("4f507640-5bc3-4e87-acdd-896a9cf0fe6c"), "Redjie"));
 						String notch = CustomCapeManager.resolveForSnapshot(new GameProfile(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), "Notch"));
 						// The priority list (#52), with a stand-in for an official cape: by default a provider's cape
 						// wins; with Minecraft first the official one does, and a provider's still shows for
@@ -2145,11 +2154,11 @@ public final class UiSnapshotter {
 						};
 						boolean providerWins = CustomCapeManager.capeTextureFor(user, official) != official;
 						EMUtilsClient.config().moveCapeSource(CapeSource.MINECRAFT, -10);
-						CustomCapeManager.resolveForSnapshot(user);
+						resolveCapeForSnapshot(user);
 						boolean officialWins = CustomCapeManager.capeTextureFor(user, official) == official;
 						boolean fallsBack = CustomCapeManager.capeTextureFor(user, null) != null;
 						EMUtilsClient.config().setCapeMinecraft(false);
-						CustomCapeManager.resolveForSnapshot(user);
+						resolveCapeForSnapshot(user);
 						CustomCapeManager.resolveForSnapshot(notchProfile);
 						boolean hidden = CustomCapeManager.capeTextureFor(notchProfile, official) == null;
 						boolean providerInstead = CustomCapeManager.capeTextureFor(user, official) != official && CustomCapeManager.capeTextureFor(user, official) != null;
@@ -2245,6 +2254,8 @@ public final class UiSnapshotter {
 					// A clear stone floor, so grass or a slope doesn't get between the player and the mob.
 					command(client, "fill ~-1 ~-1 ~1 ~1 ~-1 ~4 minecraft:stone");
 					command(client, "fill ~-1 ~ ~1 ~1 ~2 ~4 minecraft:air");
+					// The quick wins (255) made the world peaceful, where a husk can't be summoned (#252); it has no AI.
+					command(client, "difficulty easy");
 					command(client, "summon minecraft:husk ~ ~ ~3 {NoAI:1b,Silent:1b,active_effects:[{id:\"minecraft:speed\",amplifier:1b,duration:2400}]}");
 					command(client, "damage @e[type=minecraft:husk,limit=1,sort=nearest] 5 minecraft:generic");
 					client.player.setXRot(10.0F);
@@ -2258,6 +2269,9 @@ public final class UiSnapshotter {
 					check(speed.startsWith("II · "), "in singleplayer the mob's effects show, with their level (" + speed + ")");
 				}
 				captureAfter(client, 40, "look-at info, mob with an effect");
+				if (step != 302) {
+					command(client, "difficulty peaceful");
+				}
 			}
 			case 303 -> {
 				if (stepTicks == 1) {
@@ -2275,6 +2289,8 @@ public final class UiSnapshotter {
 					EMUtilsClient.config().resetLookAtInfoDefaults();
 					EMUtilsClient.config().setLookAtInfo(true);
 					client.player.setXRot(-90.0F);
+					// Nothing within reach overhead, such as a tree the new world put there (#252).
+					command(client, "fill ~-1 ~2 ~-1 ~1 ~8 ~1 minecraft:air");
 				}
 				if (stepTicks == 5 && HudLayoutManager.beginEditorSession(EMUtilsClient.MOD_ID, client)) {
 					check(LookAtInfoData.current() == null, "looking at the sky targets nothing");
@@ -3374,13 +3390,29 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
-			// Outside a world: the settings can be opened from the title screen, and so can their screens.
+			// Typing /emutils in chat opens the menu (#211). Chat needs a player, so this runs before leaving the world;
+			// the chat screen can't even open on the title screen (#252).
+			// Then outside a world: the settings can be opened from the title screen, and so can their screens.
 			case 374 -> {
-				EMUtilsClient.config().resetHudDefaults();
-				SmokeLaunchVerifier.stopEnteringTestWorld();
-				leftWorld = true;
-				client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
-				next();
+				if (stepTicks == 1) {
+					client.gui.setScreen(new net.minecraft.client.gui.screens.ChatScreen("/emutils", false));
+				}
+				if (stepTicks == 5) {
+					Screen chat = MinecraftClientCompat.screen(client);
+					chat.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
+				}
+				if (stepTicks == 20) {
+					check(MinecraftClientCompat.screen(client) instanceof SettingsScreen, "typing /emutils in chat opens the menu, screen is " + MinecraftClientCompat.screen(client));
+					grab(client, "settings opened by the /emutils command");
+					client.gui.setScreen(null);
+				}
+				if (stepTicks == 22) {
+					EMUtilsClient.config().resetHudDefaults();
+					SmokeLaunchVerifier.stopEnteringTestWorld();
+					leftWorld = true;
+					client.disconnectFromWorld(Component.literal("EMUtils UI snapshots"));
+					next();
+				}
 			}
 			case 375 -> {
 				if (client.level == null && MinecraftClientCompat.screen(client) != null && stepTicks > 20) {
@@ -3429,18 +3461,27 @@ public final class UiSnapshotter {
 				}
 				captureAfter(client, 16, "settings closing back to the title screen, mid-fade after a resize");
 			}
+			// Back into a new test world for the steps after this, which need one (#252). Each of them starts from a
+			// new world when run on its own too, so they find it as they expect.
 			case 379 -> {
 				if (stepTicks == 1) {
-					client.gui.setScreen(new net.minecraft.client.gui.screens.ChatScreen("/emutils", false));
+					client.gui.setScreen(null);
+					SmokeLaunchVerifier.enterTestWorldAgain();
+					rejoinedAt = -1;
 				}
-				if (stepTicks == 5) {
-					Screen chat = MinecraftClientCompat.screen(client);
-					chat.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
+				if (client.level != null && client.player != null) {
+					if (rejoinedAt < 0) {
+						rejoinedAt = stepTicks;
+					}
+					if (stepTicks - rejoinedAt >= 40) {
+						leftWorld = false;
+						check(true, "went back into a test world for the steps that need one");
+						next();
+					}
+				} else if (stepTicks > 2400) {
+					check(false, "went back into a test world for the steps that need one");
+					finish(client);
 				}
-				if (stepTicks == 20) {
-					check(MinecraftClientCompat.screen(client) instanceof SettingsScreen, "typing /emutils in chat opens the menu, screen is " + MinecraftClientCompat.screen(client));
-				}
-				captureAfter(client, 21, "settings opened by the /emutils command");
 			}
 			// Remember last menu position (#192): category, scroll and open sheet come back; off forgets them.
 			case 380 -> {
@@ -5451,6 +5492,27 @@ public final class UiSnapshotter {
 			}
 		}
 		return "";
+	}
+
+	/**
+	 * Looks up a player who has a provider's cape, trying again a few times when the lookup finds none: the
+	 * lookups are live, and a provider times out now and then (#252). Returns the provider, or null if none of
+	 * the tries found one.
+	 */
+	private static @Nullable String resolveCapeForSnapshot(GameProfile profile) {
+		String provider = null;
+		for (int attempt = 0; attempt < 3 && provider == null; attempt++) {
+			if (attempt > 0) {
+				try {
+					Thread.sleep(1000L);
+				} catch (InterruptedException exception) {
+					Thread.currentThread().interrupt();
+					return null;
+				}
+			}
+			provider = CustomCapeManager.resolveForSnapshot(profile);
+		}
+		return provider;
 	}
 
 	private static void check(boolean passed, String what) {

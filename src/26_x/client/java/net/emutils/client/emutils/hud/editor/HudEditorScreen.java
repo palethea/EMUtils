@@ -854,38 +854,55 @@ public final class HudEditorScreen extends Screen {
 	 */
 	public @Nullable String cycleProblemForSnapshot() {
 		HudElementId before = selected;
-		try {
-			for (HudLayoutElement element : HudLayoutManager.editorElements()) {
-				HudLayoutDraft draft = draft(element.id());
-				HudOverlayPlacement.PanelDimensions panel = dimensions.get(element.id());
-				if (draft == null || panel == null) {
-					continue;
-				}
-				int x = draft.x() + panel.width() / 2;
-				int y = draft.y() + panel.height() / 2;
-				List<HudElementId> hits = elementsAt(x, y);
-				if (hits.size() < 3) {
-					continue;
-				}
-				selected = null;
-				if (!hits.getFirst().equals(pickAt(x, y))) {
-					return "with nothing selected a press doesn't pick the smallest element";
-				}
-				selected = hits.get(1);
-				if (!hits.get(1).equals(pickAt(x, y))) {
-					return "a press doesn't keep the selected element";
-				}
-				selected = hits.getFirst();
-				Set<HudElementId> seen = new HashSet<>();
-				for (int i = 0; i < hits.size(); i++) {
-					seen.add(selected);
-					selectNextUnder(x, y);
-				}
-				return seen.size() == hits.size() && hits.getFirst().equals(selected) ? null : "clicking again visited " + seen.size() + " of " + hits.size() + " elements";
+		// Three elements are stacked on one spot for the check and put back after, so it doesn't depend on
+		// the default layout happening to overlap three of them (#252).
+		Map<HudElementId, HudLayoutDraft> moved = new LinkedHashMap<>();
+		int x = 0;
+		int y = 0;
+		for (HudLayoutElement element : HudLayoutManager.editorElements()) {
+			HudElementId id = element.id();
+			HudLayoutDraft draft = draft(id);
+			HudOverlayPlacement.PanelDimensions panel = dimensions.get(id);
+			if (isHidden(id) || draft == null || panel == null || panel.width() <= 0 || panel.height() <= 0) {
+				continue;
 			}
-			return "no spot has three overlapping elements in the editor";
+			if (moved.isEmpty()) {
+				x = draft.x() + panel.width() / 2;
+				y = draft.y() + panel.height() / 2;
+			} else {
+				HudLayoutManager.setDraftLayout(id, x - panel.width() / 2, y - panel.height() / 2, draft.scale(), draft.opacity());
+			}
+			moved.put(id, draft);
+			if (moved.size() == 3) {
+				break;
+			}
+		}
+		try {
+			if (moved.size() < 3) {
+				return "the editor has fewer than three elements to stack";
+			}
+			List<HudElementId> hits = elementsAt(x, y);
+			if (hits.size() < 3) {
+				return "only " + hits.size() + " of three stacked elements can be hit";
+			}
+			selected = null;
+			if (!hits.getFirst().equals(pickAt(x, y))) {
+				return "with nothing selected a press doesn't pick the smallest element";
+			}
+			selected = hits.get(1);
+			if (!hits.get(1).equals(pickAt(x, y))) {
+				return "a press doesn't keep the selected element";
+			}
+			selected = hits.getFirst();
+			Set<HudElementId> seen = new HashSet<>();
+			for (int i = 0; i < hits.size(); i++) {
+				seen.add(selected);
+				selectNextUnder(x, y);
+			}
+			return seen.size() == hits.size() && hits.getFirst().equals(selected) ? null : "clicking again visited " + seen.size() + " of " + hits.size() + " elements";
 		} finally {
 			selected = before;
+			moved.forEach((id, draft) -> HudLayoutManager.setDraftLayout(id, draft.x(), draft.y(), draft.scale(), draft.opacity()));
 		}
 	}
 
