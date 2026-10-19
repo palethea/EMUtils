@@ -40,6 +40,20 @@ public final class SmokeLaunchVerifier {
 		launchTestWorld = false;
 	}
 
+	/**
+	 * Goes into a test world again after {@link #stopEnteringTestWorld()}: the kept world when there is one,
+	 * else a new one, as at launch. UI snapshots use it after their outside-a-world steps (#252).
+	 */
+	public static void enterTestWorldAgain() {
+		launchTestWorld = true;
+		registered = true;
+		enabled = false;
+		ticks = 0;
+		worldTicks = 0;
+		requestedWorldCreation = false;
+		clickedCreateWorld = false;
+	}
+
 	/** The kept world launches open, or null when they make a new one each time. */
 	public static String keptWorld() {
 		String name = System.getProperty(KEPT_WORLD_PROPERTY);
