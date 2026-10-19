@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinescriptCompat;
+import net.emutils.client.emutils.util.AtomicFiles;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -157,7 +158,8 @@ public final class MinescriptPython {
 			}
 		}
 		Files.createDirectories(config.getParent());
-		Files.writeString(config, String.join(newline, lines), StandardCharsets.UTF_8);
+		// Minescript's own config, so it's never left half written (#250).
+		AtomicFiles.writeString(config, String.join(newline, lines));
 		MinescriptCompat.reloadConfig();
 		generation++;
 		result = new Result(Problem.NONE, python.path(), python, null, false);

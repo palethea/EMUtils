@@ -7,7 +7,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,6 +17,7 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.util.AtomicFiles;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
@@ -57,16 +57,10 @@ public final class ProfileManager {
 	/** Reads the profile list; a missing or unreadable one starts with just the Default profile. */
 	public static ProfileManager load() {
 		ProfileManager manager = new ProfileManager();
-		Path file = EMUtilsPaths.profilesFile();
-		if (Files.exists(file)) {
-			try (Reader reader = Files.newBufferedReader(file)) {
-				SaveData data = GSON.fromJson(reader, SaveData.class);
-				if (data != null) {
-					manager.read(data);
-				}
-			} catch (IOException | JsonParseException | IllegalStateException exception) {
-				EMUtilsClient.LOGGER.warn("Could not read the EMUtils profile list; only the Default profile is listed.", exception);
-			}
+		// An unreadable list is kept as a copy, as the profiles' own files stay in profiles/ but go unlisted.
+		SaveData data = DataFiles.readJsonOrNull(EMUtilsPaths.profilesFile(), GSON, SaveData.class);
+		if (data != null) {
+			manager.read(data);
 		}
 		manager.ensureDefault();
 		return manager;

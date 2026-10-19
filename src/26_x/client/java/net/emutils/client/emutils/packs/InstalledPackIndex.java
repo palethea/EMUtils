@@ -2,9 +2,7 @@ package net.emutils.client.emutils.packs;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,20 +10,14 @@ import java.util.List;
 import java.util.Optional;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.DataFiles;
 
 public final class InstalledPackIndex {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private final List<PackInstallRecord> records = new ArrayList<>();
 
 	public static InstalledPackIndex load() {
-		InstalledPackIndex index = null;
-		if (Files.exists(EMUtilsPaths.packInstallIndexFile())) {
-			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.packInstallIndexFile())) {
-				index = GSON.fromJson(reader, InstalledPackIndex.class);
-			} catch (IOException | JsonParseException | IllegalStateException ignored) {
-			}
-		}
-
+		InstalledPackIndex index = DataFiles.readJsonOrNull(EMUtilsPaths.packInstallIndexFile(), GSON, InstalledPackIndex.class);
 		return index == null ? new InstalledPackIndex() : index;
 	}
 

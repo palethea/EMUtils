@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
 import net.emutils.client.emutils.util.AtomicFiles;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.client.Minecraft;
@@ -974,31 +975,21 @@ public final class WaypointManager {
             return;
         }
 
-        try {
-            String json = Files.readString(EMUtilsPaths.waypointFile());
-            WaypointSaveData saveData = GSON.fromJson(
-                json,
-                WaypointSaveData.class
-            );
-            if (
-                saveData != null &&
-                saveData.waypoints() != null &&
-                !saveData.waypoints().isEmpty()
-            ) {
-                waypoints.clear();
-                waypoints.addAll(saveData.waypoints());
-                if (ensureUniqueIds()) {
-                    save();
-                }
-                return;
+        // An unreadable file is kept as waypoints.json.broken before anything is saved over it (#250).
+        WaypointSaveData saveData = DataFiles.readJsonOrNull(
+            EMUtilsPaths.waypointFile(),
+            GSON,
+            WaypointSaveData.class
+        );
+        waypoints.clear();
+        if (saveData != null && saveData.waypoints() != null) {
+            // A null entry in a hand-edited file would break every list of waypoints.
+            saveData.waypoints().stream()
+                .filter(waypoint -> waypoint != null)
+                .forEach(waypoints::add);
+            if (ensureUniqueIds()) {
+                save();
             }
-        } catch (
-            IOException
-            | JsonParseException
-            | IllegalStateException exception
-        ) {
-            EMUtilsClient.LOGGER.warn("Failed to load waypoints.", exception);
-            waypoints.clear();
         }
     }
 

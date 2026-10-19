@@ -1482,6 +1482,7 @@ public final class EMUtilsTexts {
     public static final String PROFILE_AUTO_SWITCHED = "emutils.profile.auto_switched";
     public static final String PROFILE_SWITCHED_BACK = "emutils.profile.switched_back";
     public static final String PROFILE_SWITCH_FAILED = "emutils.profile.switch_failed";
+    public static final String DATA_FILE_UNREADABLE = "emutils.data_file.unreadable";
     public static final String COMMAND_FEEDBACK_PROFILES = "emutils.command.feedback.profiles";
     public static final String COMMAND_FEEDBACK_UNKNOWN_PROFILE = "emutils.command.feedback.unknown_profile";
 

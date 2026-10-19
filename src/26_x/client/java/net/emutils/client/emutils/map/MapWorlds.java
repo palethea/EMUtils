@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+import net.emutils.client.emutils.util.AtomicFiles;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.EMUtilsClient;
 import org.jspecify.annotations.Nullable;
 
@@ -72,15 +74,7 @@ final class MapWorlds {
 	}
 
 	private static MapWorlds load(Path folder, String dimension) {
-		Data data = null;
-		Path file = folder.resolve(FILE);
-		if (Files.isRegularFile(file)) {
-			try {
-				data = GSON.fromJson(Files.readString(file), Data.class);
-			} catch (IOException | RuntimeException exception) {
-				EMUtilsClient.LOGGER.warn("EMUtils map couldn't read {}", file, exception);
-			}
-		}
+		Data data = DataFiles.readJsonOrNull(folder.resolve(FILE), GSON, Data.class);
 		MapWorlds worlds = new MapWorlds(folder, dimension, data == null || data.worlds == null ? new Data() : data);
 		worlds.data.worlds.removeIf(entry -> entry == null || entry.id == null || entry.id.isBlank());
 		worlds.migrate();
@@ -227,12 +221,11 @@ final class MapWorlds {
 
 	private void save() {
 		try {
-			Files.createDirectories(folder);
-			Files.writeString(folder.resolve(FILE), GSON.toJson(data));
+			AtomicFiles.writeString(folder.resolve(FILE), GSON.toJson(data));
 			// The dimension's id, beside its worlds, so the world map can name the folder.
 			Path dimensionFile = folder.resolve(MapWorld.DIMENSION_FILE);
 			if (!Files.exists(dimensionFile)) {
-				Files.writeString(dimensionFile, dimension);
+				AtomicFiles.writeString(dimensionFile, dimension);
 			}
 		} catch (IOException exception) {
 			EMUtilsClient.LOGGER.warn("EMUtils map couldn't save {}", folder.resolve(FILE), exception);

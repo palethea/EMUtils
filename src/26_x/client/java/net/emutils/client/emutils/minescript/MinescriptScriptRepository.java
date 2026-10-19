@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
 import net.emutils.client.emutils.compat.MinescriptCompat;
+import net.emutils.client.emutils.util.AtomicFiles;
 
 public final class MinescriptScriptRepository {
 	private static final Set<String> IGNORED_DIRECTORIES = Set.of("system", "blockpacks", "undo");
@@ -50,7 +51,8 @@ public final class MinescriptScriptRepository {
 			throw new IOException("Only .py Minescript files can be edited.");
 		}
 		Path path = safePath(script.path());
-		Files.writeString(path, content == null ? "" : content, StandardCharsets.UTF_8);
+		// Written whole or not at all, so a crash mid-save never empties the script (#250).
+		AtomicFiles.writeString(path, content == null ? "" : content);
 	}
 
 	public MinescriptScript createScript(String relativeName) throws IOException {

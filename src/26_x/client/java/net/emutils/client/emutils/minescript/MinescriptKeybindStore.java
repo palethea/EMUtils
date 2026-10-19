@@ -2,14 +2,13 @@ package net.emutils.client.emutils.minescript;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.DataFiles;
 import java.nio.file.Files;
 
 public final class MinescriptKeybindStore {
@@ -17,13 +16,7 @@ public final class MinescriptKeybindStore {
 	private final List<MinescriptKeyBinding> bindings = new ArrayList<>();
 
 	public static MinescriptKeybindStore load() {
-		MinescriptKeybindStore store = null;
-		if (Files.exists(EMUtilsPaths.minescriptKeybindFile())) {
-			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.minescriptKeybindFile())) {
-				store = GSON.fromJson(reader, MinescriptKeybindStore.class);
-			} catch (IOException | JsonParseException | IllegalStateException ignored) {
-			}
-		}
+		MinescriptKeybindStore store = DataFiles.readJsonOrNull(EMUtilsPaths.minescriptKeybindFile(), GSON, MinescriptKeybindStore.class);
 		return store == null ? new MinescriptKeybindStore() : store;
 	}
 
