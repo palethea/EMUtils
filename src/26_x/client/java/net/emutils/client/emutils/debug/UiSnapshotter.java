@@ -1785,7 +1785,9 @@ public final class UiSnapshotter {
 					BlockPos beacon = quickWinsOrigin.offset(3, 3, 0);
 					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(beacon), Direction.WEST, beacon, false));
 				}
-				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen, 40, "right-clicking the beacon opens it");
+				// The beacon counts its pyramid only every 80 ticks; paying for an effect before that is refused,
+				// and the server kicks the player for it.
+				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen screen && screen.getMenu().getLevels() > 0, 120, "right-clicking the beacon opens it, with its pyramid counted");
 			}
 			case 275 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof BeaconScreen screen) {
