@@ -761,6 +761,20 @@ public final class SettingsScreen extends UiPanelScreen {
 		}
 	}
 
+	/** Scrolls the open sheet's rows to the middle; used by UI snapshots. */
+	public void scrollSheetToMiddleForSnapshot() {
+		if (sheet != null) {
+			sheet.scrollToMiddleForSnapshot();
+		}
+	}
+
+	/** Scrolls the open sheet's rows to the end; used by UI snapshots. */
+	public void scrollSheetToEndForSnapshot() {
+		if (sheet != null) {
+			sheet.scrollToEndForSnapshot();
+		}
+	}
+
 	/** Opens the color picker in the open sheet; used by UI snapshots. */
 	public void openColorPickerInSheet() {
 		if (sheet != null) {
