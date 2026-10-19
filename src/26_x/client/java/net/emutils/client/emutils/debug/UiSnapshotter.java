@@ -2207,6 +2207,9 @@ public final class UiSnapshotter {
 					BlockPos feet = client.player.blockPosition();
 					// Stand in the middle of the block, facing south and looking down at dirt right in front, then obsidian.
 					command(client, "tp @s " + (feet.getX() + 0.5) + " " + feet.getY() + " " + (feet.getZ() + 0.5) + " 0 60");
+					// A clear, flat spot, so trees or roots where the world put the player don't get in the way (#252).
+					command(client, "fill ~-2 ~ ~-2 ~2 ~4 ~5 minecraft:air");
+					command(client, "fill ~-2 ~-1 ~-2 ~2 ~-1 ~5 minecraft:stone");
 					command(client, "setblock ~ ~ ~1 minecraft:dirt");
 					command(client, "setblock ~ ~1 ~1 minecraft:air");
 					command(client, "time set 6000");
@@ -3002,6 +3005,8 @@ public final class UiSnapshotter {
 					freeCameraWallX = client.player.blockPosition().getX() + 6;
 					BlockPos base = client.player.blockPosition();
 					command(client, "fill " + freeCameraWallX + " " + (base.getY() - 3) + " " + (base.getZ() - 4) + " " + freeCameraWallX + " " + (base.getY() + 8) + " " + (base.getZ() + 4) + " minecraft:stone");
+					// A clear way up to the wall, so a hill or tree doesn't stop the camera first (#252).
+					command(client, "fill " + base.getX() + " " + base.getY() + " " + (base.getZ() - 1) + " " + (freeCameraWallX - 1) + " " + (base.getY() + 2) + " " + (base.getZ() + 1) + " minecraft:air");
 					config.setTweakFreeCamera(true);
 				}
 				if (stepTicks == 10) {
@@ -3472,6 +3477,8 @@ public final class UiSnapshotter {
 				if (client.level != null && client.player != null) {
 					if (rejoinedAt < 0) {
 						rejoinedAt = stepTicks;
+						// The new world may put the player in water, and the long steps after this would drown them.
+						command(client, "effect give @s minecraft:water_breathing infinite 0 true");
 					}
 					if (stepTicks - rejoinedAt >= 40) {
 						leftWorld = false;
