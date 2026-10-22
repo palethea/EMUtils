@@ -37,6 +37,7 @@ public abstract class DisconnectedScreenMixin extends Screen {
 		if (!manager.enabled() || !manager.hasServer()) {
 			return;
 		}
+		manager.track((net.minecraft.client.gui.screens.DisconnectedScreen) (Object) this);
 
 		emutils$reconnectButton = Button.builder(
 			manager.buttonText(),
