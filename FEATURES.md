@@ -265,11 +265,11 @@ A full-screen map of everything you explored, drawn like the minimap, with block
 
 ### Auto Reconnect
 
-Reconnect to the last server after being kicked, with a countdown button on the disconnect screen.
+Reconnect to the last server after being kicked, with a countdown button on the disconnect screen. Bans, kicks by an operator, not being whitelisted, logging in elsewhere and a game version the server doesn't accept aren't retried on their own; the button still reconnects when you press it.
 
 - Retry Delay: set the delay before reconnecting.
 - Always Retry: retry until manually stopped.
-- Max Tries: limit automatic reconnect attempts.
+- Max Tries: limit automatic reconnect attempts. Only staying connected for 30 seconds starts the count over, so a server that kicks you right after joining isn't rejoined forever.
 
 ### Screenshot Helper
 

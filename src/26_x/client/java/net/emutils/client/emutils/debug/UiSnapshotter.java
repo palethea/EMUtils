@@ -135,6 +135,8 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.emutils.client.emutils.reconnect.AutoReconnectManager;
 import net.minecraft.client.multiplayer.ServerList;
 import net.emutils.client.mixin.MouseAccess;
 import net.emutils.client.mixin.HandledScreenAccessor;
@@ -227,6 +229,8 @@ public final class UiSnapshotter {
 	private static boolean leftWorld;
 	/** The step tick the player was back in a world after the outside-a-world steps, or -1 (#252). */
 	private static int rejoinedAt = -1;
+	/** Auto Reconnect's settings before its step changed them (#255). */
+	private static int[] reconnectBefore = new int[4];
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
@@ -4341,6 +4345,55 @@ public final class UiSnapshotter {
 			case 418 -> {
 				checkForgedChatButtons(client);
 				next();
+			}
+			// Auto Reconnect (#255): a kick right after joining keeps counting the tries, and a ban or an operator's
+			// kick isn't retried on its own; the button still reconnects by hand.
+			case 419 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				AutoReconnectManager manager = EMUtilsClient.autoReconnect();
+				if (stepTicks == 1) {
+					reconnectBefore = new int[] {config.autoReconnect() ? 1 : 0, config.autoReconnectUnlimitedTries() ? 1 : 0, config.autoReconnectMaxTries(), config.reconnectDelaySeconds()};
+					config.setAutoReconnect(true);
+					config.setAutoReconnectUnlimitedTries(false);
+					config.setAutoReconnectMaxTries(3);
+					config.setReconnectDelaySeconds(30);
+
+					AutoReconnectManager tries = new AutoReconnectManager();
+					tries.captureServer(new ServerData("EMUtils test", "emutils.invalid", ServerData.Type.OTHER));
+					for (int i = 0; i < 3; i++) {
+						tries.countAttemptForSnapshot();
+						tries.captureCurrentServer(client);
+						tries.onDisconnected();
+					}
+					check(tries.attemptsForSnapshot() == 3, "kicks right after joining keep counting toward Max Tries (" + tries.attemptsForSnapshot() + " of 3)");
+					tries.joinedAtForSnapshot(System.currentTimeMillis() - 31_000L);
+					tries.onDisconnected();
+					check(tries.attemptsForSnapshot() == 0, "a session that stayed connected starts the tries over");
+
+					check(AutoReconnectManager.noAutoReconnect(Component.translatable("multiplayer.disconnect.kicked")), "a kick by an operator isn't retried on its own");
+					check(AutoReconnectManager.noAutoReconnect(Component.translatable("multiplayer.disconnect.banned.reason", "Griefing")), "a ban isn't retried on its own");
+					check(AutoReconnectManager.noAutoReconnect(Component.translatable("multiplayer.disconnect.duplicate_login")), "a login elsewhere isn't retried on its own");
+					check(!AutoReconnectManager.noAutoReconnect(Component.translatable("multiplayer.disconnect.idling")), "an idle kick is still retried");
+					check(!AutoReconnectManager.noAutoReconnect(Component.literal("Server restarting")), "a server's own reason is still retried");
+
+					manager.captureServer(new ServerData("EMUtils test", "emutils.invalid", ServerData.Type.OTHER));
+					client.gui.setScreen(new DisconnectedScreen(new TitleScreen(), Component.literal("Connection Lost"), Component.translatable("multiplayer.disconnect.kicked")));
+				}
+				if (stepTicks == 20) {
+					check(MinecraftClientCompat.screen(client) instanceof DisconnectedScreen && manager.buttonText().getString().equals("Reconnect"), "after a kick the button reconnects by hand, without a countdown: " + manager.buttonText().getString());
+					grab(client, "disconnected after a kick, reconnect by hand");
+					client.gui.setScreen(new DisconnectedScreen(new TitleScreen(), Component.literal("Connection Lost"), Component.translatable("multiplayer.disconnect.idling")));
+				}
+				if (stepTicks == 40) {
+					check(MinecraftClientCompat.screen(client) instanceof DisconnectedScreen && manager.buttonText().getString().startsWith("Reconnect in"), "after an idle kick the button counts down: " + manager.buttonText().getString());
+					grab(client, "disconnected after an idle kick, counting down");
+					client.gui.setScreen(null);
+					config.setAutoReconnect(reconnectBefore[0] == 1);
+					config.setAutoReconnectUnlimitedTries(reconnectBefore[1] == 1);
+					config.setAutoReconnectMaxTries(reconnectBefore[2]);
+					config.setReconnectDelaySeconds(reconnectBefore[3]);
+					next();
+				}
 			}
 			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
 			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and

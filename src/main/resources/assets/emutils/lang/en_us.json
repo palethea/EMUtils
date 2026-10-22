@@ -1239,6 +1239,7 @@
   "emutils.reconnect.countdown_attempts": "Reconnect in %s (%s/%s)",
   "emutils.reconnect.retrying": "Reconnect failed; retrying",
   "emutils.reconnect.exhausted": "Max reconnect attempts reached",
+  "emutils.reconnect.manual": "Reconnect",
   "emutils.pack.tab.resource_packs": "Resource Packs",
   "emutils.pack.tab.shader_packs": "Shader Packs",
   "emutils.pack.tab.installed": "Installed",

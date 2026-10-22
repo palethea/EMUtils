@@ -1250,6 +1250,8 @@ public final class EMUtilsTexts {
         "emutils.reconnect.retrying";
     public static final String RECONNECT_EXHAUSTED =
         "emutils.reconnect.exhausted";
+    public static final String RECONNECT_MANUAL =
+        "emutils.reconnect.manual";
 
     public static final String PACK_SECTION_INSTALLED =
         "emutils.pack.section.installed";
