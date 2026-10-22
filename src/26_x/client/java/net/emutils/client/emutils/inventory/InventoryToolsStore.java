@@ -2,7 +2,6 @@ package net.emutils.client.emutils.inventory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -14,6 +13,7 @@ import java.util.Set;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.DataFiles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.world.entity.player.Inventory;
@@ -108,18 +108,8 @@ public final class InventoryToolsStore {
 	}
 
 	private static InventoryToolsSaveData loadAll() {
-		if (!Files.exists(EMUtilsPaths.inventoryToolsFile())) {
-			return new InventoryToolsSaveData();
-		}
-
-		try {
-			String json = Files.readString(EMUtilsPaths.inventoryToolsFile());
-			InventoryToolsSaveData saveData = GSON.fromJson(json, InventoryToolsSaveData.class);
-			return saveData == null ? new InventoryToolsSaveData() : saveData;
-		} catch (IOException | JsonParseException | IllegalStateException exception) {
-			EMUtilsClient.LOGGER.warn("Failed to load inventory tools state.", exception);
-			return new InventoryToolsSaveData();
-		}
+		InventoryToolsSaveData saveData = DataFiles.readJsonOrNull(EMUtilsPaths.inventoryToolsFile(), GSON, InventoryToolsSaveData.class);
+		return saveData == null ? new InventoryToolsSaveData() : saveData;
 	}
 
 	private static void saveAll(InventoryToolsSaveData saveData) {

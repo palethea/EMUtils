@@ -45,6 +45,7 @@ import net.emutils.client.emutils.gui.ui.UiCodeFont;
 import net.emutils.client.emutils.gui.ui.UiFontFamily;
 import net.emutils.client.emutils.gui.ui.UiMotion;
 import net.emutils.client.emutils.util.AtomicFiles;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -59,7 +60,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import org.jspecify.annotations.Nullable;
 
 public final class EMUtilsConfig implements HudLayoutConfig {
@@ -529,15 +529,6 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 	private Integer zoomOutSpeedMultiplier = 18;
 	private Integer packManagerSearchLimit = 20;
 
-	/** Keeps an unreadable config as {@code <name>.broken} before the defaults replace it. */
-	private static void keepBrokenCopy(Path file) {
-		try {
-			Files.copy(file, file.resolveSibling(file.getFileName() + ".broken"), StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException exception) {
-			EMUtilsClient.LOGGER.warn("Could not keep a copy of the unreadable EMUtils config {}.", file, exception);
-		}
-	}
-
 	public static EMUtilsConfig load() {
 		return load(EMUtilsPaths.configFile());
 	}
@@ -557,7 +548,8 @@ public final class EMUtilsConfig implements HudLayoutConfig {
 				EMUtilsClient.LOGGER.warn("Could not read the EMUtils config {}; starting from defaults.", file, exception);
 			}
 			if (config == null) {
-				keepBrokenCopy(file);
+				// Kept as <name>.broken before the defaults replace it.
+				DataFiles.keepBrokenCopy(file);
 			}
 		}
 

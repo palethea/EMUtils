@@ -124,6 +124,7 @@ import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.zoom.ZoomManager;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
 import net.minecraft.client.CameraType;
@@ -1792,7 +1793,9 @@ public final class UiSnapshotter {
 					BlockPos beacon = quickWinsOrigin.offset(3, 3, 0);
 					client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(beacon), Direction.WEST, beacon, false));
 				}
-				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen, 40, "right-clicking the beacon opens it");
+				// The beacon counts its pyramid only every 80 ticks; paying for an effect before that is refused,
+				// and the server kicks the player for it.
+				waitForCheck(MinecraftClientCompat.screen(client) instanceof BeaconScreen screen && screen.getMenu().getLevels() > 0, 120, "right-clicking the beacon opens it, with its pyramid counted");
 			}
 			case 275 -> {
 				if (stepTicks == 1 && MinecraftClientCompat.screen(client) instanceof BeaconScreen screen) {
@@ -4326,6 +4329,11 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Unreadable data files (#250): kept as a .broken copy before anything replaces them, and reported in chat.
+			case 417 -> {
+				checkUnreadableWaypoints(client);
+				next();
+			}
 			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
 			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and
 			// Fast. Normal runs never get here: their steps end before.
@@ -4796,6 +4804,47 @@ public final class UiSnapshotter {
 			check(false, "a profile file can be removed for the check: " + exception);
 		}
 		profiles.delete(damaged);
+	}
+
+	/**
+	 * An unreadable waypoints.json (#250) is kept as waypoints.json.broken and reported once in chat, instead of
+	 * being cleared and saved over. The real file is put back afterwards.
+	 */
+	private static void checkUnreadableWaypoints(Minecraft client) {
+		Path file = EMUtilsPaths.waypointFile();
+		Path broken = DataFiles.brokenCopy(file);
+		String damaged = "{\"waypoints\": [ not json";
+		try {
+			byte[] original = Files.exists(file) ? Files.readAllBytes(file) : null;
+			byte[] originalBroken = Files.exists(broken) ? Files.readAllBytes(broken) : null;
+			try {
+				Files.writeString(file, damaged);
+				new WaypointManager();
+				check(Files.exists(broken) && Files.readString(broken).equals(damaged), "an unreadable waypoints.json is kept as waypoints.json.broken");
+				check(Files.readString(file).equals(damaged), "an unreadable waypoints.json isn't saved over while loading");
+				check(DataFiles.unreportedForSnapshot().contains(file), "an unreadable waypoints.json is waiting to be reported");
+				DataFiles.reportBroken(client);
+				check(!DataFiles.unreportedForSnapshot().contains(file), "an unreadable file is reported once, on joining a world");
+
+				// A hand-edited list with an empty entry still loads the rest.
+				Files.writeString(file, "{\"waypoints\": [null]}");
+				new WaypointManager();
+				check(DataFiles.unreportedForSnapshot().isEmpty(), "a waypoints.json with an empty entry still reads");
+			} finally {
+				if (original != null) {
+					Files.write(file, original);
+				} else {
+					Files.deleteIfExists(file);
+				}
+				if (originalBroken != null) {
+					Files.write(broken, originalBroken);
+				} else {
+					Files.deleteIfExists(broken);
+				}
+			}
+		} catch (IOException | RuntimeException exception) {
+			check(false, "unreadable waypoints can be checked: " + exception);
+		}
 	}
 
 	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */

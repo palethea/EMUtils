@@ -8,6 +8,7 @@ import net.emutils.client.emutils.command.EMUtilsCommand;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.emutils.client.emutils.profile.Profile;
 import net.emutils.client.emutils.text.EmUtilsChatPrefix;
+import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.network.chat.Component;
 import net.emutils.client.emutils.profile.ProfileManager;
@@ -157,6 +158,8 @@ public class EMUtilsClient implements ClientModInitializer {
 			}
 			inventoryToolsManager.onWorldJoin(client);
 			profileManager.onJoin(client);
+			// Data files that couldn't be read and were kept as a copy (#250).
+			DataFiles.reportBroken(client);
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			inventoryToolsManager.onWorldLeave(client);

@@ -2,9 +2,7 @@ package net.emutils.client.emutils.commandshortcuts;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +11,7 @@ import java.util.Optional;
 import net.emutils.client.emutils.input.StoredKeyCombo;
 import net.emutils.client.emutils.util.AtomicFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
+import net.emutils.client.emutils.util.DataFiles;
 
 public final class CommandShortcutStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -20,14 +19,7 @@ public final class CommandShortcutStore {
 	private List<CommandShortcut> shortcuts = new ArrayList<>();
 
 	public static CommandShortcutStore load() {
-		CommandShortcutStore store = null;
-		if (Files.exists(EMUtilsPaths.commandShortcutsFile())) {
-			try (Reader reader = Files.newBufferedReader(EMUtilsPaths.commandShortcutsFile())) {
-				store = GSON.fromJson(reader, CommandShortcutStore.class);
-			} catch (IOException | JsonParseException | IllegalStateException ignored) {
-			}
-		}
-
+		CommandShortcutStore store = DataFiles.readJsonOrNull(EMUtilsPaths.commandShortcutsFile(), GSON, CommandShortcutStore.class);
 		if (store == null) {
 			store = new CommandShortcutStore();
 		}

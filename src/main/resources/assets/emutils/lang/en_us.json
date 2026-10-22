@@ -1408,6 +1408,7 @@
   "emutils.profile.auto_switched": "Switched to the %s profile for this world.",
   "emutils.profile.switched_back": "Switched back to the %s profile.",
   "emutils.profile.switch_failed": "Couldn’t save the current settings, so the profile didn’t change.",
+  "emutils.data_file.unreadable": "Couldn’t read %s, so it started over. The old file was kept beside it as %s.",
   "emutils.command.feedback.profiles": "Using the %s profile. Profiles: %s",
   "emutils.command.feedback.unknown_profile": "Unknown profile: %s",
   "emutils.ui.profile.fallback": "Used when no other profile loads",
