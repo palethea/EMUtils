@@ -178,6 +178,7 @@ public final class PacksScreen extends UiPanelScreen {
 		PackType scanned = type;
 		CompletableFuture.supplyAsync(() -> {
 			try {
+				ResourcePackController.removeLeftoverDownloads(ResourcePackController.folder(minecraft, scanned));
 				return InstalledPackScanner.scan(minecraft, scanned, index).stream().sorted(Comparator.comparing(InstalledPack::filename)).toList();
 			} catch (IOException exception) {
 				throw new RuntimeException(exception);

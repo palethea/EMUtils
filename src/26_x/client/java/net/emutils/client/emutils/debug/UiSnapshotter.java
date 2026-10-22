@@ -1,5 +1,9 @@
 package net.emutils.client.emutils.debug;
 
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executors;
+import net.emutils.client.emutils.packs.modrinth.ModrinthFile;
+import net.emutils.client.emutils.packs.modrinth.ModrinthClient;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
@@ -235,6 +239,8 @@ public final class UiSnapshotter {
 	private static boolean[] capesBefore = new boolean[2];
 	/** The step tick the cape setting was switched at, or -1 before (#256). */
 	private static int capeSwitchedAt = -1;
+	/** The pack download checks running off the client thread (#257), or null. */
+	private static CompletableFuture<List<String>> packDownloadChecks;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
@@ -4428,6 +4434,24 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Pack downloads (#257): a stalled, a damaged and a good download from a local server; only the good one
+			// leaves a file, the stalled one gives up, and leftovers from before are cleaned up.
+			case 421 -> {
+				if (stepTicks == 1) {
+					packDownloadChecks = CompletableFuture.supplyAsync(UiSnapshotter::checkPackDownloads);
+				}
+				if (packDownloadChecks != null && packDownloadChecks.isDone()) {
+					List<String> failures = packDownloadChecks.join();
+					packDownloadChecks = null;
+					for (String result : failures) {
+						check(result.startsWith("ok: "), result.startsWith("ok: ") ? result.substring(4) : result);
+					}
+					next();
+				} else if (stepTicks > 1200) {
+					check(false, "the pack download checks finished within a minute");
+					next();
+				}
+			}
 			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
 			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and
 			// Fast. Normal runs never get here: their steps end before.
@@ -4966,6 +4990,105 @@ public final class UiSnapshotter {
 		check(ChatActions.value(ChatActions.forgedForSnapshot(ScreenshotMessage.COPY_SCREENSHOT_ACTION, Optional.of("C:/any/image.png")).payload()).isEmpty(), "a Copy Screenshot click in server text copies nothing");
 		check(ChatActions.value(ChatActions.click(ScreenshotMessage.COPY_SCREENSHOT_ACTION, "shot.png").payload()).equals(Optional.of("shot.png")), "EMUtils' own Copy button still names its screenshot");
 		manager.clearForCurrentWorld(client);
+	}
+
+	/**
+	 * Pack downloads against a local server (#257), off the client thread: each result starts with "ok: " when
+	 * it passed, and otherwise says what went wrong.
+	 */
+	private static List<String> checkPackDownloads() {
+		List<String> results = new ArrayList<>();
+		byte[] good = "EMUtils test pack".getBytes(StandardCharsets.UTF_8);
+		com.sun.net.httpserver.HttpServer server = null;
+		// Daemon threads, stopped at the end, so the stalled answer that's still waiting doesn't hold up quitting.
+		java.util.concurrent.ExecutorService serverThreads = Executors.newCachedThreadPool(runnable -> {
+			Thread thread = new Thread(runnable, "EMUtils Snapshot Pack Server");
+			thread.setDaemon(true);
+			return thread;
+		});
+		Path folder = null;
+		try {
+			server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+			server.setExecutor(serverThreads);
+			server.createContext("/good", exchange -> {
+				exchange.sendResponseHeaders(200, good.length);
+				exchange.getResponseBody().write(good);
+				exchange.close();
+			});
+			server.createContext("/stall", exchange -> {
+				exchange.sendResponseHeaders(200, 100_000);
+				exchange.getResponseBody().write(new byte[1000]);
+				exchange.getResponseBody().flush();
+				try {
+					Thread.sleep(20_000L);
+				} catch (InterruptedException ignored) {
+					Thread.currentThread().interrupt();
+				}
+				exchange.close();
+			});
+			server.start();
+			String base = "http://127.0.0.1:" + server.getAddress().getPort();
+			folder = Files.createTempDirectory("emutils-pack-download");
+			String goodSha1 = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-1").digest(good));
+			ModrinthClient client = new ModrinthClient(java.time.Duration.ofSeconds(2));
+
+			long started = System.nanoTime();
+			String stalled = downloadOutcome(client, new ModrinthFile("stall.zip", base + "/stall", true, 100_000, Map.of()), folder);
+			long seconds = (System.nanoTime() - started) / 1_000_000_000L;
+			results.add((stalled.contains("stalled") && seconds < 10 ? "ok: " : "") + "a stalled download gives up after the stall timeout (" + stalled + ", " + seconds + " s)");
+			results.add((leftovers(folder).isEmpty() ? "ok: " : "") + "a stalled download leaves no file behind " + leftovers(folder));
+
+			String damaged = downloadOutcome(client, new ModrinthFile("damaged.zip", base + "/good", true, good.length, Map.of("sha1", "0000000000000000000000000000000000000000")), folder);
+			results.add((damaged.contains("verification") && leftovers(folder).isEmpty() ? "ok: " : "") + "a download that fails its hash leaves no file behind (" + damaged + ") " + leftovers(folder));
+
+			String fine = downloadOutcome(client, new ModrinthFile("fine.zip", base + "/good", true, good.length, Map.of("sha1", goodSha1)), folder);
+			boolean installed = Files.isRegularFile(folder.resolve("fine.zip")) && java.util.Arrays.equals(Files.readAllBytes(folder.resolve("fine.zip")), good);
+			results.add((fine.equals("installed") && installed && leftovers(folder).equals(List.of("fine.zip")) ? "ok: " : "") + "a good download is installed, with nothing else left (" + fine + ") " + leftovers(folder));
+
+			Files.writeString(folder.resolve(".emutils-left-over.tmp"), "partial");
+			ResourcePackController.removeLeftoverDownloads(folder);
+			results.add((leftovers(folder).equals(List.of("fine.zip")) ? "ok: " : "") + "leftover downloads are cleaned up and packs are kept " + leftovers(folder));
+		} catch (Exception exception) {
+			results.add("the pack download checks could run: " + exception);
+		} finally {
+			if (server != null) {
+				server.stop(0);
+			}
+			serverThreads.shutdownNow();
+			if (folder != null) {
+				try (Stream<Path> files = Files.list(folder)) {
+					for (Path file : files.toList()) {
+						Files.deleteIfExists(file);
+					}
+					Files.deleteIfExists(folder);
+				} catch (IOException ignored) {
+					// A temporary folder; the system cleans it up otherwise.
+				}
+			}
+		}
+		return results;
+	}
+
+	/** What downloading {@code file} into {@code folder} came to: "installed", or the error's message. */
+	private static String downloadOutcome(ModrinthClient client, ModrinthFile file, Path folder) {
+		try {
+			ResourcePackController.downloadInto(client, file, folder, file.filename());
+			return "installed";
+		} catch (IOException exception) {
+			return String.valueOf(exception.getMessage());
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			return "interrupted";
+		}
+	}
+
+	/** The files in {@code folder}, by name, sorted. */
+	private static List<String> leftovers(Path folder) {
+		try (Stream<Path> files = Files.list(folder)) {
+			return files.map(file -> file.getFileName().toString()).sorted().toList();
+		} catch (IOException exception) {
+			return List.of("unlistable: " + exception.getMessage());
+		}
 	}
 
 	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */
