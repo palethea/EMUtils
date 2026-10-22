@@ -4,9 +4,12 @@ import com.mojang.authlib.GameProfile;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.config.EMUtilsConfig;
 import net.minecraft.client.Minecraft;
@@ -23,6 +26,10 @@ public final class CustomCapeManager {
 	private static final Map<UUID, CapePlayerHandler> HANDLERS = new ConcurrentHashMap<>();
 	/** How long a player without a cape waits before being looked up again. */
 	private static final long RETRY_WITHOUT_CAPE_MILLIS = 5 * 60_000L;
+	/** For UI snapshot checks (#256): while set, a lookup waits here before it shows what it found. */
+	private static volatile @Nullable CountDownLatch holdForSnapshot;
+	/** For UI snapshot checks: counted down when a lookup reaches the hold. */
+	private static volatile @Nullable CountDownLatch heldForSnapshot;
 
 	private CustomCapeManager() {
 	}
@@ -104,6 +111,40 @@ public final class CustomCapeManager {
 		return handler.hasCape() ? handler.provider().displayName() : null;
 	}
 
+	/**
+	 * For UI snapshot checks (#256): whether {@code profile}'s capes are looked up with the current settings and
+	 * no lookup is running, and if so the provider shown, or an empty text without one; null while unsettled.
+	 */
+	public static @Nullable String settledProviderForSnapshot(GameProfile profile) {
+		CapePlayerHandler handler = get(profile);
+		if (handler == null || !handler.resolved || handler.loading.get()) {
+			return null;
+		}
+		return handler.hasCape() && handler.provider() != null ? handler.provider().displayName() : "";
+	}
+
+	/** For UI snapshot checks (#256): the next lookups wait before showing what they found, until released. */
+	public static void holdLookupsForSnapshot() {
+		heldForSnapshot = new CountDownLatch(1);
+		holdForSnapshot = new CountDownLatch(1);
+	}
+
+	/** For UI snapshot checks: whether a lookup is waiting at the hold. */
+	public static boolean lookupHeldForSnapshot() {
+		CountDownLatch held = heldForSnapshot;
+		return held != null && held.getCount() == 0;
+	}
+
+	/** For UI snapshot checks: lets the held lookups go on, and later ones aren't held. */
+	public static void releaseLookupsForSnapshot() {
+		CountDownLatch hold = holdForSnapshot;
+		holdForSnapshot = null;
+		heldForSnapshot = null;
+		if (hold != null) {
+			hold.countDown();
+		}
+	}
+
 	private static boolean isValidProfile(GameProfile profile) {
 		return profile.id() != null && profile.name() != null && !profile.name().isBlank();
 	}
@@ -111,6 +152,11 @@ public final class CustomCapeManager {
 	static final class CapePlayerHandler {
 		private final GameProfile profile;
 		private final AtomicBoolean loading = new AtomicBoolean();
+		/**
+		 * Raised by every reset (#256): a lookup started before one used the old settings, so what it finds is
+		 * dropped and the player is looked up again.
+		 */
+		private final AtomicInteger generation = new AtomicInteger();
 		/** Whether the capes have been looked up since the last reset, and when. */
 		private volatile boolean resolved;
 		private volatile long resolvedAtMillis;
@@ -136,15 +182,21 @@ public final class CustomCapeManager {
 			}
 
 			EXECUTOR.submit(() -> {
+				boolean current = true;
 				try {
-					resolveCape();
+					current = resolveCape();
 				} finally {
 					loading.set(false);
+				}
+				// The settings changed while it looked; this request was turned away then, so it's made now.
+				if (!current) {
+					requestLoad();
 				}
 			});
 		}
 
-		void reset() {
+		synchronized void reset() {
+			generation.incrementAndGet();
 			resolved = false;
 			above = null;
 			below = null;
@@ -166,7 +218,8 @@ public final class CustomCapeManager {
 		 * the skin is in, so the choice is made in {@link #capeTextureFor}. A provider without a cape for
 		 * this player falls through to the next one, for every player, the local one too.
 		 */
-		private void resolveCape() {
+		private boolean resolveCape() {
+			int started = generation.get();
 			EMUtilsConfig config = EMUtilsClient.config();
 			ClientAsset.Texture foundAbove = null;
 			ClientAsset.Texture foundBelow = null;
@@ -196,11 +249,29 @@ public final class CustomCapeManager {
 					break;
 				}
 			}
-			above = foundAbove;
-			below = foundBelow;
-			provider = foundProvider;
-			resolvedAtMillis = System.currentTimeMillis();
-			resolved = true;
+			CountDownLatch hold = holdForSnapshot;
+			if (hold != null) {
+				CountDownLatch held = heldForSnapshot;
+				if (held != null) {
+					held.countDown();
+				}
+				try {
+					hold.await(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException exception) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			synchronized (this) {
+				if (generation.get() != started) {
+					return false;
+				}
+				above = foundAbove;
+				below = foundBelow;
+				provider = foundProvider;
+				resolvedAtMillis = System.currentTimeMillis();
+				resolved = true;
+				return true;
+			}
 		}
 	}
 }

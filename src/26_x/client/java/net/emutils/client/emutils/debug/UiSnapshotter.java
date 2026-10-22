@@ -231,6 +231,10 @@ public final class UiSnapshotter {
 	private static int rejoinedAt = -1;
 	/** Auto Reconnect's settings before its step changed them (#255). */
 	private static int[] reconnectBefore = new int[4];
+	/** The cape settings before the cape lookup step changed them (#256). */
+	private static boolean[] capesBefore = new boolean[2];
+	/** The step tick the cape setting was switched at, or -1 before (#256). */
+	private static int capeSwitchedAt = -1;
 	private static boolean spotifyWasPlaying;
 	private static int hudTextures;
 	/** Where the player stood when the quick wins section began; its test blocks are placed around it. */
@@ -4392,6 +4396,35 @@ public final class UiSnapshotter {
 					config.setAutoReconnectUnlimitedTries(reconnectBefore[1] == 1);
 					config.setAutoReconnectMaxTries(reconnectBefore[2]);
 					config.setReconnectDelaySeconds(reconnectBefore[3]);
+					next();
+				}
+			}
+			// Capes (#256): a provider switched off while a player's capes are being looked up with it on doesn't
+			// show; the lookup that started first is dropped and done again. The lookup is held just before it
+			// shows what it found, and the setting changes right then.
+			case 420 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				GameProfile profile = new GameProfile(UUID.fromString("cd19cb6e-c829-46b3-a6df-63bbe2c5a0dd"), "Lythogeor");
+				if (stepTicks == 1) {
+					capesBefore = new boolean[] {config.customCapes(), config.capeCosmetica()};
+					capeSwitchedAt = -1;
+					config.setCustomCapes(true);
+					config.setCapeCosmetica(true);
+					CustomCapeManager.clear();
+					CustomCapeManager.holdLookupsForSnapshot();
+					CustomCapeManager.onLoadTexture(profile);
+				}
+				if (capeSwitchedAt < 0 && CustomCapeManager.lookupHeldForSnapshot()) {
+					config.setCapeCosmetica(false);
+					CustomCapeManager.releaseLookupsForSnapshot();
+					capeSwitchedAt = stepTicks;
+				}
+				String provider = capeSwitchedAt < 0 ? null : CustomCapeManager.settledProviderForSnapshot(profile);
+				if (provider != null || stepTicks > 600) {
+					check(capeSwitchedAt >= 0 && provider != null && !"Cosmetica".equals(provider), "Cosmetica switched off during a cape lookup doesn't show once settled (" + (capeSwitchedAt < 0 ? "the lookup never reached the hold" : provider) + ")");
+					CustomCapeManager.releaseLookupsForSnapshot();
+					config.setCustomCapes(capesBefore[0]);
+					config.setCapeCosmetica(capesBefore[1]);
 					next();
 				}
 			}
