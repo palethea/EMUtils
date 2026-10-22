@@ -2,7 +2,6 @@ package net.emutils.client.emutils.util;
 
 import java.util.Optional;
 import java.util.UUID;
-import net.emutils.client.EMUtilsClient;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.ClickEvent;
@@ -23,11 +22,6 @@ public final class ChatActions {
 	/** The click event of an EMUtils button that does {@code action} with {@code value}. */
 	public static ClickEvent.Custom click(Identifier action, String value) {
 		return new ClickEvent.Custom(action, Optional.of(StringTag.valueOf(TOKEN + SEPARATOR + value)));
-	}
-
-	/** Whether {@code action} is one of EMUtils' own, which is never sent on to the server. */
-	public static boolean ours(Identifier action) {
-		return EMUtilsClient.MOD_ID.equals(action.getNamespace());
 	}
 
 	/** The value of a button EMUtils made this session, or empty for anything else, such as server-sent text. */
