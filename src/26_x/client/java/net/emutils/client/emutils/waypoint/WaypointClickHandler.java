@@ -2,9 +2,9 @@ package net.emutils.client.emutils.waypoint;
 
 import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.util.ChatActions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.Tag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.resources.Identifier;
 
@@ -16,17 +16,16 @@ public final class WaypointClickHandler {
 		return tryHandle(actionId, new ClickEvent.Custom(actionId, payload), client);
 	}
 
+	/**
+	 * Handles the waypoint buttons EMUtils puts in chat. Only ones it made this session do anything (#254):
+	 * the same click event in text from a server is taken, so it isn't sent on, but ignored.
+	 */
 	public static boolean tryHandle(Identifier actionId, ClickEvent.Custom custom, Minecraft client) {
 		WaypointManager manager = EMUtilsClient.waypoint();
-		Optional<String> id = parseId(custom);
+		Optional<String> id = ChatActions.value(custom.payload());
 
 		if (WaypointMessage.CLEAR_WAYPOINT_ACTION.equals(actionId)) {
-			if (id.isPresent()) {
-				manager.clear(client, id.get());
-			} else if (manager.hasWaypoint()) {
-				manager.clearForCurrentWorld(client);
-			}
-
+			id.ifPresent(value -> manager.clear(client, value));
 			return true;
 		}
 
@@ -41,10 +40,5 @@ public final class WaypointClickHandler {
 		}
 
 		return false;
-	}
-
-	private static Optional<String> parseId(ClickEvent.Custom custom) {
-		return custom.payload()
-			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty());
 	}
 }
