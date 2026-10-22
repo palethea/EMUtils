@@ -16,7 +16,10 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(Screenshot.class)
 public abstract class ScreenshotRecorderMixin {
-	@Redirect(method = "lambda$grab$3", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", ordinal = 0), require = 0)
+	// The lambda that saves the image, by its generated name. Required, so a game version that renames or
+	// reorders it fails at launch instead of screenshots quietly losing EMUtils' message, metadata and auto
+	// copy (#258).
+	@Redirect(method = "lambda$grab$3", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", ordinal = 0))
 	private static void emutils$replaceSuccessMessage(Consumer<Component> consumer, Object message, NativeImage image, File screenshot, Consumer<Component> originalConsumer) {
 		consumer.accept(EMUtilsClient.config().screenshotHelper() ? ScreenshotMessage.saved(screenshot) : (Component) message);
 		ScreenshotMetadataSaver.trySave(screenshot);

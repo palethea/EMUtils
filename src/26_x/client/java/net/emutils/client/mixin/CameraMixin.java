@@ -28,10 +28,20 @@ public abstract class CameraMixin {
 		cir.setReturnValue(fov);
 	}
 
+	// Required, so a game version that moves these calls fails at launch instead of Freelook quietly stopping
+	// (#258). The first call is for riding a minecart with the new minecart behavior, the second for the rest;
+	// the later ones flip the camera around for third person and are left alone.
 	@Redirect(
 		method = "alignWithEntity",
-		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 1),
-		require = 0
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 0)
+	)
+	private void emutils$freelookRotationInMinecart(Camera camera, float yaw, float pitch) {
+		emutils$setFreelookOrVanillaRotation(camera, yaw, pitch);
+	}
+
+	@Redirect(
+		method = "alignWithEntity",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V", ordinal = 1)
 	)
 	private void emutils$freelookRotation(Camera camera, float yaw, float pitch) {
 		emutils$setFreelookOrVanillaRotation(camera, yaw, pitch);

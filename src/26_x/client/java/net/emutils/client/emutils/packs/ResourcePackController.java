@@ -13,7 +13,11 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.gui.hub.HubIcons;
 import net.emutils.client.emutils.gui.ui.UiLoadingOverlay;
@@ -31,6 +35,11 @@ import net.minecraft.server.packs.repository.PackRepository;
 import org.jspecify.annotations.Nullable;
 
 public final class ResourcePackController {
+	private static final String TEMP_PREFIX = ".emutils-";
+	private static final String TEMP_SUFFIX = ".tmp";
+	/** Temporary files of downloads under way, which the leftover cleanup leaves alone (#257). */
+	private static final Set<Path> DOWNLOADING = ConcurrentHashMap.newKeySet();
+
 	private ResourcePackController() {
 	}
 
@@ -51,17 +60,7 @@ public final class ResourcePackController {
 		}
 
 		String filename = sanitizeFilename(file.filename());
-		Path folder = folder(client, type).normalize();
-		Files.createDirectories(folder);
-		Path temp = folder.resolve(".emutils-" + UUID.randomUUID() + ".tmp").normalize();
-		Path target = folder.resolve(filename).normalize();
-		if (!temp.startsWith(folder) || !target.startsWith(folder)) {
-			throw new IOException("Unsafe Modrinth filename.");
-		}
-
-		modrinth.download(file, temp);
-		verifyHash(temp, file);
-		Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+		downloadInto(modrinth, file, folder(client, type), filename);
 
 		PackInstallRecord record = new PackInstallRecord(
 			type,
@@ -76,6 +75,54 @@ public final class ResourcePackController {
 		);
 		index.put(record);
 		return record;
+	}
+
+	/**
+	 * Downloads {@code file} into {@code folder} as {@code filename}: to a temporary file first, checked against
+	 * its hash, then moved into place. A failed or stalled download leaves nothing behind (#257).
+	 */
+	public static Path downloadInto(ModrinthClient modrinth, ModrinthFile file, Path folder, String filename) throws IOException, InterruptedException {
+		folder = folder.normalize();
+		Files.createDirectories(folder);
+		Path temp = folder.resolve(TEMP_PREFIX + UUID.randomUUID() + TEMP_SUFFIX).normalize();
+		Path target = folder.resolve(filename).normalize();
+		if (!temp.startsWith(folder) || !target.startsWith(folder)) {
+			throw new IOException("Unsafe Modrinth filename.");
+		}
+
+		DOWNLOADING.add(temp);
+		try {
+			modrinth.download(file, temp);
+			verifyHash(temp, file);
+			Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+			return target;
+		} finally {
+			DOWNLOADING.remove(temp);
+			deleteQuietly(temp);
+		}
+	}
+
+	/** Removes temporary files that failed downloads left in {@code folder}, from before #257 or a crash. */
+	public static void removeLeftoverDownloads(Path folder) {
+		if (!Files.isDirectory(folder)) {
+			return;
+		}
+		try (Stream<Path> files = Files.list(folder)) {
+			files.filter(path -> {
+				String name = path.getFileName().toString();
+				return name.startsWith(TEMP_PREFIX) && name.endsWith(TEMP_SUFFIX) && !DOWNLOADING.contains(path.normalize());
+			}).forEach(ResourcePackController::deleteQuietly);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not look for leftover pack downloads in {}.", folder, exception);
+		}
+	}
+
+	private static void deleteQuietly(Path path) {
+		try {
+			Files.deleteIfExists(path);
+		} catch (IOException exception) {
+			EMUtilsClient.LOGGER.warn("Could not remove the unfinished pack download {}.", path, exception);
+		}
 	}
 
 	/**
