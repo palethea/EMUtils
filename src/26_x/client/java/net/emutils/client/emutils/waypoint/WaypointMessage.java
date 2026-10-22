@@ -1,10 +1,8 @@
 package net.emutils.client.emutils.waypoint;
 
-import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.util.ChatActions;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Component;
@@ -84,7 +82,7 @@ public final class WaypointMessage {
 		return Component.empty()
 			.append(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY))
 			.append(Component.translatable(labelKey).withStyle(color).withStyle(style -> style
-				.withClickEvent(new ClickEvent.Custom(actionId, Optional.of(StringTag.valueOf(id))))
+				.withClickEvent(ChatActions.click(actionId, id))
 				.withHoverEvent(new HoverEvent.ShowText(Component.translatable(hoverKey)))))
 			.append(Component.literal("]").withStyle(ChatFormatting.DARK_GRAY));
 	}

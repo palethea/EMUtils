@@ -1,10 +1,9 @@
 package net.emutils.client.emutils.screenshot;
 
 import java.io.File;
-import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
+import net.emutils.client.emutils.util.ChatActions;
 import net.emutils.client.emutils.util.EMUtilsTexts;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
@@ -27,7 +26,7 @@ public final class ScreenshotMessage {
 		return Component.empty()
 			.append(EMUtilsTexts.greenPrefix())
 			.append(Component.translatable(messageKey).withStyle(ChatFormatting.GRAY))
-			.append(action(EMUtilsTexts.CHAT_ACTION_COPY, ChatFormatting.YELLOW, new ClickEvent.Custom(COPY_SCREENSHOT_ACTION, Optional.of(StringTag.valueOf(screenshot.getAbsolutePath()))), EMUtilsTexts.CHAT_HOVER_COPY_SCREENSHOT))
+			.append(action(EMUtilsTexts.CHAT_ACTION_COPY, ChatFormatting.YELLOW, ChatActions.click(COPY_SCREENSHOT_ACTION, screenshot.getAbsolutePath()), EMUtilsTexts.CHAT_HOVER_COPY_SCREENSHOT))
 			.append(Component.literal(" "))
 			.append(action(EMUtilsTexts.CHAT_ACTION_OPEN, ChatFormatting.AQUA, new ClickEvent.OpenFile(screenshot), EMUtilsTexts.CHAT_HOVER_OPEN_IMAGE))
 			.append(Component.literal(" "))

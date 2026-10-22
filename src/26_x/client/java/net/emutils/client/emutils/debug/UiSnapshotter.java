@@ -95,6 +95,7 @@ import net.emutils.client.emutils.packs.PackType;
 import net.emutils.client.emutils.packs.ResourcePackController;
 import net.emutils.client.emutils.packs.gui.PacksScreen;
 import net.emutils.client.emutils.screenshot.gui.GalleryScreen;
+import net.emutils.client.emutils.screenshot.ScreenshotMessage;
 import net.emutils.client.emutils.spotify.SpotifyTrackState;
 import net.emutils.client.emutils.render.BeaconRadiusRenderer;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
@@ -116,6 +117,8 @@ import net.emutils.client.emutils.waypoint.WaypointShare;
 import net.emutils.client.emutils.waypoint.WaypointChatShare;
 import net.emutils.client.emutils.waypoint.WaypointSort;
 import net.emutils.client.emutils.waypoint.WaypointManager;
+import net.emutils.client.emutils.waypoint.WaypointClickHandler;
+import net.emutils.client.emutils.waypoint.WaypointMessage;
 import net.emutils.client.emutils.waypoint.XaeroWaypointImport;
 import net.emutils.client.emutils.waypoint.WaypointEntry;
 import net.emutils.client.emutils.waypoint.WaypointDimensions;
@@ -124,6 +127,7 @@ import net.emutils.client.emutils.waypoint.WaypointMarkerRenderer;
 import net.emutils.client.emutils.waypoint.WaypointCoordinates;
 import net.emutils.client.emutils.waypoint.gui.WaypointsScreen;
 import net.emutils.client.emutils.zoom.ZoomManager;
+import net.emutils.client.emutils.util.ChatActions;
 import net.emutils.client.emutils.util.DataFiles;
 import net.emutils.client.emutils.util.EMUtilsPaths;
 import net.emutils.client.versioned.VersionedScreens;
@@ -4334,6 +4338,10 @@ public final class UiSnapshotter {
 				checkUnreadableWaypoints(client);
 				next();
 			}
+			case 418 -> {
+				checkForgedChatButtons(client);
+				next();
+			}
 			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
 			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and
 			// Fast. Normal runs never get here: their steps end before.
@@ -4845,6 +4853,33 @@ public final class UiSnapshotter {
 		} catch (IOException | RuntimeException exception) {
 			check(false, "unreadable waypoints can be checked: " + exception);
 		}
+	}
+
+	/**
+	 * EMUtils' chat buttons only act when EMUtils made them (#254): the same click events in text from a
+	 * server, a sign or a book, without the session's token, do nothing.
+	 */
+	private static void checkForgedChatButtons(Minecraft client) {
+		WaypointManager manager = EMUtilsClient.waypoint();
+		manager.clearForCurrentWorld(client);
+		int x = client.player.getBlockX();
+		int y = client.player.getBlockY();
+		int z = client.player.getBlockZ();
+		manager.addCustom(client, "Home", x + 10, y, z, 0xFFFF5555, false, "");
+		manager.addCustom(client, "Mine", x - 10, y, z, 0xFF5555FF, false, "");
+		List<Waypoint> before = manager.waypointsForCurrentWorld(client);
+		String id = before.isEmpty() ? "" : before.getFirst().id();
+
+		boolean taken = WaypointClickHandler.tryHandle(WaypointMessage.CLEAR_WAYPOINT_ACTION, ChatActions.forgedForSnapshot(WaypointMessage.CLEAR_WAYPOINT_ACTION, Optional.empty()), client);
+		check(taken && manager.waypointsForCurrentWorld(client).size() == 2, "a Remove click in server text without an id removes nothing (" + manager.waypointsForCurrentWorld(client).size() + " of 2 left)");
+		WaypointClickHandler.tryHandle(WaypointMessage.CLEAR_WAYPOINT_ACTION, ChatActions.forgedForSnapshot(WaypointMessage.CLEAR_WAYPOINT_ACTION, Optional.of(id)), client);
+		check(manager.waypointsForCurrentWorld(client).size() == 2, "a Remove click in server text with a waypoint's id, but not EMUtils' token, removes nothing");
+		WaypointClickHandler.tryHandle(WaypointMessage.CLEAR_WAYPOINT_ACTION, ChatActions.click(WaypointMessage.CLEAR_WAYPOINT_ACTION, id), client);
+		check(manager.waypointsForCurrentWorld(client).size() == 1, "EMUtils' own Remove button still removes its waypoint");
+
+		check(ChatActions.value(ChatActions.forgedForSnapshot(ScreenshotMessage.COPY_SCREENSHOT_ACTION, Optional.of("C:/any/image.png")).payload()).isEmpty(), "a Copy Screenshot click in server text copies nothing");
+		check(ChatActions.value(ChatActions.click(ScreenshotMessage.COPY_SCREENSHOT_ACTION, "shot.png").payload()).equals(Optional.of("shot.png")), "EMUtils' own Copy button still names its screenshot");
+		manager.clearForCurrentWorld(client);
 	}
 
 	/** Resetting a profile puts its settings back to the defaults and keeps it active (#89). */

@@ -1,20 +1,16 @@
 package net.emutils.client.mixin;
 
 import java.io.File;
-import java.util.Optional;
 import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.waypoint.WaypointClickHandler;
 import net.emutils.client.emutils.waypoint.WaypointMessage;
 import net.emutils.client.emutils.screenshot.ScreenshotActions;
 import net.emutils.client.emutils.screenshot.ScreenshotMessage;
-import net.emutils.client.emutils.util.EMUtilsTexts;
+import net.emutils.client.emutils.util.ChatActions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -57,12 +53,8 @@ public abstract class ScreenMixin {
 			return false;
 		}
 
-		custom.payload()
-			.flatMap(element -> element instanceof StringTag string ? string.asString() : Optional.empty())
-			.ifPresentOrElse(
-				path -> ScreenshotActions.copyWithFeedback(client, new File(path)),
-				() -> net.emutils.client.emutils.compat.MinecraftClientCompat.chat(client).addClientSystemMessage(Component.translatable(EMUtilsTexts.CHAT_SCREENSHOT_COPY_FAILURE).withStyle(ChatFormatting.RED))
-			);
+		// Only a Copy button EMUtils made this session copies anything (#254); one in text from a server doesn't.
+		ChatActions.value(custom.payload()).ifPresent(path -> ScreenshotActions.copyWithFeedback(client, new File(path)));
 		return true;
 	}
 }
