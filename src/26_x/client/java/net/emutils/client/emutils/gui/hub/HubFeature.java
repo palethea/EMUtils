@@ -1,10 +1,10 @@
 package net.emutils.client.emutils.gui.hub;
 
-import net.emutils.client.emutils.compat.IrisCompat;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import net.emutils.client.emutils.compat.IrisCompat;
 import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
