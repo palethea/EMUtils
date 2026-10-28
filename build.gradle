@@ -202,6 +202,12 @@ dependencies {
 		}
 		if ("iris" in compatMods) {
 			modLocalRuntime "maven.modrinth:iris:${selected26.irisVersion}"
+			// Iris bundles these, but the dev runtime doesn't load bundled jars; same versions as in both Iris jars.
+			["org.anarres:jcpp:1.4.14", "io.github.douira:glsl-transformer:3.0.0-pre3", "org.antlr:antlr4-runtime:4.13.1"].each {
+				localRuntime(it) {
+					transitive = false
+				}
+			}
 			compatShaders compatShaderPack
 		}
 		if ("modmenu" in compatMods) {

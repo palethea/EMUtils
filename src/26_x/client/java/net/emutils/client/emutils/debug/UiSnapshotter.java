@@ -285,6 +285,16 @@ public final class UiSnapshotter {
 			finish(client);
 			return;
 		}
+		// The visual compatibility scenes (#246), only reached by starting there.
+		if (step >= CompatScenes.FIRST_STEP) {
+			switch (CompatScenes.tick(client, step - CompatScenes.FIRST_STEP, stepTicks)) {
+				case NEXT -> next();
+				case FINISH -> finish(client);
+				case WAIT -> {
+				}
+			}
+			return;
+		}
 		switch (step) {
 			case 0 -> setup(client, 3, true);
 			case 1 -> capture(client, "gui scale 3, dark");
