@@ -13,7 +13,10 @@ import net.emutils.client.EMUtilsClient;
 import net.emutils.client.emutils.compat.IrisCompat;
 import net.emutils.client.emutils.compat.MinecraftClientCompat;
 import net.emutils.client.emutils.config.EMUtilsConfig;
+import net.emutils.client.emutils.gui.hub.HubFeature;
+import net.emutils.client.emutils.gui.hub.HubFeatureCatalog;
 import net.emutils.client.emutils.gui.settings.SettingsScreen;
+import net.emutils.client.emutils.util.EMUtilsTexts;
 import net.emutils.client.emutils.render.BeaconRadiusRenderer;
 import net.emutils.client.emutils.render.LightLevelOverlayRenderer;
 import net.emutils.client.emutils.waypoint.Waypoint;
@@ -109,7 +112,11 @@ final class CompatScenes {
 			return turnShadersOn(client, stepTicks);
 		}
 		if (index < WRAP_UP) {
-			return shaders ? scene(client, SCENES.get(index - SHADER_SCENES_START), stepTicks) : Outcome.NEXT;
+			if (!shaders) {
+				return Outcome.NEXT;
+			}
+			Scene scene = SCENES.get(index - SHADER_SCENES_START);
+			return scene.id().equals("no-fog") ? fogNote(client, stepTicks) : scene(client, scene, stepTicks);
 		}
 		if (index == WRAP_UP) {
 			wrapUp(client);
@@ -227,6 +234,27 @@ final class CompatScenes {
 				check(false, name(scene) + ": the frames came back from the GPU");
 				return Outcome.NEXT;
 			}
+		}
+		return Outcome.WAIT;
+	}
+
+	/**
+	 * With a shader pack on, No Fog can't remove the fog, which the pack draws itself (#264), so instead of
+	 * changing the picture its card says so.
+	 */
+	private static Outcome fogNote(Minecraft client, int stepTicks) {
+		if (stepTicks == 1) {
+			SettingsScreen settings = new SettingsScreen(null);
+			client.gui.setScreen(settings);
+			settings.searchFor("No Fog");
+		} else if (stepTicks == 25) {
+			HubFeature noFog = HubFeatureCatalog.all().stream().filter(feature -> feature.id().equals("no_fog")).findFirst().orElse(null);
+			check(noFog != null && noFog.underShaderPack() && noFog.descriptionKey().equals(EMUtilsTexts.HUB_FEATURE_NO_FOG_SHADERS_DESC),
+				"with a shader pack on, No Fog's card says the pack draws its own fog");
+			saveScreen(client, "no-fog-shaders-note");
+		} else if (stepTicks >= 30) {
+			client.gui.setScreen(null);
+			return Outcome.NEXT;
 		}
 		return Outcome.WAIT;
 	}

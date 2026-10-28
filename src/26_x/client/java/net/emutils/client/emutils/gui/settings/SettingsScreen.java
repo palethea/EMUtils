@@ -503,6 +503,12 @@ public final class SettingsScreen extends UiPanelScreen {
 				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
 				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.surfaceAlt(), theme.textSecondary());
 				descriptionRight -= badgeWidth + 6;
+			} else if (feature.underShaderPack()) {
+				Component badge = Component.translatable(EMUtilsTexts.UI_SHADER_PACK_ON);
+				int badgeWidth = UiText.width(font, badge, UiText.Size.SMALL) + 8;
+				int badgeHeight = UiText.lineHeight(font, UiText.Size.SMALL) + 5;
+				UiWidgets.badge(context, font, descriptionRight - badgeWidth, bottomCenter - badgeHeight / 2, badge, theme.surfaceAlt(), theme.textSecondary());
+				descriptionRight -= badgeWidth + 6;
 			}
 			Component description = UiText.ellipsize(font, Component.translatable(feature.descriptionKey()), UiText.Size.BODY, descriptionRight - x - CARD_PADDING);
 			UiText.drawCentered(context, font, description, UiText.Size.BODY, x + CARD_PADDING, bottomCenter, theme.muted());

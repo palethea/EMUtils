@@ -1,5 +1,6 @@
 package net.emutils.client.emutils.gui.hub;
 
+import net.emutils.client.emutils.compat.IrisCompat;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
@@ -99,6 +100,7 @@ public final class HubFeature {
 	private final @Nullable Runnable resetAction;
 	private List<String> keyNames = List.of();
 	private @Nullable String missingMod;
+	private @Nullable String shaderDescriptionKey;
 	private boolean unfair;
 	private boolean mapArea;
 
@@ -144,8 +146,22 @@ public final class HubFeature {
 		return titleKey;
 	}
 
+	/** The description, or the shader pack one while a shader pack is on, when the feature has one. */
 	public String descriptionKey() {
-		return descriptionKey;
+		return underShaderPack() ? shaderDescriptionKey : descriptionKey;
+	}
+
+	/**
+	 * A shader pack is on and changes what the feature can do, which its card says, with {@code
+	 * shaderDescription(String)} in place of the usual description (#264).
+	 */
+	public boolean underShaderPack() {
+		return shaderDescriptionKey != null && IrisCompat.isShaderPackInUse();
+	}
+
+	public HubFeature shaderDescription(String descriptionKey) {
+		shaderDescriptionKey = descriptionKey;
+		return this;
 	}
 
 	public Icon icon() {

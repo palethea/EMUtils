@@ -44,6 +44,7 @@ public final class EMUtilsTexts {
     public static final String MAP_LOAD_SPEED_FAST = "emutils.map.load_speed.fast";
     public static final String MAP_LOAD_SPEED_FASTEST = "emutils.map.load_speed.fastest";
     public static final String UI_UNFAIR_OFF = "emutils.ui.unfair_off";
+    public static final String UI_SHADER_PACK_ON = "emutils.ui.shader_pack_on";
     public static final String UI_UNFAIR_OFF_ITEM = "emutils.ui.unfair_off_item";
     public static final String UI_UNFAIR_OFF_MESSAGE = "emutils.ui.unfair_off_message";
     public static final String UI_UNFAIR_COVERS = "emutils.ui.unfair_covers";
@@ -326,6 +327,8 @@ public final class EMUtilsTexts {
         "emutils.hub.feature.free_camera.desc";
     public static final String HUB_FEATURE_NO_FOG_DESC =
         "emutils.hub.feature.no_fog.desc";
+    public static final String HUB_FEATURE_NO_FOG_SHADERS_DESC =
+        "emutils.hub.feature.no_fog.shaders_desc";
     public static final String HUB_FEATURE_CLEAR_UNDERWATER_DESC =
         "emutils.hub.feature.clear_underwater.desc";
     public static final String HUB_FEATURE_CLEAR_LAVA_DESC =
