@@ -18,6 +18,8 @@ public final class WaypointRenderer {
 	private static final int BEACON_HEIGHT = 256;
 	private static final double BEACON_WIDTH = 0.08;
 	private static final Identifier BEAM_TEXTURE = Identifier.fromNamespaceAndPath("minecraft", "textures/entity/beacon/beacon_beam.png");
+	/** How much the beam's color is dimmed with a shader pack on, which makes it glow (#265). */
+	private static final float SHADER_BEAM_DIM = 0.5F;
 	private static final Identifier LABEL_HUD_ID = Identifier.fromNamespaceAndPath("emutils", "waypoint_labels");
 
 	private WaypointRenderer() {
@@ -35,18 +37,24 @@ public final class WaypointRenderer {
 			return;
 		}
 
+		boolean shaders = net.emutils.client.emutils.compat.IrisCompat.isShaderPackInUse();
 		for (WaypointEntry entry : manager.renderEntries(client)) {
 			Waypoint waypoint = entry.waypoint();
 			if (waypoint.hidden()) {
 				continue;
 			}
 			if (waypoint.beaconEnabled()) {
-				renderBeacon(context, waypoint, entry);
+				renderBeacon(context, waypoint, entry, shaders);
 			}
 		}
 	}
 
-	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint, WaypointEntry entry) {
+	/**
+	 * The beam fades out going up. Shader packs take a beacon beam that's under half opaque for the faint glow
+	 * around vanilla's beam and barely draw it, so with one on the beam is at least half opaque (#265). Packs then
+	 * make it glow, brighter for brighter colors, so its color is dimmed to look about as strong as without one.
+	 */
+	private static void renderBeacon(LevelRenderContext context, Waypoint waypoint, WaypointEntry entry, boolean shaders) {
 		Camera camera = net.emutils.client.emutils.compat.MinecraftClientCompat.mainCamera(context.gameRenderer());
 		SubmitNodeCollector collector = context.submitNodeCollector();
 		PoseStack matrices = context.poseStack();
@@ -60,9 +68,10 @@ public final class WaypointRenderer {
 		double z = entry.z() + 0.5 - cameraZ;
 
 		int color = waypoint.color();
-		int r = (color >> 16) & 0xFF;
-		int g = (color >> 8) & 0xFF;
-		int b = color & 0xFF;
+		float dim = shaders ? SHADER_BEAM_DIM : 1.0F;
+		int r = (int) (((color >> 16) & 0xFF) * dim);
+		int g = (int) (((color >> 8) & 0xFF) * dim);
+		int b = (int) ((color & 0xFF) * dim);
 		float width = (float) BEACON_WIDTH;
 
 		int segments = 8;
@@ -76,7 +85,7 @@ public final class WaypointRenderer {
 					float y0 = i * segmentHeight;
 					float y1 = (i + 1) * segmentHeight;
 					float fade = 1.0F - (float) i / segments;
-					int alpha = (int) (fade * 80);
+					int alpha = shaders ? 128 + (int) (fade * 64) : (int) (fade * 80);
 					int packed = (alpha << 24) | (r << 16) | (g << 8) | b;
 
 					float v0 = (float) i / segments;

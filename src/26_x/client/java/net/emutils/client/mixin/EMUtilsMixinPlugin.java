@@ -30,6 +30,9 @@ public final class EMUtilsMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".SodiumWorldRendererMixin")) {
 			return isSupportedSodiumTarget() && FabricLoader.getInstance().isModLoaded("sodium");
 		}
+		if (mixinClassName.endsWith(".IrisCommonUniformsMixin")) {
+			return FabricLoader.getInstance().isModLoaded("iris");
+		}
 		if (mixinClassName.endsWith(".MinescriptJobMixin")) {
 			return FabricLoader.getInstance().isModLoaded("minescript");
 		}

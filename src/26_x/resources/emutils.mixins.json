@@ -13,6 +13,7 @@
 		"ClientInputAccessor",
 		"ClientLevelAmbientParticleMixin",
 		"FallingLeavesParticleMixin",
+		"IrisCommonUniformsMixin",
 		"ClientCommonNetworkHandlerMixin",
 		"ClientPlayNetworkHandlerMixin",
 		"ClientPlayerEntityMixin",
