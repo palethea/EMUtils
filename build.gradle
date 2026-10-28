@@ -61,7 +61,16 @@ if ("iris" in compatMods && !("sodium" in compatMods)) {
 	throw new GradleException("Iris needs Sodium: use -PemutilsCompat=sodium,iris")
 }
 def compatName = compatProperty == null ? null : (compatMods ? compatMods.join("-") : "baseline")
-def smokeRunDir = compatName != null && (uiSnapshot || findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
+// Carry-over test runs (#267): -PemutilsCarryOver=0.14.0 starts the smoke launch with that release's settings,
+// keybinds and data files from src/test/carry-over/<version>, and checks that this build keeps all of them.
+def carryOverVersion = mcFamily == "26.x" ? findProperty("emutilsCarryOver")?.toString() : null
+def carryOverFixture = carryOverVersion == null ? null : file("src/test/carry-over/${carryOverVersion}")
+if (carryOverFixture != null && !carryOverFixture.isDirectory()) {
+	throw new GradleException("No carry-over fixture for ${carryOverVersion} in src/test/carry-over")
+}
+def smokeRunDir = carryOverFixture != null && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()
+	? "run/26x-carryover/${selected26Version}"
+	: compatName != null && (uiSnapshot || findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
 	? "run/26x-compat/${selected26Version}/${compatName}"
 	: uiSnapshot
 	? "run/26x-ui/${selected26Version}"
@@ -267,7 +276,27 @@ def prepareCompatShaders = tasks.register("prepareCompatShaders", Copy) {
 	rename { "EMUtils Test Shaders.zip" }
 }
 
+def prepareCarryOver = tasks.register("prepareCarryOver") {
+	doLast {
+		// Starts from the old release's files every time, as the run saves over them.
+		def runDir = file(smokeRunDir)
+		project.delete(new File(runDir, "config/emutils"))
+		project.copy {
+			from new File(carryOverFixture, "config")
+			into new File(runDir, "config")
+		}
+		new File(runDir, "options.txt").text = new File(carryOverFixture, "options.txt").text + "soundCategory_master:0.0\n"
+	}
+}
+
 tasks.matching { it.name == "runClient" }.configureEach {
+	if (carryOverFixture != null) {
+		if (smokeRunDir == null || !smokeRunDir.startsWith("run/26x-carryover/")) {
+			throw new GradleException("-PemutilsCarryOver needs -PemutilsSmokeLaunch=true")
+		}
+		dependsOn prepareCarryOver
+		jvmArgs "-Demutils.carryOver=${carryOverFixture.absolutePath}"
+	}
 	if ("iris" in compatMods) {
 		dependsOn prepareCompatShaders
 	}

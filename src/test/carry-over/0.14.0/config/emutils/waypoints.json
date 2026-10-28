@@ -1,0 +1,46 @@
+{
+  "waypoints": [
+    {
+      "x": 120,
+      "y": 70,
+      "z": -340,
+      "dimension": "minecraft:overworld",
+      "serverAddress": "singleplayer:EMUtils Debug World",
+      "timestamp": 1760000000000,
+      "nearPromptShown": false,
+      "label": "Base",
+      "color": -16776961,
+      "type": "CUSTOM",
+      "beaconEnabled": true,
+      "hidden": false
+    },
+    {
+      "x": -50,
+      "y": 40,
+      "z": 75,
+      "dimension": "minecraft:the_nether",
+      "serverAddress": "multiplayer:play.example.net",
+      "timestamp": 1760000100000,
+      "nearPromptShown": true,
+      "label": "Portal",
+      "color": -43691,
+      "type": "CUSTOM",
+      "beaconEnabled": false,
+      "hidden": true
+    },
+    {
+      "x": 8,
+      "y": -20,
+      "z": 16,
+      "dimension": "minecraft:overworld",
+      "serverAddress": "singleplayer:EMUtils Debug World",
+      "timestamp": 1760000200000,
+      "nearPromptShown": false,
+      "label": "Death",
+      "color": -65536,
+      "type": "DEATH",
+      "beaconEnabled": true,
+      "hidden": false
+    }
+  ]
+}

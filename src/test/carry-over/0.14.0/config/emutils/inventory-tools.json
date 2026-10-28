@@ -1,0 +1,27 @@
+{
+  "scopes": {
+    "singleplayer:EMUtils Debug World": {
+      "lockedSlots": [
+        9,
+        10,
+        40
+      ],
+      "bindings": [
+        [
+          0,
+          27
+        ],
+        [
+          3,
+          40
+        ]
+      ]
+    },
+    "multiplayer:play.example.net": {
+      "lockedSlots": [
+        17
+      ],
+      "bindings": []
+    }
+  }
+}

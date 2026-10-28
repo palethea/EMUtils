@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "command": "hello",
+      "keyType": "KEYSYM",
+      "keyCode": 75,
+      "ctrl": false,
+      "alt": true,
+      "shift": false
+    }
+  ]
+}
