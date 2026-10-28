@@ -6,7 +6,7 @@ EMUtils features are organized to match the in-game settings hub: Render, HUD, U
 
 ### Fullbright
 
-Brighten dark areas without changing the vanilla gamma slider.
+Brighten dark areas without changing the vanilla gamma slider. Works with Iris shader packs too, through the night vision brightness that packs use.
 
 - Fullbright Strength: adjust how strongly dark areas are brightened.
 
@@ -24,7 +24,7 @@ Hide distracting weather effects while keeping the world playable.
 
 Toggle small rendering changes without installing separate single-purpose mods.
 
-- No Fog: reduce distance fog where possible.
+- No Fog: reduce distance fog where possible. A shader pack draws its own fog, which No Fog can't remove; while one is on, the card says so and points to the pack's settings.
 - Clear Underwater: improve visibility underwater.
 - Clear Lava: improve visibility while inside lava.
 - No Environment Fog: remove biome and dimension fog.

@@ -1,6 +1,8 @@
 param(
     [string] $Base = 'origin/master',
-    [switch] $Full
+    [switch] $Full,
+    # Also runs the visual compatibility tests with Sodium, Iris and Mod Menu (scripts	est-compat.ps1).
+    [switch] $Compat
 )
 
 $ErrorActionPreference = 'Stop'
@@ -42,4 +44,8 @@ if ($Full -or $sensitive.Count -gt 0) {
 else {
     Write-Host "No version-sensitive files changed; running the latest version only ($($supportedVersions[-1]))."
     & $runner -Latest
+}
+
+if ($Compat) {
+    & (Join-Path $PSScriptRoot 'test-compat.ps1') -Versions $(if ($Full -or $sensitive.Count -gt 0) { $supportedVersions } else { @($supportedVersions[-1]) })
 }

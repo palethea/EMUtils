@@ -18,7 +18,36 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 public final class IrisCompat {
+	/** Iris's API object and its isShaderPackInUse method, looked up once; null until then or without Iris. */
+	private static @Nullable Object api;
+	private static @Nullable Method shaderPackInUse;
+	private static boolean apiLookedUp;
+
 	private IrisCompat() {
+	}
+
+	/** Whether a shader pack draws the world right now. Cheap enough to ask every frame. */
+	public static boolean isShaderPackInUse() {
+		if (!apiLookedUp) {
+			apiLookedUp = true;
+			if (isIrisLoaded()) {
+				try {
+					Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+					api = apiClass.getMethod("getInstance").invoke(null);
+					shaderPackInUse = apiClass.getMethod("isShaderPackInUse");
+				} catch (ReflectiveOperationException | LinkageError exception) {
+					EMUtilsClient.LOGGER.warn("Could not look up Iris's shader pack state", exception);
+				}
+			}
+		}
+		if (api == null || shaderPackInUse == null) {
+			return false;
+		}
+		try {
+			return (Boolean) shaderPackInUse.invoke(api);
+		} catch (ReflectiveOperationException exception) {
+			return false;
+		}
 	}
 
 	public static boolean isIrisLoaded() {

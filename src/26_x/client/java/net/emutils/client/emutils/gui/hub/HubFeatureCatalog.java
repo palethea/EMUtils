@@ -36,7 +36,9 @@ public final class HubFeatureCatalog {
 		List<HubFeature> features = new ArrayList<>(List.of(
 			categoryFeature("fullbright", HubCategory.FULLBRIGHT, HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_FULLBRIGHT, EMUtilsTexts.HUB_FEATURE_FULLBRIGHT_DESC, HubFeature.Icon.SUN, toggle(config::tweakFullbright, config::setTweakFullbright)),
 			categoryFeature("clear_weather", HubCategory.CLEAR_WEATHER, HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_WEATHER, EMUtilsTexts.HUB_FEATURE_CLEAR_WEATHER_DESC, HubFeature.Icon.CLOUD_SUN, toggle(config::tweakClearWeather, config::setTweakClearWeather)),
-			leaf("no_fog", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, HubFeature.Icon.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog), () -> config.setTweakNoFog(false)),
+			leaf("no_fog", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FOG, EMUtilsTexts.HUB_FEATURE_NO_FOG_DESC, HubFeature.Icon.CLOUD_OFF, toggle(config::tweakNoFog, config::setTweakNoFog), () -> config.setTweakNoFog(false))
+				// Shader packs draw their own fog, which No Fog can't reach (#264).
+				.shaderDescription(EMUtilsTexts.HUB_FEATURE_NO_FOG_SHADERS_DESC),
 			leaf("clear_underwater", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_UNDERWATER, EMUtilsTexts.HUB_FEATURE_CLEAR_UNDERWATER_DESC, HubFeature.Icon.DROPLETS, toggle(config::tweakClearUnderwater, config::setTweakClearUnderwater), () -> config.setTweakClearUnderwater(true)),
 			leaf("clear_lava", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_CLEAR_LAVA, EMUtilsTexts.HUB_FEATURE_CLEAR_LAVA_DESC, HubFeature.Icon.FLAME, toggle(config::tweakClearLava, config::setTweakClearLava), () -> config.setTweakClearLava(true)).markUnfair(),
 			leaf("no_fire_overlay", HubFeature.Group.RENDER, EMUtilsTexts.OPTION_TWEAK_NO_FIRE_OVERLAY, EMUtilsTexts.HUB_FEATURE_NO_FIRE_OVERLAY_DESC, HubFeature.Icon.FLAME, toggle(config::tweakNoFireOverlay, config::setTweakNoFireOverlay), () -> config.setTweakNoFireOverlay(false)),

@@ -135,7 +135,8 @@ public final class SmokeLaunchVerifier {
 			if (screen instanceof CreateWorldScreen createWorldScreen) {
 				clickedCreateWorld = true;
 				createWorldScreen.getUiState().setName(kept != null ? kept : TEST_WORLD_NAME);
-				if (kept != null) {
+				// Compatibility runs (#246) are compared with the baseline's, so they all get the same world.
+				if (kept != null || System.getProperty("emutils.compat") != null) {
 					createWorldScreen.getUiState().setSeed(KEPT_WORLD_SEED);
 				}
 				// UI snapshots set up their checks with commands, such as building a beacon.

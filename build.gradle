@@ -13,8 +13,10 @@ def mc26Versions = [
 		fabricApiVersion: "0.152.1+26.2",
 		mappingFile: "gradle/mappings/26.2-official-identity.tiny",
 		minecraftDependency: ">=26.2- <26.3-",
-		sodiumVersion: "mc26.2-0.9.0-fabric",
-		modMenuVersion: "20.0.2"
+		// Sodium and Mod Menu are compile-time APIs; with Iris they're also put in the compatibility test runs (#246).
+		sodiumVersion: "mc26.2-0.9.2-fabric",
+		irisVersion: "1.11.4+26.2-fabric",
+		modMenuVersion: "20.0.3"
 	],
 	"26.3": [
 		minecraftVersion: "26.3",
@@ -22,10 +24,12 @@ def mc26Versions = [
 		mappingFile: "gradle/mappings/26.3-official-identity.tiny",
 		minecraftDependency: ">=26.3- <26.4-",
 		sodiumVersion: "mc26.3-0.9.2-fabric",
-		// Mod Menu has no stable 26.3 release yet; it is only a compile-time API dependency.
-		modMenuVersion: "21.0.0-beta.1"
+		irisVersion: "1.11.7+26.3-fabric",
+		modMenuVersion: "21.0.0"
 	]
 ]
+// The shader pack the compatibility tests turn on (#246), from Modrinth. Only downloaded into the test runs.
+def compatShaderPack = "maven.modrinth:complementary-reimagined:r5.9.3@zip"
 // supported_mc_versions (gradle.properties) is the release and test matrix; the last entry is the default target.
 def supportedMcVersions = project.supported_mc_versions.toString().split(",")*.trim().findAll { it }
 supportedMcVersions.each { version ->
@@ -43,7 +47,23 @@ if (mcFamily == "26.x" && !file("${versionPath}/resources/emutils.versioned.mixi
 	throw new GradleException("Missing ${versionPath}/resources/emutils.versioned.mixins.json for Minecraft ${selected26Version}")
 }
 def uiSnapshot = mcFamily == "26.x" && findProperty("emutilsUiSnapshot")?.toString()?.toBoolean()
-def smokeRunDir = uiSnapshot
+// Compatibility test runs (#246): -PemutilsCompat=sodium,iris,modmenu puts those mods in the run, at the versions
+// pinned above, and "none" is the baseline without them. Each combination has its own run folder, so its options
+// and screenshots stay apart and can be compared with the baseline's.
+def compatProperty = mcFamily == "26.x" ? findProperty("emutilsCompat")?.toString() : null
+def compatMods = compatProperty == null ? [] : compatProperty.split(",")*.trim().findAll { it && it != "none" }.unique().sort()
+compatMods.each { mod ->
+	if (!(mod in ["sodium", "iris", "modmenu"])) {
+		throw new GradleException("Unknown emutilsCompat mod '${mod}'. Use sodium, iris, modmenu, or none.")
+	}
+}
+if ("iris" in compatMods && !("sodium" in compatMods)) {
+	throw new GradleException("Iris needs Sodium: use -PemutilsCompat=sodium,iris")
+}
+def compatName = compatProperty == null ? null : (compatMods ? compatMods.join("-") : "baseline")
+def smokeRunDir = compatName != null && (uiSnapshot || findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
+	? "run/26x-compat/${selected26Version}/${compatName}"
+	: uiSnapshot
 	? "run/26x-ui/${selected26Version}"
 	: (mcFamily == "26.x" && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
 		? "run/26x-smoke/${selected26Version}"
@@ -155,6 +175,14 @@ if (mcFamily == "26.x") {
 	}
 }
 
+configurations {
+	// The shader pack of the compatibility test runs (#246), copied into the run's shaderpacks folder.
+	compatShaders {
+		canBeConsumed = false
+		transitive = false
+	}
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${selectedMc.minecraftVersion}"
 	mappings loom.layered {
@@ -168,6 +196,26 @@ dependencies {
 		modCompileOnly "maven.modrinth:sodium:${selected26.sodiumVersion}"
 		// Mod Menu publishes in official mappings, so it needs no Loom remapping here.
 		compileOnly "com.terraformersmc:modmenu:${selected26.modMenuVersion}"
+		// In the runs only, never in the jar (#246).
+		if ("sodium" in compatMods) {
+			modLocalRuntime "maven.modrinth:sodium:${selected26.sodiumVersion}"
+		}
+		if ("iris" in compatMods) {
+			modLocalRuntime "maven.modrinth:iris:${selected26.irisVersion}"
+			// Iris bundles these, but the dev runtime doesn't load bundled jars; same versions as in both Iris jars.
+			["org.anarres:jcpp:1.4.14", "io.github.douira:glsl-transformer:3.0.0-pre3", "org.antlr:antlr4-runtime:4.13.1"].each {
+				localRuntime(it) {
+					transitive = false
+				}
+			}
+			compatShaders compatShaderPack
+		}
+		if ("modmenu" in compatMods) {
+			// Without its POM's Fabric API modules: they aren't remapped for the dev runtime and can win over ours.
+			localRuntime("com.terraformersmc:modmenu:${selected26.modMenuVersion}") {
+				transitive = false
+			}
+		}
 	}
 	include implementation("net.java.dev.jna:jna:5.17.0")
 	include implementation("org.glavo:webp:0.2.0")
@@ -212,7 +260,21 @@ tasks.matching { it.name == "remapSourcesJar" }.configureEach {
 	enabled = selectedMc.mappingNamespace != "mojang"
 }
 
+def prepareCompatShaders = tasks.register("prepareCompatShaders", Copy) {
+	from configurations.compatShaders
+	into(smokeRunDir == null ? "build/compat-shaderpacks" : "${smokeRunDir}/shaderpacks")
+	// Iris lists packs by file name; the tests look for this one.
+	rename { "EMUtils Test Shaders.zip" }
+}
+
 tasks.matching { it.name == "runClient" }.configureEach {
+	if ("iris" in compatMods) {
+		dependsOn prepareCompatShaders
+	}
+	if (compatName != null) {
+		// Tells the snapshots which combination they run in, for the compatibility scenes (#246).
+		jvmArgs "-Demutils.compat=${compatName}"
+	}
 	if (mcFamily == "26.x" && (findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean() || uiSnapshot)) {
 		// Automated launches run in the background: no mouse grab, no pause on lost focus (see BackgroundLaunch),
 		// and SDL (26.3+) opens the window without taking focus.
