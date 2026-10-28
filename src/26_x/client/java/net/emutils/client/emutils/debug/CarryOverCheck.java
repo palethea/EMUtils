@@ -71,20 +71,28 @@ public final class CarryOverCheck {
 		contains("settings", GSON.toJsonTree(EMUtilsClient.config()), expected, "", problems);
 		contains("config.json", read(EMUtilsPaths.configFile()), expected, "", problems);
 
-		// Settings an update replaced, which only count as kept if the new ones say the same.
+		// Settings an update replaced, which only count as kept if the new ones say the same. Only for files
+		// from before the new setting; a newer file has it saved, and the check above covers it.
 		JsonObject old = expected.getAsJsonObject();
-		CapeSource preferred = CapeSource.fromName(old.get("capePreferredProvider").getAsString());
-		if (preferred != null && EMUtilsClient.config().capeOrder().getFirst() != preferred) {
-			problems.add("the preferred cape provider " + preferred + " isn't first in the cape order " + EMUtilsClient.config().capeOrder());
+		if (!old.has("capeOrder") && old.has("capePreferredProvider")) {
+			CapeSource preferred = CapeSource.fromName(old.get("capePreferredProvider").getAsString());
+			if (preferred != null && EMUtilsClient.config().capeOrder().getFirst() != preferred) {
+				problems.add("the preferred cape provider " + preferred + " isn't first in the cape order " + EMUtilsClient.config().capeOrder());
+			}
 		}
-		boolean spotify = old.get("spotifyPlayerEnabled").getAsBoolean() || old.get("spotifyHudOverlay").getAsBoolean();
-		if (EMUtilsClient.config().spotifyEnabled() != spotify) {
-			problems.add("Spotify is " + (spotify ? "off" : "on") + " after the update");
+		if (!old.has("spotifyEnabled")) {
+			boolean spotify = flag(old, "spotifyPlayerEnabled") || flag(old, "spotifyHudOverlay");
+			if (EMUtilsClient.config().spotifyEnabled() != spotify) {
+				problems.add("Spotify is " + (spotify ? "off" : "on") + " after the update");
+			}
 		}
-		boolean chat = Stream.of("copyChat", "chatTimestamps", "smartChatFilters", "chatMentionAlerts", "chatMentionHighlight")
-			.anyMatch(name -> old.get(name).getAsBoolean());
-		if (EMUtilsClient.config().chatFeaturesEnabled() != chat) {
-			problems.add("the chat features are " + (chat ? "off" : "on") + " after the update");
+		if (!old.has("chatFeaturesEnabled")) {
+			// Copy Chat is on by default, so a file without it had it on.
+			boolean chat = !old.has("copyChat") || flag(old, "copyChat");
+			chat |= Stream.of("chatTimestamps", "smartChatFilters", "chatMentionAlerts", "chatMentionHighlight").anyMatch(name -> flag(old, name));
+			if (EMUtilsClient.config().chatFeaturesEnabled() != chat) {
+				problems.add("the chat features are " + (chat ? "off" : "on") + " after the update");
+			}
 		}
 	}
 
@@ -177,6 +185,10 @@ public final class CarryOverCheck {
 		} else if (!expected.equals(actual)) {
 			problems.add(what + " " + path + " is " + actual + " instead of " + expected);
 		}
+	}
+
+	private static boolean flag(JsonObject object, String name) {
+		return object.has(name) && object.get(name).getAsBoolean();
 	}
 
 	private static JsonElement read(Path file) throws IOException {
