@@ -92,6 +92,9 @@ public final class SmokeLaunchVerifier {
 				EMUtilsClient.LOGGER.info("EMUtils debug launch reached a singleplayer world.");
 			}
 			if (enabled && worldTicks >= MIN_WORLD_TICKS) {
+				if (CarryOverCheck.enabled()) {
+					CarryOverCheck.run(client);
+				}
 				EMUtilsClient.LOGGER.info("EMUtils smoke launch verifier reached singleplayer world; stopping Minecraft.");
 				client.stop();
 				registered = false;

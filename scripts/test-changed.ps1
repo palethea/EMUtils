@@ -1,7 +1,7 @@
 param(
     [string] $Base = 'origin/master',
     [switch] $Full,
-    # Also runs the visual compatibility tests with Sodium, Iris and Mod Menu (scripts	est-compat.ps1).
+    # Also runs the visual compatibility tests with Sodium, Iris and Mod Menu (scripts\test-compat.ps1).
     [switch] $Compat
 )
 
@@ -45,6 +45,9 @@ else {
     Write-Host "No version-sensitive files changed; running the latest version only ($($supportedVersions[-1]))."
     & $runner -Latest
 }
+
+# Old releases' settings, keybinds and data files still carry over (scripts\test-carryover.ps1).
+& (Join-Path $PSScriptRoot 'test-carryover.ps1') -Versions $(if ($Full -or $sensitive.Count -gt 0) { $supportedVersions } else { @($supportedVersions[-1]) })
 
 if ($Compat) {
     & (Join-Path $PSScriptRoot 'test-compat.ps1') -Versions $(if ($Full -or $sensitive.Count -gt 0) { $supportedVersions } else { @($supportedVersions[-1]) })
