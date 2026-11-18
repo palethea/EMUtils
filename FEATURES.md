@@ -22,7 +22,7 @@ Hide distracting weather effects while keeping the world playable.
 
 ### Visual Tweaks
 
-Toggle small rendering changes without installing separate single-purpose mods.
+Small rendering changes, each its own card in Render, so you don't need separate single-purpose mods.
 
 - No Fog: reduce distance fog where possible. A shader pack draws its own fog, which No Fog can't remove; while one is on, the card says so and points to the pack's settings.
 - Clear Underwater: improve visibility underwater.
@@ -101,7 +101,7 @@ Show a configurable info panel with icons and useful world or client stats, as a
 - Coordinates: show current XYZ coordinates.
 - Free Camera Coordinates: show the free camera XYZ as an extra line while Free Camera is active and Coordinates are enabled.
 - Nether Coordinates: show equivalent Nether XYZ while in the Overworld using the 8:1 portal scale; hidden in other dimensions.
-- Looking At: show the coordinates of the block you are looking at. Off by default.
+- Targeted Block: show the coordinates of the block you are looking at, as a Looking At line. Off by default.
 - Dimension: show which dimension you are in. Off by default.
 - Chunk / Region: show current chunk and region.
 - Slime Chunk: show whether you stand in a slime chunk. It needs the world seed, so it works in singleplayer and says Unknown seed on servers. Off by default.
@@ -158,9 +158,6 @@ A map of the area around you in the top-right corner, drawn from each block's re
 - Shape: a Square map, or a Round one.
 - Rotate with You: turn the map so the way you face is always up. Turn it off to keep north up.
 - Zoom: from 0.25× to 8×. The Minimap Zoom In (`=`) and Minimap Zoom Out (`-`) keys change it too.
-- Cave View: underground (with a solid roof over the 3×3 blocks around you, so standing under a tree or a log doesn't count), and always in the Nether, the minimap shows the caves at your height instead of the surface: a layer of 16 blocks, starting a little above your head, showing the floor of the caves in it, darker the deeper it lies, with solid rock left empty. It goes back to the surface when you come out. The caves you explore are kept, and the world map's Underground shows them. In singleplayer the layer also fills in from the world's files, like the surface does, while you're in it or look at it on the world map. The Toggle Cave View key (unbound by default) turns it on wherever you are, and back to switching by itself. On by default.
-  - Full Nether Map: in the Nether and other dimensions with a roof, show every floor under the roof at once instead of the caves at your height. Off by default.
-- Loading Speed: how hard the minimap and world map work to load. Normal (the default) keeps most of the work off the game's own thread so the game stays smooth; Fast and Fastest use more of the CPU and GPU, with more threads reading, unpacking and drawing, more done at once and more often, so a big explored or Chunky-generated world shows much sooner, at some cost to FPS while it loads. A Chunky-generated world with a 2048-block radius (65,000 chunks) is on the map, fully drawn zoomed out, after about 23 seconds at Normal and 8 at Fast and Fastest.
 - Coordinates: show your coordinates under the map.
 - Waypoints: show your waypoints with the same markers as in the world.
   - Pin to Edge: keep waypoints past the map's edge on it, pinned to the edge in their direction. Turn it off to show only the ones in view.
@@ -248,7 +245,10 @@ One screen for every setting of the map, opened from the Map card, the world map
 - World Map: its switch and key (see World Map below).
 - Entity Radar: the players, mobs and items on the maps (see Entity Radar under HUD).
 - Caves & Nether: Cave View, its key, and Full Nether Map.
+  - Cave View: underground (with a solid roof over the 3×3 blocks around you, so standing under a tree or a log doesn't count), and always in the Nether, the minimap shows the caves at your height instead of the surface: a layer of 16 blocks, starting a little above your head, showing the floor of the caves in it, darker the deeper it lies, with solid rock left empty. It goes back to the surface when you come out. The caves you explore are kept, and the world map's Underground shows them. In singleplayer the layer also fills in from the world's files, like the surface does, while you're in it or look at it on the world map. The Toggle Cave View key (unbound by default) turns it on wherever you are, and back to switching by itself. On by default.
+    - Full Nether Map: in the Nether and other dimensions with a roof, show every floor under the roof at once instead of the caves at your height. Off by default.
 - Loading: Loading Speed.
+  - Loading Speed: how hard the minimap and world map work to load. Normal (the default) keeps most of the work off the game's own thread so the game stays smooth; Fast and Fastest use more of the CPU and GPU, with more threads reading, unpacking and drawing, more done at once and more often, so a big explored or Chunky-generated world shows much sooner, at some cost to FPS while it loads. A Chunky-generated world with a 2048-block radius (65,000 chunks) is on the map, fully drawn zoomed out, after about 23 seconds at Normal and 8 at Fast and Fastest.
 - With Unfair Features off, the sidebar says that the entity radar and cave view wait for them.
 
 ### World Map
@@ -283,8 +283,8 @@ Replace the default screenshot message with quick actions and optional metadata.
 Save death and custom waypoints per world or server, as many custom ones as you like; each world and dimension keeps up to 64 death waypoints. In the world each one is a colored marker with the waypoint's initial (a cross for deaths). Markers shrink and fade with distance and fade out right next to you. The name and distance show when you aim at a marker or are within 8 blocks.
 
 - Auto Copy Coords: copy coordinates when a waypoint is created.
-- Coord Format: copy coordinates as plain, comma-separated, or teleport-command text.
-- Copy Coordinates: a keybind that copies your current position in the Coord Format, or the camera's position while Free Camera is active.
+- Coordinate Format: copy coordinates as plain, comma-separated, or teleport-command text.
+- Copy Coordinates: a keybind that copies your current position in the Coordinate Format, or the camera's position while Free Camera is active.
 - Copy Coords Feedback: show a chat message with the copied coordinates.
 - Deaths to Keep: how many death waypoints a world keeps, from 1 to 10 (3 by default). A new death drops the oldest ones past that, never a custom waypoint, and never a death waypoint you chose to Keep, which isn't counted.
 - When You Reach a Death Point: Ask in Chat (default) asks with Remove and Keep buttons when you get back to a death waypoint, Remove It removes it on its own once you are within 5 blocks, and Keep It leaves it. It counts only once you have been 20 blocks away from it, so respawning next to it doesn't trigger it, and hidden waypoints and ones you kept are left alone.
@@ -305,6 +305,19 @@ Save death and custom waypoints per world or server, as many custom ones as you 
 - Show Other Dimensions: also show the world's waypoints from other dimensions, off by default. Overworld and Nether waypoints appear at the matching spot in the other one (Nether coordinates times eight, the same height), as markers and beacons. End and custom dimensions don't line up, so those stay in the list. The same switch sits in the Current Waypoints list.
 - Show on Xaero's Maps: also show the waypoints on Xaero's Minimap and World Map when those optional mods are installed, on by default. They look like Xaero's own waypoints: on the minimap a rounded colored marker with the initial (a cross for deaths) that pins to the edge when out of range, following Waypoint Opacity, Waypoint Size and Max Distance; on the World Map Xaero's own flag with the name that fades in under the cursor, following Xaero's waypoint scale, background and zoom settings. Hidden waypoints stay hidden, and with Show Other Dimensions on, Overworld and Nether waypoints also show at their converted spot. The switch only shows when a Xaero map mod is installed.
 - Import from Xaero's Minimap: in the Import tab, bring over the waypoints of Xaero's Minimap for every singleplayer world and server at once, whether or not it's still installed. Each keeps its name, color, set, dimension and hidden state, and goes to the world or server it was made in; Xaero's death waypoints come over as kept death waypoints. A spot that already has a waypoint is skipped, so importing again adds nothing. Realms waypoints aren't imported, since Xaero's folder names for Realms can't be matched to a Realm.
+
+### Free Camera
+
+Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera defaults to a clean spectator-style HUD with held items and survival HUD elements hidden, and can switch to the regular HUD to show the real player's hand, hotbar, health, armor, food, and XP while the camera is detached. Left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored. Through a dimension change or a respawn the camera stays detached and keeps facing the same way, and stays where it was when you end up in the same dimension.
+
+- Free Camera HUD: a clean spectator-style view, or the regular HUD.
+- Free Camera Boost: how much faster the camera moves while sprinting, both across and up and down.
+- Horizontal Speed: how fast the camera moves forward, back and sideways, from 10% to 500%.
+- Vertical Speed: how fast the camera moves up with jump and down with sneak, from 10% to 500%.
+- Collision: stop the camera at blocks instead of passing through them. Off by default.
+- Double-Tap to Start: start Free Camera with a double tap of its key, so a stray press doesn't detach the camera. One press still ends it. Off by default.
+- Camera FOV: use a field of view of its own while the camera is detached. Off by default.
+  - Field of View: the detached camera's field of view, from 30 to 110. Zoom still works on top of it.
 
 ## Management
 
@@ -422,7 +435,7 @@ Every EMUtils key on one page, opened from the Keybinds card or the keyboard but
 
 ### Chat Features
 
-Improve chat reading, copying, and notifications.
+Improve chat reading, copying, and notifications. The card's switch turns all of them off at once, and each keeps its own setting.
 
 - Copy Chat: copy full chat messages with Ctrl + left click.
 - Copy Formatting: include formatting when copying chat.
@@ -430,9 +443,14 @@ Improve chat reading, copying, and notifications.
 - Chat Timestamps: prepend timestamps to chat messages.
 - 24-Hour Clock: use 24-hour timestamps.
 - Smart Chat Filters: collapse repeated messages.
-- Duplicate Time Window: group duplicate messages within a configurable time window.
-- Mention Alerts: play sound or toast alerts when you are mentioned.
-- Mention Highlight: highlight mentions with configurable color and style.
+- Duplicate Time Window: only group repeats that arrive close together.
+  - Window Duration: how close together repeats must be to get grouped, from 30 to 120 seconds.
+- Mention Alerts: play a sound and show a toast with the message when someone mentions your name.
+  - Alert Volume: how loud the sound is; 0% leaves just the toast.
+  - Alert Sound: Pling, Chime, Bell, Harp, Xylophone, Experience Orb or Amethyst.
+- Mention Highlight: highlight your name in chat messages.
+  - Mention Highlight Color: the color your name is highlighted in.
+  - Mention Highlight Style: bold, italic, underlined, or just the color.
 
 ### Inventory Tools
 
@@ -482,8 +500,9 @@ Prevent a held damageable item from attacking, breaking blocks, swinging, or per
 
 Automatically select the fastest suitable tool using each item and block's public mining-speed and correct-tool data, including modded content.
 
-- Legit: switch only between tools already in the hotbar.
-- Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
+- Auto Tool Mode:
+  - Legit: switch only between tools already in the hotbar.
+  - Unfair: search the whole player inventory and swap the best tool into the currently selected hotbar slot.
 - Return to Previous Item: switch back to the item you were holding after Auto Tool stops using a tool.
 - Enchantments: a priority list of the enchantments to prefer between tools that can mine the block and get its drops; the first one that tells two tools apart decides, and the fastest tool wins when none does. Each can be turned off and moved up or down. By default Fortune, then Silk Touch, then Efficiency.
   - Fortune: the highest Fortune, on ores, glowstone, sea lanterns, melons and amethyst clusters.
@@ -512,16 +531,3 @@ Hold a configurable keybind while placing against a block to redirect the placem
 ### Locked Y Placement
 
 Press a configurable keybind while targeting a block to lock block placements to that block's Y coordinate. The HUD overlay shows the active placement Y, and pressing the keybind while looking in the air or toggling the feature off clears the lock.
-
-### Free Camera
-
-Toggle a detached spectator-like camera while the visible real player continues to receive normal physics and knockback without accepting movement input. Move the camera with the normal movement keys, ascend with jump, descend with sneak, and hold sprint for a configurable speed boost. Free Camera defaults to a clean spectator-style HUD with held items and survival HUD elements hidden, and can switch to the regular HUD to show the real player's hand, hotbar, health, armor, food, and XP while the camera is detached. Left and right clicks act from the real player's position and block picking remains suppressed until the camera is restored. Through a dimension change or a respawn the camera stays detached and keeps facing the same way, and stays where it was when you end up in the same dimension.
-
-- Free Camera HUD: a clean spectator-style view, or the regular HUD.
-- Free Camera Boost: how much faster the camera moves while sprinting, both across and up and down.
-- Horizontal Speed: how fast the camera moves forward, back and sideways, from 10% to 500%.
-- Vertical Speed: how fast the camera moves up with jump and down with sneak, from 10% to 500%.
-- Collision: stop the camera at blocks instead of passing through them. Off by default.
-- Double-Tap to Start: start Free Camera with a double tap of its key, so a stray press doesn't detach the camera. One press still ends it. Off by default.
-- Camera FOV: use a field of view of its own while the camera is detached. Off by default.
-  - Field of View: the detached camera's field of view, from 30 to 110. Zoom still works on top of it.
