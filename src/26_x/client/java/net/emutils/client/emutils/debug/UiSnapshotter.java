@@ -285,6 +285,16 @@ public final class UiSnapshotter {
 			finish(client);
 			return;
 		}
+		// The Modrinth gallery's showcase scenes (#272), only reached by starting there.
+		if (step >= ShowcaseScenes.FIRST_STEP) {
+			switch (ShowcaseScenes.tick(client, step - ShowcaseScenes.FIRST_STEP, stepTicks)) {
+				case NEXT -> next();
+				case FINISH -> finish(client);
+				case WAIT -> {
+				}
+			}
+			return;
+		}
 		// The visual compatibility scenes (#246), only reached by starting there.
 		if (step >= CompatScenes.FIRST_STEP) {
 			switch (CompatScenes.tick(client, step - CompatScenes.FIRST_STEP, stepTicks)) {
