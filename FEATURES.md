@@ -247,7 +247,7 @@ One screen for every setting of the map, opened from the Map card, the world map
 - Caves & Nether: Cave View, its key, and Full Nether Map.
   - Cave View: underground (with a solid roof over the 3×3 blocks around you, so standing under a tree or a log doesn't count), and always in the Nether, the minimap shows the caves at your height instead of the surface: a layer of 16 blocks, starting a little above your head, showing the floor of the caves in it, darker the deeper it lies, with solid rock left empty. It goes back to the surface when you come out. The caves you explore are kept, and the world map's Underground shows them. In singleplayer the layer also fills in from the world's files, like the surface does, while you're in it or look at it on the world map. The Toggle Cave View key (unbound by default) turns it on wherever you are, and back to switching by itself. On by default.
     - Full Nether Map: in the Nether and other dimensions with a roof, show every floor under the roof at once instead of the caves at your height. Off by default.
-- Loading:
+- Loading: Loading Speed.
   - Loading Speed: how hard the minimap and world map work to load. Normal (the default) keeps most of the work off the game's own thread so the game stays smooth; Fast and Fastest use more of the CPU and GPU, with more threads reading, unpacking and drawing, more done at once and more often, so a big explored or Chunky-generated world shows much sooner, at some cost to FPS while it loads. A Chunky-generated world with a 2048-block radius (65,000 chunks) is on the map, fully drawn zoomed out, after about 23 seconds at Normal and 8 at Fast and Fastest.
 - With Unfair Features off, the sidebar says that the entity radar and cave view wait for them.
 
