@@ -15,6 +15,7 @@ def mc26Versions = [
 		minecraftDependency: ">=26.2- <26.3-",
 		// Sodium and Mod Menu are compile-time APIs; with Iris they're also put in the compatibility test runs (#246).
 		sodiumVersion: "mc26.2-0.9.2-fabric",
+		minescriptVersion: "5.0-fabric-26.2",
 		irisVersion: "1.11.4+26.2-fabric",
 		modMenuVersion: "20.0.3"
 	],
@@ -24,6 +25,7 @@ def mc26Versions = [
 		mappingFile: "gradle/mappings/26.3-official-identity.tiny",
 		minecraftDependency: ">=26.3- <26.4-",
 		sodiumVersion: "mc26.3-0.9.2-fabric",
+		minescriptVersion: "5.0-fabric-26.3",
 		irisVersion: "1.11.7+26.3-fabric",
 		modMenuVersion: "21.0.0"
 	]
@@ -46,7 +48,10 @@ def versionPath = "src/${selected26Version.replace('.', '_')}"
 if (mcFamily == "26.x" && !file("${versionPath}/resources/emutils.versioned.mixins.json").isFile()) {
 	throw new GradleException("Missing ${versionPath}/resources/emutils.versioned.mixins.json for Minecraft ${selected26Version}")
 }
-def uiSnapshot = mcFamily == "26.x" && findProperty("emutilsUiSnapshot")?.toString()?.toBoolean()
+// Showcase runs (#272): -PemutilsShowcase=true poses the screenshots for the Modrinth gallery (UI snapshot steps
+// 2000 and up, see ShowcaseScenes) in a kept world, with Chunky to pre-generate it and Minescript for its editor.
+def showcase = mcFamily == "26.x" && findProperty("emutilsShowcase")?.toString()?.toBoolean()
+def uiSnapshot = mcFamily == "26.x" && (findProperty("emutilsUiSnapshot")?.toString()?.toBoolean() || showcase)
 // Compatibility test runs (#246): -PemutilsCompat=sodium,iris,modmenu puts those mods in the run, at the versions
 // pinned above, and "none" is the baseline without them. Each combination has its own run folder, so its options
 // and screenshots stay apart and can be compared with the baseline's.
@@ -68,7 +73,9 @@ def carryOverFixture = carryOverVersion == null ? null : file("src/test/carry-ov
 if (carryOverFixture != null && !carryOverFixture.isDirectory()) {
 	throw new GradleException("No carry-over fixture for ${carryOverVersion} in src/test/carry-over")
 }
-def smokeRunDir = carryOverFixture != null && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()
+def smokeRunDir = showcase
+	? "run/26x-showcase/${selected26Version}"
+	: carryOverFixture != null && findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean()
 	? "run/26x-carryover/${selected26Version}"
 	: compatName != null && (uiSnapshot || findProperty("emutilsSmokeLaunch")?.toString()?.toBoolean())
 	? "run/26x-compat/${selected26Version}/${compatName}"
@@ -190,6 +197,11 @@ configurations {
 		canBeConsumed = false
 		transitive = false
 	}
+	// The showcase run's mods (#272), copied into its mods folder: Minescript's bundled libraries only load from there.
+	showcaseMods {
+		canBeConsumed = false
+		transitive = false
+	}
 }
 
 dependencies {
@@ -218,6 +230,11 @@ dependencies {
 				}
 			}
 			compatShaders compatShaderPack
+		}
+		if (showcase) {
+			// The Fabric build by its version ID: the version number is shared with the other loaders' builds.
+			showcaseMods "maven.modrinth:chunky:86FKD9qx"
+			showcaseMods "maven.modrinth:minescript:${selected26.minescriptVersion}"
 		}
 		if ("modmenu" in compatMods) {
 			// Without its POM's Fabric API modules: they aren't remapped for the dev runtime and can win over ours.
@@ -289,7 +306,15 @@ def prepareCarryOver = tasks.register("prepareCarryOver") {
 	}
 }
 
+def prepareShowcaseMods = tasks.register("prepareShowcaseMods", Sync) {
+	from configurations.showcaseMods
+	into(smokeRunDir == null ? "build/showcase-mods" : "${smokeRunDir}/mods")
+}
+
 tasks.matching { it.name == "runClient" }.configureEach {
+	if (showcase) {
+		dependsOn prepareShowcaseMods
+	}
 	if (carryOverFixture != null) {
 		if (smokeRunDir == null || !smokeRunDir.startsWith("run/26x-carryover/")) {
 			throw new GradleException("-PemutilsCarryOver needs -PemutilsSmokeLaunch=true")
@@ -317,7 +342,7 @@ tasks.matching { it.name == "runClient" }.configureEach {
 	if (mcFamily == "26.x" && findProperty("emutilsLaunchTestWorld")?.toString()?.toBoolean()) {
 		jvmArgs "-Demutils.launchTestWorld=true"
 	}
-	def keptWorld = findProperty("emutilsTestWorld")
+	def keptWorld = findProperty("emutilsTestWorld") ?: (showcase ? "EMUtils Showcase" : null)
 	if (mcFamily == "26.x" && keptWorld != null) {
 		// A world kept between launches (see SmokeLaunchVerifier), such as the big one the map is measured in.
 		jvmArgs "-Demutils.testWorld=${keptWorld}"
@@ -327,7 +352,7 @@ tasks.matching { it.name == "runClient" }.configureEach {
 		jvmArgs "-Demutils.uiSnapshot=true"
 		jvmArgs "-Demutils.launchTestWorld=true"
 		args "--width", "1920", "--height", "1080"
-		def snapshotFrom = findProperty("emutilsUiSnapshotFrom")
+		def snapshotFrom = findProperty("emutilsUiSnapshotFrom") ?: (showcase ? "2000" : null)
 		if (snapshotFrom != null) {
 			// Skips to that step, for checking only the newest snapshots.
 			jvmArgs "-Demutils.uiSnapshotFrom=${snapshotFrom}"
