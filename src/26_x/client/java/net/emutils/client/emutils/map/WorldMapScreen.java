@@ -209,7 +209,7 @@ public final class WorldMapScreen extends Screen {
 			show(dimension, worldId, cave);
 		}
 		if (cave != MapSampler.SURFACE && !MapManager.cavesAllowed()) {
-			// Unfair Features were turned off meanwhile (#213), which cave view is one of.
+			// Unfair Features were turned off meanwhile (#213), which cave view is one of, or the server turned it off (#269).
 			show(dimension, worldId, MapSampler.SURFACE);
 		}
 		dimensions.clear();
@@ -955,8 +955,9 @@ public final class WorldMapScreen extends Screen {
 		if (MapManager.cavesAllowed()) {
 			items.add(UiContextMenu.Item.choice(Component.literal(layerName(0)), cave != MapSampler.SURFACE, () -> show(dimension, worldId, undergroundLayer(dimension))));
 		} else {
-			// Cave view is one of the Unfair Features (#213), which are off.
-			items.add(new UiContextMenu.Item(Component.translatable(EMUtilsTexts.UI_UNFAIR_OFF_ITEM, layerName(0)), false, false, () -> {
+			// Cave view is one of the Unfair Features (#213), which are off, or the server turned it off (#269).
+			String why = MapManager.cavesOffByServer() ? EMUtilsTexts.UI_SERVER_OFF_ITEM : EMUtilsTexts.UI_UNFAIR_OFF_ITEM;
+			items.add(new UiContextMenu.Item(Component.translatable(why, layerName(0)), false, false, () -> {
 			}));
 		}
 		menu = new UiContextMenu(font, anim, layerChip[0], layerChip[1] + layerChip[3] + 2, items);

@@ -250,6 +250,7 @@ One screen for every setting of the map, opened from the Map card, the world map
 - Loading: Loading Speed.
   - Loading Speed: how hard the minimap and world map work to load. Normal (the default) keeps most of the work off the game's own thread so the game stays smooth; Fast and Fastest use more of the CPU and GPU, with more threads reading, unpacking and drawing, more done at once and more often, so a big explored or Chunky-generated world shows much sooner, at some cost to FPS while it loads. A Chunky-generated world with a 2048-block radius (65,000 chunks) is on the map, fully drawn zoomed out, after about 23 seconds at Normal and 8 at Fast and Fastest.
 - With Unfair Features off, the sidebar says that the entity radar and cave view wait for them.
+- Server restrictions: servers that restrict Xaero's Minimap and World Map or JourneyMap restrict EMUtils' maps the same way, with the codes they already send in a message. Xaero's no-minimap code hides the minimap; its fair-play code turns off the entity radar and cave view (its Nether code allows cave view in the Nether again), and its reset code allows them again. JourneyMap's codes turn off the entity radar or cave view. Only messages from the server count, never other players' chat, and the restrictions last until you leave the server. A line in chat says what the server turned off, the cave view key says so instead of turning it on, and the world map's Underground layer shows as off on this server.
 
 ### World Map
 

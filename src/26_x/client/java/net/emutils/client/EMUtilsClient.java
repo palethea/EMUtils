@@ -148,6 +148,7 @@ public class EMUtilsClient implements ClientModInitializer {
 		LightLevelOverlayRenderer.register();
 		MapManager.register();
 		net.emutils.client.emutils.map.MapServerWorlds.register();
+		net.emutils.client.emutils.map.MapServerRules.register();
 		registerHudLayoutElements();
 		UiClosingScreens.register();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -471,7 +472,11 @@ public class EMUtilsClient implements ClientModInitializer {
 		while (mapCavesKeyMapping != null && mapCavesKeyMapping.consumeClick()) {
 			// Like Xaero's manual cave mode: the cave view on wherever you are, or back to switching by itself.
 			if (!net.emutils.client.emutils.map.MapManager.cavesAllowed()) {
-				net.emutils.client.emutils.util.UnfairFeatures.tellOff(client, Component.translatable(EMUtilsTexts.OPTION_MAP_CAVES));
+				if (net.emutils.client.emutils.map.MapManager.cavesOffByServer()) {
+					client.gui.hud.setOverlayMessage(Component.translatable(EMUtilsTexts.UI_SERVER_OFF_MESSAGE, Component.translatable(EMUtilsTexts.OPTION_MAP_CAVES)), false);
+				} else {
+					net.emutils.client.emutils.util.UnfairFeatures.tellOff(client, Component.translatable(EMUtilsTexts.OPTION_MAP_CAVES));
+				}
 				continue;
 			}
 			boolean forced = net.emutils.client.emutils.map.MapManager.toggleManualCaves();

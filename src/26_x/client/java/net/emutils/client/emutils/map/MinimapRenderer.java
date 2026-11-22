@@ -104,7 +104,8 @@ public final class MinimapRenderer {
 	private static void render(GuiGraphicsExtractor context, DeltaTracker deltaTracker) {
 		EMUtilsConfig config = EMUtilsClient.config();
 		Minecraft client = Minecraft.getInstance();
-		if (config == null || client.player == null || client.level == null || !config.minimap()) {
+		// The server may hide it, with Xaero's no-minimap code (#269).
+		if (config == null || client.player == null || client.level == null || !config.minimap() || !MapServerRules.minimapAllowed()) {
 			return;
 		}
 		if (HudLayoutManager.isEditing() || MinecraftClientCompat.isHudHidden(client) || WorldMapScreen.isOpen(client)) {
@@ -137,7 +138,7 @@ public final class MinimapRenderer {
 	/** The minimap's frame on screen right now, or null when it isn't showing. */
 	static @Nullable Frame frame(Minecraft client) {
 		EMUtilsConfig config = EMUtilsClient.config();
-		if (config == null || client.player == null || !config.minimap() || MinecraftClientCompat.isHudHidden(client)) {
+		if (config == null || client.player == null || !config.minimap() || !MapServerRules.minimapAllowed() || MinecraftClientCompat.isHudHidden(client)) {
 			return null;
 		}
 		int guiWidth = client.getWindow().getGuiScaledWidth();

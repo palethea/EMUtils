@@ -47,6 +47,10 @@ public final class EMUtilsTexts {
     public static final String UI_SHADER_PACK_ON = "emutils.ui.shader_pack_on";
     public static final String UI_UNFAIR_OFF_ITEM = "emutils.ui.unfair_off_item";
     public static final String UI_UNFAIR_OFF_MESSAGE = "emutils.ui.unfair_off_message";
+    public static final String UI_SERVER_OFF_ITEM = "emutils.ui.server_off_item";
+    public static final String UI_SERVER_OFF_MESSAGE = "emutils.ui.server_off_message";
+    public static final String CHAT_MAP_SERVER_OFF = "emutils.chat.map_server_off";
+    public static final String CHAT_LIST_AND = "emutils.chat.list_and";
     public static final String UI_UNFAIR_COVERS = "emutils.ui.unfair_covers";
     public static final String OPTION_UNFAIR_FEATURES = "emutils.option.unfair_features";
     public static final String HUB_FEATURE_UNFAIR_FEATURES_DESC = "emutils.hub.feature.unfair_features.desc";
