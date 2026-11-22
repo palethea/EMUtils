@@ -27,10 +27,10 @@ Most utility mods do one job. One zooms, one copies chat, one sorts your chests,
 | Category | Highlights |
 |---|---|
 | **Render** | Zoom, Freelook, Fullbright, Clear Weather, Light Level Overlay, Beacon Radius Outline, custom capes, and a stack of visual tweaks |
-| **HUD** | Minimap drawn with real block textures, Info overlay with a drag-and-drop layout editor, Food HUD, Spotify now playing |
-| **Utility** | Auto Reconnect, Screenshot Helper, death and custom Waypoints |
-| **Management** | Settings hub, Screenshot Gallery, Pack Manager with Modrinth search, Script Manager |
-| **QoL** | Chat copy and filters, Sort Buttons, Quick Stack, Slot Locking, Auto Tool, Auto Flight Gear, Free Camera, Safe Walk, Fast Place |
+| **HUD** | Minimap drawn with real block textures, Entity Radar, Info overlay with a drag-and-drop layout editor, Look-At Info, Keystrokes, Armor Status, Scoreboard, Tab List, Food HUD, Spotify now playing |
+| **Utility** | World Map with saved exploration and cave view, Waypoints with sharing, death markers and Xaero's import, Free Camera, Auto Reconnect, Screenshot Helper |
+| **Management** | Settings hub, config Profiles with per-server switching, Unfair Features switch, Keybinds, Screenshot Gallery, Pack Manager with Modrinth search, Script Manager |
+| **QoL** | Chat copy and filters, Inventory Search, Sort Buttons, Quick Stack, Slot Locking, Auto Tool, Auto Flight Gear, Safe Walk, Fast Place |
 
 Every feature has its own on/off switch. The full list with every setting is in **[FEATURES.md](FEATURES.md)**.
 
@@ -52,7 +52,7 @@ EMUtils follows the two latest Minecraft releases. Older versions live on the [`
 - **Mod Menu:** opens the EMUtils settings hub from its config button.
 - **Iris:** lets Pack Manager apply and turn off shader packs.
 - **Minescript:** powers Script Manager (browse, edit, run, and bind scripts).
-- **Xaero's Minimap / World Map:** shows Beacon Radius Outline boundaries on the map.
+- **Xaero's Minimap / World Map:** shows EMUtils waypoints and Beacon Radius Outline boundaries on Xaero's maps.
 
 </details>
 
