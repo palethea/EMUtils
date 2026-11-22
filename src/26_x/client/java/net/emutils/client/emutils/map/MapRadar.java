@@ -66,7 +66,7 @@ public final class MapRadar {
 
 	/** Whether the radar shows anything at all. */
 	static boolean enabled(@Nullable EMUtilsConfig config) {
-		return config != null && config.mapRadar() && config.unfairFeatures();
+		return config != null && config.mapRadar() && config.unfairFeatures() && MapServerRules.radarAllowed();
 	}
 
 	/** Whether the minimap shows the radar. */

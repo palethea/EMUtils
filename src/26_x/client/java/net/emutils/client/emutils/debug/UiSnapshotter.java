@@ -57,6 +57,7 @@ import net.emutils.client.emutils.map.MinimapRenderer;
 import net.emutils.client.emutils.map.MinimapShape;
 import net.emutils.client.emutils.map.MinimapZoom;
 import net.emutils.client.emutils.map.WorldMapScreen;
+import net.emutils.client.emutils.map.MapServerRules;
 import net.emutils.client.emutils.hud.ArmorStatusRenderer;
 import net.emutils.client.emutils.hud.ClickCounter;
 import net.emutils.client.emutils.tweaks.AutoToolEnchantment;
@@ -4472,6 +4473,44 @@ public final class UiSnapshotter {
 					next();
 				}
 			}
+			// Server map restrictions (#269): Xaero's and JourneyMap's codes, arriving as system messages, hide the
+			// minimap and turn off the entity radar and cave view; Xaero's reset brings Xaero's back, not JourneyMap's.
+			case 422 -> {
+				EMUtilsConfig config = EMUtilsClient.config();
+				if (stepTicks == 1) {
+					client.gui.setScreen(null);
+					MapServerRules.reset();
+					config.setUnfairFeatures(true);
+					config.setMinimap(true);
+					config.setMapRadar(true);
+					check(MapServerRules.minimapAllowed() && MapServerRules.radarAllowed() && MapManager.cavesAllowed(), "with no codes the server allows the minimap, radar and cave view");
+					serverMessage(client, "Welcome!");
+					check(MapServerRules.minimapAllowed() && MapServerRules.radarAllowed() && MapManager.cavesAllowed(), "a message without codes changes nothing");
+					serverMessage(client, "Welcome! §f§a§i§r§x§a§e§r§o");
+					check(MapServerRules.minimapAllowed() && !MapServerRules.radarAllowed() && !MapManager.cavesAllowed() && MapManager.cavesOffByServer(), "Xaero's fair-play code turns off the radar and cave view, not the minimap");
+				}
+				if (stepTicks == 10) {
+					grab(client, "server map restrictions, fair play: chat line, minimap without radar");
+					serverMessage(client, "§r§e§s§e§t§x§a§e§r§o");
+					check(MapServerRules.radarAllowed() && MapManager.cavesAllowed(), "Xaero's reset code allows them again");
+					serverMessage(client, "§n§o§m§i§n§i§m§a§p");
+					check(!MapServerRules.minimapAllowed() && MapServerRules.radarAllowed(), "Xaero's no-minimap code hides the minimap only");
+				}
+				if (stepTicks == 20) {
+					grab(client, "server map restrictions, no minimap");
+					serverMessage(client, "§r§e§s§e§t§x§a§e§r§o");
+					serverMessage(client, "§3 §6 §3 §6 §3 §6 §e");
+					check(MapServerRules.minimapAllowed() && !MapServerRules.radarAllowed() && MapManager.cavesAllowed(), "JourneyMap's radar code turns off the radar only");
+					serverMessage(client, "§3 §6 §3 §6 §3 §6 §d");
+					check(!MapManager.cavesAllowed(), "JourneyMap's cave code turns off cave view");
+					serverMessage(client, "§r§e§s§e§t§x§a§e§r§o");
+					check(!MapServerRules.radarAllowed() && !MapManager.cavesAllowed(), "Xaero's reset code leaves JourneyMap's codes in place");
+					MapServerRules.reset();
+					check(MapServerRules.radarAllowed() && MapManager.cavesAllowed(), "leaving the server clears every code");
+					config.setMinimap(false);
+					next();
+				}
+			}
 			// The big map tests (#239), in the kept world (-PemutilsTestWorld): generated once with Chunky, a
 			// 2048-block radius around 0, 0, then the map measured opening it from nothing, at Fastest, Normal and
 			// Fast. Normal runs never get here: their steps end before.
@@ -5680,6 +5719,13 @@ public final class UiSnapshotter {
 			}
 		}
 		return InventorySearch.Match.NONE;
+	}
+
+	/** A system message as the server would send it, through the game's own handling, so mods' message events see it. */
+	private static void serverMessage(Minecraft client, String text) {
+		if (client.getConnection() != null) {
+			client.getConnection().handleSystemChat(new net.minecraft.network.protocol.game.ClientboundSystemChatPacket(Component.literal(text), false));
+		}
 	}
 
 	private static void press(Screen screen, int key, int modifiers) {

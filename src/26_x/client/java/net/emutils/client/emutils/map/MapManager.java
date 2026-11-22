@@ -469,10 +469,16 @@ public final class MapManager {
 	}
 
 	/** The cave view's key (#222): forces it on wherever you are, or back to switching by itself. Returns whether it's forced now. */
-	/** Cave view may be shown: it's one of the Unfair Features (#213). */
+	/** Cave view may be shown: it's one of the Unfair Features (#213), and the server may turn it off (#269). */
 	public static boolean cavesAllowed() {
 		EMUtilsConfig config = EMUtilsClient.config();
-		return config != null && config.unfairFeatures();
+		return config != null && config.unfairFeatures() && MapServerRules.cavesAllowedIn(Minecraft.getInstance().level);
+	}
+
+	/** Cave view is off because the server turned it off, not the Unfair Features switch (#269). */
+	public static boolean cavesOffByServer() {
+		EMUtilsConfig config = EMUtilsClient.config();
+		return config != null && config.unfairFeatures() && !MapServerRules.cavesAllowedIn(Minecraft.getInstance().level);
 	}
 
 	public static boolean toggleManualCaves() {
